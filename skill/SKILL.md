@@ -1,0 +1,96 @@
+---
+name: legislator
+description: Scaffold or upgrade the AI-development constitution (CLAUDE.md rules, OKF knowledge bundle, backlog, ADRs, dev journal, changelog, specs/plans, agent-space convention) in the current project repo. Use when starting a new AI-first project, migrating an existing repo to the standard layout, or re-applying an updated constitution after editing the Legislator's rule files.
+---
+
+# Legislator
+
+Run this procedure against the **current working directory** (the target project repo). Never write outside it. Never commit — leave the diff for the user to review.
+
+## Step 0 — Preconditions
+
+1. Confirm the current directory looks like a project root (has a `.git` directory, or the user has explicitly confirmed this directory is the target). If neither is true, ask the user to confirm before proceeding.
+2. Run `git status --porcelain`. If it reports anything, warn the user that uncommitted changes exist and ask whether to proceed (a run's diff would mix with their changes) before continuing.
+
+## Step 1 — Detect state
+
+Check, in this order:
+
+1. Does `docs/ai/manifest.json` exist? → **upgrade** mode. Read it for the previously applied `legislatorVersion`, `profiles`, and `ownedFiles`.
+2. Else, does `CLAUDE.md` exist at the repo root? → **legacy migration** mode.
+3. Else → **fresh scaffold** mode.
+
+## Step 2 — Determine profiles
+
+- **Upgrade mode:** use `profiles` from the existing manifest. Do not ask again.
+- **Fresh scaffold / legacy migration:** inspect the repo for stack signals — any `*.slnx`/`*.sln`/`*.csproj` file → candidate profile `dotnet`; an `aurelia` entry in `package.json` dependencies, or an `aurelia.json`/`au.config` file → candidate profile `aurelia`. Present the detected candidates to the user and ask them to confirm or adjust before proceeding. Store the confirmed list as `profiles`.
+
+## Step 3 — Apply owned files
+
+Owned files live in this skill package at `assets/rules/`. For each file:
+
+1. Always copy every file under `assets/rules/core/` to `docs/ai/rules/core/` in the target repo, preserving relative path, using a byte-for-byte copy operation (e.g. `cp`) — never retype or reformat the content.
+2. For each confirmed profile name in `profiles`, copy `assets/rules/stacks/<profile>/` to `docs/ai/rules/stacks/<profile>/` the same way.
+3. Read `assets/VERSION` (a single integer) — this is the `legislatorVersion` to write into the manifest.
+4. Compute the new `ownedFiles` list: every path just copied, expressed relative to the target repo root (e.g. `docs/ai/rules/core/okf.md`).
+5. **Deletions:** if an upgrade-mode manifest's old `ownedFiles` list contains a path not present in the new `ownedFiles` list, delete that file from the target repo (it was removed from the constitution).
+6. Write `docs/ai/manifest.json`:
+
+```json
+{
+  "legislatorVersion": <int from assets/VERSION>,
+  "profiles": [<confirmed profile names>],
+  "ownedFiles": [<new ownedFiles list, sorted>]
+}
+```
+
+## Step 4 — Scaffold missing project-owned artifacts
+
+For each of the following, create it **only if it does not already exist** — never overwrite. Use the templates in `assets/templates/`, filling placeholders as described below. Never invent content for a placeholder without either asking the user or deriving it from the repo (see the derivation rules below) — do not leave a placeholder token unfilled in the written file.
+
+| Target path | Template | Notes |
+|---|---|---|
+| `CLAUDE.md` | `CLAUDE.md.tpl` | Only in fresh-scaffold mode — legacy migration mode handles this file per Step 5 instead |
+| `docs/okf/index.md` | `okf-index.md.tpl` | |
+| `docs/okf/log.md` | `okf-log.md.tpl` | |
+| `docs/backlog.md` | `backlog.md.tpl` | |
+| `docs/adr/0001-record-architecture-decisions.md` | `adr-0001.md.tpl` | Used verbatim, no placeholders |
+| `docs/adr/template.md` | `adr-template.md.tpl` | Used verbatim, no placeholders |
+| `docs/journal/README.md` | `journal-README.md.tpl` | Used verbatim, no placeholders |
+| `CHANGELOG.md` | `changelog.md.tpl` | Used verbatim, no placeholders |
+| `.claude/agents/README.md` | `agents-README.md.tpl` | Used verbatim, no placeholders |
+| `docs/superpowers/specs/` | (empty directory) | Create the directory if absent; no file |
+| `docs/superpowers/plans/` | (empty directory) | Create the directory if absent; no file |
+
+Placeholder derivation rules (fresh-scaffold mode only — legacy migration extracts these from the existing CLAUDE.md instead, per Step 5):
+
+- `{{PROJECT_NAME}}` — ask the user, or infer from the repo directory name if unambiguous, and confirm with the user before writing.
+- `{{PROJECT_OVERVIEW}}` — ask the user for a one-paragraph description.
+- `{{STACK_SUMMARY}}` — derive from `profiles` (e.g. "`.NET`" for `dotnet`, "`.NET, Aurelia`" for both) plus anything the user adds.
+- `{{STACK_IMPORTS}}` — one `@docs/ai/rules/stacks/<profile>/<file>.md` line per file under each confirmed profile's rule directory.
+- `{{PROJECT_ARCHITECTURE_NOTES}}` — ask the user for any project-specific architecture constraints beyond the stack rules; if none, write "None beyond the stack rules imported above."
+- `{{BUILD_TEST_COMMANDS}}` — ask the user for the build/test commands (e.g. `dotnet build`, `dotnet test`), or detect from solution/project files and confirm.
+- `{{TODAY_ISO}}` — today's date/time in ISO 8601 (e.g. `2026-07-08T00:00:00Z`).
+- `{{TODAY_ISO_DATE}}` — today's date only (e.g. `2026-07-08`).
+- `{{CATEGORY_MAPPING_TABLE}}` — ask the user for the project's feature-slice-to-OKF-category mapping (mirroring the pattern: `| Change | OKF file to update |`); if the project has no slices yet, write a single row pointing everything at `docs/okf/index.md`.
+
+## Step 5 — Legacy migration (migration mode only)
+
+Follow `references/migration.md` in full. Summary of what it covers:
+
+1. Split the existing CLAUDE.md into project-specific content (kept) and content now covered by an owned rule (removed, replaced by the `@docs/ai/rules/...` import block from the `CLAUDE.md.tpl` import section).
+2. Extract any existing "what maps to what" / category table into `docs/okf/index.md` if `docs/okf/` already exists but lacks this file; otherwise scaffold `docs/okf/index.md` per Step 4 and fold the existing table in as `{{CATEGORY_MAPPING_TABLE}}`.
+3. Relocate any plans/specs directory outside the standard location (e.g. `.claude/plans/`) into `docs/superpowers/plans/`, fixing any relative references inside the moved files.
+4. Remove `docs/superpowers/` (or equivalent) from `.gitignore` if present.
+5. If an existing CLAUDE.md section conflicts with an owned rule (e.g. contradictory branch-naming convention), do not resolve it — surface the conflict and ask, per the decision-gate rule.
+
+## Step 6 — Verify
+
+1. For every file in the new `ownedFiles` list, diff it against the corresponding `assets/rules/...` source file (e.g. `diff docs/ai/rules/core/okf.md <skill-path>/assets/rules/core/okf.md`) — must be byte-identical. If any diff is non-empty, re-copy and check again; if it still fails, stop and report the failure instead of continuing.
+2. Confirm every artifact from Step 4's table exists (or was already present).
+
+## Step 7 — Report
+
+Print a summary with four sections: **Created** (new files/directories), **Overwritten** (owned files updated by this run), **Deleted** (owned files removed because they left the constitution), **Needs your review** (e.g. a proposed `@import` line to add/remove from CLAUDE.md when a rule file was added/removed — CLAUDE.md is project-owned, so the Legislator never edits it directly; it only proposes the exact line here for the user to add or delete themselves).
+
+Do not run `git add` or `git commit`. The user reviews and commits.
