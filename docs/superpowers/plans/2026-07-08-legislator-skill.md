@@ -607,7 +607,7 @@ git commit -m "Add project-owned scaffold templates"
 - Create: `legislator/skill/SKILL.md`
 
 **Interfaces:**
-- Consumes: rule file paths from Task 2/3 (`assets/rules/core/*.md`, `assets/rules/stacks/{dotnet,aurelia}/*.md`), template placeholder names from Task 4, `assets/VERSION`'s content format from Task 1
+- Consumes: rule file paths from Task 2/3 (`assets/rules/core/*.md`, `assets/rules/stacks/{dotnet,aurelia}/*.md`), template placeholder names from Task 4, `VERSION`'s content format from Task 1
 - Produces: the `docs/ai/manifest.json` schema (`legislatorVersion` int, `profiles` string array, `ownedFiles` string array relative to the target repo root) — Task 6 (migration guide) and Tasks 8–11 (acceptance tests) read this exact schema when writing verification checks.
 
 - [ ] **Step 1: Write `SKILL.md`**
@@ -646,14 +646,14 @@ Owned files live in this skill package at `assets/rules/`. For each file:
 
 1. Always copy every file under `assets/rules/core/` to `docs/ai/rules/core/` in the target repo, preserving relative path, using a byte-for-byte copy operation (e.g. `cp`) — never retype or reformat the content.
 2. For each confirmed profile name in `profiles`, copy `assets/rules/stacks/<profile>/` to `docs/ai/rules/stacks/<profile>/` the same way.
-3. Read `assets/VERSION` (a single integer) — this is the `legislatorVersion` to write into the manifest.
+3. Read `VERSION` (a single integer) — this is the `legislatorVersion` to write into the manifest.
 4. Compute the new `ownedFiles` list: every path just copied, expressed relative to the target repo root (e.g. `docs/ai/rules/core/okf.md`).
 5. **Deletions:** if an upgrade-mode manifest's old `ownedFiles` list contains a path not present in the new `ownedFiles` list, delete that file from the target repo (it was removed from the constitution).
 6. Write `docs/ai/manifest.json`:
 
 ```json
 {
-  "legislatorVersion": <int from assets/VERSION>,
+  "legislatorVersion": <int from VERSION>,
   "profiles": [<confirmed profile names>],
   "ownedFiles": [<new ownedFiles list, sorted>]
 }
@@ -858,7 +858,7 @@ No commit needed for this task (nothing changed inside the repo).
 - Create (in a scratch location, not the skill repo): `/tmp/legislator-accept/fresh/` and its scaffolded contents.
 
 **Interfaces:**
-- Consumes: the installed skill from Task 7, `assets/VERSION`'s value from Task 1 (expected `1`)
+- Consumes: the installed skill from Task 7, `VERSION`'s value from Task 1 (expected `1`)
 - Produces: a verified reference example of `docs/ai/manifest.json`'s exact shape, used as the baseline Task 10 diffs against after an upgrade.
 
 - [ ] **Step 1: Create and enter a clean scratch directory**
