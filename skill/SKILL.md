@@ -31,14 +31,14 @@ Owned files live in this skill package at `assets/rules/`. For each file:
 
 1. Always copy every file under `assets/rules/core/` to `docs/ai/rules/core/` in the target repo, preserving relative path, using a byte-for-byte copy operation (e.g. `cp`) — never retype or reformat the content.
 2. For each confirmed profile name in `profiles`, copy `assets/rules/stacks/<profile>/` to `docs/ai/rules/stacks/<profile>/` the same way.
-3. Read `assets/VERSION` (a single integer) — this is the `legislatorVersion` to write into the manifest.
+3. Read `VERSION` (a single integer) — this is the `legislatorVersion` to write into the manifest.
 4. Compute the new `ownedFiles` list: every path just copied, expressed relative to the target repo root (e.g. `docs/ai/rules/core/okf.md`).
 5. **Deletions:** if an upgrade-mode manifest's old `ownedFiles` list contains a path not present in the new `ownedFiles` list, delete that file from the target repo (it was removed from the constitution).
 6. Write `docs/ai/manifest.json`:
 
 ```json
 {
-  "legislatorVersion": <int from assets/VERSION>,
+  "legislatorVersion": <int from VERSION>,
   "profiles": [<confirmed profile names>],
   "ownedFiles": [<new ownedFiles list, sorted>]
 }
