@@ -7,6 +7,8 @@ description: Scaffold or upgrade the AI-development constitution (CLAUDE.md rule
 
 Run this procedure against the **current working directory** (the target project repo). Never write outside it. Never commit — leave the diff for the user to review. `<skill-path>` in the commands below means this skill's install directory (typically `~/.claude/skills/legislator`, a symlink to the skill package).
 
+If the user's request is to **audit** or health-check the existing AI layer (no scaffolding or upgrading intent), do not run Steps 0–7 — follow the **Audit — read-only health check** section at the end of this file instead.
+
 ## Step 0 — Preconditions
 
 1. Confirm the current directory looks like a project root (has a `.git` directory, or the user has explicitly confirmed this directory is the target). If neither is true, ask the user to confirm before proceeding.
@@ -56,7 +58,7 @@ For each of the following, create it **only if it does not already exist** — n
 | `docs/okf/index.md` | `okf-index.md.tpl` | Fresh scaffold: fill placeholders per the derivation rules below. Legacy migration: `{{PROJECT_NAME}}`, `{{PROJECT_OVERVIEW}}`, and `{{STACK_SUMMARY}}` are derived the same way Step 5 derives them for CLAUDE.md (from the existing CLAUDE.md's own overview/stack content); `{{CATEGORY_MAPPING_TABLE}}` is filled by Step 5.2's table extraction; `{{TODAY_ISO}}` is mode-independent — always today's date/time in ISO 8601, per the derivation rules below, regardless of mode. Run Step 5 before scaffolding this file in migration mode, since Step 5 is what supplies the first three values. |
 | `docs/okf/log.md` | `okf-log.md.tpl` | |
 | `docs/okf/codebase-map.md` | `codebase-map.md.tpl` | `{{CODEBASE_MAP_TABLE}}` per the derivation rules below; `{{PROJECT_NAME}}` and `{{TODAY_ISO}}` as usual |
-| `docs/okf/glossary.md` | `glossary.md.tpl` | Seeded with an intentionally empty table — terms grow under the okf.md sync rule |
+| `docs/okf/glossary.md` | `glossary.md.tpl` | Seeded with an intentionally empty table — terms grow under the okf.md sync rule; `{{PROJECT_NAME}}` and `{{TODAY_ISO}}` as usual |
 | `docs/backlog.md` | `backlog.md.tpl` | |
 | `docs/adr/0001-record-architecture-decisions.md` | `adr-0001.md.tpl` | Used verbatim, no placeholders |
 | `docs/adr/template.md` | `adr-template.md.tpl` | Copied verbatim — its `{{...}}` tokens are intentional and must NOT be filled in (see the note above the table) |
@@ -83,7 +85,7 @@ Placeholder derivation rules (fresh-scaffold mode only, except `{{TODAY_ISO}}`, 
 
 Follow `references/migration.md` in full. Summary of what it covers:
 
-1. Split the existing CLAUDE.md into project-specific content (kept) and content now covered by an owned rule (removed, replaced by the `@docs/ai/rules/...` import block from the `CLAUDE.md.tpl` import section).
+1. Split the existing CLAUDE.md into project-specific content (kept) and content now covered by an owned rule (removed, replaced by the full `CLAUDE.md.tpl` v2 wiring: the `@docs/ai/rules/...` import block, the `@docs/okf/codebase-map.md` import, the `## Boundaries` section, and the glossary pointer line — see `references/migration.md` §1; migration writes these directly rather than proposing them in Step 7).
 2. Extract any existing "what maps to what" / category table from the old CLAUDE.md. If `docs/okf/index.md` already exists and already has an equivalent table, leave it untouched — do not write `docs/okf/index.md` at all. Otherwise, derive `{{PROJECT_NAME}}`, `{{PROJECT_OVERVIEW}}`, `{{STACK_SUMMARY}}` from the old CLAUDE.md and the extracted table as `{{CATEGORY_MAPPING_TABLE}}`, then hand these four values to Step 4 — Step 4 is the only step that actually writes `docs/okf/index.md` from `okf-index.md.tpl`; this step only supplies its placeholder values.
 3. Relocate any plans/specs directory outside the standard location (e.g. `.claude/plans/`) into `docs/superpowers/plans/`, fixing any relative references inside the moved files.
 4. Remove `docs/superpowers/` (or equivalent) from `.gitignore` if present.
@@ -100,4 +102,42 @@ Run this step before scaffolding `docs/okf/index.md` in Step 4 — Step 4's `doc
 
 Print a summary with four sections: **Created** (new files/directories), **Overwritten** (owned files updated by this run), **Deleted** (owned files removed because they left the constitution or a de-selected stack profile), **Needs your review** (CLAUDE.md is project-owned, so the Legislator never edits it directly; it only proposes exact lines here for the user to apply themselves — e.g. an `@import` line to add/remove when a rule file was added/removed, and, when this run scaffolded an artifact an existing CLAUDE.md doesn't reference yet, the wiring for it: the `@docs/okf/codebase-map.md` import, a `## Boundaries` section, the glossary pointer line).
 
+In **upgrade mode only**, append a fifth section, `### Health`, running the cheap audit checks (1–6 in the Audit section below) against the post-run state: list findings in the Audit section's line format; if there are none, print exactly `Health: clean`. Fresh-scaffold and migration runs skip this section — everything they just created is definitionally fresh.
+
 Do not run `git add` or `git commit`. The user reviews and commits.
+
+## Audit — read-only health check
+
+Run this section INSTEAD of Steps 0–7 when the user asks to audit or health-check the AI layer. It performs **zero writes**: record `git status --porcelain` and `git rev-parse HEAD` before starting, and verify both are byte-identical after producing the report — if either changed, the run has a bug; say so explicitly in the report.
+
+Perform these checks (severity in parentheses; a finding names the offending path, date, or entry verbatim):
+
+1. **Imports resolve (Critical):** every `@<path>` line in CLAUDE.md points to an existing file.
+2. **Unresolved placeholders (Critical):** no `{{TOKEN}}` pattern in CLAUDE.md or any `.md` under `docs/`, except `docs/adr/template.md` (its tokens are intentional).
+3. **Owned-layer integrity (Critical):** `docs/ai/manifest.json` parses; every `ownedFiles` entry exists on disk; every owned file is byte-identical to its `<skill-path>/assets/rules/...` source (diff each one).
+4. **Constitution staleness (Info):** manifest `legislatorVersion` vs. `<skill-path>/VERSION`; if behind, note "re-run /legislator to upgrade".
+5. **OKF index links (Warning):** every markdown link in `docs/okf/index.md` resolves to an existing file.
+6. **Codebase-map freshness (Warning):** skip if `docs/okf/codebase-map.md` is absent. Otherwise: every directory named in the map's table exists, and every non-generated top-level directory (ignore hidden directories and `bin/`, `obj/`, `node_modules/`, `dist/`) has a row.
+7. **Orphan docs (Warning):** an `.md` under `docs/okf/` or directly in `docs/` that no other `.md` file (or CLAUDE.md) references by markdown link or `@import`. Exempt by directory convention: `docs/ai/rules/**`, `docs/adr/**`, `docs/journal/**`, `docs/superpowers/**`, and `docs/backlog.md`.
+8. **Journal recency (Warning):** newest entry date in `docs/journal/` (from filenames or entry content) vs. the date of the last commit touching paths outside `docs/`; flag if the code commit is newer by more than 30 days, citing the newest entry's date.
+9. **Foreign AI-layer structures (Info):** list any of `.cursorrules`, `.cursor/`, `AGENTS.md`/`agents.md`, `.github/copilot-instructions.md`, `wiki/`, and ADR/plans directories outside the standard layout (`adrs/`, `doc/adr/`, `.claude/plans/`).
+10. **Keep-list integrity (Warning):** if the manifest has a `keep` key, every kept path must exist and be referenced from somewhere; if the key is absent, report `keep-list: not present (pre-BL-002 manifest)` and skip.
+
+Report format — print exactly this structure (omit empty severity sections; a fully clean audit prints the header, `No findings.`, and the clean-checks line):
+
+```
+# AI-Layer Audit — <repo name>, <ISO date>
+
+Constitution: v<manifest version> (skill source: v<VERSION>) — <up to date | behind>
+
+## Critical
+- [check-name] <path>: <one-line finding> → <one-line remedy>
+
+## Warning
+...
+
+## Info
+...
+
+Clean checks: <comma-separated names of checks that passed>
+```
