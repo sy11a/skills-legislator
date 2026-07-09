@@ -249,10 +249,10 @@ def materialize_rotted(dest: Path) -> None:
             f"(skill source: v{version}) — behind",  # defect 4: stale manifest (header wording)
             "renamed-away.md",        # defect 5: stale index link
             "legacy/",                # defect 6: stale map row
-            "orphan-notes.md",        # defect 7: orphan doc
+            "orphan-docs] docs/okf/orphan-notes.md",  # defect 7: orphan doc
             "2026-01-15",             # defect 8: dead journal (entry date cited)
             ".cursorrules",           # defect 9: foreign structure
-            "special-sauce.md",       # defect 10: kept but referenced nowhere
+            "keep-list] docs/notes/special-sauce.md",  # defect 10: kept but referenced nowhere
         ],
         # BL-011 regression lock: the audit must NOT flag the constitution's
         # hub files as orphans (they are referenced by inline-code mention).

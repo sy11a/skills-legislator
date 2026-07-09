@@ -7,7 +7,7 @@ Reads the tool call's file path, walks up the directory tree looking for
 docs/ai/manifest.json (the "is this a legislated repo?" test), and — if
 found — blocks (exit 2) when the file lies under that repo's
 docs/ai/rules/**. docs/ai/manifest.json itself is deliberately NOT guarded:
-SKILL.md Step 3.6 rewrites it with the Write tool on every run, and that
+SKILL.md Step 3.7 rewrites it with the Write tool on every run, and that
 rewrite already heals hand-edits; guarding it would block legislator's own
 runs. See docs/superpowers/specs/2026-07-09-hooks-plugin-design.md.
 
