@@ -36,6 +36,10 @@ project-local agents). Guidance inlined into a rule file is a second copy that
 rots; a pointer stays true. When tempted to paste a tutorial into a rule file,
 that's the test to apply.
 
+Stack rule files are named by concern — `architecture.md`,
+`coding-standards.md` — and a stack ships only the concerns it actually has
+law for (no empty placeholder files).
+
 ## Update the constitution
 
 1. Edit a file under `skill/assets/rules/`.
