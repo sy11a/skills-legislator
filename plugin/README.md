@@ -82,9 +82,11 @@ of `okf.md`'s sync law.
 - **Loop-safe:** exits 0 immediately if the hook input carries
   `stop_hook_active: true` (Claude Code sets this when a Stop hook already
   fired for this stop) — the reminder fires at most once per stop.
-- **Only active in legislated repos** (same manifest-walk test as hook 1) (checked at the git toplevel only — unlike hook 1's walk-up from the file path, so a legislated subdirectory of a larger monorepo gets the write-guard but not this reminder);
-  exits 0 outside a legislated repo, and exits 0 outside a git repo
-  entirely.
+- **Only active in legislated repos** — `docs/ai/manifest.json` checked at
+  the git toplevel only (unlike hook 1's walk-up from the file path, so a
+  legislated subdirectory of a larger monorepo gets the write-guard but not
+  this reminder); exits 0 outside a legislated repo, and exits 0 outside a
+  git repo entirely.
 
 **Accepted limitation:** scope is uncommitted working-tree state only
 (`git status --porcelain`). Changes already committed mid-session, with the
