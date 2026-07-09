@@ -31,7 +31,7 @@ no-op.
 
 **Accepted limitations (by design, not bugs):**
 
-- **`docs/ai/manifest.json` itself is not guarded.** SKILL.md Step 3.6
+- **`docs/ai/manifest.json` itself is not guarded.** SKILL.md Step 3.7
   rewrites the manifest with the `Write` tool on every legislator run, and
   that rewrite already heals hand-edits to it every run. Guarding it would
   block legislator's own upgrade runs.
@@ -43,6 +43,11 @@ no-op.
   legislator itself. The guard's job is stopping the *accidental* mid-session
   hand-edit, which arrives via Edit/Write; audit mode's byte-diff check still
   detects a Bash-authored drift after the fact.
+- **A symlink planted inside `docs/ai/rules/` that points outside the repo
+  bypasses the guard** (`Path.resolve()` follows it out of the legislated
+  repo before the manifest walk). Same class as the Bash bypass: it requires
+  a deliberate act legislator never performs, and audit's byte-diff catches
+  the resulting drift after the fact.
 
 ### 2. `format_on_edit.py` — PostToolUse format-on-edit
 
