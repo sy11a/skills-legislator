@@ -18,14 +18,14 @@ Execution order (dependencies, not dates):
 ```
 Rot-prevention chain:
 BL-001 audit (+ BL-005a rotted fixture)   ← DONE 2026-07-09 (with BL-010)
-   → BL-002 keep-markers
-      → BL-003 harvest report
+   → BL-002 keep-markers                  ← DONE 2026-07-09 (with BL-011)
+      → BL-003 harvest report             ← next: Wave 2
          → BL-005b restructure eval scenarios
             → BL-004 restructure flow      ← last: most destructive if wrong
 
 Best-practices track (2026-07-09 large-codebases review, decisions user-approved):
 BL-006 CLAUDE.md.tpl v2                   ← DONE 2026-07-09
-BL-007 hooks plugin                       ← independent of the rot chain
+BL-007 hooks plugin                       ← DONE 2026-07-09 (Wave 1 Track B)
    → BL-008 full plugin + marketplace     ← deferred until a 2nd human/machine
 BL-009 steward practice                   ← DONE 2026-07-09 (docs-only, README)
 ```
@@ -45,7 +45,8 @@ BL-009 steward practice                   ← DONE 2026-07-09 (docs-only, README
     design question (where harvest candidates durably land), to speed its
     brainstorm.
 - **Wave 2 (serial, after Track A):** BL-003 brainstorm (using the memo) →
-  full cycle.
+  full cycle. *(Wave 1 completed 2026-07-09: Track A benchmark v7.2 58/58,
+  Track B merged, Track C memo delivered — Wave 2 is next.)*
 - **Wave 3 (serial, last):** BL-005b + BL-004 as one combined cycle — eval
   scenarios land before the restructure implementation, same pattern as
   BL-001+005a.
@@ -74,6 +75,8 @@ independent of this repo entirely.
 **Done when:** on the rotted fixture (BL-005a) the report names every planted defect; on a clean freshly-legislated repo it reports clean; no writes in either case.
 
 ## BL-002 — Keep-markers: manifest `keep` list for do-not-touch project artifacts
+
+**Status: DONE 2026-07-09** — full cycle (spec `docs/superpowers/specs/2026-07-09-keep-markers-design.md`, plan `docs/superpowers/plans/2026-07-09-keep-markers.md`, commits f6f0f8f..9ab7e3e, VERSION stays 7, benchmark `evals/benchmarks/v7.2.md`: 58/58 + zero-diff idempotency on both fresh and the new permanent `idempotency:upgrade` scenario; keep carry-forward + prompt-driven add + pinned serialization all verified live; BL-011 riders shipped with it).
 
 **What:** `docs/ai/manifest.json` gains a `keep` section — entries of `{path, reason}` naming ultra-specific project artifacts that work as-is and must never be restructured. SKILL.md's pinned serialization is extended (order, formatting) so idempotency holds; upgrade runs must carry old manifests without a `keep` key forward deterministically (default `[]`). Audit (BL-001) warns when a kept file is linked from nowhere — protected content must stay wired into the layer, not become an orphan. Restructure (BL-004) treats kept paths as immovable.
 
@@ -150,6 +153,8 @@ placeholders; the map @import resolves; upgrade run propagates the new law line
 to an already-legislated repo; benchmark shows no regression.
 
 ## BL-007 — Hooks plugin: the deterministic enforcement arm of the constitution
+
+**Status: DONE 2026-07-09** — built per spec `docs/superpowers/specs/2026-07-09-hooks-plugin-design.md` in an isolated worktree (Wave 1 Track B), reviewed Approved, merged as 6f61774 (+README follow-up 3591325). `plugin/` ships `legislator-hooks` v0.1.0 (write-guard on `docs/ai/rules/**`, format-on-edit, OKF-sync stop hook); `evals/check_hooks.py` 26/26. Gate 0 decision honored: Edit/Write-family guard only, the `cp` asymmetry is the mechanism; manifest deliberately unguarded. Local install + BL-008 marketplace packaging remain out of scope.
 
 Decisions settled with the user (2026-07-09): hooks are law's enforcement arm
 (CLAUDE.md/rules are advisory; hooks are guaranteed), and they are delivered
@@ -256,6 +261,8 @@ was fixed immediately in the eval layer, verified with a planted-token
 negative test; no benchmark required for `evals/**`.)
 
 ## BL-011 — Audit follow-ups from the v7.1 final review (skill-file items)
+
+**Status: DONE 2026-07-09** — rode the BL-002 cycle as planned: item 1 fixed generically (inline-code path mentions count as references in checks 7 and 10; locked in by the audit scenario's absent-markers), item 2 resolved (missing-keep note goes to the Info section, exact line pinned in SKILL.md), item 3 fixed (migration.md glossary quote byte-identical to CLAUDE.md.tpl). Benchmark `evals/benchmarks/v7.2.md`.
 
 Ride along with the next benchmarked `skill/**` cycle (BL-002 keep-markers is
 the natural vehicle — it edits SKILL.md's audit check 10 anyway):
