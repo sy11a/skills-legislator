@@ -17,14 +17,14 @@ Execution order (dependencies, not dates):
 
 ```
 Rot-prevention chain:
-BL-001 audit (+ BL-005a rotted fixture)   ← ship first, read-only, safe alone
+BL-001 audit (+ BL-005a rotted fixture)   ← DONE 2026-07-09 (with BL-010)
    → BL-002 keep-markers
       → BL-003 harvest report
          → BL-005b restructure eval scenarios
             → BL-004 restructure flow      ← last: most destructive if wrong
 
 Best-practices track (2026-07-09 large-codebases review, decisions user-approved):
-BL-006 CLAUDE.md.tpl v2                   ← next constitution edit (small)
+BL-006 CLAUDE.md.tpl v2                   ← DONE 2026-07-09
 BL-007 hooks plugin                       ← independent of the rot chain
    → BL-008 full plugin + marketplace     ← deferred until a 2nd human/machine
 BL-009 steward practice                   ← DONE 2026-07-09 (docs-only, README)
@@ -37,6 +37,8 @@ independent of this repo entirely.
 ---
 
 ## BL-001 — Audit mode: read-only rot detection for the project-owned AI layer
+
+**Status: DONE 2026-07-09** — full cycle (spec `docs/superpowers/specs/2026-07-09-audit-mode-design.md`, plan `docs/superpowers/plans/2026-07-09-audit-mode.md`, commits 8ac8cd9..d96e369, VERSION stays 7, benchmark `evals/benchmarks/v7.1.md`: 45/45 + zero-diff idempotency; audit found all 9 planted defects on its first live run; BL-005a delivered with it; BL-010 riding items shipped). Follow-ups: BL-011.
 
 **What:** a new invocation path in SKILL.md (user asks to "audit"/"check" the AI layer, no scaffolding intent). Inventories `docs/**` + `CLAUDE.md` and checks structural invariants: every `@import` in CLAUDE.md resolves; every OKF-index link resolves; no orphan `.md` under `docs/` (reachable from no index/import); no unresolved `{{TOKEN}}`s outside `docs/adr/template.md`; journal recency vs. recent git activity; foreign AI-layer structures detected and listed (`.cursorrules`, `agents.md`, non-standard ADR/plans dirs, wiki folders); keep-listed files (BL-002) are actually linked. Output: a severity-ranked rot report. **Zero writes** — `git status` before and after must be identical.
 
