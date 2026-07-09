@@ -287,6 +287,33 @@ the natural vehicle — it edits SKILL.md's audit check 10 anyway):
 zero_writes — were fixed immediately with a positive + amend-HEAD negative
 test; no benchmark needed for `evals/**`.)
 
+## BL-012 — Keep-list follow-ups from the v7.2 final review (skill-file items)
+
+Ride along with the next benchmarked `skill/**` cycle (BL-003 harvest is the
+natural vehicle — it edits Step 7 anyway):
+
+1. **Refused keep requests can vanish from the report (Important).** Step 3.6
+   says a refused keep add is reported in Step 7, but Step 7's Keep list
+   section triggers "only when this run changed the `keep` list" — a refusal
+   changes nothing, so a run whose only keep event is a refusal omits the
+   section. Fix: trigger on "changed the keep list *or refused a keep
+   request*", and widen the parenthetical to cover both refusal reasons
+   (path missing; path is an owned file).
+2. **SKILL.md doesn't mandate the Bash copy path the write-guard exempts
+   (Minor, cross-track seam).** Step 3.1 says "byte-for-byte copy operation
+   (e.g. `cp`)" — an agent that satisfies this via the Write tool gets
+   blocked by `legislator-hooks`' guard mid-run. Fix: "via a Bash copy
+   (`cp`) — never the Write/Edit tools".
+3. **Bookkeeping:** the keep-markers plan's "Deviations from spec" list has a
+   fourth, undocumented deviation — owned files declared not-keepable in
+   Step 3.6 (sanctioned in spirit by the spec's "Kept ≠ owned" decision).
+   Recorded here since executed plans are never rewritten.
+
+(The review's other three findings — vacuously-passable absent-markers,
+stale plugin docstring step number, README repo-gate overclaim — were fixed
+immediately in the eval/plugin layers, commits ea15fac + follow-up; the
+strengthened markers were proven against the recorded v7.2 audit report.)
+
 ---
 
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
