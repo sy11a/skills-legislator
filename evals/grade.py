@@ -114,8 +114,11 @@ class Grader:
                    f"{len(status.splitlines()) if status else 0} changed paths in working tree, {commits} commit(s)")
 
     def no_unresolved_tokens(self, repo: Path) -> None:
+        # -uall lists every untracked file individually; without it, a wholly
+        # untracked docs/ tree collapses to one "?? docs/" entry and nothing
+        # under it gets scanned.
         offenders = []
-        changed = git(repo, "status", "--porcelain").splitlines()
+        changed = git(repo, "status", "--porcelain", "-uall").splitlines()
         for line in changed:
             rel = line[3:].strip()
             path = repo / rel
@@ -123,11 +126,6 @@ class Grader:
                 continue
             if path.suffix == ".md" and re.search(r"\{\{[A-Z_]+\}\}", path.read_text(errors="ignore")):
                 offenders.append(rel)
-            elif path.is_dir():
-                for f in path.rglob("*.md"):
-                    r = str(f.relative_to(repo))
-                    if r != "docs/adr/template.md" and re.search(r"\{\{[A-Z_]+\}\}", f.read_text(errors="ignore")):
-                        offenders.append(r)
         self.check("no_unresolved_placeholders", not offenders,
                    "adr template carve-out respected, no stray {{TOKEN}}s" if not offenders else f"unfilled tokens in: {offenders}")
 

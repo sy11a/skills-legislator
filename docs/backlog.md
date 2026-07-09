@@ -78,6 +78,13 @@ independent of this repo entirely.
 
 ## BL-006 — CLAUDE.md.tpl v2: ambient codebase map, boundaries, glossary pointer
 
+**Status: DONE 2026-07-09** — implemented via full cycle (spec
+`docs/superpowers/specs/2026-07-09-claude-md-tpl-v2-design.md`, plan
+`docs/superpowers/plans/2026-07-09-claude-md-tpl-v2.md`, commits
+f878958..d945cb8, VERSION 7, benchmark `evals/benchmarks/v7.md`: 33/33 +
+zero-diff idempotency, final whole-branch review: ready). Follow-ups spun
+into BL-010.
+
 Decisions settled with the user (2026-07-09, from the large-codebases best-practices review):
 
 **What:**
@@ -194,6 +201,30 @@ measurement loop nobody else has.
 
 **Status: DONE 2026-07-09** — docs-only, executed without a full cycle;
 "Steward duties" section added to README.md.
+
+## BL-010 — Migration-mode v2 wiring + two SKILL.md/migration.md wording touch-ups
+
+Small follow-ups from BL-006's v7 benchmark and final review — ride along
+with the next cycle that edits `skill/**` anyway (its mandatory benchmark
+covers them; not worth a full e2e run on their own):
+
+1. **Migration mode should write the full v2 CLAUDE.md wiring directly.**
+   The v7 run left the `@docs/okf/codebase-map.md` import, `## Boundaries`
+   section, and glossary pointer as Step 7 proposals even though migration
+   mode rewrites CLAUDE.md anyway — friction the rewrite could absorb.
+   Requires updating `references/migration.md` §1's import-block description.
+2. **`references/migration.md` "mirroring `CLAUDE.md.tpl`'s import block"
+   wording is now ambiguous** — the tpl's import block ends with the
+   codebase-map import; qualify the sentence so a future run doesn't inline
+   it by accident (moot if item 1 makes inlining the intended behavior —
+   settle both together).
+3. **SKILL.md Step 4 glossary row omits its placeholders** — cosmetic
+   inconsistency: the codebase-map row names `{{PROJECT_NAME}}`/`{{TODAY_ISO}}`,
+   the glossary row doesn't though its template carries both.
+
+(The fourth final-review finding — the grader's dead unresolved-token scan —
+was fixed immediately in the eval layer, verified with a planted-token
+negative test; no benchmark required for `evals/**`.)
 
 ---
 
