@@ -35,7 +35,7 @@ Owned files live in this skill package at `assets/rules/`. For each file:
 2. For each confirmed profile name in `profiles`, copy `assets/rules/stacks/<profile>/` to `docs/ai/rules/stacks/<profile>/` the same way.
 3. Read `VERSION` (a single integer) — this is the `legislatorVersion` to write into the manifest.
 4. Compute the new `ownedFiles` list: every path just copied, expressed relative to the target repo root (e.g. `docs/ai/rules/core/okf.md`).
-5. **Deletions:** if an upgrade-mode manifest's old `ownedFiles` list contains a path not present in the new `ownedFiles` list, delete that file from the target repo (it was removed from the constitution, or its stack profile was de-selected in Step 2). If deleting a file empties its containing `docs/ai/rules/stacks/<profile>/` directory, remove the now-empty directory too.
+5. **Deletions:** compare the new `ownedFiles` list against the "old" `ownedFiles` list — the existing manifest's list in upgrade mode, or the reconstructed list from Step 1's edge-case guard when there was no manifest to read. If the old list contains a path not present in the new list, delete that file from the target repo (it was removed from the constitution, or its stack profile was de-selected in Step 2). If deleting a file empties its containing `docs/ai/rules/stacks/<profile>/` directory, remove the now-empty directory too.
 6. Write `docs/ai/manifest.json` with this exact serialization — 2-space indentation, keys in this order (`legislatorVersion`, `profiles`, `ownedFiles`), `ownedFiles` sorted — so that two runs with no actual constitution change produce a byte-identical file and no spurious diff:
 
 ```json
@@ -53,7 +53,7 @@ For each of the following, create it **only if it does not already exist** — n
 | Target path | Template | Notes |
 |---|---|---|
 | `CLAUDE.md` | `CLAUDE.md.tpl` | Only in fresh-scaffold mode — legacy migration mode handles this file per Step 5 instead |
-| `docs/okf/index.md` | `okf-index.md.tpl` | Fresh scaffold: fill placeholders per the derivation rules below. Legacy migration: `{{PROJECT_NAME}}`, `{{PROJECT_OVERVIEW}}`, and `{{STACK_SUMMARY}}` are derived the same way Step 5 derives them for CLAUDE.md (from the existing CLAUDE.md's own overview/stack content); `{{CATEGORY_MAPPING_TABLE}}` is filled by Step 5.2's table extraction. Run Step 5 before scaffolding this file in migration mode, since Step 5 is what supplies these values. |
+| `docs/okf/index.md` | `okf-index.md.tpl` | Fresh scaffold: fill placeholders per the derivation rules below. Legacy migration: `{{PROJECT_NAME}}`, `{{PROJECT_OVERVIEW}}`, and `{{STACK_SUMMARY}}` are derived the same way Step 5 derives them for CLAUDE.md (from the existing CLAUDE.md's own overview/stack content); `{{CATEGORY_MAPPING_TABLE}}` is filled by Step 5.2's table extraction; `{{TODAY_ISO}}` is mode-independent — always today's date/time in ISO 8601, per the derivation rules below, regardless of mode. Run Step 5 before scaffolding this file in migration mode, since Step 5 is what supplies the first three values. |
 | `docs/okf/log.md` | `okf-log.md.tpl` | |
 | `docs/backlog.md` | `backlog.md.tpl` | |
 | `docs/adr/0001-record-architecture-decisions.md` | `adr-0001.md.tpl` | Used verbatim, no placeholders |
@@ -64,7 +64,7 @@ For each of the following, create it **only if it does not already exist** — n
 | `docs/superpowers/specs/` | (empty directory) | Create the directory if absent; no file |
 | `docs/superpowers/plans/` | (empty directory) | Create the directory if absent; no file |
 
-Placeholder derivation rules (fresh-scaffold mode only — legacy migration extracts these from the existing CLAUDE.md instead, per Step 5 and the `docs/okf/index.md` row above):
+Placeholder derivation rules (fresh-scaffold mode only, except `{{TODAY_ISO}}` and `{{TODAY_ISO_DATE}}` which are always mode-independent — legacy migration extracts the rest of these from the existing CLAUDE.md instead, per Step 5 and the `docs/okf/index.md` row above):
 
 - `{{PROJECT_NAME}}` — ask the user, or infer from the repo directory name if unambiguous, and confirm with the user before writing.
 - `{{PROJECT_OVERVIEW}}` — ask the user for a one-paragraph description.
@@ -81,7 +81,7 @@ Placeholder derivation rules (fresh-scaffold mode only — legacy migration extr
 Follow `references/migration.md` in full. Summary of what it covers:
 
 1. Split the existing CLAUDE.md into project-specific content (kept) and content now covered by an owned rule (removed, replaced by the `@docs/ai/rules/...` import block from the `CLAUDE.md.tpl` import section).
-2. Extract any existing "what maps to what" / category table into `docs/okf/index.md` if `docs/okf/` already exists but lacks this file; otherwise scaffold `docs/okf/index.md` per Step 4 and fold the existing table in as `{{CATEGORY_MAPPING_TABLE}}`.
+2. Extract any existing "what maps to what" / category table from the old CLAUDE.md. If `docs/okf/index.md` already exists and already has an equivalent table, leave it untouched — do not write `docs/okf/index.md` at all. Otherwise, derive `{{PROJECT_NAME}}`, `{{PROJECT_OVERVIEW}}`, `{{STACK_SUMMARY}}` from the old CLAUDE.md and the extracted table as `{{CATEGORY_MAPPING_TABLE}}`, then hand these four values to Step 4 — Step 4 is the only step that actually writes `docs/okf/index.md` from `okf-index.md.tpl`; this step only supplies its placeholder values.
 3. Relocate any plans/specs directory outside the standard location (e.g. `.claude/plans/`) into `docs/superpowers/plans/`, fixing any relative references inside the moved files.
 4. Remove `docs/superpowers/` (or equivalent) from `.gitignore` if present.
 5. If an existing CLAUDE.md section conflicts with an owned rule (e.g. contradictory branch-naming convention), do not resolve it — surface the conflict and ask, per the decision-gate rule.
