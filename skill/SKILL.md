@@ -55,6 +55,8 @@ For each of the following, create it **only if it does not already exist** — n
 | `CLAUDE.md` | `CLAUDE.md.tpl` | Only in fresh-scaffold mode — legacy migration mode handles this file per Step 5 instead |
 | `docs/okf/index.md` | `okf-index.md.tpl` | Fresh scaffold: fill placeholders per the derivation rules below. Legacy migration: `{{PROJECT_NAME}}`, `{{PROJECT_OVERVIEW}}`, and `{{STACK_SUMMARY}}` are derived the same way Step 5 derives them for CLAUDE.md (from the existing CLAUDE.md's own overview/stack content); `{{CATEGORY_MAPPING_TABLE}}` is filled by Step 5.2's table extraction; `{{TODAY_ISO}}` is mode-independent — always today's date/time in ISO 8601, per the derivation rules below, regardless of mode. Run Step 5 before scaffolding this file in migration mode, since Step 5 is what supplies the first three values. |
 | `docs/okf/log.md` | `okf-log.md.tpl` | |
+| `docs/okf/codebase-map.md` | `codebase-map.md.tpl` | `{{CODEBASE_MAP_TABLE}}` per the derivation rules below; `{{PROJECT_NAME}}` and `{{TODAY_ISO}}` as usual |
+| `docs/okf/glossary.md` | `glossary.md.tpl` | Seeded with an intentionally empty table — terms grow under the okf.md sync rule |
 | `docs/backlog.md` | `backlog.md.tpl` | |
 | `docs/adr/0001-record-architecture-decisions.md` | `adr-0001.md.tpl` | Used verbatim, no placeholders |
 | `docs/adr/template.md` | `adr-template.md.tpl` | Copied verbatim — its `{{...}}` tokens are intentional and must NOT be filled in (see the note above the table) |
@@ -63,7 +65,7 @@ For each of the following, create it **only if it does not already exist** — n
 | `docs/superpowers/specs/` | (empty directory) | Create the directory if absent; no file |
 | `docs/superpowers/plans/` | (empty directory) | Create the directory if absent; no file |
 
-Placeholder derivation rules (fresh-scaffold mode only, except `{{TODAY_ISO}}` and `{{TODAY_ISO_DATE}}` which are always mode-independent — legacy migration extracts the rest of these from the existing CLAUDE.md instead, per Step 5 and the `docs/okf/index.md` row above):
+Placeholder derivation rules (fresh-scaffold mode only, except `{{TODAY_ISO}}`, `{{TODAY_ISO_DATE}}`, `{{CODEBASE_MAP_TABLE}}`, and `{{BOUNDARIES}}`, which are mode-independent — legacy migration extracts the rest of these from the existing CLAUDE.md instead, per Step 5 and the `docs/okf/index.md` row above; the mode-independent four are always derived the same way regardless of mode):
 
 - `{{PROJECT_NAME}}` — ask the user, or infer from the repo directory name if unambiguous, and confirm with the user before writing.
 - `{{PROJECT_OVERVIEW}}` — ask the user for a one-paragraph description.
@@ -74,6 +76,8 @@ Placeholder derivation rules (fresh-scaffold mode only, except `{{TODAY_ISO}}` a
 - `{{TODAY_ISO}}` — today's date/time in ISO 8601 (e.g. `2026-07-08T00:00:00Z`).
 - `{{TODAY_ISO_DATE}}` — today's date only (e.g. `2026-07-08`).
 - `{{CATEGORY_MAPPING_TABLE}}` — ask the user for the project's feature-slice-to-OKF-category mapping (mirroring the pattern: `| Change | OKF file to update |`); if the project has no slices yet, write a single row pointing everything at `docs/okf/index.md`.
+- `{{CODEBASE_MAP_TABLE}}` — list the repo's actual top-level directories, draft a one-line description of each from its contents, and confirm the table with the user before writing. One row per directory, formatted `| ` + backtick-quoted `dir/` + ` | description |`. Mode-independent: always derived from the tree, never from an existing CLAUDE.md.
+- `{{BOUNDARIES}}` — detect no-touch candidates from the repo (`bin/`, `obj/`, `node_modules/`, `dist/`, `*.Designer.cs`, database-migration output, vendored code), present them and ask the user for repo-specific additions (legacy areas, generated projects). If nothing exists beyond generated output, write exactly: "Generated build output only (`bin/`, `obj/`, `node_modules/`) — do not edit generated files."
 
 ## Step 5 — Legacy migration (migration mode only)
 
@@ -94,6 +98,6 @@ Run this step before scaffolding `docs/okf/index.md` in Step 4 — Step 4's `doc
 
 ## Step 7 — Report
 
-Print a summary with four sections: **Created** (new files/directories), **Overwritten** (owned files updated by this run), **Deleted** (owned files removed because they left the constitution or a de-selected stack profile), **Needs your review** (e.g. a proposed `@import` line to add/remove from CLAUDE.md when a rule file was added/removed — CLAUDE.md is project-owned, so the Legislator never edits it directly; it only proposes the exact line here for the user to add or delete themselves).
+Print a summary with four sections: **Created** (new files/directories), **Overwritten** (owned files updated by this run), **Deleted** (owned files removed because they left the constitution or a de-selected stack profile), **Needs your review** (CLAUDE.md is project-owned, so the Legislator never edits it directly; it only proposes exact lines here for the user to apply themselves — e.g. an `@import` line to add/remove when a rule file was added/removed, and, when this run scaffolded an artifact an existing CLAUDE.md doesn't reference yet, the wiring for it: the `@docs/okf/codebase-map.md` import, a `## Boundaries` section, the glossary pointer line).
 
 Do not run `git add` or `git commit`. The user reviews and commits.

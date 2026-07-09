@@ -7,6 +7,7 @@
 Stack: {{STACK_SUMMARY}}
 
 - OKF bundle: `docs/okf/` (knowledge documentation — must stay in sync with code)
+- Domain glossary: `docs/okf/glossary.md` — check it when a term is unclear; add terms as they emerge
 - Specs and plans: `docs/superpowers/` (committed)
 
 @docs/ai/rules/core/okf.md
@@ -16,10 +17,15 @@ Stack: {{STACK_SUMMARY}}
 @docs/ai/rules/core/dev-journal.md
 @docs/ai/rules/core/changelog.md
 {{STACK_IMPORTS}}
+@docs/okf/codebase-map.md
 
 ## Architecture Constraints
 
 {{PROJECT_ARCHITECTURE_NOTES}}
+
+## Boundaries
+
+{{BOUNDARIES}}
 
 ## Build & Test
 
