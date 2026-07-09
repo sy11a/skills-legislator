@@ -18,11 +18,11 @@ If the user's request is to **audit** or health-check the existing AI layer (no 
 
 Check, in this order:
 
-1. Does `docs/ai/manifest.json` exist? → **upgrade** mode. Read it for the previously applied `legislatorVersion`, `profiles`, and `ownedFiles`.
+1. Does `docs/ai/manifest.json` exist? → **upgrade** mode. Read it for the previously applied `legislatorVersion`, `profiles`, `keep`, and `ownedFiles`.
 2. Else, does `CLAUDE.md` exist at the repo root? → **legacy migration** mode.
 3. Else → **fresh scaffold** mode.
 
-**Edge case — manifest missing but CLAUDE.md already carries the import block:** before treating a manifest-less repo as legacy migration, check whether `CLAUDE.md` already contains the `@docs/ai/rules/core/okf.md` import line. If it does, the repo was already legislated at some point and the manifest was deleted or never committed — do not re-run the CLAUDE.md migration logic in Step 5 (it is not idempotent against an already-migrated file). Instead: inspect `docs/ai/rules/` for the owned files already present, reconstruct `profiles` from which `docs/ai/rules/stacks/<name>/` directories exist, reconstruct `ownedFiles` from the files actually on disk under `docs/ai/rules/`, ask the user to confirm the reconstructed profile list, then proceed as upgrade mode from Step 3 onward (skip Step 5 entirely).
+**Edge case — manifest missing but CLAUDE.md already carries the import block:** before treating a manifest-less repo as legacy migration, check whether `CLAUDE.md` already contains the `@docs/ai/rules/core/okf.md` import line. If it does, the repo was already legislated at some point and the manifest was deleted or never committed — do not re-run the CLAUDE.md migration logic in Step 5 (it is not idempotent against an already-migrated file). Instead: inspect `docs/ai/rules/` for the owned files already present, reconstruct `profiles` from which `docs/ai/rules/stacks/<name>/` directories exist, reconstruct `ownedFiles` from the files actually on disk under `docs/ai/rules/`, default `keep` to `[]` (there is no manifest to carry it from), ask the user to confirm the reconstructed profile list, then proceed as upgrade mode from Step 3 onward (skip Step 5 entirely).
 
 ## Step 2 — Determine profiles
 
