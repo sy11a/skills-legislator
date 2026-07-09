@@ -7,14 +7,16 @@ legislator skill against:
   <workspace>/fresh-scaffold-dotnet/repo   — new repo, no CLAUDE.md
   <workspace>/legacy-migration/repo        — hand-written CLAUDE.md, no manifest
   <workspace>/upgrade/repo                 — previously legislated, one version behind
-  <workspace>/rotted-layer/repo            — legislated, nine planted defects (audit scenario)
+  <workspace>/rotted-layer/repo            — legislated, ten planted defects (audit scenario)
 
 The upgrade repo is generated from the CURRENT skill source so this suite
 never rots as the constitution evolves: it contains every current core+dotnet
 rule EXCEPT the alphabetically last core rule (simulating a rule added to the
 constitution since the repo was last legislated), PLUS one retired rule that
 no longer exists in the source (so the run must delete it — this exercises
-deletion propagation). Its manifest records VERSION-1.
+deletion propagation). Its manifest records VERSION-1. Its manifest also
+carries one `keep` entry; the eval prompt adds a second — together they
+exercise keep carry-forward, prompt-driven adds, and pinned keep serialization.
 
 Usage: python3 evals/setup_workspace.py <workspace-dir>
 The workspace dir must not already exist (refuses to overwrite).
@@ -90,6 +92,9 @@ def materialize_upgrade(dest: Path) -> None:
         "{\n"
         f'  "legislatorVersion": {version - 1},\n'
         '  "profiles": ["dotnet"],\n'
+        '  "keep": [\n'
+        '    {"path": "docs/notes/deploy-runbook.md", "reason": "battle-tested deploy runbook"}\n'
+        "  ],\n"
         '  "ownedFiles": [\n'
         + ",\n".join(f'    "{p}"' for p in owned_sorted)
         + "\n  ]\n}\n"
@@ -109,12 +114,18 @@ def materialize_upgrade(dest: Path) -> None:
         "withheld_core_rule": withheld.name,
         "retired_rule": RETIRED_RULE,
         "fixture_manifest_version": version - 1,
+        # Entry 0 pre-exists in the fixture manifest (carry-forward test);
+        # entry 1 is added by the eval prompt (add-path test). Sorted by path.
+        "expected_keep": [
+            {"path": "docs/notes/deploy-runbook.md", "reason": "battle-tested deploy runbook"},
+            {"path": "docs/notes/perf-tuning.md", "reason": "hand-tuned GC settings notes"},
+        ],
     }
     (dest.parent / "fixture_meta.json").write_text(json.dumps(meta, indent=2) + "\n")
 
 
 def materialize_rotted(dest: Path) -> None:
-    """Legislated repo with nine planted defects for the audit scenario.
+    """Legislated repo with ten planted defects for the audit scenario.
 
     Generated from the CURRENT skill source, then deliberately damaged.
     Each defect leaves a distinctive marker string an audit report must
@@ -148,6 +159,9 @@ def materialize_rotted(dest: Path) -> None:
         "{\n"
         f'  "legislatorVersion": {version - 1},\n'
         '  "profiles": ["dotnet"],\n'
+        '  "keep": [\n'
+        '    {"path": "docs/notes/special-sauce.md", "reason": "works as-is"}\n'
+        "  ],\n"
         '  "ownedFiles": [\n'
         + ",\n".join(f'    "{p}"' for p in sorted(owned))
         + "\n  ]\n}\n")
@@ -197,6 +211,15 @@ def materialize_rotted(dest: Path) -> None:
     (okf / "orphan-notes.md").write_text(
         "# Scratch notes\n\nNobody links to this file.\n")
 
+    # Defect 10 — keep-listed file that nothing references (protected but
+    # orphaned). Lives under docs/notes/ so orphan check 7 (which scans only
+    # docs/okf/ and docs/ top level) cannot double-report it — the finding
+    # must come from keep-list check 10.
+    (dest / "docs/notes").mkdir(parents=True)
+    (dest / "docs/notes/special-sauce.md").write_text(
+        "# Special sauce\n\nUltra-specific invoice rounding rules that work "
+        "in production. Keep as-is.\n")
+
     (dest / "docs/journal").mkdir(parents=True)
     (dest / "docs/journal/README.md").write_text(
         "# Dev Journal\n\nEntries go here, one per working session.\n")
@@ -229,6 +252,13 @@ def materialize_rotted(dest: Path) -> None:
             "orphan-notes.md",        # defect 7: orphan doc
             "2026-01-15",             # defect 8: dead journal (entry date cited)
             ".cursorrules",           # defect 9: foreign structure
+            "special-sauce.md",       # defect 10: kept but referenced nowhere
+        ],
+        # BL-011 regression lock: the audit must NOT flag the constitution's
+        # hub files as orphans (they are referenced by inline-code mention).
+        "absent_markers": [
+            "orphan-docs] docs/okf/index.md",
+            "orphan-docs] docs/okf/glossary.md",
         ],
         "fixture_commit_count": 2,
         "fixture_head": subprocess.run(
