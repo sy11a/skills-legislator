@@ -1,0 +1,5 @@
+{
+  "name": "legislator-hooks",
+  "version": "0.1.0",
+  "description": "Deterministic enforcement arm of the legislator constitution: blocks hand-edits to machine-owned rule files, formats edited code on save, and reminds when src/ changed without a matching OKF update."
+}
