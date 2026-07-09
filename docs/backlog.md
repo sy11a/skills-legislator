@@ -16,12 +16,23 @@ Direction settled with the user:
 Execution order (dependencies, not dates):
 
 ```
+Rot-prevention chain:
 BL-001 audit (+ BL-005a rotted fixture)   ← ship first, read-only, safe alone
    → BL-002 keep-markers
       → BL-003 harvest report
          → BL-005b restructure eval scenarios
             → BL-004 restructure flow      ← last: most destructive if wrong
+
+Best-practices track (2026-07-09 large-codebases review, decisions user-approved):
+BL-006 CLAUDE.md.tpl v2                   ← next constitution edit (small)
+BL-007 hooks plugin                       ← independent of the rot chain
+   → BL-008 full plugin + marketplace     ← deferred until a 2nd human/machine
+BL-009 steward practice                   ← DONE 2026-07-09 (docs-only, README)
 ```
+
+Personal machine to-do (not a Legislator task): adopt the official C# LSP
+plugin (`csharp-ls`) locally — symbol-level navigation for the dotnet fleet;
+independent of this repo entirely.
 
 ---
 
@@ -101,6 +112,88 @@ benchmark per evals/README.md.
 **Done when:** fresh scaffold produces map+boundaries+glossary with no unresolved
 placeholders; the map @import resolves; upgrade run propagates the new law line
 to an already-legislated repo; benchmark shows no regression.
+
+## BL-007 — Hooks plugin: the deterministic enforcement arm of the constitution
+
+Decisions settled with the user (2026-07-09): hooks are law's enforcement arm
+(CLAUDE.md/rules are advisory; hooks are guaranteed), and they are delivered
+**via a plugin, not `.claude/settings.json`** — a settings fragment would break
+the clean owned/project split (merge problem in a user-edited file); a plugin
+bundles hooks versioned and cleanly per machine.
+
+**What:** a new plugin package (lives in this repo, e.g. `plugin/`, becoming the
+skeleton BL-008 extends) shipping three hooks:
+
+1. **PreToolUse write-guard on `docs/ai/rules/**`** — blocks Edit/Write to owned
+   files in legislated repos, making per-repo law drift mechanically impossible
+   instead of merely detectable.
+2. **PostToolUse format-on-edit** — `dotnet format` on `.cs`, prettier on the
+   Aurelia/TS side; per-file, fast, non-blocking (`; exit 0`). Consequence:
+   mechanically-enforced style rules can then be *deleted* from
+   `coding-standards.md` (deletion habit — law shrinks when a machine takes over
+   enforcement).
+3. **Stop-hook OKF-sync check** — session end: if `src/**` changed but
+   `docs/okf/**` did not, exit 2 with a reminder. Runtime rot prevention — the
+   enforcement arm of okf.md's sync law.
+
+**Open design question (settle in this task's brainstorm):** the write-guard
+must not block the Legislator's own runs — the skill updates owned files via
+`cp` (Bash), which a PreToolUse guard on Edit/Write doesn't intercept; decide
+whether that asymmetry is the mechanism (guard file-editing tools only) or
+whether an explicit escape (env flag) is needed, and whether Bash writes to
+`docs/ai/rules/**` should also be guarded against non-legislator use.
+
+**Why:** law without deterministic enforcement is advisory; hooks close the gap.
+Installation is build-time scaffolding — legislator's jurisdiction (unlike
+runtime agents, which stay in the separate master-agent skill).
+
+**Done when:** in a legislated repo with the plugin installed, a hand-edit to an
+owned rule file is blocked; an edited `.cs` file comes out formatted; a session
+that touches `src/` without touching `docs/okf/` gets the sync reminder; a
+legislator upgrade run still completes (guard does not break owned-file
+updates).
+
+## BL-008 — Package the toolchain as a plugin in a private marketplace
+
+**What:** extend BL-007's plugin skeleton into the full capability bundle:
+the legislator skill itself, the BL-007 hooks, LSP configs (C# `csharp-ls`,
+TypeScript for Aurelia), and MCP configs — **scope decided by the user:
+Microsoft Learn Docs MCP, context7, and a read-only DB MCP only; explicitly NO
+GitHub MCP and NO ticketing MCPs** (no automation against external
+sources/ticketing). Distributed via a private marketplace repo
+(`/plugin marketplace add <repo>`).
+
+**Why:** the constitution travels with each repo (committed `docs/ai/**`);
+capabilities travel with the machine (plugin). Complementary strata — plugin
+form kills tribal-knowledge setup drift the moment a second human or second
+machine appears.
+
+**Trigger:** deferred until that second human/machine exists. Until then the
+symlink install stays.
+
+**Done when:** on a clean machine, `marketplace add` + `plugin install` yields
+working `/legislator`, active hooks, LSP navigation in a dotnet repo, and the
+three approved MCPs — with no manual setup steps beyond the two commands.
+
+## BL-009 — Steward practice: constitution review cadence + model-release benchmark
+
+**What:** document in README a standing "Steward duties" section: (1) every
+3–6 months or after a major model release, review each rule with the question
+*preference or compensation?* — delete compensations (instructions that padded
+over a limitation models no longer have; they start to actively constrain);
+(2) after each major model release, re-run the eval benchmark unchanged and
+record `evals/benchmarks/v<N>-<model>.md` — pass-rate/token deltas measure
+empirically whether the constitution helps or hinders the new model; (3) triage
+harvest candidates once BL-003 ships; (4) the deletion habit — a rule that
+changed no review outcome in months is either internalized (delete) or ignored
+(delete or start enforcing; decide, don't let it linger).
+
+**Why:** instructions written for today's model can work against a future one
+(the article's core maintenance insight). The eval suite doubles as the
+measurement loop nobody else has.
+
+**Status: DONE 2026-07-09** — docs-only, executed without a full cycle;
+"Steward duties" section added to README.md.
 
 ---
 

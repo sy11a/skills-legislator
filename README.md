@@ -72,3 +72,27 @@ against the previous version's file (pass rate = correctness, tokens/time =
 cost, idempotency = diff noise) is the productivity verdict for the change.
 This requirement is also stated in this repo's `CLAUDE.md` so any agent
 working here sees it.
+
+## Steward duties
+
+The constitution has one steward (the DRI for the fleet's AI layer). Standing
+duties, on a cadence of **every 3–6 months and after every major model
+release**:
+
+1. **Review each rule asking: preference or compensation?** Preferences (e.g.
+   the decision gate, decimal-for-money) are durable — keep them.
+   Compensations — instructions that padded over a limitation models no longer
+   have — become actively constraining on newer models: delete them centrally
+   and bump VERSION.
+2. **Re-run the benchmark on the new model, unchanged.** Record results as
+   `evals/benchmarks/v<N>-<model>.md`; pass-rate and token deltas against the
+   previous model's file measure empirically whether the constitution helps or
+   hinders the newer model — don't guess, measure.
+3. **The deletion habit.** A rule that hasn't changed a single review outcome
+   in months is either universally internalized (delete it — it's context
+   noise) or universally ignored (delete it or start enforcing it — decide,
+   don't let it linger). Deletion propagation makes removal a one-commit
+   operation.
+4. **Triage harvest candidates** (once BL-003 ships): promote proven
+   project-specific rules into `assets/rules/**`, bump VERSION, re-legislate
+   downstream.
