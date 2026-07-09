@@ -38,15 +38,21 @@ Owned files live in this skill package at `assets/rules/`. For each file:
 3. Read `VERSION` (a single integer) — this is the `legislatorVersion` to write into the manifest.
 4. Compute the new `ownedFiles` list: every path just copied, expressed relative to the target repo root (e.g. `docs/ai/rules/core/okf.md`).
 5. **Deletions:** compare the new `ownedFiles` list against the "old" `ownedFiles` list — the existing manifest's list in upgrade mode, or the reconstructed list from Step 1's edge-case guard when there was no manifest to read. If the old list contains a path not present in the new list, delete that file from the target repo (it was removed from the constitution, or its stack profile was de-selected in Step 2). If deleting a file empties its containing `docs/ai/rules/stacks/<profile>/` directory, remove the now-empty directory too.
-6. Write `docs/ai/manifest.json` with this exact serialization — 2-space indentation, keys in this order (`legislatorVersion`, `profiles`, `ownedFiles`), `profiles` as a single-line inline array (e.g. `["dotnet"]` or `["dotnet", "aurelia"]` — never expanded across multiple lines, regardless of how many entries it has), `ownedFiles` sorted and each entry on its own line as shown below — so that two runs with no actual constitution change produce a byte-identical file and no spurious diff:
+6. **Keep list — protected project artifacts.** Carry forward the existing manifest's `keep` list (default to `[]` when the key is absent — older manifests predate it). Then apply any keep requests in the user's prompt: **adding** requires the path to exist in the repo (if it doesn't, skip it and report the refusal in Step 7) and to not be an owned file under `docs/ai/rules/` (owned files are machine-managed, not keepable); entries dedupe by path — re-marking an already-kept path replaces its reason. **Remove** an entry only when the user explicitly asks. Never add or remove keep entries on your own initiative. Kept files are project-owned content — the keep list is manifest metadata about them; it changes nothing about how this skill treats the file (project-owned files are never touched anyway). Its meaning is downstream: audit check 10 verifies kept files stay wired into the layer, and any future restructuring must leave kept paths in place.
+7. Write `docs/ai/manifest.json` with this exact serialization — 2-space indentation, keys in this order (`legislatorVersion`, `profiles`, `keep`, `ownedFiles`), `profiles` as a single-line inline array (e.g. `["dotnet"]` or `["dotnet", "aurelia"]` — never expanded across multiple lines, regardless of how many entries it has), `keep` written as `[]` on the same line as its key when empty and otherwise one entry per line sorted by `path`, each entry a single-line inline object with keys in the order `path`, `reason`, and `ownedFiles` sorted with each entry on its own line as shown below — so that two runs with no actual change produce a byte-identical file and no spurious diff:
 
 ```json
 {
   "legislatorVersion": <int from VERSION>,
   "profiles": [<confirmed profile names>],
+  "keep": [
+    {"path": "<repo-relative path>", "reason": "<why this artifact must stay as-is>"}
+  ],
   "ownedFiles": [<new ownedFiles list, sorted>]
 }
 ```
+
+With no kept files that line is exactly `  "keep": [],` — never an expanded empty array.
 
 ## Step 4 — Scaffold missing project-owned artifacts
 
@@ -100,9 +106,9 @@ Run this step before scaffolding `docs/okf/index.md` in Step 4 — Step 4's `doc
 
 ## Step 7 — Report
 
-Print a summary with these sections: **Created** (new files/directories), **Overwritten** (owned files updated by this run), **Deleted** (owned files removed because they left the constitution or a de-selected stack profile), **Needs your review** (CLAUDE.md is project-owned, so the Legislator never edits it directly; it only proposes exact lines here for the user to apply themselves — e.g. an `@import` line to add/remove when a rule file was added/removed, and, when this run scaffolded an artifact an existing CLAUDE.md doesn't reference yet, the wiring for it: the `@docs/okf/codebase-map.md` import, a `## Boundaries` section, the glossary pointer line).
+Print a summary with these sections: **Created** (new files/directories), **Overwritten** (owned files updated by this run), **Deleted** (owned files removed because they left the constitution or a de-selected stack profile), **Needs your review** (CLAUDE.md is project-owned, so the Legislator never edits it directly; it only proposes exact lines here for the user to apply themselves — e.g. an `@import` line to add/remove when a rule file was added/removed, and, when this run scaffolded an artifact an existing CLAUDE.md doesn't reference yet, the wiring for it: the `@docs/okf/codebase-map.md` import, a `## Boundaries` section, the glossary pointer line). Additionally, only when this run changed the `keep` list, include a **Keep list** section: each entry added or removed (path + reason) and any refused keep request (the path did not exist).
 
-In **upgrade mode only**, append a fifth section, `### Health`, running the cheap audit checks (1–6 in the Audit section below) against the post-run state: list findings in the Audit section's line format; if there are none, print exactly `Health: clean`. Fresh-scaffold and migration runs skip this section — everything they just created is definitionally fresh.
+In **upgrade mode only**, append a final section, `### Health`, running the cheap audit checks (1–6 in the Audit section below) against the post-run state: list findings in the Audit section's line format; if there are none, print exactly `Health: clean`. Fresh-scaffold and migration runs skip this section — everything they just created is definitionally fresh.
 
 Do not run `git add` or `git commit`. The user reviews and commits.
 
