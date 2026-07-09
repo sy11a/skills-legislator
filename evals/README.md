@@ -8,7 +8,7 @@ Two layers, mirroring unit vs. e2e tests:
 | Layer | Command | Cost | When |
 |---|---|---|---|
 | Static checks | `python3 evals/check_static.py` | seconds, no agent | every commit |
-| E2E scenarios | procedure below | ~4 agent runs (~60k tokens each) | every VERSION bump / SKILL.md change |
+| E2E scenarios | procedure below | ~5 agent runs (~40–60k tokens each) | every VERSION bump / SKILL.md change |
 
 All grading is deterministic scripting (byte-diffs against the skill source,
 git state, manifest parsing) — no AI judge. Expectations are **derived from
@@ -74,7 +74,9 @@ warrants re-running that scenario 2–3 times before drawing a conclusion.
    workspace, and the scenario's prompt from `evals.json`. Instruct it to
    follow SKILL.md exactly, treat profile confirmation as pre-approved
    (`dotnet`), and never commit. Scenarios: `fresh-scaffold-dotnet`,
-   `legacy-migration`, `upgrade`.
+   `legacy-migration`, `upgrade`, `audit` (the audit agent must be told to
+   save its report to `<ws>/rotted-layer/outputs/audit-report.md` — outside
+   the target repo, which the audit must not touch).
 
 3. **Grade:**
 
@@ -112,6 +114,10 @@ warrants re-running that scenario 2–3 times before drawing a conclusion.
 - **idempotency** — a second run with nothing changed produces a zero diff.
   Catches serialization/formatting drift (this exact class of bug was found
   and fixed at VERSION 5).
+- **audit** — read-only rot detection: the report must name every planted
+  defect in the rotted fixture (see `setup_workspace.py:materialize_rotted`
+  for the nine defects), and the repo must be byte-untouched afterwards
+  (zero-writes contract).
 
 ## Baseline comparisons
 

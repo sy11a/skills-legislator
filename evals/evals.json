@@ -28,6 +28,13 @@
       "prompt": "(second run, same repo, after committing run 1's result) Re-run the legislator here — nothing about the constitution or the repo has changed.",
       "expected_output": "Zero diff: git status and git diff HEAD both empty after the second run. This is the constitution's core promise and the cheapest regression signal for serialization/formatting drift.",
       "assertions": "see grade.py grade_idempotency"
+    },
+    {
+      "id": 4,
+      "name": "audit",
+      "prompt": "Something feels off with the AI docs in this repo — audit the AI layer here and tell me what's rotted. Don't change anything, just report.",
+      "expected_output": "Full read-only audit: a severity-ranked report naming all nine planted defects (broken ghost-rule import, unresolved {{PROJECT_OVERVIEW}} token, drifted okf.md owned file, manifest one version behind, stale renamed-away.md index link, stale legacy/ map row, orphan-notes.md orphan, journal dead since 2026-01-15 while code moved on, .cursorrules foreign structure). Zero writes: git status and HEAD identical before and after. In evals the agent saves the report to <ws>/rotted-layer/outputs/audit-report.md — outside the target repo.",
+      "assertions": "see grade.py grade_audit — markers from fixture_meta.json"
     }
   ]
 }

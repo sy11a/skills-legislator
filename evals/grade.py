@@ -14,6 +14,9 @@ Scenarios (default: the first three):
   fresh-scaffold-dotnet    grade <ws>/fresh-scaffold-dotnet/repo
   legacy-migration         grade <ws>/legacy-migration/repo
   upgrade                  grade <ws>/upgrade/repo (needs fixture_meta.json)
+  audit                    grade the audit report saved by the eval agent at
+                           <ws>/rotted-layer/outputs/audit-report.md against
+                           the fixture's planted defects; asserts zero writes.
   idempotency:<scenario>   grade a SECOND skill run on <scenario>'s repo:
                            requires that run 1's result was committed before
                            run 2; passes iff run 2 left a zero diff.
@@ -153,6 +156,11 @@ def grade_migration(ws: Path) -> Grader:
     g.common_checks(repo)
     g.scaffold_checks(repo)
     g.no_unresolved_tokens(repo)
+    claude = (repo / "CLAUDE.md").read_text() if (repo / "CLAUDE.md").exists() else ""
+    v2_wired = "@docs/okf/codebase-map.md" in claude and "## Boundaries" in claude
+    g.check("claude_md_v2_wiring_written_directly", v2_wired,
+            "map import + Boundaries section present in rewritten CLAUDE.md" if v2_wired
+            else "migration left v2 wiring as Step 7 proposals instead of writing it")
     for needle in MIGRATION_PRESERVED:
         hits = subprocess.run(
             ["grep", "-rl", "--exclude-dir=.git", needle, str(repo)],
@@ -187,6 +195,30 @@ def grade_upgrade(ws: Path) -> Grader:
     return g
 
 
+def grade_audit(ws: Path) -> Grader:
+    repo = ws / "rotted-layer" / "repo"
+    meta = json.loads((ws / "rotted-layer" / "fixture_meta.json").read_text())
+    report_path = ws / "rotted-layer" / "outputs" / "audit-report.md"
+    g = Grader()
+
+    has_report = report_path.exists()
+    report = report_path.read_text() if has_report else ""
+    g.check("audit_report_saved", has_report,
+            str(report_path) if has_report else f"missing: {report_path}")
+
+    for marker in meta["report_markers"]:
+        g.check(f"report names {marker!r}", marker in report,
+                "named in report" if marker in report else "absent from report")
+
+    status = git(repo, "status", "--porcelain").strip()
+    commits = len(git(repo, "log", "--oneline").strip().splitlines())
+    clean = not status and commits == meta["fixture_commit_count"]
+    g.check("zero_writes", clean,
+            "working tree untouched, no new commits" if clean
+            else f"status={status[:200]!r}, commits={commits} (expected {meta['fixture_commit_count']})")
+    return g
+
+
 def grade_idempotency(ws: Path, scenario: str) -> Grader:
     repo = ws / scenario / "repo"
     g = Grader()
@@ -202,7 +234,7 @@ def main() -> None:
     if len(sys.argv) < 2:
         sys.exit(__doc__)
     ws = Path(sys.argv[1]).resolve()
-    names = sys.argv[2:] or ["fresh-scaffold-dotnet", "legacy-migration", "upgrade"]
+    names = sys.argv[2:] or ["fresh-scaffold-dotnet", "legacy-migration", "upgrade", "audit"]
 
     any_failed = False
     for name in names:
@@ -212,6 +244,8 @@ def main() -> None:
             g, outdir = grade_migration(ws), ws / name
         elif name == "upgrade":
             g, outdir = grade_upgrade(ws), ws / name
+        elif name == "audit":
+            g, outdir = grade_audit(ws), ws / "rotted-layer"
         elif name.startswith("idempotency:"):
             target = name.split(":", 1)[1]
             g, outdir = grade_idempotency(ws, target), ws / target
