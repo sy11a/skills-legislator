@@ -30,6 +30,33 @@ BL-007 hooks plugin                       ← independent of the rot chain
 BL-009 steward practice                   ← DONE 2026-07-09 (docs-only, README)
 ```
 
+### Implementation queue (agreed 2026-07-09, parallel where file-disjoint)
+
+- **Gate 0 (user):** answer two pre-settled design questions — BL-002 keep-list
+  manifest serialization; BL-007 write-guard mechanism.
+- **Gate 1 (user):** review the two specs (BL-002+BL-011, BL-007) in one pass.
+- **Wave 1 (parallel):**
+  - *Track A — main tree:* BL-002 + BL-011 riding: plan → SDD → benchmark.
+  - *Track B — isolated worktree, background agent:* BL-007 full
+    implementation from its approved spec/plan; verification = hook behavior
+    tests (no e2e benchmark — plugin/ only, no skill/SKILL.md changes); lands
+    as a branch, merged after Track A (only overlap: backlog status lines).
+  - *Track C — background, no repo writes:* options memo for BL-003's open
+    design question (where harvest candidates durably land), to speed its
+    brainstorm.
+- **Wave 2 (serial, after Track A):** BL-003 brainstorm (using the memo) →
+  full cycle.
+- **Wave 3 (serial, last):** BL-005b + BL-004 as one combined cycle — eval
+  scenarios land before the restructure implementation, same pattern as
+  BL-001+005a.
+- **Dormant:** BL-008 until a 2nd human/machine.
+
+Rationale: BL-002→003→005b→004 is a true dependency chain (audit check 10
+reads the keep schema; the restructure eval asserts BL-004's spec); BL-007 is
+file-disjoint from all of it. Background agents can't pause to ask questions,
+so anything dispatched to Track B must have its design fully settled at
+Gate 0/1 — that ordering is what makes the parallelism safe.
+
 Personal machine to-do (not a Legislator task): adopt the official C# LSP
 plugin (`csharp-ls`) locally — symbol-level navigation for the dotnet fleet;
 independent of this repo entirely.
