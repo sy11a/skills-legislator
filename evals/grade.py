@@ -10,7 +10,7 @@ grader does not rot when rules are added, removed, or renamed.
 Usage:
   python3 evals/grade.py <workspace> [scenario ...]
 
-Scenarios (default: the first three):
+Scenarios (default: the first four):
   fresh-scaffold-dotnet    grade <ws>/fresh-scaffold-dotnet/repo
   legacy-migration         grade <ws>/legacy-migration/repo
   upgrade                  grade <ws>/upgrade/repo (needs fixture_meta.json)
