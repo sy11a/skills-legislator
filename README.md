@@ -44,6 +44,31 @@ law for (no empty placeholder files).
 
 1. Edit a file under `skill/assets/rules/`.
 2. Bump `skill/VERSION`.
-3. `cd` into each downstream project and run `/legislator`.
-4. Review the `git diff` — only the changed owned file(s) and the manifest
+3. Run the eval suite (see below) — required before the change is done.
+4. `cd` into each downstream project and run `/legislator`.
+5. Review the `git diff` — only the changed owned file(s) and the manifest
    should appear — then commit.
+
+## Test and benchmark
+
+`evals/` is the skill's regression suite — see [evals/README.md](evals/README.md)
+for the full explanation of what the evals do and how benchmarking works.
+Short version:
+
+```bash
+# unit layer — every commit, seconds, no agent
+python3 evals/check_static.py
+
+# e2e layer — required after ANY behavioral change to skill/
+python3 evals/setup_workspace.py /tmp/legislator-eval-vN
+#   → run one fresh agent per scenario (prompts in evals/evals.json)
+python3 evals/grade.py /tmp/legislator-eval-vN
+#   → commit run 1 in one repo, re-run the agent, then:
+python3 evals/grade.py /tmp/legislator-eval-vN idempotency:fresh-scaffold-dotnet
+```
+
+Record each version's results in `evals/benchmarks/v<N>.md`; the comparison
+against the previous version's file (pass rate = correctness, tokens/time =
+cost, idempotency = diff noise) is the productivity verdict for the change.
+This requirement is also stated in this repo's `CLAUDE.md` so any agent
+working here sees it.

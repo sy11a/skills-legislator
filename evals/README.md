@@ -17,6 +17,48 @@ suite does not rot when rules are added, removed, or renamed. The one thing to
 maintain by hand: `SCAFFOLD_ARTIFACTS` in `grade.py` mirrors SKILL.md Step 4's
 table — update it if that table changes.
 
+## What an eval actually is
+
+`SKILL.md` is a program whose interpreter is a language model. There is no
+function to call, so it cannot be unit-tested like code — an eval tests it
+the way a service is e2e-tested: put the world into a known state, trigger an
+execution, assert on the observable result. One eval = three parts:
+
+1. **Fixture** — a known input state: a git repo that is fresh, legacy
+   (hand-written CLAUDE.md), or previously legislated at an older version.
+2. **Trigger** — a realistic user prompt (see `evals.json`) given to a
+   **fresh agent** with no context beyond the skill itself. Fresh matters:
+   the skill must work for a future session that knows nothing, so the test
+   agent must not be the session that wrote the skill.
+3. **Assertions** — machine-checkable postconditions on the resulting file
+   tree (manifest parses with exactly the derived ownedFiles, rules
+   byte-identical to source, project-owned files untouched, nothing
+   committed).
+
+Grading deliberately avoids the "LLM-as-judge" pattern (asking another model
+whether the output looks good — subjective, drifty). The legislator's output
+is a file tree, so every assertion is a `diff`, a `git status`, or a JSON
+parse: binary and reproducible. The only model judgment in the loop is inside
+the run under test — the grading itself is plain code.
+
+## How this becomes a benchmark
+
+One graded run is a test result. A **benchmark** is the same assertions
+tracked across versions: each `benchmarks/v<N>.md` records three numbers, and
+comparing v(N) against v(N−1) answers "did my change increase or decrease
+productivity":
+
+| Number | Question it answers |
+|---|---|
+| Pass rate (per scenario) | Did the change break correctness? Any drop is a regression to find before downstream repos do. |
+| Tokens + wall time | Did the change make runs more expensive? A SKILL.md edit that makes agents wander costs real money across many repos. |
+| Idempotency diff count | Did the change introduce noise? A re-run with nothing changed must produce a zero diff (this caught the manifest-formatting bug at v5). |
+
+Caveat: model runs are nondeterministic. A single failed assertion means
+*investigate* (read the agent's run summary and the failing evidence line),
+not automatically *revert* — and a suspicious or flaky-looking result
+warrants re-running that scenario 2–3 times before drawing a conclusion.
+
 ## E2E procedure
 
 1. **Materialize a workspace** (fresh fixtures, git-initialized; the upgrade
