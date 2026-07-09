@@ -65,7 +65,7 @@ independent of this repo entirely.
 
 ## BL-001 — Audit mode: read-only rot detection for the project-owned AI layer
 
-**Status: DONE 2026-07-09** — full cycle (spec `docs/superpowers/specs/2026-07-09-audit-mode-design.md`, plan `docs/superpowers/plans/2026-07-09-audit-mode.md`, commits 8ac8cd9..d96e369, VERSION stays 7, benchmark `evals/benchmarks/v7.1.md`: 45/45 + zero-diff idempotency; audit found all 9 planted defects on its first live run; BL-005a delivered with it; BL-010 riding items shipped). Follow-ups: BL-011.
+**Status: DONE 2026-07-09** — full cycle (spec `docs/superpowers/specs/2026-07-09-audit-mode-design.md`, plan `docs/superpowers/plans/2026-07-09-audit-mode.md`, commits 5840d54..3f01b12, VERSION stays 7, benchmark `evals/benchmarks/v7.1.md`: 45/45 + zero-diff idempotency; audit found all 9 planted defects on its first live run; BL-005a delivered with it; BL-010 riding items shipped). Follow-ups: BL-011.
 
 **What:** a new invocation path in SKILL.md (user asks to "audit"/"check" the AI layer, no scaffolding intent). Inventories `docs/**` + `CLAUDE.md` and checks structural invariants: every `@import` in CLAUDE.md resolves; every OKF-index link resolves; no orphan `.md` under `docs/` (reachable from no index/import); no unresolved `{{TOKEN}}`s outside `docs/adr/template.md`; journal recency vs. recent git activity; foreign AI-layer structures detected and listed (`.cursorrules`, `agents.md`, non-standard ADR/plans dirs, wiki folders); keep-listed files (BL-002) are actually linked. Output: a severity-ranked rot report. **Zero writes** — `git status` before and after must be identical.
 
@@ -110,7 +110,7 @@ independent of this repo entirely.
 **Status: DONE 2026-07-09** — implemented via full cycle (spec
 `docs/superpowers/specs/2026-07-09-claude-md-tpl-v2-design.md`, plan
 `docs/superpowers/plans/2026-07-09-claude-md-tpl-v2.md`, commits
-f878958..d945cb8, VERSION 7, benchmark `evals/benchmarks/v7.md`: 33/33 +
+85213d1..87d428d, VERSION 7, benchmark `evals/benchmarks/v7.md`: 33/33 +
 zero-diff idempotency, final whole-branch review: ready). Follow-ups spun
 into BL-010.
 
