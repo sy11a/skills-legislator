@@ -12,7 +12,7 @@
       "id": 1,
       "name": "legacy-migration",
       "prompt": "This repo (InvoiceApi) already has a CLAUDE.md we wrote by hand a year ago — it's got some architecture constraints and our bl/NNN-short-description branch naming convention in it, but nothing else, no ADRs, no journal, no backlog. Bring it up to our standard AI-dev setup without losing what's already written in there.",
-      "expected_output": "Legacy-migration mode: CLAUDE.md rewritten around the @import block with all original repo-specific content preserved verbatim somewhere in the result (architecture constraints, branch convention), remaining artifacts scaffolded, manifest written, nothing committed.",
+      "expected_output": "Legacy-migration mode: CLAUDE.md rewritten around the @import block with all original repo-specific content preserved verbatim somewhere in the result (architecture constraints, branch convention), remaining artifacts scaffolded, manifest written, nothing committed. The Step 7 report (saved by the eval harness to <ws>/legacy-migration/outputs/step7-report.md, outside the repo) carries a \"### Constitution candidates\" section quoting the decimal-money constraint with its source path, and does NOT propose the bl/NNN branch convention (project-instance data, not generalizable law).",
       "assertions": "see grade.py grade_migration"
     },
     {
@@ -33,7 +33,7 @@
       "id": 4,
       "name": "audit",
       "prompt": "Something feels off with the AI docs in this repo — audit the AI layer here and tell me what's rotted. Don't change anything, just report.",
-      "expected_output": "Full read-only audit: a severity-ranked report naming all ten planted defects (broken ghost-rule import, unresolved {{PROJECT_OVERVIEW}} token, drifted okf.md owned file, manifest one version behind, stale renamed-away.md index link, stale legacy/ map row, orphan-notes.md orphan, journal dead since 2026-01-15 while code moved on, .cursorrules foreign structure, keep-listed special-sauce.md referenced nowhere). Zero writes: git status and HEAD identical before and after. In evals the agent saves the report to <ws>/rotted-layer/outputs/audit-report.md — outside the target repo. The report must not flag docs/okf/index.md or docs/okf/glossary.md as orphans.",
+      "expected_output": "Full read-only audit: a severity-ranked report naming all ten planted defects (broken ghost-rule import, unresolved {{PROJECT_OVERVIEW}} token, drifted okf.md owned file, manifest one version behind, stale renamed-away.md index link, stale legacy/ map row, orphan-notes.md orphan, journal dead since 2026-01-15 while code moved on, .cursorrules foreign structure, keep-listed special-sauce.md referenced nowhere). Zero writes: git status and HEAD identical before and after. In evals the agent saves the report to <ws>/rotted-layer/outputs/audit-report.md — outside the target repo. The report must not flag docs/okf/index.md or docs/okf/glossary.md as orphans. The report ends with a Constitution candidates appendix quoting the dry-run importer rule; the not-law-marked statement about deleting invoice rows is suppressed and appears nowhere.",
       "assertions": "see grade.py grade_audit — markers from fixture_meta.json"
     }
   ]

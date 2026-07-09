@@ -76,7 +76,8 @@ warrants re-running that scenario 2–3 times before drawing a conclusion.
    (`dotnet`), and never commit. Scenarios: `fresh-scaffold-dotnet`,
    `legacy-migration`, `upgrade`, `audit` (the audit agent must be told to
    save its report to `<ws>/rotted-layer/outputs/audit-report.md` — outside
-   the target repo, which the audit must not touch).
+   the target repo, which the audit must not touch). The migration agent must
+   likewise be told to save its Step 7 report to `<ws>/legacy-migration/outputs/step7-report.md` — the harvest assertions grade that file.
 
 3. **Grade:**
 
@@ -108,7 +109,9 @@ warrants re-running that scenario 2–3 times before drawing a conclusion.
   unresolved `{{TOKEN}}`s (adr template carve-out respected), no commit.
 - **legacy-migration** — everything above plus content fidelity: the
   fixture's hand-written architecture constraints and `bl/NNN-…` branch
-  convention must survive somewhere in the result, never silently dropped.
+  convention must survive somewhere in the result, never silently dropped;
+  harvest: the decimal-money constraint is proposed as a constitution
+  candidate, the branch convention (instance data) is not.
 - **upgrade** — added-rule pickup, retired-rule deletion propagation,
   profiles reused without re-asking, project-owned files (including
   CLAUDE.md) untouched, keep-list carry-forward + prompt-driven add, pinned
@@ -121,7 +124,8 @@ warrants re-running that scenario 2–3 times before drawing a conclusion.
   defect in the rotted fixture (see `setup_workspace.py:materialize_rotted`
   for the ten planted defects, including an unlinked keep-listed file; hub
   files must not be flagged (BL-011 regression lock)), and the repo must be
-  byte-untouched afterwards (zero-writes contract).
+  byte-untouched afterwards (zero-writes contract); harvest appendix:
+  planted law-shaped line quoted, not-law-suppressed line absent.
 
 ## Baseline comparisons
 

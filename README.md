@@ -96,3 +96,4 @@ release**:
 4. **Triage harvest candidates** (once BL-003 ships): promote proven
    project-specific rules into `assets/rules/**`, bump VERSION, re-legislate
    downstream.
+- **Harvest candidates:** migration/upgrade/audit runs propose "Constitution candidates" in their reports (proposals only — nothing is written anywhere). Review them; promote worthy ones into `assets/rules/**` (bump `VERSION`), then re-run `/legislator` across repos. Reject by adding `<!-- legislator: not-law -->` above (or on) the source line in the target repo, or by rewording it so it stops reading as law. Candidates are re-derived every run, so an unread proposal is never lost — and a rejected one stays silenced.

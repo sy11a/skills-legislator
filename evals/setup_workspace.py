@@ -175,7 +175,14 @@ def materialize_rotted(dest: Path) -> None:
         "unclear; add terms as they emerge\n\n"
         "## Boundaries\n\nGenerated build output only (`bin/`, `obj/`, "
         "`node_modules/`) — do not edit generated files.\n\n"
-        "## Project notes\n\nLegacyBilling processes archived invoices.\n")
+        "## Project notes\n\nLegacyBilling processes archived invoices.\n\n"
+        # Harvest bait: one law-shaped generalizable line the audit's
+        # constitution-candidates appendix must quote...
+        "Always run the archive importer in dry-run mode before a real "
+        "import.\n"
+        # ...and one suppressed by the not-law marker, which it must NOT.
+        "<!-- legislator: not-law -->\n"
+        "Never delete rows from the invoices table; archive them instead.\n")
 
     okf = dest / "docs/okf"
     okf.mkdir(parents=True)
@@ -253,12 +260,15 @@ def materialize_rotted(dest: Path) -> None:
             "2026-01-15",             # defect 8: dead journal (entry date cited)
             ".cursorrules",           # defect 9: foreign structure
             "keep-list] docs/notes/special-sauce.md",  # defect 10: kept but referenced nowhere
+            "dry-run mode before a real import",  # harvest: candidate quoted
         ],
         # BL-011 regression lock: the audit must NOT flag the constitution's
         # hub files as orphans (they are referenced by inline-code mention).
         "absent_markers": [
             "orphan-docs] docs/okf/index.md",
             "orphan-docs] docs/okf/glossary.md",
+            # not-law suppression: the marked statement must not be proposed
+            "Never delete rows from the invoices table",
         ],
         "fixture_commit_count": 2,
         "fixture_head": subprocess.run(
