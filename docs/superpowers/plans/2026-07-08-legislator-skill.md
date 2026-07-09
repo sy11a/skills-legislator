@@ -1062,8 +1062,8 @@ Nothing in the `legislator` repo changes here. If Steps 2–9 all passed, mark t
 ### Task 10: Acceptance test — upgrade propagation
 
 **Files:**
-- Modify (temporarily, reverted after the test): `legislator/skill/assets/rules/core/decision-gate.md`
-- Modify (temporarily): `legislator/skill/VERSION`
+- Modify (real, permanent — a genuine rule improvement, not reverted; see Step 7): `legislator/skill/assets/rules/core/decision-gate.md`
+- Modify (real, permanent — see Step 7): `legislator/skill/VERSION`
 
 **Interfaces:**
 - Consumes: the fresh-scaffold scratch repo from Task 8 (`/tmp/legislator-accept/fresh`), already committed at the end of Task 8 Step 7
@@ -1135,8 +1135,8 @@ git commit -m "Add data-loss-without-backup to the decision gate; bump VERSION t
 ### Task 11: Acceptance test — rule removal propagation
 
 **Files:**
-- Create (temporarily, reverted after the test): `legislator/skill/assets/rules/core/scratch-temp-rule.md`
-- Modify (temporarily, reverted after the test): `legislator/skill/VERSION`
+- Create then delete (never committed — a throwaway rule used only to prove deletion propagates): `legislator/skill/assets/rules/core/scratch-temp-rule.md`
+- Modify (real, permanent — VERSION ends at 4, not reverted; see Step 10): `legislator/skill/VERSION`
 
 **Interfaces:**
 - Consumes: the fresh-scaffold scratch repo from Task 10 (`/tmp/legislator-accept/fresh`, now at manifest version 2)
