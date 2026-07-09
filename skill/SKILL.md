@@ -33,7 +33,7 @@ Check, in this order:
 
 Owned files live in this skill package at `assets/rules/`. For each file:
 
-1. Always copy every file under `assets/rules/core/` to `docs/ai/rules/core/` in the target repo, preserving relative path, using a byte-for-byte copy operation (e.g. `cp`) — never retype or reformat the content.
+1. Always copy every file under `assets/rules/core/` to `docs/ai/rules/core/` in the target repo, preserving relative path, using a byte-for-byte Bash copy (`cp`) — never the Write or Edit tools, and never retype or reformat the content. (The legislator-hooks write-guard blocks Edit/Write on `docs/ai/rules/**` in legislated repos; the Bash copy is the sanctioned path.)
 2. For each confirmed profile name in `profiles`, copy `assets/rules/stacks/<profile>/` to `docs/ai/rules/stacks/<profile>/` the same way.
 3. Read `VERSION` (a single integer) — this is the `legislatorVersion` to write into the manifest.
 4. Compute the new `ownedFiles` list: every path just copied, expressed relative to the target repo root (e.g. `docs/ai/rules/core/okf.md`).
@@ -106,9 +106,18 @@ Run this step before scaffolding `docs/okf/index.md` in Step 4 — Step 4's `doc
 
 ## Step 7 — Report
 
-Print a summary with these sections: **Created** (new files/directories), **Overwritten** (owned files updated by this run), **Deleted** (owned files removed because they left the constitution or a de-selected stack profile), **Needs your review** (CLAUDE.md is project-owned, so the Legislator never edits it directly; it only proposes exact lines here for the user to apply themselves — e.g. an `@import` line to add/remove when a rule file was added/removed, and, when this run scaffolded an artifact an existing CLAUDE.md doesn't reference yet, the wiring for it: the `@docs/okf/codebase-map.md` import, a `## Boundaries` section, the glossary pointer line). Additionally, only when this run changed the `keep` list, include a **Keep list** section: each entry added or removed (path + reason) and any refused keep request (the path did not exist).
+Print a summary with these sections: **Created** (new files/directories), **Overwritten** (owned files updated by this run), **Deleted** (owned files removed because they left the constitution or a de-selected stack profile), **Needs your review** (CLAUDE.md is project-owned, so the Legislator never edits it directly; it only proposes exact lines here for the user to apply themselves — e.g. an `@import` line to add/remove when a rule file was added/removed, and, when this run scaffolded an artifact an existing CLAUDE.md doesn't reference yet, the wiring for it: the `@docs/okf/codebase-map.md` import, a `## Boundaries` section, the glossary pointer line). Additionally, only when this run changed the `keep` list or refused a keep request, include a **Keep list** section: each entry added or removed (path + reason) and each refused request with why it was refused (the path does not exist, or the path is an owned file under `docs/ai/rules/`).
 
 In **upgrade mode only**, append a final section, `### Health`, running the cheap audit checks (1–6 in the Audit section below) against the post-run state: list findings in the Audit section's line format; if there are none, print exactly `Health: clean`. Fresh-scaffold and migration runs skip this section — everything they just created is definitionally fresh.
+
+In **migration and upgrade modes** (never fresh scaffold — everything there was just written by this skill), also scan project-owned prose for **Constitution candidates** and, when at least one qualifies, append a section (after the Keep list section, before Health):
+
+```
+### Constitution candidates
+- "<verbatim quote>" — <repo-relative path>
+```
+
+A candidate is a statement passing all three tests: (1) **law-shaped** — imperative and diff-checkable ("always …", "never …", "must …", "… before every commit"), not description or narration; (2) **not already covered** — no rule under `docs/ai/rules/**` states it (judge by meaning, not wording); (3) **generalizable** — it would make sense verbatim in another repo of the same stack. Project-instance data is an instantiation of law, not law: a concrete path, this project's branch pattern, a named contact or environment stays put and is never proposed. Scan CLAUDE.md's project-specific sections (skip the `@import` block and the template wiring lines) and prose under `docs/okf/`; do not scan `docs/ai/rules/**`, `docs/adr/**`, `docs/journal/**`, `docs/backlog.md`, or `docs/superpowers/**`. Skip any line carrying `<!-- legislator: not-law -->` on it or as the entire immediately preceding line — the user has already ruled that statement out. Candidates are **proposals only**: never write them to any file; the user promotes worthy ones into the skill's central `assets/rules/**` (bumping VERSION) and re-runs `/legislator` fleet-wide. If nothing qualifies, omit the section entirely.
 
 Do not run `git add` or `git commit`. The user reviews and commits.
 
@@ -149,3 +158,5 @@ Constitution: v<manifest version> (skill source: v<VERSION>) — <up to date | b
 
 Clean checks: <comma-separated names of checks that passed>
 ```
+
+**Constitution candidates appendix:** after the Info section and before the `Clean checks:` line, apply Step 7's constitution-candidates scan — same three tests, same scanned sources, same suppression marker, same section format. It is an appendix of proposals, not a numbered check: no severity, no slug, and it changes nothing about the zero-writes contract. Omit it when nothing qualifies.
