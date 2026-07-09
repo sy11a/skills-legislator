@@ -1,1 +1,5 @@
 .superpowers/
+
+# .NET build artifacts inside eval fixtures (agents may run dotnet build there)
+evals/fixtures/**/obj/
+evals/fixtures/**/bin/
