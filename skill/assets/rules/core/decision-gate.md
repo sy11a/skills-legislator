@@ -7,5 +7,6 @@
 - An approach that diverges from the task description
 - Any concern about correctness, security, or architecture
 - Unexpected existing code that contradicts the plan
+- A migration or upgrade step that would delete data without an explicit backup
 
 Do not resolve these unilaterally. Surface them and wait.
