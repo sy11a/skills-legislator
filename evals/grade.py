@@ -36,6 +36,8 @@ PROFILES = ["dotnet"]  # all fixtures are dotnet-only
 SCAFFOLD_ARTIFACTS = [
     "docs/okf/index.md",
     "docs/okf/log.md",
+    "docs/okf/codebase-map.md",
+    "docs/okf/glossary.md",
     "docs/backlog.md",
     "docs/adr/0001-record-architecture-decisions.md",
     "docs/adr/template.md",
