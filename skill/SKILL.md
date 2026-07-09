@@ -36,7 +36,7 @@ Owned files live in this skill package at `assets/rules/`. For each file:
 3. Read `VERSION` (a single integer) — this is the `legislatorVersion` to write into the manifest.
 4. Compute the new `ownedFiles` list: every path just copied, expressed relative to the target repo root (e.g. `docs/ai/rules/core/okf.md`).
 5. **Deletions:** compare the new `ownedFiles` list against the "old" `ownedFiles` list — the existing manifest's list in upgrade mode, or the reconstructed list from Step 1's edge-case guard when there was no manifest to read. If the old list contains a path not present in the new list, delete that file from the target repo (it was removed from the constitution, or its stack profile was de-selected in Step 2). If deleting a file empties its containing `docs/ai/rules/stacks/<profile>/` directory, remove the now-empty directory too.
-6. Write `docs/ai/manifest.json` with this exact serialization — 2-space indentation, keys in this order (`legislatorVersion`, `profiles`, `ownedFiles`), `ownedFiles` sorted — so that two runs with no actual constitution change produce a byte-identical file and no spurious diff:
+6. Write `docs/ai/manifest.json` with this exact serialization — 2-space indentation, keys in this order (`legislatorVersion`, `profiles`, `ownedFiles`), `profiles` as a single-line inline array (e.g. `["dotnet"]` or `["dotnet", "aurelia"]` — never expanded across multiple lines, regardless of how many entries it has), `ownedFiles` sorted and each entry on its own line as shown below — so that two runs with no actual constitution change produce a byte-identical file and no spurious diff:
 
 ```json
 {
