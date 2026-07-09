@@ -92,6 +92,7 @@ warrants re-running that scenario 2–3 times before drawing a conclusion.
    git -C /tmp/legislator-eval-vN/fresh-scaffold-dotnet/repo commit -m "run 1"
    # ... agent runs the skill a second time ...
    python3 evals/grade.py /tmp/legislator-eval-vN idempotency:fresh-scaffold-dotnet
+   python3 evals/grade.py /tmp/legislator-eval-vN idempotency:upgrade
    ```
 
 5. **Record the result** — copy the printed pass/fail summary (plus tokens and
@@ -110,14 +111,17 @@ warrants re-running that scenario 2–3 times before drawing a conclusion.
   convention must survive somewhere in the result, never silently dropped.
 - **upgrade** — added-rule pickup, retired-rule deletion propagation,
   profiles reused without re-asking, project-owned files (including
-  CLAUDE.md) untouched.
+  CLAUDE.md) untouched, keep-list carry-forward + prompt-driven add, pinned
+  keep serialization.
 - **idempotency** — a second run with nothing changed produces a zero diff.
   Catches serialization/formatting drift (this exact class of bug was found
-  and fixed at VERSION 5).
+  and fixed at VERSION 5). Run against both fresh-scaffold-dotnet and upgrade
+  (the latter proves a populated keep list re-serializes byte-identically).
 - **audit** — read-only rot detection: the report must name every planted
   defect in the rotted fixture (see `setup_workspace.py:materialize_rotted`
-  for the nine defects), and the repo must be byte-untouched afterwards
-  (zero-writes contract).
+  for the ten planted defects, including an unlinked keep-listed file; hub
+  files must not be flagged (BL-011 regression lock)), and the repo must be
+  byte-untouched afterwards (zero-writes contract).
 
 ## Baseline comparisons
 

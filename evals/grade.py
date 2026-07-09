@@ -20,6 +20,7 @@ Scenarios (default: the first four):
   idempotency:<scenario>   grade a SECOND skill run on <scenario>'s repo:
                            requires that run 1's result was committed before
                            run 2; passes iff run 2 left a zero diff.
+                           (benchmarks run it for fresh-scaffold-dotnet and upgrade)
 
 Writes grading.json into <ws>/<scenario>/ (viewer-compatible schema) and
 prints a pass/fail table. Exit code 1 if any assertion failed.
@@ -78,7 +79,7 @@ class Grader:
     def check(self, name: str, passed: bool, evidence: str) -> None:
         self.exps.append({"text": name, "passed": bool(passed), "evidence": evidence})
 
-    def common_checks(self, repo: Path) -> None:
+    def common_checks(self, repo: Path, expected_keep: list | None = None) -> None:
         owned = expected_owned()
         version = int((SKILL / "VERSION").read_text().strip())
 
@@ -104,7 +105,32 @@ class Grader:
                    else f"expected {sorted(owned)}, got {manifest.get('ownedFiles') if manifest else None}")
         inline = bool(re.search(r'^  "profiles": \[[^\n\]]*\],$', raw, re.M))
         self.check("manifest_profiles_single_line_inline", inline,
-                   "profiles array on one line per Step 3.6" if inline else "profiles array expanded across lines")
+                   "profiles array on one line per Step 3.7" if inline else "profiles array expanded across lines")
+
+        expected_keep = expected_keep or []
+        keep = manifest.get("keep") if manifest else None
+        self.check("manifest_keep_matches_expected", keep == expected_keep,
+                   f"expected {expected_keep}, got {keep}")
+
+        idx = [raw.find(f'"{k}"') for k in
+               ("legislatorVersion", "profiles", "keep", "ownedFiles")]
+        order_ok = all(i >= 0 for i in idx) and idx == sorted(idx)
+        self.check("manifest_key_order", order_ok,
+                   "legislatorVersion, profiles, keep, ownedFiles" if order_ok
+                   else "keys missing or out of order")
+
+        if isinstance(keep, list) and keep:
+            block = re.search(
+                r'^  "keep": \[\n((?:    \{"path": "[^"]*", "reason": "[^"]*"\},?\n)+)  \],$',
+                raw, re.M)
+            pinned = bool(block) and [e["path"] for e in keep] == sorted(e["path"] for e in keep)
+            evidence = ("one entry per line, single-line objects, sorted by path" if pinned
+                        else "keep block not in pinned form (expanded objects, unsorted, or wrong indent)")
+        else:
+            pinned = bool(re.search(r'^  "keep": \[\],$', raw, re.M))
+            evidence = ('empty keep inline as \'"keep": [],\'' if pinned
+                        else "empty keep not serialized inline on one line")
+        self.check("manifest_keep_pinned_serialization", pinned, evidence)
 
         bad = [p for p, src in owned.items()
                if not (repo / p).exists() or (repo / p).read_bytes() != src.read_bytes()]
@@ -174,7 +200,7 @@ def grade_upgrade(ws: Path) -> Grader:
     repo = ws / "upgrade" / "repo"
     meta = json.loads((ws / "upgrade" / "fixture_meta.json").read_text())
     g = Grader()
-    g.common_checks(repo)
+    g.common_checks(repo, expected_keep=meta.get("expected_keep", []))
 
     withheld = repo / "docs/ai/rules/core" / meta["withheld_core_rule"]
     g.check("newly_added_rule_present", withheld.exists(),
@@ -209,6 +235,10 @@ def grade_audit(ws: Path) -> Grader:
     for marker in meta["report_markers"]:
         g.check(f"report names {marker!r}", marker in report,
                 "named in report" if marker in report else "absent from report")
+
+    for marker in meta.get("absent_markers", []):
+        g.check(f"report does NOT contain {marker!r}", marker not in report,
+                "correctly absent" if marker not in report else "false-positive finding present")
 
     status = git(repo, "status", "--porcelain").strip()
     head = git(repo, "rev-parse", "HEAD").strip()
