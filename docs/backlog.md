@@ -65,6 +65,43 @@ BL-001 audit (+ BL-005a rotted fixture)   ← ship first, read-only, safe alone
 
 **Why:** the repo's CLAUDE.md mandates benchmarking for behavioral changes; audit and restructure are the highest-risk features yet and must not ship blind. Split delivery: BL-005a (fixture + audit scenario) is built *with* BL-001; BL-005b (restructure scenario) lands *before* BL-004 implementation starts.
 
+## BL-006 — CLAUDE.md.tpl v2: ambient codebase map, boundaries, glossary pointer
+
+Decisions settled with the user (2026-07-09, from the large-codebases best-practices review):
+
+**What:**
+
+1. **Codebase map — an OKF artifact, made ambient via @import.** New scaffolded
+   file `docs/okf/codebase-map.md` (create-if-missing): a table of top-level
+   directories with one-line descriptions, derived from the actual repo tree at
+   scaffold time and confirmed with the user. `CLAUDE.md.tpl` gains one line:
+   `@docs/okf/codebase-map.md`. Rationale: the map is knowledge → single source
+   of truth in OKF (no duplication across the layer, per the user's explicit
+   concern); the @import makes it ambient in every session, which is what
+   actually prevents navigation wandering. Freshness is covered by the existing
+   okf.md sync law; BL-001 audit later adds a "map entries vs. actual
+   directories" check.
+2. **Boundaries — split by stratum.**
+   - Law (core rule file, propagates to every repo on re-run, VERSION bump):
+     "Never hand-edit `docs/ai/rules/**` — these files are machine-managed by
+     the Legislator and overwritten on every run; change them centrally."
+   - Project-owned (`{{BOUNDARIES}}` section in CLAUDE.md.tpl, filled at
+     scaffold): repo-specific no-touch zones — generated dirs, legacy areas,
+     migration output.
+3. **Domain glossary — pointer only.** Scaffold a thin `docs/okf/glossary.md`
+   (create-if-missing) and add a pointer line (not an @import — jargon lookup
+   is on-demand, no ambient budget spent).
+
+**Consequences to handle in the plan:** new templates registered in SKILL.md
+Step 4's table (static checks enforce referenced<->present); `SCAFFOLD_ARTIFACTS`
+in `evals/grade.py` extended; migration mode must respect an existing map/glossary
+(create-if-missing as always); VERSION bump (rule content changes); full e2e
+benchmark per evals/README.md.
+
+**Done when:** fresh scaffold produces map+boundaries+glossary with no unresolved
+placeholders; the map @import resolves; upgrade run propagates the new law line
+to an already-legislated repo; benchmark shows no regression.
+
 ---
 
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
