@@ -226,6 +226,31 @@ covers them; not worth a full e2e run on their own):
 was fixed immediately in the eval layer, verified with a planted-token
 negative test; no benchmark required for `evals/**`.)
 
+## BL-011 — Audit follow-ups from the v7.1 final review (skill-file items)
+
+Ride along with the next benchmarked `skill/**` cycle (BL-002 keep-markers is
+the natural vehicle — it edits SKILL.md's audit check 10 anyway):
+
+1. **Orphan check flags the constitution's own hub files (Important).** Check
+   7 counts only markdown links and `@import`s as references, but in a
+   healthy freshly-legislated repo `docs/okf/index.md` is referenced only as
+   backtick code (in okf.md's rule text) and `docs/okf/glossary.md` only via
+   CLAUDE.md's pointer *bullet* — so a strict clean-repo audit reports both
+   hubs as Warning orphans. Fix deliberately: either exempt the two hub files
+   by name or count inline-code path mentions as references. Add a clean-repo
+   audit expectation to the eval when fixing (the deferred clean-audit
+   scenario, or a targeted assertion).
+2. **Check 10's "keep-list: not present" note has no slot in the fixed report
+   format** — define where it goes (Info section vs. clean-checks line) so
+   agents place it consistently.
+3. **migration.md §1 quotes the glossary pointer line without its leading
+   `- ` bullet/backticks** — align the quoted line with CLAUDE.md.tpl's exact
+   text so migrated and fresh CLAUDE.mds don't drift textually.
+
+(The review's two eval-layer minors — weak grep markers, commit-count-based
+zero_writes — were fixed immediately with a positive + amend-HEAD negative
+test; no benchmark needed for `evals/**`.)
+
 ---
 
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature

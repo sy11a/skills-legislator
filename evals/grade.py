@@ -211,11 +211,11 @@ def grade_audit(ws: Path) -> Grader:
                 "named in report" if marker in report else "absent from report")
 
     status = git(repo, "status", "--porcelain").strip()
-    commits = len(git(repo, "log", "--oneline").strip().splitlines())
-    clean = not status and commits == meta["fixture_commit_count"]
+    head = git(repo, "rev-parse", "HEAD").strip()
+    clean = not status and head == meta["fixture_head"]
     g.check("zero_writes", clean,
-            "working tree untouched, no new commits" if clean
-            else f"status={status[:200]!r}, commits={commits} (expected {meta['fixture_commit_count']})")
+            "working tree untouched, HEAD identical to fixture" if clean
+            else f"status={status[:200]!r}, HEAD={head} (expected {meta['fixture_head']})")
     return g
 
 

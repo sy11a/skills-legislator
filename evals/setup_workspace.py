@@ -170,7 +170,7 @@ def materialize_rotted(dest: Path) -> None:
         "# OKF Index\n\n- [Log](log.md)\n- [Overview draft](overview-draft.md)\n"
         "- [Old notes](renamed-away.md)\n- [Glossary](glossary.md)\n")
     (okf / "log.md").write_text(
-        "# OKF Log\n\n## 2026-01-15 — Initial legislation\n\nSet up.\n")
+        "# OKF Log\n\n## 2026-01-10 — Initial legislation\n\nSet up.\n")
     # Defect 2 — unresolved placeholder (linked from the index, so it is
     # a token defect, not an orphan — defects stay isolated).
     (okf / "overview-draft.md").write_text(
@@ -179,7 +179,7 @@ def materialize_rotted(dest: Path) -> None:
     (okf / "codebase-map.md").write_text(
         "---\ntype: System\ntitle: LegacyBilling — Codebase Map\n"
         "description: Top-level directory map — where things live in this repo.\n"
-        "tags: [system, architecture, map]\ntimestamp: 2026-01-15T00:00:00Z\n"
+        "tags: [system, architecture, map]\ntimestamp: 2026-01-10T00:00:00Z\n"
         "status: implemented\n---\n\n# Codebase Map\n\n"
         "One line per top-level directory. Keep this table in sync with the "
         "actual tree (the okf.md sync rule applies): update it when "
@@ -190,7 +190,7 @@ def materialize_rotted(dest: Path) -> None:
     (okf / "glossary.md").write_text(
         "---\ntype: System\ntitle: LegacyBilling — Domain Glossary\n"
         "description: Domain terms mapped to their meaning in this codebase.\n"
-        "tags: [system, glossary, domain]\ntimestamp: 2026-01-15T00:00:00Z\n"
+        "tags: [system, glossary, domain]\ntimestamp: 2026-01-10T00:00:00Z\n"
         "status: implemented\n---\n\n# Domain Glossary\n\n"
         "| Term | Meaning in this codebase |\n|------|--------------------------|\n")
     # Defect 7 — orphan: linked from nowhere.
@@ -223,7 +223,7 @@ def materialize_rotted(dest: Path) -> None:
             "ghost-rule.md",          # defect 1: broken import
             "overview-draft.md",      # defect 2: unresolved token file
             "docs/ai/rules/core/okf.md",  # defect 3: owned drift
-            "behind",                 # defect 4: stale manifest (header wording)
+            f"(skill source: v{version}) — behind",  # defect 4: stale manifest (header wording)
             "renamed-away.md",        # defect 5: stale index link
             "legacy/",                # defect 6: stale map row
             "orphan-notes.md",        # defect 7: orphan doc
@@ -231,6 +231,9 @@ def materialize_rotted(dest: Path) -> None:
             ".cursorrules",           # defect 9: foreign structure
         ],
         "fixture_commit_count": 2,
+        "fixture_head": subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=dest, check=True,
+            capture_output=True, text=True).stdout.strip(),
         "expected_manifest_version": version - 1,
     }
     (dest.parent / "fixture_meta.json").write_text(
