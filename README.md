@@ -25,6 +25,17 @@ invocation.
 full procedure and `skill/references/migration.md` for legacy-repo migration
 specifics.
 
+## Content discipline for rule files
+
+Rule files (core and stacks alike) contain only **law** — short, enforceable
+constraints a reviewer can check any diff against. How-to **guidance** (build
+this component like so, optimize that query this way) is never inlined; it is
+delegated by a pointer to where it actually lives (a skill such as
+`aurelia-developer` or the `dotnet-*` family, project docs, or — later —
+project-local agents). Guidance inlined into a rule file is a second copy that
+rots; a pointer stays true. When tempted to paste a tutorial into a rule file,
+that's the test to apply.
+
 ## Update the constitution
 
 1. Edit a file under `skill/assets/rules/`.
