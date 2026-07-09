@@ -1,6 +1,6 @@
 ---
 name: legislator
-description: Scaffold or upgrade the AI-development constitution (CLAUDE.md rules, OKF knowledge bundle, backlog, ADRs, dev journal, changelog, specs/plans, agent-space convention) in the current project repo. Use when starting a new AI-first project, migrating an existing repo to the standard layout, or re-applying an updated constitution after editing the Legislator's rule files.
+description: Scaffold or upgrade the AI-development constitution (CLAUDE.md rules, OKF knowledge bundle, backlog, ADRs, dev journal, changelog, specs/plans) in the current project repo. Use when starting a new AI-first project, migrating an existing repo to the standard layout, or re-applying an updated constitution after editing the Legislator's rule files.
 ---
 
 # Legislator
@@ -60,7 +60,6 @@ For each of the following, create it **only if it does not already exist** — n
 | `docs/adr/template.md` | `adr-template.md.tpl` | Copied verbatim — its `{{...}}` tokens are intentional and must NOT be filled in (see the note above the table) |
 | `docs/journal/README.md` | `journal-README.md.tpl` | Used verbatim, no placeholders |
 | `CHANGELOG.md` | `changelog.md.tpl` | Used verbatim, no placeholders |
-| `.claude/agents/README.md` | `agents-README.md.tpl` | Used verbatim, no placeholders |
 | `docs/superpowers/specs/` | (empty directory) | Create the directory if absent; no file |
 | `docs/superpowers/plans/` | (empty directory) | Create the directory if absent; no file |
 

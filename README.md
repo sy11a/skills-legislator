@@ -2,8 +2,7 @@
 
 The Legislator is a Claude Code skill that scaffolds, migrates, or upgrades the
 AI-development "constitution" in a project repo: CLAUDE.md rules, the OKF
-knowledge bundle, backlog, ADRs, dev journal, changelog, specs/plans, and the
-project-local agent-space convention.
+knowledge bundle, backlog, ADRs, dev journal, changelog, and specs/plans.
 
 It is designed to be re-run: edit a rule file here, bump `skill/VERSION`, then
 run `/legislator` in each downstream project. Owned rule files
