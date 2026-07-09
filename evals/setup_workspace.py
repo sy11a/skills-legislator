@@ -7,6 +7,7 @@ legislator skill against:
   <workspace>/fresh-scaffold-dotnet/repo   — new repo, no CLAUDE.md
   <workspace>/legacy-migration/repo        — hand-written CLAUDE.md, no manifest
   <workspace>/upgrade/repo                 — previously legislated, one version behind
+  <workspace>/rotted-layer/repo            — legislated, nine planted defects (audit scenario)
 
 The upgrade repo is generated from the CURRENT skill source so this suite
 never rots as the constitution evolves: it contains every current core+dotnet
