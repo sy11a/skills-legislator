@@ -118,16 +118,18 @@ Run this section INSTEAD of Steps 0–7 when the user asks to audit or health-ch
 
 Perform these checks (severity in parentheses; a finding names the offending path, date, or entry verbatim):
 
+In findings, `[check-name]` is the check's pinned slug — use exactly these: 1 `imports-resolve`, 2 `unresolved-placeholders`, 3 `owned-integrity`, 4 `staleness`, 5 `okf-index-links`, 6 `codebase-map`, 7 `orphan-docs`, 8 `journal-recency`, 9 `foreign-structures`, 10 `keep-list`.
+
 1. **Imports resolve (Critical):** every `@<path>` line in CLAUDE.md points to an existing file.
 2. **Unresolved placeholders (Critical):** no `{{TOKEN}}` pattern in CLAUDE.md or any `.md` under `docs/`, except `docs/adr/template.md` (its tokens are intentional).
 3. **Owned-layer integrity (Critical):** `docs/ai/manifest.json` parses; every `ownedFiles` entry exists on disk; every owned file is byte-identical to its `<skill-path>/assets/rules/...` source (diff each one).
 4. **Constitution staleness (Info):** manifest `legislatorVersion` vs. `<skill-path>/VERSION`; if behind, note "re-run /legislator to upgrade".
 5. **OKF index links (Warning):** every markdown link in `docs/okf/index.md` resolves to an existing file.
 6. **Codebase-map freshness (Warning):** skip if `docs/okf/codebase-map.md` is absent. Otherwise: every directory named in the map's table exists, and every non-generated top-level directory (ignore hidden directories and `bin/`, `obj/`, `node_modules/`, `dist/`) has a row.
-7. **Orphan docs (Warning):** an `.md` under `docs/okf/` or directly in `docs/` that no other `.md` file (or CLAUDE.md) references by markdown link or `@import`. Exempt by directory convention: `docs/ai/rules/**`, `docs/adr/**`, `docs/journal/**`, `docs/superpowers/**`, and `docs/backlog.md`.
+7. **Orphan docs (Warning):** an `.md` under `docs/okf/` or directly in `docs/` that no other `.md` file (or CLAUDE.md) **references**. A file counts as referenced when any other markdown file mentions it by markdown link, by `@import`, or by inline-code path mention — its repo-relative path (or a relative path resolving to it) inside backticks; rule text naming `docs/okf/index.md` in backticks wires that file in. Exempt by directory convention: `docs/ai/rules/**`, `docs/adr/**`, `docs/journal/**`, `docs/superpowers/**`, and `docs/backlog.md`.
 8. **Journal recency (Warning):** newest entry date in `docs/journal/` (from filenames or entry content) vs. the date of the last commit touching paths outside `docs/`; flag if the code commit is newer by more than 30 days, citing the newest entry's date.
 9. **Foreign AI-layer structures (Info):** list any of `.cursorrules`, `.cursor/`, `AGENTS.md`/`agents.md`, `.github/copilot-instructions.md`, `wiki/`, and ADR/plans directories outside the standard layout (`adrs/`, `doc/adr/`, `.claude/plans/`).
-10. **Keep-list integrity (Warning):** if the manifest has a `keep` key, every kept path must exist and be referenced from somewhere; if the key is absent, report `keep-list: not present (pre-BL-002 manifest)` and skip.
+10. **Keep-list integrity (Warning):** for every entry in the manifest's `keep` list: (a) the kept path exists on disk — otherwise finding `<path>: kept path missing from disk → restore it or remove the keep entry`; (b) the kept file is referenced from somewhere — same definition as check 7, searched across CLAUDE.md and every `.md` in the repo, with no directory exemptions — otherwise finding `<path>: kept but referenced from nowhere → link it from docs/okf/index.md or CLAUDE.md`. If the manifest has no `keep` key at all, add to the **Info** section exactly `- [keep-list] docs/ai/manifest.json: no keep key (pre-keep-schema manifest) → re-run /legislator to refresh` and skip the check.
 
 Report format — print exactly this structure (omit empty severity sections; a fully clean audit prints the header, `No findings.`, and the clean-checks line):
 
