@@ -168,6 +168,10 @@ class Grader:
         claude = (repo / "CLAUDE.md").read_text() if (repo / "CLAUDE.md").exists() else ""
         self.check("claude_md_imports_rules", "@docs/ai/rules/core/" in claude,
                    "@import block present" if "@docs/ai/rules/core/" in claude else "no @import lines in CLAUDE.md")
+        rules_dir = repo / ".claude/rules"
+        self.check("project_rules_dir_scaffolded", rules_dir.is_dir(),
+                   ".claude/rules/ exists" if rules_dir.is_dir()
+                   else ".claude/rules/ directory not scaffolded")
 
 
 def grade_fresh(ws: Path) -> Grader:
@@ -208,6 +212,19 @@ def grade_migration(ws: Path) -> Grader:
     g.check("harvest_excludes_instance_convention", no_leak,
             "branch convention correctly not proposed" if no_leak
             else "instance data leaked into candidates (or section missing)")
+    pr_dir = repo / ".claude/rules"
+    law_hits = subprocess.run(
+        ["grep", "-rl", "Money values are always", str(pr_dir)],
+        capture_output=True, text=True).stdout.strip() if pr_dir.is_dir() else ""
+    g.check("law_carved_to_project_rules", bool(law_hits),
+            f"decimal-money law lives in {law_hits.splitlines()}" if law_hits
+            else "law-shaped constraint not carved into .claude/rules/")
+    conv_hits = subprocess.run(
+        ["grep", "-rl", "bl/NNN-short-description", str(pr_dir)],
+        capture_output=True, text=True).stdout.strip() if pr_dir.is_dir() else ""
+    g.check("instance_data_not_in_project_rules", pr_dir.is_dir() and not conv_hits,
+            "branch convention correctly stayed in CLAUDE.md" if pr_dir.is_dir() and not conv_hits
+            else f"instance data leaked into .claude/rules/ (or dir missing): {conv_hits.splitlines() if conv_hits else 'dir missing'}")
     for needle in MIGRATION_PRESERVED:
         hits = subprocess.run(
             ["grep", "-rl", "--exclude-dir=.git", needle, str(repo)],
@@ -303,6 +320,14 @@ def grade_restructure(ws: Path) -> Grader:
     g.check("conflict_surfaced_as_decision", decision_open,
             "[decision] item names the conflict" if decision_open
             else "report lacks a [decision] item naming the conflict")
+
+    pr_path = repo / meta["project_rule_conflict_path"]
+    pr_ok = pr_path.exists() and pr_path.read_text() == meta["project_rule_conflict_content"]
+    pr_named = meta["project_rule_conflict_path"] in report
+    g.check("project_rule_conflict_decision_gated", pr_ok and pr_named,
+            "conflicting project rule byte-unchanged and named in the report"
+            if pr_ok and pr_named
+            else f"file untouched={pr_ok}, named in report={pr_named}")
 
     moved_ok = (not (repo / ".claude/plans").exists()
                 and (repo / "docs/superpowers/plans/2026-01-importer-plan.md").exists())
