@@ -120,8 +120,10 @@ warrants re-running that scenario 2–3 times before drawing a conclusion.
   keep serialization.
 - **idempotency** — a second run with nothing changed produces a zero diff.
   Catches serialization/formatting drift (this exact class of bug was found
-  and fixed at VERSION 5). Run against both fresh-scaffold-dotnet and upgrade
-  (the latter proves a populated keep list re-serializes byte-identically).
+  and fixed at VERSION 5). Run against fresh-scaffold-dotnet, upgrade (proves
+  a populated keep list re-serializes byte-identically), and restructure
+  (proves an already-standard layer is a zero-write no-op apart from
+  re-surfacing open decision items).
 - **audit** — read-only rot detection: the report must name every planted
   defect in the rotted fixture (see `setup_workspace.py:materialize_rotted`
   for the twelve planted defects, including an unlinked keep-listed file and

@@ -478,6 +478,44 @@ contradiction line absent from candidates); restructure merges it into
 idempotency zero-diff; then CareerPlatform live validation (upgrade +
 restructure) succeeds end-to-end.
 
+## BL-017 — Stray-rulebook follow-ups from the v9 final review (skill-file items)
+
+Ride along with the next benchmarked `skill/**` cycle:
+
+1. **Check 12 lacks a keep-list exemption (Important).** A keep-listed
+   law-shaped doc draws a Warning whose remedy ("run restructure to
+   consolidate") is an action restructure refuses on kept paths — an
+   unresolvable finding. Fix: exempt kept paths from check 12; the keep
+   entry is the user's ruling.
+2. **Check 12's referrer set omits `docs/okf/index.md` (Important).** The
+   OKF index is a surface sessions load (via `core/okf.md`), so a law-shaped
+   doc properly linked from it is flagged as "no session loads" — factually
+   wrong text — and a law-shaped orphan under `docs/okf/` gets two Warnings
+   with contradictory remedies (check 7 vs 12). Fix: add the OKF index as a
+   recognized referrer and define precedence between checks 7 and 12.
+3. **Root-level scan false-positives on conventional docs (Important).**
+   `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md` are imperative
+   checklists unreferenced from CLAUDE.md → fleet audits will emit noise.
+   Fix: extend the root exemption list with the conventional-doc set.
+4. **Upgrade fixture never exercises a stacks/ file addition (Important).**
+   The generated fixture withholds only the alphabetically last *core*
+   rule, so delivering a new stack file (exactly what v9's fleet action
+   does) is untested, and no assertion checks the Step 7 proposal of the
+   new `@...` import line. Fix: also withhold the alphabetically last
+   stack rule and assert the proposed import line.
+5. **Captive-dependency law candidate (Minor, v10).** "No singleton
+   services holding scoped/DbContext references" from the CareerPlatform
+   checklist is generic + diff-checkable and covered by neither new DI
+   bullet — promote in the next law cycle.
+6. **Check 12 × check 9 double-report on root `AGENTS.md` (Minor)** — same
+   file, two slugs, two severities; remedies agree. Decide precedence when
+   fixing item 2.
+7. **Latent grader rot (Minor):** `grade.py` greps `stray_project_law`
+   without `-F`; the candidates-section regex silently passes absent checks
+   if the pinned heading changes (mitigated: heading is also a must-contain
+   marker). Harvest's stray-rulebook scan is only exercised in audit mode —
+   pairs with the BL-016 §3 restatement-path rider.
+
 ---
 
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
