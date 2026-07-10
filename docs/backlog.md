@@ -397,7 +397,15 @@ auto-withheld by the fixture generator); all idempotency passes zero-diff.
 
 ## BL-015 — Project-rules follow-ups from the v8 final review (skill-file items)
 
-Ride along with the next benchmarked `skill/**` cycle:
+**Status: DONE 2026-07-10** — rode the BL-016 cycle: item 1 shipped (harvest
+test 2 now counts an owned-law contradiction as covered, locked by a
+candidates-section-scoped absent marker in the audit grader), item 2 shipped
+(check 11 Info note when the manifest is current but `.claude/rules/` is
+absent), item 3 shipped ("Narrative AI rules prose" in restructure.md §1),
+item 4 shipped (check 10(b) exempts `.claude/rules/**` — auto-loading is the
+wiring). Benchmark `evals/benchmarks/v9.md`.
+
+Original items:
 
 1. **Harvest test 2 doesn't exclude owned-law contradictions (Important).**
    "No rule under `docs/ai/rules/**` states it" reads literally as passing a
@@ -427,6 +435,20 @@ final shipped v8 bytes (post-4966342) — disclosed in v8.md note; migration/
 upgrade/restructure ran pre-fix (both fixes narrow and strengthening-only).
 
 ## BL-016 — Stray rulebooks + .NET refactoring law (constitution v9)
+
+**Status: DONE 2026-07-10** — full cycle (spec
+`docs/superpowers/specs/2026-07-10-stray-rulebooks-design.md`, commits
+8d8e698..HEAD, **VERSION 8→9**, benchmark `evals/benchmarks/v9.md`: 95/95 —
+the first fully clean single-pass benchmark, no mid-run fixes). Audit check
+12 flagged the planted stray rulebook and only it; harvest proposed its
+generic line and excluded the project line and the owned-law contradiction
+(BL-015 rider-1 lock); restructure merged it into `.claude/rules/` and
+removed it with fidelity verified; all idempotency passes zero-diff.
+BL-015 riders shipped with it. **Fleet action: run `/legislator` in each
+downstream repo to deliver v9.** Rider logged: §3's
+restatement-replacement path under restructure (and its interplay with the
+fidelity pass's exemption list) is still untested — next fixture that
+plants an owned-rule-restating line in a merged source should lock it.
 
 **What:** two-part cycle (spec:
 `docs/superpowers/specs/2026-07-10-stray-rulebooks-design.md`). (a) Generic
