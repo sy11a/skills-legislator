@@ -195,6 +195,9 @@ def grade_migration(ws: Path) -> Grader:
             str(report_path) if has_report else f"missing: {report_path}")
     m = re.search(r"### Constitution candidates\n(.*?)(?=\n#|\Z)", report, re.S)
     section = m.group(1) if m else ""
+    # Coupled to the constitution's CURRENT content: if a decimal-for-money
+    # rule is ever promoted into assets/rules/**, criterion 2 flips and this
+    # fixture line stops being a valid candidate — update the fixture then.
     money = "Money values are always" in section
     g.check("harvest_lists_decimal_money_rule", money,
             "decimal-money constraint quoted as a candidate" if money

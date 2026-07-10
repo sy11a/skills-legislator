@@ -261,6 +261,7 @@ def materialize_rotted(dest: Path) -> None:
             ".cursorrules",           # defect 9: foreign structure
             "keep-list] docs/notes/special-sauce.md",  # defect 10: kept but referenced nowhere
             "dry-run mode before a real import",  # harvest: candidate quoted
+            "### Constitution candidates",  # harvest appendix present with pinned heading
         ],
         # BL-011 regression lock: the audit must NOT flag the constitution's
         # hub files as orphans (they are referenced by inline-code mention).

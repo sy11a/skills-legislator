@@ -321,6 +321,12 @@ stale plugin docstring step number, README repo-gate overclaim — were fixed
 immediately in the eval/plugin layers, commits ea15fac + follow-up; the
 strengthened markers were proven against the recorded v7.2 audit report.)
 
+Rider for the next benchmarked `skill/**` cycle (Wave 3), from the v7.3 final
+review: SKILL.md's candidates-section placement anchors ("after the Keep
+list section, before Health") are both absent in the common migration
+case — append "(when those sections are absent, make it the report's last
+section)"; also pin the Keep list section's heading level.
+
 ---
 
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
