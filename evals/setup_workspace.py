@@ -126,7 +126,7 @@ def materialize_upgrade(dest: Path) -> None:
 
 
 def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
-    """Legislated repo with ten planted defects for the audit scenario.
+    """Legislated repo with eleven planted defects for the audit scenario.
 
     Generated from the CURRENT skill source, then deliberately damaged.
     Each defect leaves a distinctive marker string an audit report must
@@ -251,9 +251,17 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
     # Defect 9 — foreign AI-layer structure.
     (dest / ".cursorrules").write_text("Always write tests first.\n")
 
+    # Defect 11 -- a project rule (in the standard .claude/rules/ home) that
+    # contradicts owned law (core/dev-journal.md). Audit check 11 must flag
+    # it; restructure must decision-gate it, never edit it.
+    (dest / ".claude/rules").mkdir(parents=True)
+    (dest / ".claude/rules/journal.md").write_text(
+        "# Journal policy\n\n"
+        "Dev journal entries are optional; skip them for small changes.\n")
+
     if restructure_extras:
         # Restructure bait: plans in a non-standard location (a `move`).
-        (dest / ".claude/plans").mkdir(parents=True)
+        (dest / ".claude/plans").mkdir(parents=True, exist_ok=True)
         (dest / ".claude/plans/2026-01-importer-plan.md").write_text(
             "# Importer split plan\n\n"
             "Planned: split the importer into reader and writer stages.\n")
@@ -277,6 +285,7 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
             "2026-01-15",             # defect 8: dead journal (entry date cited)
             ".cursorrules",           # defect 9: foreign structure
             "keep-list] docs/notes/special-sauce.md",  # defect 10: kept but referenced nowhere
+            "project-rules] .claude/rules/journal.md",  # defect 11: project rule vs owned law
             "dry-run mode before a real import",  # harvest: candidate quoted
             "### Constitution candidates",  # harvest appendix present with pinned heading
         ],
@@ -307,6 +316,9 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
             "in the wiki at release time.")
         meta["kept_path"] = "docs/notes/special-sauce.md"
         meta["kept_content"] = (dest / "docs/notes/special-sauce.md").read_text()
+        meta["project_rule_conflict_path"] = ".claude/rules/journal.md"
+        meta["project_rule_conflict_content"] = (
+            dest / ".claude/rules/journal.md").read_text()
 
     (dest.parent / "fixture_meta.json").write_text(
         json.dumps(meta, indent=2) + "\n")

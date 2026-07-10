@@ -45,6 +45,7 @@ aurelia) and asks you to confirm before importing stack rules.
 
 ```
 CLAUDE.md                  ← imports the rules; your project prose lives here
+.claude/rules/             ← YOUR project law — one topic per file, auto-loaded
 docs/ai/manifest.json      ← machine-managed: version, profiles, keep list
 docs/ai/rules/             ← THE LAW — copied byte-for-byte, never edit by hand
 docs/okf/                  ← knowledge: index, codebase map, glossary, log
@@ -72,6 +73,7 @@ Once legislated, three more requests matter:
 - **"Keep `docs/notes/runbook.md` as-is: battle-tested"** — marks a file
   untouchable in the manifest. Restructuring must leave it in place, and
   audits warn if it ever becomes unlinked.
+- **"Add a project rule: every feature ships behind a feature toggle"** — the agent creates `.claude/rules/feature-toggles.md` per the project-rules law (auto-loaded, no CLAUDE.md bloat); harvest will later propose promoting it if it generalizes.
 
 ### 4. The fleet loop
 

@@ -113,7 +113,7 @@ warrants re-running that scenario 2–3 times before drawing a conclusion.
   fixture's hand-written architecture constraints and `bl/NNN-…` branch
   convention must survive somewhere in the result, never silently dropped;
   harvest: the decimal-money constraint is proposed as a constitution
-  candidate, the branch convention (instance data) is not.
+  candidate, the branch convention (instance data) is not; law carved to .claude/rules/, instance data kept in CLAUDE.md.
 - **upgrade** — added-rule pickup, retired-rule deletion propagation,
   profiles reused without re-asking, project-owned files (including
   CLAUDE.md) untouched, keep-list carry-forward + prompt-driven add, pinned
@@ -124,11 +124,11 @@ warrants re-running that scenario 2–3 times before drawing a conclusion.
   (the latter proves a populated keep list re-serializes byte-identically).
 - **audit** — read-only rot detection: the report must name every planted
   defect in the rotted fixture (see `setup_workspace.py:materialize_rotted`
-  for the ten planted defects, including an unlinked keep-listed file; hub
+  for the eleven planted defects, including an unlinked keep-listed file; hub
   files must not be flagged (BL-011 regression lock)), and the repo must be
   byte-untouched afterwards (zero-writes contract); harvest appendix:
-  planted law-shaped line quoted, not-law-suppressed line absent.
-- **restructure** — approval-gated repair: zero content loss (fidelity greps), kept path immovable, owned-rule conflict decision-gated (never auto-resolved), foreign/misplaced structures reach the standard layout; second run is a zero-diff no-op.
+  planted law-shaped line quoted, not-law-suppressed line absent; project-rule conflicting with owned law flagged under the project-rules slug.
+- **restructure** — approval-gated repair: zero content loss (fidelity greps), kept path immovable, owned-rule conflict decision-gated (never auto-resolved), foreign/misplaced structures reach the standard layout; conflicting project rule decision-gated byte-unchanged; second run is a zero-diff no-op.
 
 ## Baseline comparisons
 
