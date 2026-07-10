@@ -179,9 +179,11 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
         "`node_modules/`) — do not edit generated files.\n\n"
         "## Project notes\n\nLegacyBilling processes archived invoices.\n\n"
         # Harvest bait: one law-shaped generalizable line the audit's
-        # constitution-candidates appendix must quote...
-        "Always run the archive importer in dry-run mode before a real "
-        "import.\n"
+        # constitution-candidates appendix must quote. Phrased stack-generic
+        # on purpose: the v7.4 first run rejected an earlier wording ("the
+        # archive importer") as project-instance data -- defensibly, which
+        # made the bait ambiguous. The marker substring is unchanged.
+        "Always run data imports in dry-run mode before a real import.\n"
         # ...and one suppressed by the not-law marker, which it must NOT.
         "<!-- legislator: not-law -->\n"
         "Never delete rows from the invoices table; archive them instead.\n"
