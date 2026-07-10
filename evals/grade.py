@@ -278,6 +278,16 @@ def grade_audit(ws: Path) -> Grader:
         g.check(f"report does NOT contain {marker!r}", marker not in report,
                 "correctly absent" if marker not in report else "false-positive finding present")
 
+    # Scoped to the candidates section: findings may name these statements
+    # legitimately, but proposing them as fleet candidates is a failure.
+    m = re.search(r"### Constitution candidates\n(.*?)(?=\n#|\Z)", report, re.S)
+    section = m.group(1) if m else ""
+    for marker in meta.get("candidate_absent_markers", []):
+        g.check(f"candidates section does NOT contain {marker!r}",
+                marker not in section,
+                "correctly not proposed" if marker not in section
+                else "non-candidate statement proposed as fleet law")
+
     status = git(repo, "status", "--porcelain").strip()
     head = git(repo, "rev-parse", "HEAD").strip()
     clean = not status and head == meta["fixture_head"]
@@ -328,6 +338,18 @@ def grade_restructure(ws: Path) -> Grader:
             "conflicting project rule byte-unchanged and named in the report"
             if pr_ok and pr_named
             else f"file untouched={pr_ok}, named in report={pr_named}")
+
+    stray = repo / meta["stray_rulebook_path"]
+    g.check("stray_rulebook_merged_away", not stray.exists(),
+            "stray rulebook removed after merge" if not stray.exists()
+            else f"{meta['stray_rulebook_path']} still on disk")
+    pr_dir = repo / ".claude/rules"
+    law_hits = subprocess.run(
+        ["grep", "-rl", meta["stray_project_law"], str(pr_dir)],
+        capture_output=True, text=True).stdout.strip() if pr_dir.is_dir() else ""
+    g.check("stray_law_merged_to_project_rules", bool(law_hits),
+            f"stray rulebook law lives in {law_hits.splitlines()}" if law_hits
+            else "stray rulebook law not merged into .claude/rules/")
 
     moved_ok = (not (repo / ".claude/plans").exists()
                 and (repo / "docs/superpowers/plans/2026-01-importer-plan.md").exists())

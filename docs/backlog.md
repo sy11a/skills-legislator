@@ -397,7 +397,15 @@ auto-withheld by the fixture generator); all idempotency passes zero-diff.
 
 ## BL-015 — Project-rules follow-ups from the v8 final review (skill-file items)
 
-Ride along with the next benchmarked `skill/**` cycle:
+**Status: DONE 2026-07-10** — rode the BL-016 cycle: item 1 shipped (harvest
+test 2 now counts an owned-law contradiction as covered, locked by a
+candidates-section-scoped absent marker in the audit grader), item 2 shipped
+(check 11 Info note when the manifest is current but `.claude/rules/` is
+absent), item 3 shipped ("Narrative AI rules prose" in restructure.md §1),
+item 4 shipped (check 10(b) exempts `.claude/rules/**` — auto-loading is the
+wiring). Benchmark `evals/benchmarks/v9.md`.
+
+Original items:
 
 1. **Harvest test 2 doesn't exclude owned-law contradictions (Important).**
    "No rule under `docs/ai/rules/**` states it" reads literally as passing a
@@ -425,6 +433,88 @@ into `.claude/rules/` — the shipped, correct behavior); recorded here since
 specs are historical. Also: only the audit scenario was graded against the
 final shipped v8 bytes (post-4966342) — disclosed in v8.md note; migration/
 upgrade/restructure ran pre-fix (both fixes narrow and strengthening-only).
+
+## BL-016 — Stray rulebooks + .NET refactoring law (constitution v9)
+
+**Status: DONE 2026-07-10** — full cycle (spec
+`docs/superpowers/specs/2026-07-10-stray-rulebooks-design.md`, commits
+8d8e698..HEAD, **VERSION 8→9**, benchmark `evals/benchmarks/v9.md`: 95/95 —
+the first fully clean single-pass benchmark, no mid-run fixes). Audit check
+12 flagged the planted stray rulebook and only it; harvest proposed its
+generic line and excluded the project line and the owned-law contradiction
+(BL-015 rider-1 lock); restructure merged it into `.claude/rules/` and
+removed it with fidelity verified; all idempotency passes zero-diff.
+BL-015 riders shipped with it. **Fleet action: run `/legislator` in each
+downstream repo to deliver v9.** Rider logged: §3's
+restatement-replacement path under restructure (and its interplay with the
+fidelity pass's exemption list) is still untested — next fixture that
+plants an owned-rule-restating line in a merged source should lock it.
+
+**What:** two-part cycle (spec:
+`docs/superpowers/specs/2026-07-10-stray-rulebooks-design.md`). (a) Generic
+refactoring law absorbed from CareerPlatform's orphaned
+`docs/superpowers/refactoring-checklist.md` into concern-named files —
+async/cleanliness bullets in `stacks/dotnet/coding-standards.md`, DI bullets
+in `stacks/dotnet/architecture.md`, new `stacks/dotnet/data-access.md`
+(**`assets/rules/**` change: VERSION 8→9**). (b) Stray-rulebook feature:
+audit check 12 (`stray-rulebooks`, Warning) flags law-shaped rule/checklist
+docs no session loads; harvest scans them; restructure merges their law
+into `.claude/rules/<topic>.md` and removes the file. BL-015 rides along
+(all four items).
+
+**Why:** a rulebook parked in an unorthodox folder is law no agent ever
+sees — CareerPlatform's checklist was invisible to CLAUDE.md, harvest, and
+every audit check. After this cycle "refactor X" in a legislated repo hits
+v9 law (imported), project law (`.claude/rules/`, auto-loaded), and the
+generic dotnet-refactoring skill — nothing orphaned. User-settled
+2026-07-10 (concern-named law home + full loop incl. CareerPlatform
+validation).
+
+**Done when:** benchmark `evals/benchmarks/v9.md` green — audit names the
+planted `docs/superpowers/review-checklist.md` under the `stray-rulebooks`
+slug and proposes its generic line as a candidate (project line + check-11
+contradiction line absent from candidates); restructure merges it into
+`.claude/rules/` and removes it; fresh/upgrade carry `data-access.md`;
+idempotency zero-diff; then CareerPlatform live validation (upgrade +
+restructure) succeeds end-to-end.
+
+## BL-017 — Stray-rulebook follow-ups from the v9 final review (skill-file items)
+
+Ride along with the next benchmarked `skill/**` cycle:
+
+1. **Check 12 lacks a keep-list exemption (Important).** A keep-listed
+   law-shaped doc draws a Warning whose remedy ("run restructure to
+   consolidate") is an action restructure refuses on kept paths — an
+   unresolvable finding. Fix: exempt kept paths from check 12; the keep
+   entry is the user's ruling.
+2. **Check 12's referrer set omits `docs/okf/index.md` (Important).** The
+   OKF index is a surface sessions load (via `core/okf.md`), so a law-shaped
+   doc properly linked from it is flagged as "no session loads" — factually
+   wrong text — and a law-shaped orphan under `docs/okf/` gets two Warnings
+   with contradictory remedies (check 7 vs 12). Fix: add the OKF index as a
+   recognized referrer and define precedence between checks 7 and 12.
+3. **Root-level scan false-positives on conventional docs (Important).**
+   `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md` are imperative
+   checklists unreferenced from CLAUDE.md → fleet audits will emit noise.
+   Fix: extend the root exemption list with the conventional-doc set.
+4. **Upgrade fixture never exercises a stacks/ file addition (Important).**
+   The generated fixture withholds only the alphabetically last *core*
+   rule, so delivering a new stack file (exactly what v9's fleet action
+   does) is untested, and no assertion checks the Step 7 proposal of the
+   new `@...` import line. Fix: also withhold the alphabetically last
+   stack rule and assert the proposed import line.
+5. **Captive-dependency law candidate (Minor, v10).** "No singleton
+   services holding scoped/DbContext references" from the CareerPlatform
+   checklist is generic + diff-checkable and covered by neither new DI
+   bullet — promote in the next law cycle.
+6. **Check 12 × check 9 double-report on root `AGENTS.md` (Minor)** — same
+   file, two slugs, two severities; remedies agree. Decide precedence when
+   fixing item 2.
+7. **Latent grader rot (Minor):** `grade.py` greps `stray_project_law`
+   without `-F`; the candidates-section regex silently passes absent checks
+   if the pinned heading changes (mitigated: heading is also a must-contain
+   marker). Harvest's stray-rulebook scan is only exercised in audit mode —
+   pairs with the BL-016 §3 restatement-path rider.
 
 ---
 

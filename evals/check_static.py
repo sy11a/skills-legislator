@@ -73,7 +73,7 @@ for rf in rule_files:
     check(len(text.strip()) > 0, f"{rel} is non-empty")
 
 print("== stack rule-file naming (README content discipline) ==")
-allowed = {"architecture.md", "coding-standards.md"}
+allowed = {"architecture.md", "coding-standards.md", "data-access.md"}
 for rf in sorted((SKILL / "assets" / "rules" / "stacks").rglob("*.md")):
     check(rf.name in allowed, f"stacks/{rf.parent.name}/{rf.name} uses a concern-based filename",
           f"allowed: {sorted(allowed)}")

@@ -63,9 +63,10 @@ again. The skill never commits — review the diff and commit it yourself.
 
 Once legislated, three more requests matter:
 
-- **"Audit the AI layer here"** — read-only health check (11 checks: broken
+- **"Audit the AI layer here"** — read-only health check (12 checks: broken
   imports, stale maps, orphan docs, dead journal, hand-edited law, leftover
-  `.cursorrules`, …). Zero writes, severity-ranked report.
+  `.cursorrules`, stray rulebooks parked where no session loads them, …).
+  Zero writes, severity-ranked report.
 - **"Restructure the AI layer"** — the repair mode for rotted or foreign
   layouts. It audits, proposes a numbered plan, and **stops for your
   approval**; conflicts with the law are decision items it will never resolve
