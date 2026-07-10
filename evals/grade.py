@@ -12,7 +12,8 @@ Usage:
 
 Scenarios (default: the first four):
   fresh-scaffold-dotnet    grade <ws>/fresh-scaffold-dotnet/repo
-  legacy-migration         grade <ws>/legacy-migration/repo
+  legacy-migration         grade <ws>/legacy-migration/repo (+ the Step 7
+                           report saved at legacy-migration/outputs/)
   upgrade                  grade <ws>/upgrade/repo (needs fixture_meta.json)
   audit                    grade the audit report saved by the eval agent at
                            <ws>/rotted-layer/outputs/audit-report.md against
@@ -187,6 +188,21 @@ def grade_migration(ws: Path) -> Grader:
     g.check("claude_md_v2_wiring_written_directly", v2_wired,
             "map import + Boundaries section present in rewritten CLAUDE.md" if v2_wired
             else "migration left v2 wiring as Step 7 proposals instead of writing it")
+    report_path = ws / "legacy-migration" / "outputs" / "step7-report.md"
+    has_report = report_path.exists()
+    report = report_path.read_text() if has_report else ""
+    g.check("step7_report_saved", has_report,
+            str(report_path) if has_report else f"missing: {report_path}")
+    m = re.search(r"### Constitution candidates\n(.*?)(?=\n#|\Z)", report, re.S)
+    section = m.group(1) if m else ""
+    money = "Money values are always" in section
+    g.check("harvest_lists_decimal_money_rule", money,
+            "decimal-money constraint quoted as a candidate" if money
+            else "candidates section missing or does not quote the money rule")
+    no_leak = bool(m) and "bl/NNN-short-description" not in section
+    g.check("harvest_excludes_instance_convention", no_leak,
+            "branch convention correctly not proposed" if no_leak
+            else "instance data leaked into candidates (or section missing)")
     for needle in MIGRATION_PRESERVED:
         hits = subprocess.run(
             ["grep", "-rl", "--exclude-dir=.git", needle, str(repo)],
