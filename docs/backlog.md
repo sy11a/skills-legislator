@@ -335,6 +335,11 @@ section)"; also pin the Keep list section's heading level.
 
 ## BL-013 — Restructure follow-ups from the v7.4 final review (skill-file items)
 
+**Status: DONE 2026-07-10** — rode the BL-014 cycle: all four items shipped
+(fidelity-pass scoping + fix-deletion exemption, restructure runs Step 0
+first, restructure.md §5 definition reword, pinned decision-item shape).
+Benchmark `evals/benchmarks/v8.md`.
+
 Ride along with the next benchmarked `skill/**` cycle (there is no queued one
 — whichever behavioral change comes first carries these):
 
@@ -364,6 +369,8 @@ have not yet met post-bait-fix (4d2dc05) — ungraded surface only, covered
 naturally by the next benchmark.
 
 ## BL-014 — Project rules: `.claude/rules/` as the project-law home (constitution v8)
+
+**Status: DONE 2026-07-10** — full cycle (spec `docs/superpowers/specs/2026-07-10-project-rules-design.md`, plan `docs/superpowers/plans/2026-07-10-project-rules.md`, commits 43cc645..4966342, **VERSION 7→8**, benchmark `evals/benchmarks/v8.md`: 87/87 after two mid-benchmark catches — the tpl was missing the project-rules import (spec gap the upgrade run's own report exposed; fresh re-run 14/14) and suppression narration leaked a silenced statement (SKILL.md now mandates silent skipping; audit re-run 18/18). Migration carves law to `.claude/rules/`, audit check 11 live, restructure decision-gated both planted conflicts. BL-013 riders shipped with it. **Fleet action: run `/legislator` in each downstream repo to deliver v8.**
 
 **What:** project-specific rules ("every feature ships behind a feature
 toggle") get a dedicated home instead of bloating CLAUDE.md, using Claude
