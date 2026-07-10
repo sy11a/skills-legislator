@@ -31,6 +31,9 @@ no-op.
 
 **Accepted limitations (by design, not bugs):**
 
+- **`.claude/rules/**` (project law, per `core/project-rules.md`) is
+  project-owned and intentionally unguarded** — the guard protects only the
+  machine-managed fleet law under `docs/ai/rules/**`.
 - **`docs/ai/manifest.json` itself is not guarded.** SKILL.md Step 3.7
   rewrites the manifest with the `Write` tool on every legislator run, and
   that rewrite already heals hand-edits to it every run. Guarding it would

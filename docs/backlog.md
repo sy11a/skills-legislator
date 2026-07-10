@@ -395,6 +395,37 @@ the `project-rules` slug; restructure decision-gates it byte-unchanged; the
 upgrade scenario delivers `project-rules.md` itself (alphabetically last →
 auto-withheld by the fixture generator); all idempotency passes zero-diff.
 
+## BL-015 — Project-rules follow-ups from the v8 final review (skill-file items)
+
+Ride along with the next benchmarked `skill/**` cycle:
+
+1. **Harvest test 2 doesn't exclude owned-law contradictions (Important).**
+   "No rule under `docs/ai/rules/**` states it" reads literally as passing a
+   statement that *contradicts* an owned rule — the v8c run's correct
+   non-proposal of the flagged `.claude/rules/journal.md` line was judgment,
+   not pinned text. Fix: append to test 2 "a statement contradicting an
+   owned rule is covered by that rule — decision-gate material, never a
+   candidate", and add a grader absent-marker locking it.
+2. **Check 11's silent skip when `.claude/rules/` is absent (Minor).** Git
+   drops empty directories, so cloned fresh-scaffolds lack the dir and the
+   check silently skips. Consider an Info note when the manifest is current
+   but the directory is missing.
+3. **restructure.md §1 table-row overlap (Minor).** "AI rules prose →
+   CLAUDE.md project sections" now overlaps the project-rules row for
+   law-shaped text; §3 disambiguates but the table alone is ambiguous. Fix:
+   "Narrative AI rules prose".
+4. **Keep-list × `.claude/rules/` remedy is misleading (Minor).** A kept
+   file under `.claude/rules/` trips check 10(b) "referenced from nowhere"
+   though auto-loaded rules are legitimately unreferenced. Fix: exempt
+   `.claude/rules/**` from 10(b) (auto-loading IS the wiring).
+
+Bookkeeping: the v8 spec's Out-of-scope line ("migration writes carved files
+ONCE") is in tension with its own Decision 6 (restructure merges foreign law
+into `.claude/rules/` — the shipped, correct behavior); recorded here since
+specs are historical. Also: only the audit scenario was graded against the
+final shipped v8 bytes (post-4966342) — disclosed in v8.md note; migration/
+upgrade/restructure ran pre-fix (both fixes narrow and strengthening-only).
+
 ---
 
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
