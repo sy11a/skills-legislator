@@ -19,8 +19,8 @@ Execution order (dependencies, not dates):
 Rot-prevention chain:
 BL-001 audit (+ BL-005a rotted fixture)   ← DONE 2026-07-09 (with BL-010)
    → BL-002 keep-markers                  ← DONE 2026-07-09 (with BL-011)
-      → BL-003 harvest report             ← next: Wave 2
-         → BL-005b restructure eval scenarios
+      → BL-003 harvest report             ← DONE 2026-07-10 (with BL-012)
+         → BL-005b restructure eval scenarios   ← next: Wave 3 (with BL-004)
             → BL-004 restructure flow      ← last: most destructive if wrong
 
 Best-practices track (2026-07-09 large-codebases review, decisions user-approved):
@@ -46,7 +46,8 @@ BL-009 steward practice                   ← DONE 2026-07-09 (docs-only, README
     brainstorm.
 - **Wave 2 (serial, after Track A):** BL-003 brainstorm (using the memo) →
   full cycle. *(Wave 1 completed 2026-07-09: Track A benchmark v7.2 58/58,
-  Track B merged, Track C memo delivered — Wave 2 is next.)*
+  Track B merged, Track C memo delivered. Wave 2 completed 2026-07-10:
+  benchmark v7.3 63/63 — Wave 3 is next.)*
 - **Wave 3 (serial, last):** BL-005b + BL-004 as one combined cycle — eval
   scenarios land before the restructure implementation, same pattern as
   BL-001+005a.
@@ -85,6 +86,8 @@ independent of this repo entirely.
 **Done when:** idempotency eval stays zero-diff with a populated `keep` list; keep entries survive upgrade runs; audit flags an unlinked kept file on the rotted fixture.
 
 ## BL-003 — Harvest report: propose promoting proven project rules into the constitution
+
+**Status: DONE 2026-07-10** — full cycle (spec `docs/superpowers/specs/2026-07-09-harvest-report-design.md`, plan `docs/superpowers/plans/2026-07-09-harvest-report.md`, commits 3510c07..7d3f36d, VERSION stays 7, benchmark `evals/benchmarks/v7.3.md`: 63/63 after one mid-benchmark fix — the migration run drifted the section heading to H2, SKILL.md now pins it byte-for-byte, re-run 19/19). Design user-settled: report-only + user pastes survivors here; `<!-- legislator: not-law -->` suppression; migration/upgrade/audit modes. BL-012 riders shipped with it. The open design question below is resolved accordingly.
 
 **What:** during any run and any audit, scan project-owned content (CLAUDE.md project sections, OKF conventions) for statements phrased as enforceable law (imperative, diff-checkable, not already covered by an owned rule) and add a **"Constitution candidates"** section to the Step 7 report: each candidate quoted verbatim with its source location. Proposals only — never writes. The user's operating loop (documented in README): review candidates → add to `assets/rules/**` centrally → bump VERSION → re-run `/legislator` across repos.
 
@@ -288,6 +291,10 @@ zero_writes — were fixed immediately with a positive + amend-HEAD negative
 test; no benchmark needed for `evals/**`.)
 
 ## BL-012 — Keep-list follow-ups from the v7.2 final review (skill-file items)
+
+**Status: DONE 2026-07-10** — rode the BL-003 cycle as planned (items 1 and 2
+shipped in commit 3510c07; item 3 was bookkeeping-only). Benchmark
+`evals/benchmarks/v7.3.md`.
 
 Ride along with the next benchmarked `skill/**` cycle (BL-003 harvest is the
 natural vehicle — it edits Step 7 anyway):
