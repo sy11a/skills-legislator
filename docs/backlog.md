@@ -331,6 +331,37 @@ review: SKILL.md's candidates-section placement anchors ("after the Keep
 list section, before Health") are both absent in the common migration
 case — append "(when those sections are absent, make it the report's last
 section)"; also pin the Keep list section's heading level.
+*(Shipped 2026-07-10 in the BL-004 cycle, benchmark v7.4.)*
+
+## BL-013 — Restructure follow-ups from the v7.4 final review (skill-file items)
+
+Ride along with the next benchmarked `skill/**` cycle (there is no queued one
+— whichever behavioral change comes first carries these):
+
+1. **Fidelity-pass law contradicts the `fix` action when read literally
+   (Important).** SKILL.md's apply step demands every line of every file
+   "moved, merged, or edited" survive greppable, and "every miss blocks its
+   item" — but `fix` deletes lines by design (dangling imports, stale map
+   rows, dead links) and restructure.md §3 replaces restating boilerplate.
+   The v7.4 run passed on the charitable reading (tracked move/merge sources
+   only). Fix: exempt deletions that are the approved item's stated purpose,
+   or scope the inventory to move/merge sources. Same literal-reading drift
+   class as the H2 heading and the ambiguous bait.
+2. **Restructure skips Step 0's dirty-tree warning (Minor)** — it writes, so
+   a dirty tree mixes user changes into the applied diff. Fix: "run Step 0
+   first" in the Restructure section.
+3. **restructure.md §5's AI-layer parenthetical reads as a forbidden-targets
+   list (Minor)** — reword to "…outside the AI layer (the AI layer being:
+   CLAUDE.md, `docs/**`, root-level foreign AI configs)".
+4. **`decision` items don't fit the pinned `<current> → <target>` item shape
+   (Minor)** — SKILL.md should carry the spec's decision-item example so
+   agents don't improvise.
+
+Bookkeeping from the same review (no file changes owed): the intro-routing
+edit (e59a4e9) was a plan omission repaired mid-cycle — recorded here since
+executed plans are never rewritten; and the restructure fixture + scenario
+have not yet met post-bait-fix (4d2dc05) — ungraded surface only, covered
+naturally by the next benchmark.
 
 ---
 
