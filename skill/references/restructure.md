@@ -13,7 +13,8 @@ Detailed mechanics for SKILL.md's "Restructure — approval-gated repair" sectio
 | Backlog / task lists | `docs/backlog.md` |
 | Dev journal entries | `docs/journal/` |
 | Changelog | `CHANGELOG.md` |
-| Foreign AI configs (`.cursorrules`, `.cursor/`, `AGENTS.md`, `.github/copilot-instructions.md`) | prose merged into CLAUDE.md's project sections; the file removed after the merge |
+| Foreign AI configs (`.cursorrules`, `.cursor/`, `AGENTS.md`, `.github/copilot-instructions.md`) | law-shaped rules merged into `.claude/rules/<topic>.md`; narrative prose into CLAUDE.md's project sections; the file removed after the merge |
+| Project-specific rules (law for this repo only) | `.claude/rules/<topic>.md` — see `core/project-rules.md` |
 | AI rules prose | CLAUDE.md project sections — **never** `docs/ai/rules/**` (machine-managed law; only `heal` touches it, via Steps 2–3) |
 
 ## 2. The action set
@@ -31,12 +32,12 @@ When merging foreign or misplaced prose, apply the same classification disciplin
 
 ## 4. The fidelity pass
 
-Before applying, inventory every content line of each file a plan item will move, merge, or edit — non-blank lines, counting the text of headings, bullets, and table cells, but skipping pure markup (fence markers, table rules, horizontal rules). After applying, grep the repo (excluding `.git/`) for each inventoried line. Every miss blocks its item: revert that item, mark it `— blocked: <the lost line>`. Close the report with `Fidelity: verified (<N> lines tracked)` only when every line survived.
+Before applying, inventory every content line of each file a plan item will move or merge (edits by `fix` items are exempt — their stated purpose is removing specific dead lines) — non-blank lines, counting the text of headings, bullets, and table cells, but skipping pure markup (fence markers, table rules, horizontal rules). After applying, grep the repo (excluding `.git/`) for each inventoried line. Every miss blocks its item: revert that item, mark it `— blocked: <the lost line>`. Close the report with `Fidelity: verified (<N> lines tracked)` only when every line survived.
 
 ## 5. What restructure never does
 
 - Delete project content — `merge` removes a file only after its content verifiably lives elsewhere; `link` deletes nothing; no plan item may propose deleting content (if the user wants something gone, that is their explicit call, not a proposal).
 - Invent content — journal entries, overviews the derivation rules cannot produce, or any prose the team must author.
 - Resolve owned-rule conflicts on its own authority.
-- Touch source code or anything outside the AI layer (CLAUDE.md, `docs/**`, root-level foreign AI configs).
+- Touch source code or anything outside the AI layer (the AI layer being: CLAUDE.md, `.claude/rules/**`, `docs/**`, and root-level foreign AI configs).
 - Commit.
