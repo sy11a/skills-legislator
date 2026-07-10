@@ -8,6 +8,7 @@ legislator skill against:
   <workspace>/legacy-migration/repo        — hand-written CLAUDE.md, no manifest
   <workspace>/upgrade/repo                 — previously legislated, one version behind
   <workspace>/rotted-layer/repo            — legislated, ten planted defects (audit scenario)
+  <workspace>/restructure/repo            — rotted + relocatables (restructure scenario)
 
 The upgrade repo is generated from the CURRENT skill source so this suite
 never rots as the constitution evolves: it contains every current core+dotnet
@@ -124,12 +125,13 @@ def materialize_upgrade(dest: Path) -> None:
     (dest.parent / "fixture_meta.json").write_text(json.dumps(meta, indent=2) + "\n")
 
 
-def materialize_rotted(dest: Path) -> None:
+def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
     """Legislated repo with ten planted defects for the audit scenario.
 
     Generated from the CURRENT skill source, then deliberately damaged.
     Each defect leaves a distinctive marker string an audit report must
     name verbatim; the markers are recorded in fixture_meta.json.
+    With restructure_extras, plants two additional relocatables (a non-standard plans dir and a deliberate owned-rule conflict) for the restructure scenario; the audit scenario always materializes WITHOUT extras so its marker set stays version-comparable.
     """
     (dest / "src/LegacyBilling").mkdir(parents=True)
     (dest / "src/LegacyBilling/LegacyBilling.csproj").write_text(
@@ -182,7 +184,13 @@ def materialize_rotted(dest: Path) -> None:
         "import.\n"
         # ...and one suppressed by the not-law marker, which it must NOT.
         "<!-- legislator: not-law -->\n"
-        "Never delete rows from the invoices table; archive them instead.\n")
+        "Never delete rows from the invoices table; archive them instead.\n"
+        + (
+            # Restructure bait: deliberate conflict with core/changelog.md --
+            # must surface as a [decision] item, never auto-resolved.
+            "\nWe do not maintain CHANGELOG.md; release notes are written "
+            "in the wiki at release time.\n"
+            if restructure_extras else ""))
 
     okf = dest / "docs/okf"
     okf.mkdir(parents=True)
@@ -241,6 +249,13 @@ def materialize_rotted(dest: Path) -> None:
     # Defect 9 — foreign AI-layer structure.
     (dest / ".cursorrules").write_text("Always write tests first.\n")
 
+    if restructure_extras:
+        # Restructure bait: plans in a non-standard location (a `move`).
+        (dest / ".claude/plans").mkdir(parents=True)
+        (dest / ".claude/plans/2026-01-importer-plan.md").write_text(
+            "# Importer split plan\n\n"
+            "Planned: split the importer into reader and writer stages.\n")
+
     git(dest, "init", "-q")
     commit_dated(dest, "fixture: rotted-layer at 2026-01-15", "2026-01-15T12:00:00")
     # Second commit: code change months after the last journal entry.
@@ -277,6 +292,20 @@ def materialize_rotted(dest: Path) -> None:
             capture_output=True, text=True).stdout.strip(),
         "expected_manifest_version": version - 1,
     }
+    if restructure_extras:
+        meta["fidelity_sentences"] = [
+            "Planned: split the importer into reader and writer stages.",
+            "Always write tests first.",
+            "Nobody links to this file.",
+            "Ultra-specific invoice rounding rules",
+            "We do not maintain CHANGELOG.md",
+        ]
+        meta["conflict_marker"] = (
+            "We do not maintain CHANGELOG.md; release notes are written "
+            "in the wiki at release time.")
+        meta["kept_path"] = "docs/notes/special-sauce.md"
+        meta["kept_content"] = (dest / "docs/notes/special-sauce.md").read_text()
+
     (dest.parent / "fixture_meta.json").write_text(
         json.dumps(meta, indent=2) + "\n")
 
@@ -299,6 +328,9 @@ def main() -> None:
 
     repo = ws / "rotted-layer" / "repo"
     materialize_rotted(repo)
+
+    repo = ws / "restructure" / "repo"
+    materialize_rotted(repo, restructure_extras=True)
 
     print(f"workspace ready: {ws}")
     for p in sorted(ws.glob("*/repo")):

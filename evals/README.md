@@ -78,6 +78,7 @@ warrants re-running that scenario 2–3 times before drawing a conclusion.
    save its report to `<ws>/rotted-layer/outputs/audit-report.md` — outside
    the target repo, which the audit must not touch). The migration agent must
    likewise be told to save its Step 7 report to `<ws>/legacy-migration/outputs/step7-report.md` — the harvest assertions grade that file.
+   The restructure agent gets the restructure prompt (blanket approval minus decision items is part of it) and must save its final report to <ws>/restructure/outputs/restructure-report.md.
 
 3. **Grade:**
 
@@ -94,6 +95,7 @@ warrants re-running that scenario 2–3 times before drawing a conclusion.
    # ... agent runs the skill a second time ...
    python3 evals/grade.py /tmp/legislator-eval-vN idempotency:fresh-scaffold-dotnet
    python3 evals/grade.py /tmp/legislator-eval-vN idempotency:upgrade
+   python3 evals/grade.py /tmp/legislator-eval-vN idempotency:restructure
    ```
 
 5. **Record the result** — copy the printed pass/fail summary (plus tokens and
@@ -126,6 +128,7 @@ warrants re-running that scenario 2–3 times before drawing a conclusion.
   files must not be flagged (BL-011 regression lock)), and the repo must be
   byte-untouched afterwards (zero-writes contract); harvest appendix:
   planted law-shaped line quoted, not-law-suppressed line absent.
+- **restructure** — approval-gated repair: zero content loss (fidelity greps), kept path immovable, owned-rule conflict decision-gated (never auto-resolved), foreign/misplaced structures reach the standard layout; second run is a zero-diff no-op.
 
 ## Baseline comparisons
 
