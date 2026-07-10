@@ -8,6 +8,7 @@ Stack: {{STACK_SUMMARY}}
 
 - OKF bundle: `docs/okf/` (knowledge documentation — must stay in sync with code)
 - Domain glossary: `docs/okf/glossary.md` — check it when a term is unclear; add terms as they emerge
+- Project-specific rules: `.claude/rules/` — one law file per topic, auto-loaded every session; read `docs/ai/rules/core/project-rules.md` before adding one
 - Specs and plans: `docs/superpowers/` (committed)
 
 @docs/ai/rules/core/okf.md
