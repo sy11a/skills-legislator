@@ -426,6 +426,36 @@ specs are historical. Also: only the audit scenario was graded against the
 final shipped v8 bytes (post-4966342) — disclosed in v8.md note; migration/
 upgrade/restructure ran pre-fix (both fixes narrow and strengthening-only).
 
+## BL-016 — Stray rulebooks + .NET refactoring law (constitution v9)
+
+**What:** two-part cycle (spec:
+`docs/superpowers/specs/2026-07-10-stray-rulebooks-design.md`). (a) Generic
+refactoring law absorbed from CareerPlatform's orphaned
+`docs/superpowers/refactoring-checklist.md` into concern-named files —
+async/cleanliness bullets in `stacks/dotnet/coding-standards.md`, DI bullets
+in `stacks/dotnet/architecture.md`, new `stacks/dotnet/data-access.md`
+(**`assets/rules/**` change: VERSION 8→9**). (b) Stray-rulebook feature:
+audit check 12 (`stray-rulebooks`, Warning) flags law-shaped rule/checklist
+docs no session loads; harvest scans them; restructure merges their law
+into `.claude/rules/<topic>.md` and removes the file. BL-015 rides along
+(all four items).
+
+**Why:** a rulebook parked in an unorthodox folder is law no agent ever
+sees — CareerPlatform's checklist was invisible to CLAUDE.md, harvest, and
+every audit check. After this cycle "refactor X" in a legislated repo hits
+v9 law (imported), project law (`.claude/rules/`, auto-loaded), and the
+generic dotnet-refactoring skill — nothing orphaned. User-settled
+2026-07-10 (concern-named law home + full loop incl. CareerPlatform
+validation).
+
+**Done when:** benchmark `evals/benchmarks/v9.md` green — audit names the
+planted `docs/superpowers/review-checklist.md` under the `stray-rulebooks`
+slug and proposes its generic line as a candidate (project line + check-11
+contradiction line absent from candidates); restructure merges it into
+`.claude/rules/` and removes it; fresh/upgrade carry `data-access.md`;
+idempotency zero-diff; then CareerPlatform live validation (upgrade +
+restructure) succeeds end-to-end.
+
 ---
 
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
