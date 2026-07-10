@@ -363,6 +363,31 @@ executed plans are never rewritten; and the restructure fixture + scenario
 have not yet met post-bait-fix (4d2dc05) — ungraded surface only, covered
 naturally by the next benchmark.
 
+## BL-014 — Project rules: `.claude/rules/` as the project-law home (constitution v8)
+
+**What:** project-specific rules ("every feature ships behind a feature
+toggle") get a dedicated home instead of bloating CLAUDE.md, using Claude
+Code's native `.claude/rules/` (auto-loaded at CLAUDE.md priority, `paths:`
+frontmatter for scoping — per the official memory docs). New core rule
+`core/project-rules.md` teaches every agent the convention (**first
+`assets/rules/**` change: VERSION 7→8**); Step 4 scaffolds the directory;
+migration carves law-shaped legacy content there (instance data stays in
+CLAUDE.md); harvest scans it; audit check 11 (`project-rules`) flags
+conflicts with owned law; restructure routes law-shaped merges there.
+BL-013 rides along.
+
+**Why:** completes the two-strata design — `docs/ai/rules/**` fleet law vs
+`.claude/rules/**` project law — on the ecosystem-native mechanism instead
+of a custom convention. User-settled 2026-07-10 (location + full
+integration in one cycle).
+
+**Done when:** benchmark `evals/benchmarks/v8.md` green — migration carves
+the decimal-money law into `.claude/rules/` while the branch convention
+stays in CLAUDE.md; audit flags the planted conflicting project rule under
+the `project-rules` slug; restructure decision-gates it byte-unchanged; the
+upgrade scenario delivers `project-rules.md` itself (alphabetically last →
+auto-withheld by the fixture generator); all idempotency passes zero-diff.
+
 ---
 
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
