@@ -110,7 +110,7 @@ Print a summary with these sections: **Created** (new files/directories), **Over
 
 In **upgrade mode only**, append a final section, `### Health`, running the cheap audit checks (1–6 in the Audit section below) against the post-run state: list findings in the Audit section's line format; if there are none, print exactly `Health: clean`. Fresh-scaffold and migration runs skip this section — everything they just created is definitionally fresh.
 
-In **migration and upgrade modes** (never fresh scaffold — everything there was just written by this skill), also scan project-owned prose for **constitution candidates** and, when at least one qualifies, append a section (after the Keep list section, before Health):
+In **migration and upgrade modes** (never fresh scaffold — everything there was just written by this skill), also scan project-owned prose for **constitution candidates** and, when at least one qualifies, append a section headed exactly `### Constitution candidates` — that heading level and text, byte-for-byte, wherever the report appears (chat or a saved copy) — after the Keep list section, before Health:
 
 ```
 ### Constitution candidates
