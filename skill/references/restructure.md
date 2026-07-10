@@ -28,7 +28,7 @@ Detailed mechanics for SKILL.md's "Restructure — approval-gated repair" sectio
 
 ## 3. Content carve-outs
 
-When merging foreign or misplaced prose, apply the same classification discipline as migration (`references/migration.md` §1): project-specific facts are kept verbatim; boilerplate that merely restates an owned rule is replaced by the import that covers it. Under restructure, that replacement is allowed **only** for text that restates an owned rule — anything differing in substance from the owned rule is a `decision` item, never a silent deletion.
+When merging foreign or misplaced prose, apply the same three-way classification as migration (`references/migration.md` §1): law-shaped project rules go to `.claude/rules/<topic>.md`; project-specific instance data is kept verbatim in CLAUDE.md; boilerplate that merely restates an owned rule is replaced by the import that covers it. Under restructure, that replacement is allowed **only** for text that restates an owned rule — anything differing in substance from the owned rule is a `decision` item, never a silent deletion.
 
 ## 4. The fidelity pass
 
