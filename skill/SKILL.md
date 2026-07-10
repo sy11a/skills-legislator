@@ -7,7 +7,7 @@ description: Scaffold or upgrade the AI-development constitution (CLAUDE.md rule
 
 Run this procedure against the **current working directory** (the target project repo). Never write outside it. Never commit — leave the diff for the user to review. `<skill-path>` in the commands below means this skill's install directory (typically `~/.claude/skills/legislator`, a symlink to the skill package).
 
-If the user's request is to **audit** or health-check the existing AI layer (no scaffolding or upgrading intent), do not run Steps 0–7 — follow the **Audit — read-only health check** section at the end of this file instead.
+If the user's request is to **audit** or health-check the existing AI layer (no scaffolding or upgrading intent), do not run Steps 0–7 — follow the **Audit — read-only health check** section near the end of this file instead. If it is to **restructure**, repair, or reorganize the AI layer, follow the **Restructure — approval-gated repair** section at the end of this file instead.
 
 ## Step 0 — Preconditions
 
