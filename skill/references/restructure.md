@@ -15,7 +15,8 @@ Detailed mechanics for SKILL.md's "Restructure — approval-gated repair" sectio
 | Changelog | `CHANGELOG.md` |
 | Foreign AI configs (`.cursorrules`, `.cursor/`, `AGENTS.md`, `.github/copilot-instructions.md`) | law-shaped rules merged into `.claude/rules/<topic>.md`; narrative prose into CLAUDE.md's project sections; the file removed after the merge |
 | Project-specific rules (law for this repo only) | `.claude/rules/<topic>.md` — see `core/project-rules.md` |
-| AI rules prose | CLAUDE.md project sections — **never** `docs/ai/rules/**` (machine-managed law; only `heal` touches it, via Steps 2–3) |
+| Stray rulebooks (review/refactoring checklists or rule lists parked outside the law homes — audit check 12) | law-shaped lines merged into `.claude/rules/<topic>.md` per the §3 carve-outs; the file removed after the merge. Conflicts with owned law are `decision` items, never merged silently |
+| Narrative AI rules prose | CLAUDE.md project sections — **never** `docs/ai/rules/**` (machine-managed law; only `heal` touches it, via Steps 2–3) |
 
 ## 2. The action set
 
