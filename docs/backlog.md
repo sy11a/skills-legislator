@@ -20,8 +20,8 @@ Rot-prevention chain:
 BL-001 audit (+ BL-005a rotted fixture)   ← DONE 2026-07-09 (with BL-010)
    → BL-002 keep-markers                  ← DONE 2026-07-09 (with BL-011)
       → BL-003 harvest report             ← DONE 2026-07-10 (with BL-012)
-         → BL-005b restructure eval scenarios   ← next: Wave 3 (with BL-004)
-            → BL-004 restructure flow      ← last: most destructive if wrong
+         → BL-005b restructure eval scenarios   ← DONE 2026-07-10 (with BL-004)
+            → BL-004 restructure flow      ← DONE 2026-07-10 — CHAIN COMPLETE
 
 Best-practices track (2026-07-09 large-codebases review, decisions user-approved):
 BL-006 CLAUDE.md.tpl v2                   ← DONE 2026-07-09
@@ -50,7 +50,8 @@ BL-009 steward practice                   ← DONE 2026-07-09 (docs-only, README
   benchmark v7.3 63/63 — Wave 3 is next.)*
 - **Wave 3 (serial, last):** BL-005b + BL-004 as one combined cycle — eval
   scenarios land before the restructure implementation, same pattern as
-  BL-001+005a.
+  BL-001+005a. *(Completed 2026-07-10: benchmark v7.4 81/81 — the queue is
+  done; only dormant BL-008 remains.)*
 - **Dormant:** BL-008 until a 2nd human/machine.
 
 Rationale: BL-002→003→005b→004 is a true dependency chain (audit check 10
@@ -99,6 +100,8 @@ independent of this repo entirely.
 
 ## BL-004 — Restructure flow: approval-gated doctor for rotted or foreign AI layers
 
+**Status: DONE 2026-07-10** — full cycle with BL-005b (spec `docs/superpowers/specs/2026-07-10-restructure-flow-design.md`, plan `docs/superpowers/plans/2026-07-10-restructure-flow.md`, commits 4927372..4d2dc05, VERSION stays 7, benchmark `evals/benchmarks/v7.4.md`: 81/81 after one fixture-bait fix — the audit's harvest bait was defensibly rejectable as instance data; reworded, re-run 17/17). First live run: 7 items applied, planted conflict decision-gated and left open, kept file immovable, fidelity verified; second run a zero-write no-op. New `references/restructure.md`; BL-012 Wave 3 rider shipped with it.
+
 **What:** consumes an audit report (BL-001) and produces an explicit restructuring plan: per artifact, current location → target location in the standard layout, with content carve-out per `references/migration.md` — which this task extends from "CLAUDE.md only" to the whole layer. Strict protocol: **diagnose → propose → approve → apply.** Nothing moves without the user approving the plan; conflicts go to the decision gate; kept paths (BL-002) are immovable; content fidelity is absolute — every sentence of project content must survive somewhere (grep-verifiable), never silently dropped.
 
 **Why:** the actual repair capability for repos whose AI layer (legislator-built or foreign) has gone chaotic. Deliberately last: it is the most destructive feature if wrong, so it builds on audit (visibility), keep-markers (protection), and BL-005b (fidelity evals) — never as a side effect of a normal upgrade run.
@@ -106,6 +109,8 @@ independent of this repo entirely.
 **Done when:** the rotted fixture is restructured with zero content loss (every planted sentence still greppable in the result), the kept file untouched in place, the decision gate triggered on the planted conflict, and a second run produces a zero diff.
 
 ## BL-005 — Eval coverage: rotted-layer fixture + audit/restructure scenarios
+
+**Status: DONE 2026-07-10** — BL-005a shipped with BL-001 (v7.1); BL-005b (restructure scenario + `idempotency:restructure`, both permanent) shipped with BL-004 (v7.4). The suite now runs five scenarios + three idempotency passes.
 
 **What:** a new `rotted-layer` fixture with planted, greppable defects: broken `@import`, orphan doc, stale OKF-index link, unresolved `{{TOKEN}}`, a `.cursorrules` file, an unlinked keep-listed file, a journal that stopped while commits continued, one deliberate conflict with an owned rule. `grade.py` gains two scenarios: **audit** (report names each planted defect; `git status` unchanged) and **restructure** (fidelity greps for every planted sentence + idempotency zero-diff).
 
