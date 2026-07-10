@@ -7,7 +7,7 @@ legislator skill against:
   <workspace>/fresh-scaffold-dotnet/repo   — new repo, no CLAUDE.md
   <workspace>/legacy-migration/repo        — hand-written CLAUDE.md, no manifest
   <workspace>/upgrade/repo                 — previously legislated, one version behind
-  <workspace>/rotted-layer/repo            — legislated, eleven planted defects (audit scenario)
+  <workspace>/rotted-layer/repo            — legislated, twelve planted defects (audit scenario)
   <workspace>/restructure/repo            — rotted + relocatables (restructure scenario)
 
 The upgrade repo is generated from the CURRENT skill source so this suite
@@ -126,7 +126,7 @@ def materialize_upgrade(dest: Path) -> None:
 
 
 def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
-    """Legislated repo with eleven planted defects for the audit scenario.
+    """Legislated repo with twelve planted defects for the audit scenario.
 
     Generated from the CURRENT skill source, then deliberately damaged.
     Each defect leaves a distinctive marker string an audit report must
@@ -259,6 +259,19 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
         "# Journal policy\n\n"
         "Dev journal entries are optional; skip them for small changes.\n")
 
+    # Defect 12 -- stray rulebook: law-shaped review rules parked at
+    # docs/superpowers/ top level (exempt from orphan check 7, invisible to
+    # every session). Audit check 12 must flag it under its slug; the
+    # harvest must propose the generic line and NOT the project-specific
+    # one; restructure must merge its law into .claude/rules/ and remove it.
+    (dest / "docs/superpowers").mkdir(parents=True, exist_ok=True)
+    (dest / "docs/superpowers/review-checklist.md").write_text(
+        "# LegacyBilling — Review Checklist\n\n"
+        "- Every database migration must be reversible; write the Down() "
+        "step before merging.\n"
+        "- Invoice PDFs are rendered only through the PdfRenderer service; "
+        "never call wkhtmltopdf directly.\n")
+
     if restructure_extras:
         # Restructure bait: plans in a non-standard location (a `move`).
         (dest / ".claude/plans").mkdir(parents=True, exist_ok=True)
@@ -286,7 +299,9 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
             ".cursorrules",           # defect 9: foreign structure
             "keep-list] docs/notes/special-sauce.md",  # defect 10: kept but referenced nowhere
             "project-rules] .claude/rules/journal.md",  # defect 11: project rule vs owned law
+            "stray-rulebooks] docs/superpowers/review-checklist.md",  # defect 12
             "dry-run mode before a real import",  # harvest: candidate quoted
+            "must be reversible",  # harvest: stray-rulebook generic line quoted
             "### Constitution candidates",  # harvest appendix present with pinned heading
         ],
         # BL-011 regression lock: the audit must NOT flag the constitution's
@@ -296,6 +311,17 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
             "orphan-docs] docs/okf/glossary.md",
             # not-law suppression: the marked statement must not be proposed
             "Never delete rows from the invoices table",
+        ],
+        # Scoped to the report's "### Constitution candidates" section only
+        # (findings may legitimately name these files/statements):
+        "candidate_absent_markers": [
+            # project-instance law from the stray rulebook — merges to
+            # .claude/rules/, never a fleet candidate
+            "never call wkhtmltopdf directly",
+            # BL-015 rider 1 lock: a statement contradicting an owned rule
+            # is covered by that rule — decision-gate material, not a
+            # candidate (defect 11's planted line)
+            "Dev journal entries are optional",
         ],
         "fixture_commit_count": 2,
         "fixture_head": subprocess.run(
@@ -310,7 +336,11 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
             "Nobody links to this file.",
             "Ultra-specific invoice rounding rules",
             "We do not maintain CHANGELOG.md",
+            "Every database migration must be reversible",
+            "never call wkhtmltopdf directly",
         ]
+        meta["stray_rulebook_path"] = "docs/superpowers/review-checklist.md"
+        meta["stray_project_law"] = "never call wkhtmltopdf directly"
         meta["conflict_marker"] = (
             "We do not maintain CHANGELOG.md; release notes are written "
             "in the wiki at release time.")
