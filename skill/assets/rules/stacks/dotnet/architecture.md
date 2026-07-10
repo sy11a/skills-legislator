@@ -7,3 +7,5 @@ For .NET how-to guidance (refactoring, testing, EF Core, performance, diagnostic
 - Business logic never touches `HttpContext` directly — always go through a tenant/request-context abstraction (e.g. `ITenantContext`)
 - All external AI/LLM provider calls go through a single provider abstraction — never instantiate a provider directly
 - Every tenant-scoped entity has a mandatory tenant filter (EF Core global query filter or equivalent) — no tenant-scoped query may bypass it
+- Constructor injection only — never resolve services via `IServiceProvider.GetService`, `HttpContext.RequestServices`, or any service-locator pattern outside the composition root
+- No static mutable state — state that survives requests breaks multi-tenancy and testability; hold per-request state in scoped services
