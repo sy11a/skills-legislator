@@ -10,7 +10,7 @@ grader does not rot when rules are added, removed, or renamed.
 Usage:
   python3 evals/grade.py <workspace> [scenario ...]
 
-Scenarios (default: the first four):
+Scenarios (default: the first five):
   fresh-scaffold-dotnet    grade <ws>/fresh-scaffold-dotnet/repo
   legacy-migration         grade <ws>/legacy-migration/repo (+ the Step 7
                            report saved at legacy-migration/outputs/)
@@ -18,6 +18,8 @@ Scenarios (default: the first four):
   audit                    grade the audit report saved by the eval agent at
                            <ws>/rotted-layer/outputs/audit-report.md against
                            the fixture's planted defects; asserts zero writes.
+  restructure              grade <ws>/restructure/repo + the report saved at
+                           restructure/outputs/
   idempotency:<scenario>   grade a SECOND skill run on <scenario>'s repo:
                            requires that run 1's result was committed before
                            run 2; passes iff run 2 left a zero diff.
@@ -268,6 +270,86 @@ def grade_audit(ws: Path) -> Grader:
     return g
 
 
+def grade_restructure(ws: Path) -> Grader:
+    repo = ws / "restructure" / "repo"
+    meta = json.loads((ws / "restructure" / "fixture_meta.json").read_text())
+    report_path = ws / "restructure" / "outputs" / "restructure-report.md"
+    g = Grader()
+
+    has_report = report_path.exists()
+    report = report_path.read_text() if has_report else ""
+    g.check("restructure_report_saved", has_report,
+            str(report_path) if has_report else f"missing: {report_path}")
+
+    for s in meta["fidelity_sentences"]:
+        hits = subprocess.run(
+            ["grep", "-rl", "--exclude-dir=.git", s, str(repo)],
+            capture_output=True, text=True).stdout.strip()
+        g.check(f"fidelity: {s[:44]!r}", bool(hits),
+                f"survives in {hits.splitlines()}" if hits
+                else "lost — appears nowhere in the repo")
+
+    kept = repo / meta["kept_path"]
+    kept_ok = kept.exists() and kept.read_text() == meta["kept_content"]
+    g.check("kept_file_untouched_in_place", kept_ok,
+            "byte-identical at original path" if kept_ok
+            else "kept file moved, edited, or deleted")
+
+    claude = (repo / "CLAUDE.md").read_text() if (repo / "CLAUDE.md").exists() else ""
+    g.check("conflict_not_auto_resolved", meta["conflict_marker"] in claude,
+            "conflicting line still in CLAUDE.md" if meta["conflict_marker"] in claude
+            else "conflict line gone — auto-resolved without the user")
+    decision_open = "[decision]" in report and "We do not maintain CHANGELOG.md" in report
+    g.check("conflict_surfaced_as_decision", decision_open,
+            "[decision] item names the conflict" if decision_open
+            else "report lacks a [decision] item naming the conflict")
+
+    moved_ok = (not (repo / ".claude/plans").exists()
+                and (repo / "docs/superpowers/plans/2026-01-importer-plan.md").exists())
+    g.check("plans_relocated_to_standard_home", moved_ok,
+            ".claude/plans/ gone, file at docs/superpowers/plans/" if moved_ok
+            else "plan file not moved (or old dir left behind)")
+    g.check("cursorrules_merged_away", not (repo / ".cursorrules").exists(),
+            ".cursorrules removed after merge" if not (repo / ".cursorrules").exists()
+            else ".cursorrules still present")
+    g.check("ghost_import_fixed", "ghost-rule.md" not in claude,
+            "dangling import gone" if "ghost-rule.md" not in claude
+            else "ghost-rule import still in CLAUDE.md")
+
+    src = SKILL / "assets/rules/core/okf.md"
+    okf = repo / "docs/ai/rules/core/okf.md"
+    healed = okf.exists() and okf.read_bytes() == src.read_bytes()
+    g.check("owned_drift_healed", healed,
+            "okf.md byte-identical to skill source" if healed
+            else "owned drift not healed via Steps 2-3")
+
+    version = int((SKILL / "VERSION").read_text().strip())
+    mpath = repo / "docs/ai/manifest.json"
+    manifest = json.loads(mpath.read_text()) if mpath.exists() else None
+    heal_ok = bool(manifest and manifest.get("legislatorVersion") == version
+                   and {"path": meta["kept_path"], "reason": "works as-is"}
+                   in (manifest.get("keep") or []))
+    g.check("manifest_healed_keep_carried", heal_ok,
+            f"manifest at v{version}, keep entry carried" if heal_ok
+            else "manifest missing, stale, or keep entry dropped")
+
+    orphan = repo / "docs/okf/orphan-notes.md"
+    refs = subprocess.run(
+        ["grep", "-rl", "--exclude-dir=.git", "--include=*.md",
+         "orphan-notes.md", str(repo)],
+        capture_output=True, text=True).stdout.strip().splitlines()
+    linked = orphan.exists() and any(Path(r) != orphan for r in map(Path, refs))
+    g.check("orphan_linked_not_deleted", linked,
+            "orphan still exists and is now referenced" if linked
+            else "orphan deleted or still unreferenced")
+
+    fid = "Fidelity: verified" in report
+    g.check("fidelity_line_reported", fid,
+            "report carries the pinned fidelity line" if fid
+            else "no 'Fidelity: verified' line in the report")
+    return g
+
+
 def grade_idempotency(ws: Path, scenario: str) -> Grader:
     repo = ws / scenario / "repo"
     g = Grader()
@@ -283,7 +365,7 @@ def main() -> None:
     if len(sys.argv) < 2:
         sys.exit(__doc__)
     ws = Path(sys.argv[1]).resolve()
-    names = sys.argv[2:] or ["fresh-scaffold-dotnet", "legacy-migration", "upgrade", "audit"]
+    names = sys.argv[2:] or ["fresh-scaffold-dotnet", "legacy-migration", "upgrade", "audit", "restructure"]
 
     any_failed = False
     for name in names:
@@ -295,6 +377,8 @@ def main() -> None:
             g, outdir = grade_upgrade(ws), ws / name
         elif name == "audit":
             g, outdir = grade_audit(ws), ws / "rotted-layer"
+        elif name == "restructure":
+            g, outdir = grade_restructure(ws), ws / "restructure"
         elif name.startswith("idempotency:"):
             target = name.split(":", 1)[1]
             g, outdir = grade_idempotency(ws, target), ws / target
