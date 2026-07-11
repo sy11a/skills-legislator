@@ -516,6 +516,32 @@ Ride along with the next benchmarked `skill/**` cycle:
    marker). Harvest's stray-rulebook scan is only exercised in audit mode —
    pairs with the BL-016 §3 restatement-path rider.
 
+## BL-018 — Branch discipline: integrating is part of the task (constitution v10)
+
+**What:** amend `core/pair-development.md` (spec:
+`docs/superpowers/specs/2026-07-11-branch-discipline-design.md`) — WIP
+limit 1: never cut a new task branch while an unmerged one exists; stack
+dependent work (merge bottom-up); batch micro-changes; cut from
+freshly-pulled main; merging stays the user's act (**`assets/rules/**`
+change: VERSION 9→10**). BL-017 riders 1–4 ride along (check-12 keep/
+referrer/conventional-doc hardening, upgrade fixture withholds a stack
+rule) plus BL-017 item 5 (captive-dependency bullet in dotnet
+architecture.md). Companion project law: CareerPlatform
+`.claude/rules/branching.md` (concrete mechanics — stacking commands,
+2-day cap, chore batching).
+
+**Why:** at AI-assisted pace, tasks outrun merges: CareerPlatform hit 30+
+local branches (mostly squash-merge ghosts plus stale real work), each new
+branch cut from a staler master. Control comes from the gates (build/test,
+review checklist, decision gate), not branch count — so the law makes
+integration part of the task instead of an afterthought. User-settled
+2026-07-11 (WIP-limit-1 + stacking, both layers, triage).
+
+**Done when:** benchmark `evals/benchmarks/v10.md` green vs v9 — upgrade
+scenario delivers the withheld stack rule and proposes its import line;
+idempotency zero-diff ×3; final review READY; `/legislator` fleet rollout
+delivers the amended rule.
+
 ---
 
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
