@@ -12,7 +12,8 @@ legislator skill against:
 
 The upgrade repo is generated from the CURRENT skill source so this suite
 never rots as the constitution evolves: it contains every current core+dotnet
-rule EXCEPT the alphabetically last core rule (simulating a rule added to the
+rule EXCEPT the alphabetically last core rule AND the alphabetically last
+dotnet stack rule (simulating one core and one stack rule added to the
 constitution since the repo was last legislated), PLUS one retired rule that
 no longer exists in the source (so the run must delete it — this exercises
 deletion propagation). Its manifest records VERSION-1. Its manifest also
@@ -64,9 +65,10 @@ def materialize_upgrade(dest: Path) -> None:
     shutil.copytree(EVALS / "fixtures" / "upgrade-base", dest)
     core_src = sorted((SKILL / "assets/rules/core").glob("*.md"))
     dotnet_src = sorted((SKILL / "assets/rules/stacks/dotnet").glob("*.md"))
-    if len(core_src) < 2:
-        sys.exit("upgrade fixture needs at least 2 core rules to withhold one")
-    withheld = core_src[-1]  # the rule "added since this repo was legislated"
+    if len(core_src) < 2 or len(dotnet_src) < 2:
+        sys.exit("upgrade fixture needs at least 2 core and 2 dotnet rules to withhold one of each")
+    withheld = core_src[-1]  # the core rule "added since this repo was legislated"
+    withheld_stack = dotnet_src[-1]  # ditto for the dotnet stack (BL-017 R4)
 
     rules_dst = dest / "docs/ai/rules"
     (rules_dst / "core").mkdir(parents=True)
@@ -78,8 +80,9 @@ def materialize_upgrade(dest: Path) -> None:
             shutil.copy2(f, rules_dst / "core" / f.name)
             owned.append(f"docs/ai/rules/core/{f.name}")
     for f in dotnet_src:
-        shutil.copy2(f, rules_dst / "stacks/dotnet" / f.name)
-        owned.append(f"docs/ai/rules/stacks/dotnet/{f.name}")
+        if f.name != withheld_stack.name:
+            shutil.copy2(f, rules_dst / "stacks/dotnet" / f.name)
+            owned.append(f"docs/ai/rules/stacks/dotnet/{f.name}")
 
     (rules_dst / "core" / RETIRED_RULE).write_text(
         "## Retired Rule\n\n- This rule was removed from the constitution "
@@ -113,6 +116,7 @@ def materialize_upgrade(dest: Path) -> None:
     # way that could disagree with this script.
     meta = {
         "withheld_core_rule": withheld.name,
+        "withheld_stack_rule": withheld_stack.name,
         "retired_rule": RETIRED_RULE,
         "fixture_manifest_version": version - 1,
         # Entry 0 pre-exists in the fixture manifest (carry-forward test);

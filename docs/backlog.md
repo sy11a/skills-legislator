@@ -480,7 +480,17 @@ restructure) succeeds end-to-end.
 
 ## BL-017 — Stray-rulebook follow-ups from the v9 final review (skill-file items)
 
-Ride along with the next benchmarked `skill/**` cycle:
+**Status: DONE 2026-07-11** — rode the BL-018 cycle: items 1–3 shipped
+(check 12 exempts kept paths and conventional community docs, recognizes
+`docs/okf/index.md` as a referrer, finding text reworded, check-7/9/12
+precedence pinned — item 6 resolved by the same precedence sentence);
+item 4 shipped (upgrade fixture withholds the last stack rule; grader
+asserts the delivered file + the report's proposed import line); item 5
+shipped as v10 law (captive-dependency bullet in dotnet architecture.md).
+Item 7's grader-rot notes remain accepted-risk (heading is a must-contain
+marker). Benchmark `evals/benchmarks/v10.md`.
+
+Original items:
 
 1. **Check 12 lacks a keep-list exemption (Important).** A keep-listed
    law-shaped doc draws a Warning whose remedy ("run restructure to
@@ -515,6 +525,72 @@ Ride along with the next benchmarked `skill/**` cycle:
    if the pinned heading changes (mitigated: heading is also a must-contain
    marker). Harvest's stray-rulebook scan is only exercised in audit mode —
    pairs with the BL-016 §3 restatement-path rider.
+
+## BL-018 — Branch discipline: integrating is part of the task (constitution v10)
+
+**Status: DONE 2026-07-11** — full cycle (spec
+`docs/superpowers/specs/2026-07-11-branch-discipline-design.md`, commits
+444cb7e..HEAD on `feature/bl-018-branch-discipline-v10`, **VERSION 9→10**,
+benchmark `evals/benchmarks/v10.md`: 98/98, second consecutive single-pass
+clean). Upgrade scenario delivered a withheld stack rule and proposed its
+import line (the v9 fleet-action path, now locked); check-12 keep exemption
+fired unprompted in the idempotency run; all idempotency passes zero-diff.
+BL-017 shipped with it. **Fleet action: run `/legislator` in each
+downstream repo to deliver v10.** Companion CareerPlatform
+`.claude/rules/branching.md` pending re-land (orphaned commit 0dd0ebd,
+awaiting repo-idle signal from the user).
+
+**What:** amend `core/pair-development.md` (spec:
+`docs/superpowers/specs/2026-07-11-branch-discipline-design.md`) — WIP
+limit 1: never cut a new task branch while an unmerged one exists; stack
+dependent work (merge bottom-up); batch micro-changes; cut from
+freshly-pulled main; merging stays the user's act (**`assets/rules/**`
+change: VERSION 9→10**). BL-017 riders 1–4 ride along (check-12 keep/
+referrer/conventional-doc hardening, upgrade fixture withholds a stack
+rule) plus BL-017 item 5 (captive-dependency bullet in dotnet
+architecture.md). Companion project law: CareerPlatform
+`.claude/rules/branching.md` (concrete mechanics — stacking commands,
+2-day cap, chore batching).
+
+**Why:** at AI-assisted pace, tasks outrun merges: CareerPlatform hit 30+
+local branches (mostly squash-merge ghosts plus stale real work), each new
+branch cut from a staler master. Control comes from the gates (build/test,
+review checklist, decision gate), not branch count — so the law makes
+integration part of the task instead of an afterthought. User-settled
+2026-07-11 (WIP-limit-1 + stacking, both layers, triage).
+
+**Done when:** benchmark `evals/benchmarks/v10.md` green vs v9 — upgrade
+scenario delivers the withheld stack rule and proposes its import line;
+idempotency zero-diff ×3; final review READY; `/legislator` fleet rollout
+delivers the amended rule.
+
+## BL-019 — Branch-discipline follow-ups from the v10 final review (skill-file items)
+
+Ride along with the next benchmarked `skill/**` cycle:
+
+1. **Service-locator bullet needs a scope carve-out (Important).** The new
+   captive-dependency remedy (`IServiceScopeFactory`) requires resolving
+   from a created scope, which the constructor-injection-only bullet
+   (dotnet architecture.md) literally forbids. Fix: append "except
+   resolving from a scope you created via `IServiceScopeFactory`" to the
+   service-locator bullet.
+2. **Pair-development wording tightening (Minor).** "Never cut a new task
+   branch while an unmerged one exists" is literally contradicted by its
+   own stacking alternative; fix to "never cut a new task branch *from
+   main* while…". Define "explicitly parked" (single occurrence).
+3. **Import-line oracle too loose (Minor).** `report_proposes_stack_import_line`
+   substring-matches anywhere in the report; scope it to the "Needs your
+   review"/Add block.
+4. **Check-9 precedence is a severity downgrade (Minor).** A law-shaped
+   `AGENTS.md`/`.cursorrules` now reports only at Info (check 9) where v9
+   flagged it Warning (check 12). Deliberate, but reconsider: foreign
+   configs are the files most likely to hide law.
+5. **Conventional-doc exemption surface (Minor).** Root-only: a law-shaped
+   `docs/CONTRIBUTING.md` is still flagged; `.github/` variants unscanned.
+   Make the convention surface consistent.
+6. Bookkeeping: v10.md note 3 ("rider 1 fired unprompted") is
+   plausible-but-unauditable (no run-2 transcript artifact); benchmark
+   notes should stick to on-disk-verifiable claims.
 
 ---
 

@@ -9,3 +9,4 @@ For .NET how-to guidance (refactoring, testing, EF Core, performance, diagnostic
 - Every tenant-scoped entity has a mandatory tenant filter (EF Core global query filter or equivalent) — no tenant-scoped query may bypass it
 - Constructor injection only — never resolve services via `IServiceProvider.GetService`, `HttpContext.RequestServices`, or any service-locator pattern outside the composition root
 - No static mutable state — state that survives requests breaks multi-tenancy and testability; hold per-request state in scoped services
+- No captive dependencies — a singleton service never captures a scoped or transient dependency (including any `DbContext`); take the shorter-lived service per call (method injection, factory, or `IServiceScopeFactory`), never store it in a singleton field
