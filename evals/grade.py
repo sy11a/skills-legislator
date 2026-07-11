@@ -244,6 +244,21 @@ def grade_upgrade(ws: Path) -> Grader:
     g.check("newly_added_rule_present", withheld.exists(),
             f"{meta['withheld_core_rule']} copied in by the upgrade" if withheld.exists() else f"{meta['withheld_core_rule']} still missing")
 
+    withheld_stack = repo / "docs/ai/rules/stacks/dotnet" / meta["withheld_stack_rule"]
+    g.check("newly_added_stack_rule_present", withheld_stack.exists(),
+            f"{meta['withheld_stack_rule']} copied in by the upgrade" if withheld_stack.exists()
+            else f"{meta['withheld_stack_rule']} still missing")
+
+    report_path = ws / "upgrade" / "outputs" / "step7-report.md"
+    has_report = report_path.exists()
+    report = report_path.read_text() if has_report else ""
+    g.check("step7_report_saved", has_report,
+            str(report_path) if has_report else f"missing: {report_path}")
+    import_line = f"@docs/ai/rules/stacks/dotnet/{meta['withheld_stack_rule']}"
+    g.check("report_proposes_stack_import_line", import_line in report,
+            "proposed CLAUDE.md import line present" if import_line in report
+            else f"report does not propose {import_line}")
+
     retired = repo / "docs/ai/rules/core" / meta["retired_rule"]
     g.check("retired_rule_deleted", not retired.exists(),
             "deletion propagation removed it" if not retired.exists() else "retired rule still on disk")
