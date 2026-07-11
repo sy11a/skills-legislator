@@ -480,7 +480,17 @@ restructure) succeeds end-to-end.
 
 ## BL-017 — Stray-rulebook follow-ups from the v9 final review (skill-file items)
 
-Ride along with the next benchmarked `skill/**` cycle:
+**Status: DONE 2026-07-11** — rode the BL-018 cycle: items 1–3 shipped
+(check 12 exempts kept paths and conventional community docs, recognizes
+`docs/okf/index.md` as a referrer, finding text reworded, check-7/9/12
+precedence pinned — item 6 resolved by the same precedence sentence);
+item 4 shipped (upgrade fixture withholds the last stack rule; grader
+asserts the delivered file + the report's proposed import line); item 5
+shipped as v10 law (captive-dependency bullet in dotnet architecture.md).
+Item 7's grader-rot notes remain accepted-risk (heading is a must-contain
+marker). Benchmark `evals/benchmarks/v10.md`.
+
+Original items:
 
 1. **Check 12 lacks a keep-list exemption (Important).** A keep-listed
    law-shaped doc draws a Warning whose remedy ("run restructure to
@@ -517,6 +527,18 @@ Ride along with the next benchmarked `skill/**` cycle:
    pairs with the BL-016 §3 restatement-path rider.
 
 ## BL-018 — Branch discipline: integrating is part of the task (constitution v10)
+
+**Status: DONE 2026-07-11** — full cycle (spec
+`docs/superpowers/specs/2026-07-11-branch-discipline-design.md`, commits
+444cb7e..HEAD on `feature/bl-018-branch-discipline-v10`, **VERSION 9→10**,
+benchmark `evals/benchmarks/v10.md`: 98/98, second consecutive single-pass
+clean). Upgrade scenario delivered a withheld stack rule and proposed its
+import line (the v9 fleet-action path, now locked); check-12 keep exemption
+fired unprompted in the idempotency run; all idempotency passes zero-diff.
+BL-017 shipped with it. **Fleet action: run `/legislator` in each
+downstream repo to deliver v10.** Companion CareerPlatform
+`.claude/rules/branching.md` pending re-land (orphaned commit 0dd0ebd,
+awaiting repo-idle signal from the user).
 
 **What:** amend `core/pair-development.md` (spec:
 `docs/superpowers/specs/2026-07-11-branch-discipline-design.md`) — WIP
