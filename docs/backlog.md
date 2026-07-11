@@ -564,6 +564,34 @@ scenario delivers the withheld stack rule and proposes its import line;
 idempotency zero-diff ×3; final review READY; `/legislator` fleet rollout
 delivers the amended rule.
 
+## BL-019 — Branch-discipline follow-ups from the v10 final review (skill-file items)
+
+Ride along with the next benchmarked `skill/**` cycle:
+
+1. **Service-locator bullet needs a scope carve-out (Important).** The new
+   captive-dependency remedy (`IServiceScopeFactory`) requires resolving
+   from a created scope, which the constructor-injection-only bullet
+   (dotnet architecture.md) literally forbids. Fix: append "except
+   resolving from a scope you created via `IServiceScopeFactory`" to the
+   service-locator bullet.
+2. **Pair-development wording tightening (Minor).** "Never cut a new task
+   branch while an unmerged one exists" is literally contradicted by its
+   own stacking alternative; fix to "never cut a new task branch *from
+   main* while…". Define "explicitly parked" (single occurrence).
+3. **Import-line oracle too loose (Minor).** `report_proposes_stack_import_line`
+   substring-matches anywhere in the report; scope it to the "Needs your
+   review"/Add block.
+4. **Check-9 precedence is a severity downgrade (Minor).** A law-shaped
+   `AGENTS.md`/`.cursorrules` now reports only at Info (check 9) where v9
+   flagged it Warning (check 12). Deliberate, but reconsider: foreign
+   configs are the files most likely to hide law.
+5. **Conventional-doc exemption surface (Minor).** Root-only: a law-shaped
+   `docs/CONTRIBUTING.md` is still flagged; `.github/` variants unscanned.
+   Make the convention surface consistent.
+6. Bookkeeping: v10.md note 3 ("rider 1 fired unprompted") is
+   plausible-but-unauditable (no run-2 transcript artifact); benchmark
+   notes should stick to on-disk-verifiable claims.
+
 ---
 
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature

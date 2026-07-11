@@ -62,8 +62,9 @@ warrants re-running that scenario 2–3 times before drawing a conclusion.
 ## E2E procedure
 
 1. **Materialize a workspace** (fresh fixtures, git-initialized; the upgrade
-   fixture is generated from the current skill source — one core rule
-   withheld as "added since", one retired rule planted for deletion):
+   fixture is generated from the current skill source — the alphabetically
+   last core rule AND the alphabetically last dotnet stack rule withheld as
+   "added since", one retired rule planted for deletion):
 
    ```bash
    python3 evals/setup_workspace.py /tmp/legislator-eval-vN
@@ -76,8 +77,11 @@ warrants re-running that scenario 2–3 times before drawing a conclusion.
    (`dotnet`), and never commit. Scenarios: `fresh-scaffold-dotnet`,
    `legacy-migration`, `upgrade`, `audit` (the audit agent must be told to
    save its report to `<ws>/rotted-layer/outputs/audit-report.md` — outside
-   the target repo, which the audit must not touch). The migration agent must
-   likewise be told to save its Step 7 report to `<ws>/legacy-migration/outputs/step7-report.md` — the harvest assertions grade that file.
+   the target repo, which the audit must not touch). The migration and
+   upgrade agents must likewise be told to save their Step 7 reports to
+   `<ws>/legacy-migration/outputs/step7-report.md` and
+   `<ws>/upgrade/outputs/step7-report.md` respectively — the harvest and
+   proposed-import assertions grade those files.
    The restructure agent gets the restructure prompt (blanket approval minus decision items is part of it) and must save its final report to <ws>/restructure/outputs/restructure-report.md.
 
 3. **Grade:**
