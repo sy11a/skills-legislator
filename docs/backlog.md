@@ -603,6 +603,19 @@ Original items:
 
 ## BL-020 — Glossary vitality: seed + law + detection (constitution v11)
 
+**Status: DONE 2026-07-12** — full cycle (spec
+`docs/superpowers/specs/2026-07-12-glossary-vitality-design.md`, commits
+6fc11c4..HEAD on `feature/bl-020-glossary-vitality-v11`, **VERSION 10→11**,
+benchmark `evals/benchmarks/v11.md`: 103/103 after three honestly-recorded
+mid-benchmark catches — two domain-blank fixtures enriched (ambiguous-bait
+class), a candidates-regex grader precision fix, and check 11 extended to
+CLAUDE.md prose after the restructure run exposed that conflict-surfacing
+there was judgment-dependent). Fresh run seeded 5 terms, migration carved
+3 definitions into rows, restructure healed the empty glossary with 4
+derived terms, all idempotency zero-diff. BL-019 shipped with it.
+**Fleet action: run `/legislator` in each downstream repo to deliver v11**
+(phase 2 backfill covers CareerPlatform + RKruiterApi + RKruiterAgent).
+
 **What:** three levers to stop OKF glossaries dying empty (spec:
 `docs/superpowers/specs/2026-07-12-glossary-vitality-design.md`).
 (1) `{{GLOSSARY_TABLE}}` derived at legislation (5–15 confirmed terms from
