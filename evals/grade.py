@@ -184,6 +184,13 @@ class Grader:
         missing = [a for a in SCAFFOLD_ARTIFACTS if not (repo / a).exists()]
         self.check("scaffold_artifacts_present", not missing,
                    "all Step 4 artifacts exist" if not missing else f"missing: {missing}")
+        sk = repo / ".claude/rules/skills.md"
+        sk_text = sk.read_text() if sk.exists() else ""
+        stages = [w for w in ("pre-plan", "implement", "debug", "review") if w in sk_text.lower()]
+        sk_ok = sk.exists() and len(stages) >= 1
+        self.check("skills_stage_map_scaffolded", sk_ok,
+                   f".claude/rules/skills.md exists with stage(s) {stages}" if sk_ok
+                   else ".claude/rules/skills.md missing or has no stage headings")
         rows = glossary_rows(repo)
         self.check("glossary_seeded_with_terms", rows >= 1,
                    f"{rows} term row(s) derived from the repo's domain" if rows >= 1
@@ -277,6 +284,12 @@ def grade_upgrade(ws: Path) -> Grader:
     report = report_path.read_text() if has_report else ""
     g.check("step7_report_saved", has_report,
             str(report_path) if has_report else f"missing: {report_path}")
+    core_import = f"@docs/ai/rules/core/{meta['withheld_core_rule']}"
+    core_review_idx = report.find("eeds your review")
+    core_proposed = core_review_idx >= 0 and core_import in report[core_review_idx:]
+    g.check("report_proposes_core_import_line", core_proposed,
+            "core-rule import proposed in Needs-your-review" if core_proposed
+            else f"no proposal for {core_import}")
     import_line = f"@docs/ai/rules/stacks/dotnet/{meta['withheld_stack_rule']}"
     # Scoped to the "Needs your review" section (BL-019 R3): the line counts
     # only as a PROPOSAL — its appearance in Deleted/Overwritten would not.
@@ -399,6 +412,13 @@ def grade_restructure(ws: Path) -> Grader:
     g.check("foreign_definition_in_okf_glossary", def_in_gl,
             "instance definition lives in docs/okf/glossary.md" if def_in_gl
             else "definition not merged into the OKF glossary")
+
+    skf = repo / meta["skills_rules_path"]
+    skf_ok = skf.exists() and skf.read_text() == meta["skills_rules_content"]
+    named = "made-up-skill" in report
+    g.check("skill_binding_for_the_team_not_a_plan_item", skf_ok and named,
+            "skills.md byte-unchanged, finding routed to the report" if skf_ok and named
+            else f"file untouched={skf_ok}, named in report={named}")
 
     stray = repo / meta["stray_rulebook_path"]
     g.check("stray_rulebook_merged_away", not stray.exists(),
