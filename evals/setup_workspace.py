@@ -331,7 +331,6 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
             "skill-bindings] made-up-skill",  # defect 15: sanctioned but uninstalled
             "dry-run mode before a real import",  # harvest: candidate quoted
             "must be reversible",  # harvest: stray-rulebook generic line quoted
-            "named in past tense",  # foreign-glossary generic line surfaces in the check-9 finding text
             "### Constitution candidates",  # harvest appendix present with pinned heading
         ],
         # BL-011 regression lock: the audit must NOT flag the constitution's
