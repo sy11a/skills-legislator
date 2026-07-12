@@ -13,6 +13,7 @@ See this project's `docs/okf/index.md` for the category-to-file mapping table sp
 - [ ] `status` field updated: `planned` → `implemented` (or `partial`); removed concepts flip to `removed`
 - [ ] `timestamp` field updated to today's date (ISO 8601)
 - [ ] New cross-links added where relevant (`[text](../path/to/doc.md)`)
+- [ ] New or renamed domain terms have a row in `docs/okf/glossary.md`; meanings of changed terms updated
 - [ ] `docs/okf/log.md` has a new entry describing what changed and why
 
 ### When to update

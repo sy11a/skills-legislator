@@ -63,7 +63,7 @@ again. The skill never commits — review the diff and commit it yourself.
 
 Once legislated, three more requests matter:
 
-- **"Audit the AI layer here"** — read-only health check (12 checks: broken
+- **"Audit the AI layer here"** — read-only health check (13 checks: broken
   imports, stale maps, orphan docs, dead journal, hand-edited law, leftover
   `.cursorrules`, stray rulebooks parked where no session loads them, …).
   Zero writes, severity-ranked report.

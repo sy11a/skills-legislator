@@ -7,7 +7,7 @@ legislator skill against:
   <workspace>/fresh-scaffold-dotnet/repo   — new repo, no CLAUDE.md
   <workspace>/legacy-migration/repo        — hand-written CLAUDE.md, no manifest
   <workspace>/upgrade/repo                 — previously legislated, one version behind
-  <workspace>/rotted-layer/repo            — legislated, twelve planted defects (audit scenario)
+  <workspace>/rotted-layer/repo            — legislated, thirteen planted defects (audit scenario)
   <workspace>/restructure/repo            — rotted + relocatables (restructure scenario)
 
 The upgrade repo is generated from the CURRENT skill source so this suite
@@ -130,7 +130,7 @@ def materialize_upgrade(dest: Path) -> None:
 
 
 def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
-    """Legislated repo with twelve planted defects for the audit scenario.
+    """Legislated repo with thirteen planted defects for the audit scenario.
 
     Generated from the CURRENT skill source, then deliberately damaged.
     Each defect leaves a distinctive marker string an audit report must
@@ -304,6 +304,7 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
             "keep-list] docs/notes/special-sauce.md",  # defect 10: kept but referenced nowhere
             "project-rules] .claude/rules/journal.md",  # defect 11: project rule vs owned law
             "stray-rulebooks] docs/superpowers/review-checklist.md",  # defect 12
+            "glossary-vitality] docs/okf/glossary.md",  # defect 13: empty glossary, src/ exists
             "dry-run mode before a real import",  # harvest: candidate quoted
             "must be reversible",  # harvest: stray-rulebook generic line quoted
             "### Constitution candidates",  # harvest appendix present with pinned heading

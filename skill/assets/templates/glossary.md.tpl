@@ -13,3 +13,4 @@ Map internal jargon to what it means in this codebase, so any session edits the 
 
 | Term | Meaning in this codebase |
 |------|--------------------------|
+{{GLOSSARY_TABLE}}

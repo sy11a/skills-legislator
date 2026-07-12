@@ -8,6 +8,11 @@ Hand-written notes for AI assistants working on this repo. Please read before ma
 - Money values are always `decimal`, never `double` or `float`.
 - Controllers must not contain business logic; put it in `Services/`.
 
+## Domain notes
+
+- An **invoice** is issued once per billing period and settled by a payment webhook from the PSP.
+- A **dunning run** means retrying failed invoice payments on a schedule before escalating to a human.
+
 ## Branch naming
 
 Use `bl/NNN-short-description` for branches tied to a backlog item, `hf/short-description` for hotfixes.

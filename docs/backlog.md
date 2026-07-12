@@ -566,7 +566,16 @@ delivers the amended rule.
 
 ## BL-019 — Branch-discipline follow-ups from the v10 final review (skill-file items)
 
-Ride along with the next benchmarked `skill/**` cycle:
+**Status: DONE 2026-07-12** — rode the BL-020 cycle: item 1 shipped
+(`IServiceScopeFactory`-scope carve-out on the service-locator bullet),
+item 2 shipped ("from main" + "parked" defined), item 3 shipped (grader
+scoped to the "Needs your review" block), item 4 shipped (check 9 elevates
+to Warning for predominantly law-shaped foreign configs), item 5 shipped
+(conventional-doc exemption covers `docs/` and `.github/` variants).
+Item 6 honored: v11 benchmark notes stick to on-disk-verifiable claims.
+Benchmark `evals/benchmarks/v11.md`.
+
+Original items:
 
 1. **Service-locator bullet needs a scope carve-out (Important).** The new
    captive-dependency remedy (`IServiceScopeFactory`) requires resolving
@@ -592,7 +601,86 @@ Ride along with the next benchmarked `skill/**` cycle:
    plausible-but-unauditable (no run-2 transcript artifact); benchmark
    notes should stick to on-disk-verifiable claims.
 
+## BL-020 — Glossary vitality: seed + law + detection (constitution v11)
+
+**Status: DONE 2026-07-12** — full cycle (spec
+`docs/superpowers/specs/2026-07-12-glossary-vitality-design.md`, commits
+6fc11c4..HEAD on `feature/bl-020-glossary-vitality-v11`, **VERSION 10→11**,
+benchmark `evals/benchmarks/v11.md`: 103/103 after three honestly-recorded
+mid-benchmark catches — two domain-blank fixtures enriched (ambiguous-bait
+class), a candidates-regex grader precision fix, and check 11 extended to
+CLAUDE.md prose after the restructure run exposed that conflict-surfacing
+there was judgment-dependent). Fresh run seeded 5 terms, migration carved
+3 definitions into rows, restructure healed the empty glossary with 4
+derived terms, all idempotency zero-diff. BL-019 shipped with it.
+**Fleet action: run `/legislator` in each downstream repo to deliver v11**
+(phase 2 backfill covers CareerPlatform + RKruiterApi + RKruiterAgent).
+
+**What:** three levers to stop OKF glossaries dying empty (spec:
+`docs/superpowers/specs/2026-07-12-glossary-vitality-design.md`).
+(1) `{{GLOSSARY_TABLE}}` derived at legislation (5–15 confirmed terms from
+the repo's own domain) instead of an intentionally empty table; (2)
+`core/okf.md`'s mandatory completion checklist gains a glossary item
+(**`assets/rules/**` change: VERSION 10→11**); (3) audit check 13
+(`glossary-vitality`, Warning) flags a zero-row glossary in a repo with
+source code, healable by restructure via the Step 4 derivation rules
+(token-fill precedent). BL-019 rides along (all five items).
+
+**Why:** review of the fleet (2026-07-12) found CareerPlatform and
+RKruiterApi glossaries byte-empty since legislation while RKruiterAgent's
+thrives — terms "emerge" only in design sessions; code-resident terms
+never do. The glossary had no law behind it: not on the completion
+checklist, not audited, seeded empty by design.
+
+**Done when:** benchmark `evals/benchmarks/v11.md` green — fresh and
+migration runs seed ≥1 real term; audit names the empty planted glossary
+under the `glossary-vitality` slug; restructure heals it approval-gated;
+idempotency zero-diff ×3; then live backfill lands real domain terms in
+CareerPlatform and RKruiterApi on feature branches.
+
+## BL-021 — Glossary-vitality follow-ups from the v11 final review (skill-file items)
+
+Ride along with the next benchmarked `skill/**` cycle:
+
+1. **"Parked" branch still trips the never-cut clause (Important).**
+   pair-development.md: a parked branch is literally "an unmerged task
+   branch", so parking never actually unblocks new work. Fix: "while an
+   unmerged, unparked task branch exists".
+2. **Derivation floor incoherent (Important).** "Derive 5–15 terms" vs
+   "never invent" leaves 1–4 derivable terms undefined — two certified v11
+   runs seeded 3 and 4 rows. Fix: "up to 15, typically 5+ when the repo
+   evidences them".
+3. **IServiceScopeFactory carve-out lifetime-unconditioned (Important).**
+   architecture.md: as worded, any component may scope-and-resolve. Fix:
+   condition the exception on a longer-lived service reaching shorter-lived
+   ones.
+4. **Check 13 "source directory" undefined (Minor).** Borrow check 6's
+   pinned ignore list explicitly; consider the perpetual-Warning case of a
+   code-bearing repo with genuinely nothing derivable.
+5. **Grader robustness (Minor).** Absent markers are blind to text after
+   `Clean checks:` and truncate at sub-headings; `glossary_rows()` counts
+   any pipe line; presence/absence scoping asymmetric. Tighten when next
+   touching grade.py.
+6. **Check 12 `.github/` exemption is dead text (Minor).** The scan set
+   never includes `.github/*.md` — either scan it or drop the exemption
+   words; note a law-shaped `.github/foo.md` currently escapes entirely.
+7. Bookkeeping: an unresolved `{{GLOSSARY_TABLE}}` double-fires checks 2
+   and 13 (one defect, two findings); v11.md note 4's wall-time caveat
+   attribution is cosmetic-muddled — both accepted as-is.
+
+(v11 review rider "pure audit never ran under final bytes" was closed
+before rollout: audit re-run at 20466a6, results appended to v11.md.)
+
 ---
+
+## Note — OKF content-accuracy check is an open idea, not yet a backlog item
+
+The RKruiterApi v11 backfill (2026-07-12) found six `docs/okf/domain/*.md`
+files still describing a domain model an ADR had removed — no audit check
+covers OKF *content accuracy against source* (check 5 covers links, check 6
+the map's shape). A deterministic version is hard (needs source-symbol
+grounding, e.g. "every type name an OKF doc cites in backticks exists in
+src/"); promote to a BL item when the shape is clear.
 
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
 
