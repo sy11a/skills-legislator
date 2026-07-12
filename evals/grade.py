@@ -196,6 +196,11 @@ class Grader:
                    f"{rows} term row(s) derived from the repo's domain" if rows >= 1
                    else "glossary table has no body rows — {{GLOSSARY_TABLE}} derivation produced nothing")
         claude = (repo / "CLAUDE.md").read_text() if (repo / "CLAUDE.md").exists() else ""
+        missing_imports = [p for p in expected_owned()
+                           if p.startswith("docs/ai/rules/core/") and f"@{p}" not in claude]
+        self.check("claude_md_imports_all_core", not missing_imports,
+                   "every core rule imported" if not missing_imports
+                   else f"core rules on disk but not imported: {missing_imports}")
         self.check("claude_md_imports_rules", "@docs/ai/rules/core/" in claude,
                    "@import block present" if "@docs/ai/rules/core/" in claude else "no @import lines in CLAUDE.md")
         rules_dir = repo / ".claude/rules"

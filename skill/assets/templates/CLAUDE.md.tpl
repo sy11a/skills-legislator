@@ -18,6 +18,8 @@ Stack: {{STACK_SUMMARY}}
 @docs/ai/rules/core/dev-journal.md
 @docs/ai/rules/core/changelog.md
 @docs/ai/rules/core/project-rules.md
+@docs/ai/rules/core/skills.md
+@docs/ai/rules/core/verification.md
 {{STACK_IMPORTS}}
 @docs/okf/codebase-map.md
 
