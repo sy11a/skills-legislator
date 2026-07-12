@@ -7,7 +7,7 @@ legislator skill against:
   <workspace>/fresh-scaffold-dotnet/repo   — new repo, no CLAUDE.md
   <workspace>/legacy-migration/repo        — hand-written CLAUDE.md, no manifest
   <workspace>/upgrade/repo                 — previously legislated, one version behind
-  <workspace>/rotted-layer/repo            — legislated, fourteen planted defects (audit scenario)
+  <workspace>/rotted-layer/repo            — legislated, fifteen planted defects (audit scenario)
   <workspace>/restructure/repo            — rotted + relocatables (restructure scenario)
 
 The upgrade repo is generated from the CURRENT skill source so this suite
@@ -130,7 +130,7 @@ def materialize_upgrade(dest: Path) -> None:
 
 
 def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
-    """Legislated repo with fourteen planted defects for the audit scenario.
+    """Legislated repo with fifteen planted defects for the audit scenario.
 
     Generated from the CURRENT skill source, then deliberately damaged.
     Each defect leaves a distinctive marker string an audit report must
