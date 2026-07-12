@@ -673,6 +673,15 @@ before rollout: audit re-run at 20466a6, results appended to v11.md.)
 
 ---
 
+## Note — OKF content-accuracy check is an open idea, not yet a backlog item
+
+The RKruiterApi v11 backfill (2026-07-12) found six `docs/okf/domain/*.md`
+files still describing a domain model an ADR had removed — no audit check
+covers OKF *content accuracy against source* (check 5 covers links, check 6
+the map's shape). A deterministic version is hard (needs source-symbol
+grounding, e.g. "every type name an OKF doc cites in backticks exists in
+src/"); promote to a BL item when the shape is clear.
+
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
 
 A master-agent that reviews an incoming request in a project and decides whether to route it to an existing project-local mini-agent (`.claude/agents/<name>.md`) or create a new fine-grained specialized one (task-appropriate model, scoped MCPs) is being built as its **own, separate skill** — not as part of Legislator. Rationale: Legislator is build-time scaffolding (runs occasionally, evolves via VERSION/manifest); request routing is a runtime concern with its own lifecycle. Folding both into one skill would blur SRP.
