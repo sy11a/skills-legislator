@@ -212,7 +212,7 @@ def grade_migration(ws: Path) -> Grader:
     report = report_path.read_text() if has_report else ""
     g.check("step7_report_saved", has_report,
             str(report_path) if has_report else f"missing: {report_path}")
-    m = re.search(r"### Constitution candidates\n(.*?)(?=\n#|\Z)", report, re.S)
+    m = re.search(r"### Constitution candidates\n(.*?)(?=\nClean checks:|\n#|\Z)", report, re.S)
     section = m.group(1) if m else ""
     # Coupled to the constitution's CURRENT content: if a decimal-for-money
     # rule is ever promoted into assets/rules/**, criterion 2 flips and this
@@ -312,7 +312,7 @@ def grade_audit(ws: Path) -> Grader:
 
     # Scoped to the candidates section: findings may name these statements
     # legitimately, but proposing them as fleet candidates is a failure.
-    m = re.search(r"### Constitution candidates\n(.*?)(?=\n#|\Z)", report, re.S)
+    m = re.search(r"### Constitution candidates\n(.*?)(?=\nClean checks:|\n#|\Z)", report, re.S)
     section = m.group(1) if m else ""
     for marker in meta.get("candidate_absent_markers", []):
         g.check(f"candidates section does NOT contain {marker!r}",
