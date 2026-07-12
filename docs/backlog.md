@@ -770,6 +770,32 @@ Ride along with the next benchmarked `skill/**` cycle:
 10. **Upgrade grader: assert the withheld CORE rule's import proposal too
     (Minor)** — currently only the stack rule's line is asserted.
 
+## BL-024 — Skill stage-routing + setup automation (constitution v13)
+
+**What:** skills wired to workflow steps + a setup story (spec:
+`docs/superpowers/specs/2026-07-13-skill-stage-routing-design.md`).
+(1) `core/skills.md` gains stage routing: `.claude/rules/skills.md` maps
+sanctioned skills to pre-plan/implement/debug/review/docs stages,
+consulted at stage boundaries (**`assets/rules/**` change: VERSION
+12→13**); (2) create-once starter scaffold via new `skills-rules.md.tpl`
+(derived from profiles ∩ installed skills, pinned stage-affinity table);
+(3) audit check 14 `skill-bindings` (Info) — sanctioned-but-uninstalled
+skills; (4) `tools/link-skills.sh` + README "Skill ecosystem setup"
+tutorial. BL-023 rides along (all seven items).
+
+**Why:** v12 settled which skills are lawful, not when — agents don't
+proactively grill before plans or run tdd during implementation; and the
+skill layer itself had no rot detection or setup docs (symlinks into a
+non-git dump, tribal knowledge).
+
+**Done when:** benchmark `evals/benchmarks/v13.md` green — fresh scaffolds
+a stage-mapped starter (structural oracle); audit flags the planted
+`made-up-skill` binding at Info; restructure routes it to For-the-team,
+file byte-unchanged; upgrade asserts both new-rule import proposals;
+idempotency zero-diff (create-once starter never rewrites); then the
+fleet's three hand-written skills.md files gain stage headings via small
+PRs.
+
 ## Note — OKF content-accuracy check is an open idea, not yet a backlog item
 
 The RKruiterApi v11 backfill (2026-07-12) found six `docs/okf/domain/*.md`
