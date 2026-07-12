@@ -733,7 +733,18 @@ v12 + drafted verification/skills project rules on PRs.
 
 ## BL-023 — Skill-governance follow-ups from the v12 final review (skill-file items)
 
-Ride along with the next benchmarked `skill/**` cycle:
+**Status: DONE 2026-07-12** — rode the BL-024 cycle: item 1 shipped
+(harness fixtures/seeding exempt from the read-only-DB bullet), item 2
+shipped (absent-bindings fallback: ladder applies with repo defaults),
+item 3 shipped (project-rules sanctions the two instance-data homes),
+item 4 shipped (setup-gate self-exemption for legislator's CLAUDE.md
+writes), item 5 shipped (check 12 exempts PULL_REQUEST_TEMPLATE.md +
+.github/ISSUE_TEMPLATE/**), item 6 shipped (check 9 kept-path exemption),
+item 7 shipped (upgrade grader asserts both import proposals — and the
+assertion caught nothing because the run complied). Benchmark
+`evals/benchmarks/v13.md`.
+
+Original items:
 
 1. **Read-only-DB bullet vs test harnesses (Important).** verification.md's
    read-only rule, strictly read, outlaws ordinary integration-test
@@ -771,6 +782,20 @@ Ride along with the next benchmarked `skill/**` cycle:
     (Minor)** — currently only the stack rule's line is asserted.
 
 ## BL-024 — Skill stage-routing + setup automation (constitution v13)
+
+**Status: DONE 2026-07-12** — full cycle (spec
+`docs/superpowers/specs/2026-07-13-skill-stage-routing-design.md`, commits
+fc564c1..HEAD on `feature/bl-024-skill-stage-routing-v13` — stacked on the
+open v12 branch per the pair-development stacking law, merge bottom-up —
+**VERSION 12→13**, benchmark `evals/benchmarks/v13.md`: 117/117 after one
+real catch and three honesty items: v12's tpl import gap found by the
+migration run's own report (tpl fixed + class-killer static check +
+grader completeness assertion), a fragile oracle removed exactly as the
+v12 review predicted, and two run-noise re-runs with no law change).
+Fresh scaffolds now seed a stage-mapped `.claude/rules/skills.md`;
+`tools/link-skills.sh --check` verified clean live. BL-023 shipped with
+it. **Fleet action: v12 PR merges first, then v13; run `/legislator`
+in each downstream repo.**
 
 **What:** skills wired to workflow steps + a setup story (spec:
 `docs/superpowers/specs/2026-07-13-skill-stage-routing-design.md`).
