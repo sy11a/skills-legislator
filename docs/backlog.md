@@ -566,7 +566,16 @@ delivers the amended rule.
 
 ## BL-019 — Branch-discipline follow-ups from the v10 final review (skill-file items)
 
-Ride along with the next benchmarked `skill/**` cycle:
+**Status: DONE 2026-07-12** — rode the BL-020 cycle: item 1 shipped
+(`IServiceScopeFactory`-scope carve-out on the service-locator bullet),
+item 2 shipped ("from main" + "parked" defined), item 3 shipped (grader
+scoped to the "Needs your review" block), item 4 shipped (check 9 elevates
+to Warning for predominantly law-shaped foreign configs), item 5 shipped
+(conventional-doc exemption covers `docs/` and `.github/` variants).
+Item 6 honored: v11 benchmark notes stick to on-disk-verifiable claims.
+Benchmark `evals/benchmarks/v11.md`.
+
+Original items:
 
 1. **Service-locator bullet needs a scope carve-out (Important).** The new
    captive-dependency remedy (`IServiceScopeFactory`) requires resolving
@@ -591,6 +600,30 @@ Ride along with the next benchmarked `skill/**` cycle:
 6. Bookkeeping: v10.md note 3 ("rider 1 fired unprompted") is
    plausible-but-unauditable (no run-2 transcript artifact); benchmark
    notes should stick to on-disk-verifiable claims.
+
+## BL-020 — Glossary vitality: seed + law + detection (constitution v11)
+
+**What:** three levers to stop OKF glossaries dying empty (spec:
+`docs/superpowers/specs/2026-07-12-glossary-vitality-design.md`).
+(1) `{{GLOSSARY_TABLE}}` derived at legislation (5–15 confirmed terms from
+the repo's own domain) instead of an intentionally empty table; (2)
+`core/okf.md`'s mandatory completion checklist gains a glossary item
+(**`assets/rules/**` change: VERSION 10→11**); (3) audit check 13
+(`glossary-vitality`, Warning) flags a zero-row glossary in a repo with
+source code, healable by restructure via the Step 4 derivation rules
+(token-fill precedent). BL-019 rides along (all five items).
+
+**Why:** review of the fleet (2026-07-12) found CareerPlatform and
+RKruiterApi glossaries byte-empty since legislation while RKruiterAgent's
+thrives — terms "emerge" only in design sessions; code-resident terms
+never do. The glossary had no law behind it: not on the completion
+checklist, not audited, seeded empty by design.
+
+**Done when:** benchmark `evals/benchmarks/v11.md` green — fresh and
+migration runs seed ≥1 real term; audit names the empty planted glossary
+under the `glossary-vitality` slug; restructure heals it approval-gated;
+idempotency zero-diff ×3; then live backfill lands real domain terms in
+CareerPlatform and RKruiterApi on feature branches.
 
 ---
 
