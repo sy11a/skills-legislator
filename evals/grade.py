@@ -65,12 +65,22 @@ def git(repo: Path, *args: str) -> str:
 
 
 def glossary_rows(repo: Path) -> int:
-    """Body rows of the glossary term table (pipe lines minus header+separator)."""
+    """Body rows of the glossary's term table specifically: consecutive pipe
+    lines following the '| Term |' header, minus header and separator."""
     f = repo / "docs/okf/glossary.md"
     if not f.exists():
         return 0
-    pipe_lines = [l for l in f.read_text().splitlines() if l.lstrip().startswith("|")]
-    return max(0, len(pipe_lines) - 2)
+    lines = f.read_text().splitlines()
+    start = next((i for i, l in enumerate(lines)
+                  if l.lstrip().startswith("|") and "Term" in l), None)
+    if start is None:
+        return 0
+    n = 0
+    for l in lines[start:]:
+        if not l.lstrip().startswith("|"):
+            break
+        n += 1
+    return max(0, n - 2)
 
 
 def expected_owned() -> dict[str, Path]:
@@ -379,6 +389,16 @@ def grade_restructure(ws: Path) -> Grader:
     g.check("glossary_heal_in_plan", gl_named,
             "plan/report names the glossary item" if gl_named
             else "report never mentions the glossary")
+
+    fg = repo / meta["foreign_glossary_path"]
+    g.check("foreign_glossary_merged_away", not fg.exists(),
+            f"{meta['foreign_glossary_path']} removed after merge" if not fg.exists()
+            else f"{meta['foreign_glossary_path']} still on disk")
+    gl_text = (repo / "docs/okf/glossary.md").read_text() if (repo / "docs/okf/glossary.md").exists() else ""
+    def_in_gl = meta["foreign_glossary_definition"] in gl_text
+    g.check("foreign_definition_in_okf_glossary", def_in_gl,
+            "instance definition lives in docs/okf/glossary.md" if def_in_gl
+            else "definition not merged into the OKF glossary")
 
     stray = repo / meta["stray_rulebook_path"]
     g.check("stray_rulebook_merged_away", not stray.exists(),

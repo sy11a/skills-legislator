@@ -7,7 +7,7 @@ legislator skill against:
   <workspace>/fresh-scaffold-dotnet/repo   — new repo, no CLAUDE.md
   <workspace>/legacy-migration/repo        — hand-written CLAUDE.md, no manifest
   <workspace>/upgrade/repo                 — previously legislated, one version behind
-  <workspace>/rotted-layer/repo            — legislated, thirteen planted defects (audit scenario)
+  <workspace>/rotted-layer/repo            — legislated, fourteen planted defects (audit scenario)
   <workspace>/restructure/repo            — rotted + relocatables (restructure scenario)
 
 The upgrade repo is generated from the CURRENT skill source so this suite
@@ -130,7 +130,7 @@ def materialize_upgrade(dest: Path) -> None:
 
 
 def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
-    """Legislated repo with thirteen planted defects for the audit scenario.
+    """Legislated repo with fourteen planted defects for the audit scenario.
 
     Generated from the CURRENT skill source, then deliberately damaged.
     Each defect leaves a distinctive marker string an audit report must
@@ -255,6 +255,17 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
     # Defect 9 — foreign AI-layer structure.
     (dest / ".cursorrules").write_text("Always write tests first.\n")
 
+    # Defect 14 -- foreign glossary/domain store (parallel-constitution
+    # artifact, check 9). One generic law-shaped line (a candidate) and one
+    # project-instance definition (merges to okf/glossary, never a
+    # candidate). Restructure must merge it away per the new routing row.
+    (dest / "UBIQUITOUS_LANGUAGE.md").write_text(
+        "# Ubiquitous Language\n\n"
+        "- Domain events are named in past tense (InvoiceSettled, "
+        "never SettleInvoice).\n"
+        "- A billing period in LegacyBilling always runs from the 1st to "
+        "the last day of the calendar month.\n")
+
     # Defect 11 -- a project rule (in the standard .claude/rules/ home) that
     # contradicts owned law (core/dev-journal.md). Audit check 11 must flag
     # it; restructure must decision-gate it, never edit it.
@@ -304,9 +315,11 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
             "keep-list] docs/notes/special-sauce.md",  # defect 10: kept but referenced nowhere
             "project-rules] .claude/rules/journal.md",  # defect 11: project rule vs owned law
             "stray-rulebooks] docs/superpowers/review-checklist.md",  # defect 12
+            "foreign-structures] UBIQUITOUS_LANGUAGE.md",  # defect 14: foreign glossary store
             "glossary-vitality] docs/okf/glossary.md",  # defect 13: empty glossary, src/ exists
             "dry-run mode before a real import",  # harvest: candidate quoted
             "must be reversible",  # harvest: stray-rulebook generic line quoted
+            "named in past tense",  # harvest: foreign-glossary generic line quoted
             "### Constitution candidates",  # harvest appendix present with pinned heading
         ],
         # BL-011 regression lock: the audit must NOT flag the constitution's
@@ -323,6 +336,9 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
             # project-instance law from the stray rulebook — merges to
             # .claude/rules/, never a fleet candidate
             "never call wkhtmltopdf directly",
+            # foreign-glossary instance definition — merges to okf/glossary,
+            # never proposed as fleet law
+            "billing period",
             # BL-015 rider 1 lock: a statement contradicting an owned rule
             # is covered by that rule — decision-gate material, not a
             # candidate (defect 11's planted line)
@@ -343,7 +359,11 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
             "We do not maintain CHANGELOG.md",
             "Every database migration must be reversible",
             "never call wkhtmltopdf directly",
+            "named in past tense",
+            "billing period",
         ]
+        meta["foreign_glossary_path"] = "UBIQUITOUS_LANGUAGE.md"
+        meta["foreign_glossary_definition"] = "billing period"
         meta["stray_rulebook_path"] = "docs/superpowers/review-checklist.md"
         meta["stray_project_law"] = "never call wkhtmltopdf directly"
         meta["conflict_marker"] = (
