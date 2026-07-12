@@ -256,9 +256,11 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
     (dest / ".cursorrules").write_text("Always write tests first.\n")
 
     # Defect 14 -- foreign glossary/domain store (parallel-constitution
-    # artifact, check 9). One generic law-shaped line (a candidate) and one
-    # project-instance definition (merges to okf/glossary, never a
-    # candidate). Restructure must merge it away per the new routing row.
+    # artifact, check 9). Check-9 files are NOT harvest sources (check-12
+    # precedence), so NEITHER line may appear as a constitution candidate;
+    # the generic line is expected to surface in the finding text instead.
+    # Restructure must merge it away per the routing row (definition ->
+    # okf/glossary row, law line -> .claude/rules/).
     (dest / "UBIQUITOUS_LANGUAGE.md").write_text(
         "# Ubiquitous Language\n\n"
         "- Domain events are named in past tense (InvoiceSettled, "
@@ -319,7 +321,7 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
             "glossary-vitality] docs/okf/glossary.md",  # defect 13: empty glossary, src/ exists
             "dry-run mode before a real import",  # harvest: candidate quoted
             "must be reversible",  # harvest: stray-rulebook generic line quoted
-            "named in past tense",  # harvest: foreign-glossary generic line quoted
+            "named in past tense",  # foreign-glossary generic line surfaces in the check-9 finding text
             "### Constitution candidates",  # harvest appendix present with pinned heading
         ],
         # BL-011 regression lock: the audit must NOT flag the constitution's
@@ -336,9 +338,10 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
             # project-instance law from the stray rulebook — merges to
             # .claude/rules/, never a fleet candidate
             "never call wkhtmltopdf directly",
-            # foreign-glossary instance definition — merges to okf/glossary,
-            # never proposed as fleet law
+            # foreign-glossary lines — check-9 territory is not a harvest
+            # source (check-12 precedence): NEITHER line may be proposed
             "billing period",
+            "named in past tense",
             # BL-015 rider 1 lock: a statement contradicting an owned rule
             # is covered by that rule — decision-gate material, not a
             # candidate (defect 11's planted line)

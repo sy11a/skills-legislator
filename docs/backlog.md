@@ -731,6 +731,45 @@ restructure merges it into glossary rows; candidates carry its generic
 line only; idempotency zero-diff ×3; then the three-repo backfill lands
 v12 + drafted verification/skills project rules on PRs.
 
+## BL-023 — Skill-governance follow-ups from the v12 final review (skill-file items)
+
+Ride along with the next benchmarked `skill/**` cycle:
+
+1. **Read-only-DB bullet vs test harnesses (Important).** verification.md's
+   read-only rule, strictly read, outlaws ordinary integration-test
+   seeding/truncation. Scope it to manual/exploratory verification, or
+   exempt test-harness fixtures explicitly.
+2. **Absent-bindings fallback undefined (Important).** A UI repo with no
+   `.claude/rules/verification.md` makes the drive-the-app gate
+   unsatisfiable. Define the fallback (degrade to strongest available +
+   flag the missing bindings in the report).
+3. **Instance-data carve-out for the two named binding files (Important).**
+   verification.md/skills.md mandate instance data into `.claude/rules/**`,
+   which project-rules.md and the three-way split route to CLAUDE.md —
+   sanction `.claude/rules/{verification,skills}.md` as named instance-data
+   homes so restructure never proposes evicting them.
+4. **Check 12 `.github/` scan over-broad (Important).** Recursive scan hits
+   PULL_REQUEST_TEMPLATE.md / ISSUE_TEMPLATE/*.md (checklist-shaped,
+   unreferenced by design) → fleet-wide false Warnings. Exempt GitHub's
+   conventional templates.
+5. **Check-9 Warning-elevation has zero mechanical coverage (Important).**
+   Plant a predominantly-law-shaped foreign fixture with a severity-anchored
+   marker.
+6. **Precedence floor + CLAUDE.md rank (Minor).** skills.md lets a project
+   rule override another skill's safety gate without contradicting owned
+   law (check 11 silent); CLAUDE.md instructions are unranked. Define the
+   floor and CLAUDE.md's place.
+7. **Self-exemption wording (Minor).** Legislator's own migration/scaffold
+   writes CLAUDE.md — literally the setup action skills.md gates. State
+   "invoking /legislator is the approval" so literal agents don't insert
+   stops.
+8. **"Zero new warnings" baseline undefined (Minor)** — define vs the
+   pre-change build.
+9. **Kept foreign structure is a perpetual check-9 finding (Minor)** — add
+   check 12's kept-path exemption to check 9.
+10. **Upgrade grader: assert the withheld CORE rule's import proposal too
+    (Minor)** — currently only the stack rule's line is asserted.
+
 ## Note — OKF content-accuracy check is an open idea, not yet a backlog item
 
 The RKruiterApi v11 backfill (2026-07-12) found six `docs/okf/domain/*.md`
