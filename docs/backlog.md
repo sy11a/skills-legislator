@@ -821,6 +821,33 @@ idempotency zero-diff (create-once starter never rewrites); then the
 fleet's three hand-written skills.md files gain stage headings via small
 PRs.
 
+## BL-025 — Stage-routing follow-ups from the v13 final review (skill-file items)
+
+Ride along with the next benchmarked `skill/**` cycle:
+
+1. **Unprompted heading-pin evidence (Important).** The counted v13
+   migration re-run carried a pinned-format reminder; run v14's migration
+   with the clean prompt — if the H2 drift recurs, move the pin adjacent
+   to the save-report instruction in law.
+2. **Severity-anchored markers (Important).** The counted v13 audit put
+   `unresolved-placeholders` under Info (pinned: Critical) and no oracle
+   noticed. Add severity-anchored markers (e.g. section-scoped presence:
+   marker must appear under the pinned severity heading) for at least the
+   Critical checks.
+3. **Stage-affinity vs keep-list coherence (Minor).** The pinned table
+   names `dotnet-refactoring`, which `tools/link-skills.sh`'s KEEP list
+   can't provide (different source) — a fresh machine can't scaffold the
+   dotnet review stage from the tutorial alone. Document its source or
+   add a second-source mechanism to the script.
+4. **link-skills.sh hardening (Minor).** `mkdir -p "$DST"`; non-zero exit
+   on MISSING-SOURCE drift in link mode.
+5. **Mapped-but-uninstalled fallback clause (Minor).**
+   `core/skills.md` stage-routing bullet: "a mapped skill that is not
+   installed is check-14 territory — note it and proceed."
+6. **Grader tightening (Minor).** Restructure's skill-binding check should
+   scope to `For the team:`; fresh/migration could cross-check backticked
+   skill names in the scaffolded stage map against `~/.claude/skills/`.
+
 ## Note — OKF content-accuracy check is an open idea, not yet a backlog item
 
 The RKruiterApi v11 backfill (2026-07-12) found six `docs/okf/domain/*.md`
