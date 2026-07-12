@@ -64,6 +64,15 @@ def git(repo: Path, *args: str) -> str:
                           capture_output=True, text=True).stdout
 
 
+def glossary_rows(repo: Path) -> int:
+    """Body rows of the glossary term table (pipe lines minus header+separator)."""
+    f = repo / "docs/okf/glossary.md"
+    if not f.exists():
+        return 0
+    pipe_lines = [l for l in f.read_text().splitlines() if l.lstrip().startswith("|")]
+    return max(0, len(pipe_lines) - 2)
+
+
 def expected_owned() -> dict[str, Path]:
     """repo-relative owned path -> source file, derived from skill source."""
     owned: dict[str, Path] = {}
@@ -165,6 +174,10 @@ class Grader:
         missing = [a for a in SCAFFOLD_ARTIFACTS if not (repo / a).exists()]
         self.check("scaffold_artifacts_present", not missing,
                    "all Step 4 artifacts exist" if not missing else f"missing: {missing}")
+        rows = glossary_rows(repo)
+        self.check("glossary_seeded_with_terms", rows >= 1,
+                   f"{rows} term row(s) derived from the repo's domain" if rows >= 1
+                   else "glossary table has no body rows — {{GLOSSARY_TABLE}} derivation produced nothing")
         claude = (repo / "CLAUDE.md").read_text() if (repo / "CLAUDE.md").exists() else ""
         self.check("claude_md_imports_rules", "@docs/ai/rules/core/" in claude,
                    "@import block present" if "@docs/ai/rules/core/" in claude else "no @import lines in CLAUDE.md")
@@ -255,9 +268,13 @@ def grade_upgrade(ws: Path) -> Grader:
     g.check("step7_report_saved", has_report,
             str(report_path) if has_report else f"missing: {report_path}")
     import_line = f"@docs/ai/rules/stacks/dotnet/{meta['withheld_stack_rule']}"
-    g.check("report_proposes_stack_import_line", import_line in report,
-            "proposed CLAUDE.md import line present" if import_line in report
-            else f"report does not propose {import_line}")
+    # Scoped to the "Needs your review" section (BL-019 R3): the line counts
+    # only as a PROPOSAL — its appearance in Deleted/Overwritten would not.
+    review_idx = report.find("eeds your review")
+    proposed = review_idx >= 0 and import_line in report[review_idx:]
+    g.check("report_proposes_stack_import_line", proposed,
+            "proposed in the Needs-your-review section" if proposed
+            else f"no 'Needs your review' section proposing {import_line}")
 
     retired = repo / "docs/ai/rules/core" / meta["retired_rule"]
     g.check("retired_rule_deleted", not retired.exists(),
@@ -353,6 +370,15 @@ def grade_restructure(ws: Path) -> Grader:
             "conflicting project rule byte-unchanged and named in the report"
             if pr_ok and pr_named
             else f"file untouched={pr_ok}, named in report={pr_named}")
+
+    rows = glossary_rows(repo)
+    g.check("glossary_healed_with_terms", rows >= 1,
+            f"glossary seeded with {rows} term row(s) by the fix item" if rows >= 1
+            else "glossary still has zero body rows after restructure")
+    gl_named = "glossary" in report.lower()
+    g.check("glossary_heal_in_plan", gl_named,
+            "plan/report names the glossary item" if gl_named
+            else "report never mentions the glossary")
 
     stray = repo / meta["stray_rulebook_path"]
     g.check("stray_rulebook_merged_away", not stray.exists(),
