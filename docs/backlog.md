@@ -673,6 +673,40 @@ before rollout: audit re-run at 20466a6, results appended to v11.md.)
 
 ---
 
+## BL-022 — Skill governance + verification law (constitution v12)
+
+**What:** two new core rules (spec:
+`docs/superpowers/specs/2026-07-12-skill-governance-design.md`).
+`core/skills.md` — law beats skills, skill outputs redirect to
+constitutional homes (issues→backlog, foreign glossaries→okf/glossary,
+mid-skill decisions→decision gate + ADR), no skill commits/pushes/merges/
+files issues on its own authority, hook installs are decision-gate stops,
+per-repo sanction lists in `.claude/rules/skills.md`. `core/verification.md`
+— the verification ladder (tests at the right boundary, drive the real app
+via repo-configured MCP tooling before "done", read-only DB checks, honest
+build/test gate), with per-repo bindings in `.claude/rules/verification.md`
+(**`assets/rules/**` change: VERSION 11→12**). Check 9 gains the
+parallel-constitution artifacts (CONTEXT.md, UBIQUITOUS_LANGUAGE.md,
+docs/agents/, .scratch/, root NOTES.md); BL-021 rides along. Companion
+actions: 15 hostile/irrelevant mattpocock skills pruned from
+`~/.claude/skills/`; legislator repo CLAUDE.md bans AI co-author trailers
+explicitly.
+
+**Why:** the mattpocock pack sweep (2026-07-12, verdicts in the spec)
+showed any installed skill pack can out-instruct the constitution — a
+parallel intake, parallel glossaries, auto-commits. The missing law was
+precedence, not the pack. And verification had no law at all: the
+build/test gate lived in a skill, and CareerPlatform grew its own e2e
+project rule (harvest signal) — agents need a pinned ladder to keep
+control of what they build.
+
+**Done when:** benchmark `evals/benchmarks/v12.md` green — upgrade
+delivers `verification.md` (auto-withheld) and proposes its import; audit
+flags the planted `UBIQUITOUS_LANGUAGE.md` at Warning under check 9;
+restructure merges it into glossary rows; candidates carry its generic
+line only; idempotency zero-diff ×3; then the three-repo backfill lands
+v12 + drafted verification/skills project rules on PRs.
+
 ## Note — OKF content-accuracy check is an open idea, not yet a backlog item
 
 The RKruiterApi v11 backfill (2026-07-12) found six `docs/okf/domain/*.md`

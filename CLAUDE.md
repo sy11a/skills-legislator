@@ -24,6 +24,10 @@ Documentation-only edits (README, `docs/**`, `evals/**` itself) need neither.
 
 ## Other repo rules
 
+- **Never add AI co-author trailers to commits in this repo** — no
+  `Co-Authored-By: Claude ...` lines of any kind. The fleet law
+  (`skill/assets/rules/core/pair-development.md`) applies to the legislator
+  repo itself, even though this repo is not legislated.
 - Editing any file under `skill/assets/rules/` means the constitution
   changed: bump `skill/VERSION` in the same commit (see README.md).
 - Rule files contain only enforceable law; how-to guidance is delegated by
