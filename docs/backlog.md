@@ -640,7 +640,16 @@ CareerPlatform and RKruiterApi on feature branches.
 
 ## BL-021 — Glossary-vitality follow-ups from the v11 final review (skill-file items)
 
-Ride along with the next benchmarked `skill/**` cycle:
+**Status: DONE 2026-07-12** — rode the BL-022 cycle: item 1 shipped
+("unmerged, unparked"), item 2 shipped (derivation "up to 15, typically 5+
+when the repo evidences them"), item 3 shipped (carve-out conditioned on a
+longer-lived service reaching shorter-lived ones), item 4 shipped (check 13
+names check 6's pinned ignore list), item 5 partially shipped
+(`glossary_rows()` scoped to the term table; the absent-marker
+post-Clean-checks blindness remains accepted), item 6 shipped (check 12
+scans `.github/*.md`). Benchmark `evals/benchmarks/v12.md`.
+
+Original items:
 
 1. **"Parked" branch still trips the never-cut clause (Important).**
    pair-development.md: a parked branch is literally "an unmerged task
@@ -674,6 +683,21 @@ before rollout: audit re-run at 20466a6, results appended to v11.md.)
 ---
 
 ## BL-022 — Skill governance + verification law (constitution v12)
+
+**Status: DONE 2026-07-12** — full cycle (spec
+`docs/superpowers/specs/2026-07-12-skill-governance-design.md`, commits
+f90c4dc..HEAD on `feature/bl-022-skill-governance-v12`, **VERSION 11→12**,
+benchmark `evals/benchmarks/v12.md`: 110/110, third single-pass-clean
+benchmark). Upgrade delivered `verification.md` and proposed its import;
+restructure split the planted foreign glossary exactly per the new routing
+(definition→okf/glossary row, law→.claude/rules, file removed, fidelity 9
+lines); the migration run unprompted flagged the missing per-repo
+verification bindings — the new law steering behavior on first contact.
+Companion actions done: 15 conflicting/irrelevant mattpocock skills pruned;
+legislator repo CLAUDE.md bans AI co-author trailers explicitly. BL-021
+shipped with it. **Fleet action: run `/legislator` in each downstream repo
+to deliver v12** (phase 2 backfill covers all three + drafts their
+verification/skills project rules).
 
 **What:** two new core rules (spec:
 `docs/superpowers/specs/2026-07-12-skill-governance-design.md`).
