@@ -640,7 +640,16 @@ CareerPlatform and RKruiterApi on feature branches.
 
 ## BL-021 — Glossary-vitality follow-ups from the v11 final review (skill-file items)
 
-Ride along with the next benchmarked `skill/**` cycle:
+**Status: DONE 2026-07-12** — rode the BL-022 cycle: item 1 shipped
+("unmerged, unparked"), item 2 shipped (derivation "up to 15, typically 5+
+when the repo evidences them"), item 3 shipped (carve-out conditioned on a
+longer-lived service reaching shorter-lived ones), item 4 shipped (check 13
+names check 6's pinned ignore list), item 5 partially shipped
+(`glossary_rows()` scoped to the term table; the absent-marker
+post-Clean-checks blindness remains accepted), item 6 shipped (check 12
+scans `.github/*.md`). Benchmark `evals/benchmarks/v12.md`.
+
+Original items:
 
 1. **"Parked" branch still trips the never-cut clause (Important).**
    pair-development.md: a parked branch is literally "an unmerged task
@@ -672,6 +681,94 @@ Ride along with the next benchmarked `skill/**` cycle:
 before rollout: audit re-run at 20466a6, results appended to v11.md.)
 
 ---
+
+## BL-022 — Skill governance + verification law (constitution v12)
+
+**Status: DONE 2026-07-12** — full cycle (spec
+`docs/superpowers/specs/2026-07-12-skill-governance-design.md`, commits
+f90c4dc..HEAD on `feature/bl-022-skill-governance-v12`, **VERSION 11→12**,
+benchmark `evals/benchmarks/v12.md`: 110/110, third single-pass-clean
+benchmark). Upgrade delivered `verification.md` and proposed its import;
+restructure split the planted foreign glossary exactly per the new routing
+(definition→okf/glossary row, law→.claude/rules, file removed, fidelity 9
+lines); the migration run unprompted flagged the missing per-repo
+verification bindings — the new law steering behavior on first contact.
+Companion actions done: 15 conflicting/irrelevant mattpocock skills pruned;
+legislator repo CLAUDE.md bans AI co-author trailers explicitly. BL-021
+shipped with it. **Fleet action: run `/legislator` in each downstream repo
+to deliver v12** (phase 2 backfill covers all three + drafts their
+verification/skills project rules).
+
+**What:** two new core rules (spec:
+`docs/superpowers/specs/2026-07-12-skill-governance-design.md`).
+`core/skills.md` — law beats skills, skill outputs redirect to
+constitutional homes (issues→backlog, foreign glossaries→okf/glossary,
+mid-skill decisions→decision gate + ADR), no skill commits/pushes/merges/
+files issues on its own authority, hook installs are decision-gate stops,
+per-repo sanction lists in `.claude/rules/skills.md`. `core/verification.md`
+— the verification ladder (tests at the right boundary, drive the real app
+via repo-configured MCP tooling before "done", read-only DB checks, honest
+build/test gate), with per-repo bindings in `.claude/rules/verification.md`
+(**`assets/rules/**` change: VERSION 11→12**). Check 9 gains the
+parallel-constitution artifacts (CONTEXT.md, UBIQUITOUS_LANGUAGE.md,
+docs/agents/, .scratch/, root NOTES.md); BL-021 rides along. Companion
+actions: 15 hostile/irrelevant mattpocock skills pruned from
+`~/.claude/skills/`; legislator repo CLAUDE.md bans AI co-author trailers
+explicitly.
+
+**Why:** the mattpocock pack sweep (2026-07-12, verdicts in the spec)
+showed any installed skill pack can out-instruct the constitution — a
+parallel intake, parallel glossaries, auto-commits. The missing law was
+precedence, not the pack. And verification had no law at all: the
+build/test gate lived in a skill, and CareerPlatform grew its own e2e
+project rule (harvest signal) — agents need a pinned ladder to keep
+control of what they build.
+
+**Done when:** benchmark `evals/benchmarks/v12.md` green — upgrade
+delivers `verification.md` (auto-withheld) and proposes its import; audit
+flags the planted `UBIQUITOUS_LANGUAGE.md` at Warning under check 9;
+restructure merges it into glossary rows; candidates carry its generic
+line only; idempotency zero-diff ×3; then the three-repo backfill lands
+v12 + drafted verification/skills project rules on PRs.
+
+## BL-023 — Skill-governance follow-ups from the v12 final review (skill-file items)
+
+Ride along with the next benchmarked `skill/**` cycle:
+
+1. **Read-only-DB bullet vs test harnesses (Important).** verification.md's
+   read-only rule, strictly read, outlaws ordinary integration-test
+   seeding/truncation. Scope it to manual/exploratory verification, or
+   exempt test-harness fixtures explicitly.
+2. **Absent-bindings fallback undefined (Important).** A UI repo with no
+   `.claude/rules/verification.md` makes the drive-the-app gate
+   unsatisfiable. Define the fallback (degrade to strongest available +
+   flag the missing bindings in the report).
+3. **Instance-data carve-out for the two named binding files (Important).**
+   verification.md/skills.md mandate instance data into `.claude/rules/**`,
+   which project-rules.md and the three-way split route to CLAUDE.md —
+   sanction `.claude/rules/{verification,skills}.md` as named instance-data
+   homes so restructure never proposes evicting them.
+4. **Check 12 `.github/` scan over-broad (Important).** Recursive scan hits
+   PULL_REQUEST_TEMPLATE.md / ISSUE_TEMPLATE/*.md (checklist-shaped,
+   unreferenced by design) → fleet-wide false Warnings. Exempt GitHub's
+   conventional templates.
+5. **Check-9 Warning-elevation has zero mechanical coverage (Important).**
+   Plant a predominantly-law-shaped foreign fixture with a severity-anchored
+   marker.
+6. **Precedence floor + CLAUDE.md rank (Minor).** skills.md lets a project
+   rule override another skill's safety gate without contradicting owned
+   law (check 11 silent); CLAUDE.md instructions are unranked. Define the
+   floor and CLAUDE.md's place.
+7. **Self-exemption wording (Minor).** Legislator's own migration/scaffold
+   writes CLAUDE.md — literally the setup action skills.md gates. State
+   "invoking /legislator is the approval" so literal agents don't insert
+   stops.
+8. **"Zero new warnings" baseline undefined (Minor)** — define vs the
+   pre-change build.
+9. **Kept foreign structure is a perpetual check-9 finding (Minor)** — add
+   check 12's kept-path exemption to check 9.
+10. **Upgrade grader: assert the withheld CORE rule's import proposal too
+    (Minor)** — currently only the stack rule's line is asserted.
 
 ## Note — OKF content-accuracy check is an open idea, not yet a backlog item
 

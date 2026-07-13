@@ -14,6 +14,7 @@ Detailed mechanics for SKILL.md's "Restructure — approval-gated repair" sectio
 | Dev journal entries | `docs/journal/` |
 | Changelog | `CHANGELOG.md` |
 | Foreign AI configs (`.cursorrules`, `.cursor/`, `AGENTS.md`, `.github/copilot-instructions.md`) | law-shaped rules merged into `.claude/rules/<topic>.md`; narrative prose into CLAUDE.md's project sections; the file removed after the merge |
+| Foreign glossary/domain stores (`CONTEXT.md`, `CONTEXT-MAP.md`, `UBIQUITOUS_LANGUAGE.md`) | term definitions merged into `docs/okf/glossary.md` rows; law-shaped lines into `.claude/rules/<topic>.md` per §3; the file removed after the merge |
 | Project-specific rules (law for this repo only) | `.claude/rules/<topic>.md` — see `core/project-rules.md` |
 | Stray rulebooks (review/refactoring checklists or rule lists parked outside the law homes — audit check 12) | law-shaped lines merged into `.claude/rules/<topic>.md` per the §3 carve-outs; the file removed after the merge. Conflicts with owned law are `decision` items, never merged silently |
 | Narrative AI rules prose | CLAUDE.md project sections — **never** `docs/ai/rules/**` (machine-managed law; only `heal` touches it, via Steps 2–3) |
