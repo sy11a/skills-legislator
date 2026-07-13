@@ -72,6 +72,13 @@ for rf in rule_files:
     check(text.startswith("## "), f"{rel} starts with a '## ' heading")
     check(len(text.strip()) > 0, f"{rel} is non-empty")
 
+print("== CLAUDE.md.tpl imports every core rule ==")
+tpl_text = (SKILL / "assets" / "templates" / "CLAUDE.md.tpl").read_text()
+for rf in sorted((SKILL / "assets" / "rules" / "core").glob("*.md")):
+    check(f"@docs/ai/rules/core/{rf.name}" in tpl_text,
+          f"CLAUDE.md.tpl imports core/{rf.name}",
+          "missing from the tpl core import block")
+
 print("== stack rule-file naming (README content discipline) ==")
 allowed = {"architecture.md", "coding-standards.md", "data-access.md"}
 for rf in sorted((SKILL / "assets" / "rules" / "stacks").rglob("*.md")):

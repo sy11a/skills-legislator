@@ -63,7 +63,7 @@ again. The skill never commits — review the diff and commit it yourself.
 
 Once legislated, three more requests matter:
 
-- **"Audit the AI layer here"** — read-only health check (13 checks: broken
+- **"Audit the AI layer here"** — read-only health check (14 checks: broken
   imports, stale maps, orphan docs, dead journal, hand-edited law, leftover
   `.cursorrules`, stray rulebooks parked where no session loads them, …).
   Zero writes, severity-ranked report.
@@ -96,6 +96,34 @@ See [skill/SKILL.md](skill/SKILL.md) for the full procedure,
 [skill/references/migration.md](skill/references/migration.md) for migration
 specifics, and [skill/references/restructure.md](skill/references/restructure.md)
 for the repair mechanics.
+
+## Skill ecosystem setup
+
+The constitution governs *skills* as well as rules (`core/skills.md`: law
+beats skills, outputs redirect to constitutional homes; `core/verification.md`
+consumes per-repo tool bindings). The machine-level setup that makes this
+work:
+
+1. **Install packs by clone + link, never by copy.** Keep each pack's
+   canonical checkout in one place and symlink the skills you actually want
+   into `~/.claude/skills/` — exactly how this repo installs itself
+   (`ln -s .../legislator/skill ~/.claude/skills/legislator`). A pull in
+   the checkout then updates every linked skill at once.
+2. **Curate, don't hoard.** Run the conflict sweep before adopting a pack
+   (the BL-022 sweep verdicts in
+   [the skill-governance spec](docs/superpowers/specs/2026-07-12-skill-governance-design.md)
+   are the worked example): skills that file issues elsewhere, auto-commit,
+   or keep their own glossaries are either pruned or kept *governed* — the
+   `core/skills.md` redirects make the borderline ones safe.
+3. **`tools/link-skills.sh`** encodes the curated keep list: run it plain
+   to link anything missing, `--check` to print drift (pairs with audit
+   check 14, `skill-bindings`), `--prune` to drop off-list links into the
+   same source. `SRC=` overrides the pack location.
+4. **Per repo**, legislation scaffolds a create-once `.claude/rules/skills.md`
+   stage map (pre-plan / implement / debug / review / docs) from the skills
+   actually installed — agents consult it at stage boundaries, so the right
+   skill fires at the right step. Audit check 14 flags sanctioned skills
+   that aren't installed on the current machine.
 
 ## Content discipline for rule files
 
