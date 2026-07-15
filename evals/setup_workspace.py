@@ -7,7 +7,7 @@ legislator skill against:
   <workspace>/fresh-scaffold-dotnet/repo   — new repo, no CLAUDE.md
   <workspace>/legacy-migration/repo        — hand-written CLAUDE.md, no manifest
   <workspace>/upgrade/repo                 — previously legislated, one version behind
-  <workspace>/rotted-layer/repo            — legislated, fourteen planted defects (audit scenario)
+  <workspace>/rotted-layer/repo            — legislated, fifteen planted defects (audit scenario)
   <workspace>/restructure/repo            — rotted + relocatables (restructure scenario)
 
 The upgrade repo is generated from the CURRENT skill source so this suite
@@ -130,7 +130,7 @@ def materialize_upgrade(dest: Path) -> None:
 
 
 def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
-    """Legislated repo with fourteen planted defects for the audit scenario.
+    """Legislated repo with fifteen planted defects for the audit scenario.
 
     Generated from the CURRENT skill source, then deliberately damaged.
     Each defect leaves a distinctive marker string an audit report must
@@ -276,6 +276,15 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
         "# Journal policy\n\n"
         "Dev journal entries are optional; skip them for small changes.\n")
 
+    # Defect 15 -- skill-bindings rot: the repo sanctions a skill that is
+    # not installed on any machine. Audit check 14 must flag it at Info;
+    # restructure must route it to "For the team" and leave the file
+    # byte-unchanged (machine setup, never a repo plan item).
+    (dest / ".claude/rules/skills.md").write_text(
+        "# Skill Law (this repo)\n\n"
+        "- **pre-plan:** `grilling`\n"
+        "- **implement:** `made-up-skill`\n")
+
     # Defect 12 -- stray rulebook: law-shaped review rules parked at
     # docs/superpowers/ top level (exempt from orphan check 7, invisible to
     # every session). Audit check 12 must flag it under its slug; the
@@ -319,9 +328,9 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
             "stray-rulebooks] docs/superpowers/review-checklist.md",  # defect 12
             "foreign-structures] UBIQUITOUS_LANGUAGE.md",  # defect 14: foreign glossary store
             "glossary-vitality] docs/okf/glossary.md",  # defect 13: empty glossary, src/ exists
+            "skill-bindings] made-up-skill",  # defect 15: sanctioned but uninstalled
             "dry-run mode before a real import",  # harvest: candidate quoted
             "must be reversible",  # harvest: stray-rulebook generic line quoted
-            "named in past tense",  # foreign-glossary generic line surfaces in the check-9 finding text
             "### Constitution candidates",  # harvest appendix present with pinned heading
         ],
         # BL-011 regression lock: the audit must NOT flag the constitution's
@@ -374,6 +383,9 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
             "in the wiki at release time.")
         meta["kept_path"] = "docs/notes/special-sauce.md"
         meta["kept_content"] = (dest / "docs/notes/special-sauce.md").read_text()
+        meta["skills_rules_path"] = ".claude/rules/skills.md"
+        meta["skills_rules_content"] = (
+            dest / ".claude/rules/skills.md").read_text()
         meta["project_rule_conflict_path"] = ".claude/rules/journal.md"
         meta["project_rule_conflict_content"] = (
             dest / ".claude/rules/journal.md").read_text()

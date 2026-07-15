@@ -131,7 +131,7 @@ warrants re-running that scenario 2–3 times before drawing a conclusion.
   re-surfacing open decision items).
 - **audit** — read-only rot detection: the report must name every planted
   defect in the rotted fixture (see `setup_workspace.py:materialize_rotted`
-  for the fourteen planted defects, including an unlinked keep-listed file, an empty glossary in a repo with source code, a root UBIQUITOUS_LANGUAGE.md foreign glossary store, and
+  for the fifteen planted defects, including an unlinked keep-listed file, an empty glossary in a repo with source code, a root UBIQUITOUS_LANGUAGE.md foreign glossary store, and
   a stray rulebook under docs/superpowers/; hub
   files must not be flagged (BL-011 regression lock)), and the repo must be
   byte-untouched afterwards (zero-writes contract); harvest appendix:

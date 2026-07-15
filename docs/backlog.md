@@ -733,7 +733,18 @@ v12 + drafted verification/skills project rules on PRs.
 
 ## BL-023 — Skill-governance follow-ups from the v12 final review (skill-file items)
 
-Ride along with the next benchmarked `skill/**` cycle:
+**Status: DONE 2026-07-12** — rode the BL-024 cycle: item 1 shipped
+(harness fixtures/seeding exempt from the read-only-DB bullet), item 2
+shipped (absent-bindings fallback: ladder applies with repo defaults),
+item 3 shipped (project-rules sanctions the two instance-data homes),
+item 4 shipped (setup-gate self-exemption for legislator's CLAUDE.md
+writes), item 5 shipped (check 12 exempts PULL_REQUEST_TEMPLATE.md +
+.github/ISSUE_TEMPLATE/**), item 6 shipped (check 9 kept-path exemption),
+item 7 shipped (upgrade grader asserts both import proposals — and the
+assertion caught nothing because the run complied). Benchmark
+`evals/benchmarks/v13.md`.
+
+Original items:
 
 1. **Read-only-DB bullet vs test harnesses (Important).** verification.md's
    read-only rule, strictly read, outlaws ordinary integration-test
@@ -769,6 +780,73 @@ Ride along with the next benchmarked `skill/**` cycle:
    check 12's kept-path exemption to check 9.
 10. **Upgrade grader: assert the withheld CORE rule's import proposal too
     (Minor)** — currently only the stack rule's line is asserted.
+
+## BL-024 — Skill stage-routing + setup automation (constitution v13)
+
+**Status: DONE 2026-07-12** — full cycle (spec
+`docs/superpowers/specs/2026-07-13-skill-stage-routing-design.md`, commits
+fc564c1..HEAD on `feature/bl-024-skill-stage-routing-v13` — stacked on the
+open v12 branch per the pair-development stacking law, merge bottom-up —
+**VERSION 12→13**, benchmark `evals/benchmarks/v13.md`: 117/117 after one
+real catch and three honesty items: v12's tpl import gap found by the
+migration run's own report (tpl fixed + class-killer static check +
+grader completeness assertion), a fragile oracle removed exactly as the
+v12 review predicted, and two run-noise re-runs with no law change).
+Fresh scaffolds now seed a stage-mapped `.claude/rules/skills.md`;
+`tools/link-skills.sh --check` verified clean live. BL-023 shipped with
+it. **Fleet action: v12 PR merges first, then v13; run `/legislator`
+in each downstream repo.**
+
+**What:** skills wired to workflow steps + a setup story (spec:
+`docs/superpowers/specs/2026-07-13-skill-stage-routing-design.md`).
+(1) `core/skills.md` gains stage routing: `.claude/rules/skills.md` maps
+sanctioned skills to pre-plan/implement/debug/review/docs stages,
+consulted at stage boundaries (**`assets/rules/**` change: VERSION
+12→13**); (2) create-once starter scaffold via new `skills-rules.md.tpl`
+(derived from profiles ∩ installed skills, pinned stage-affinity table);
+(3) audit check 14 `skill-bindings` (Info) — sanctioned-but-uninstalled
+skills; (4) `tools/link-skills.sh` + README "Skill ecosystem setup"
+tutorial. BL-023 rides along (all seven items).
+
+**Why:** v12 settled which skills are lawful, not when — agents don't
+proactively grill before plans or run tdd during implementation; and the
+skill layer itself had no rot detection or setup docs (symlinks into a
+non-git dump, tribal knowledge).
+
+**Done when:** benchmark `evals/benchmarks/v13.md` green — fresh scaffolds
+a stage-mapped starter (structural oracle); audit flags the planted
+`made-up-skill` binding at Info; restructure routes it to For-the-team,
+file byte-unchanged; upgrade asserts both new-rule import proposals;
+idempotency zero-diff (create-once starter never rewrites); then the
+fleet's three hand-written skills.md files gain stage headings via small
+PRs.
+
+## BL-025 — Stage-routing follow-ups from the v13 final review (skill-file items)
+
+Ride along with the next benchmarked `skill/**` cycle:
+
+1. **Unprompted heading-pin evidence (Important).** The counted v13
+   migration re-run carried a pinned-format reminder; run v14's migration
+   with the clean prompt — if the H2 drift recurs, move the pin adjacent
+   to the save-report instruction in law.
+2. **Severity-anchored markers (Important).** The counted v13 audit put
+   `unresolved-placeholders` under Info (pinned: Critical) and no oracle
+   noticed. Add severity-anchored markers (e.g. section-scoped presence:
+   marker must appear under the pinned severity heading) for at least the
+   Critical checks.
+3. **Stage-affinity vs keep-list coherence (Minor).** The pinned table
+   names `dotnet-refactoring`, which `tools/link-skills.sh`'s KEEP list
+   can't provide (different source) — a fresh machine can't scaffold the
+   dotnet review stage from the tutorial alone. Document its source or
+   add a second-source mechanism to the script.
+4. **link-skills.sh hardening (Minor).** `mkdir -p "$DST"`; non-zero exit
+   on MISSING-SOURCE drift in link mode.
+5. **Mapped-but-uninstalled fallback clause (Minor).**
+   `core/skills.md` stage-routing bullet: "a mapped skill that is not
+   installed is check-14 territory — note it and proceed."
+6. **Grader tightening (Minor).** Restructure's skill-binding check should
+   scope to `For the team:`; fresh/migration could cross-check backticked
+   skill names in the scaffolded stage map against `~/.claude/skills/`.
 
 ## Note — OKF content-accuracy check is an open idea, not yet a backlog item
 
