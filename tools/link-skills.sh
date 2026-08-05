@@ -30,6 +30,7 @@ KEEP=(
   qa to-tickets triage request-refactor-plan wayfinder
   git-guardrails-claude-code
   code-review
+  angular-developer angular-new-app find-skills
   # stack + authored skills — repo-backed via the ~/.agents canonical library
   # (cross-harness parity with Claude Code; see software-dev KB Home.md)
   dotnet-refactoring aws-serverless-patterns aurelia-developer legislator
