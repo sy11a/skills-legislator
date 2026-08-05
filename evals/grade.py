@@ -29,6 +29,7 @@ Writes grading.json into <ws>/<scenario>/ (viewer-compatible schema) and
 prints a pass/fail table. Exit code 1 if any assertion failed.
 """
 import json
+import os
 import re
 import subprocess
 import sys
@@ -91,6 +92,11 @@ def expected_owned() -> dict[str, Path]:
     for profile in PROFILES:
         for f in sorted((SKILL / "assets/rules/stacks" / profile).glob("*.md")):
             owned[f"docs/ai/rules/stacks/{profile}/{f.name}"] = f
+    # v14: the root owned wiring file opencode.json (no placeholders; byte-copied
+    # from its template source).
+    oc_src = SKILL / "assets" / "templates" / "opencode.json.tpl"
+    if oc_src.exists():
+        owned["opencode.json"] = oc_src
     return owned
 
 
@@ -159,6 +165,15 @@ class Grader:
         self.check("owned_files_verbatim", not bad,
                    f"all {len(owned)} owned files byte-identical to source" if not bad else f"differ/missing: {bad}")
 
+        # v14 model: AGENTS.md is the canonical constitution; CLAUDE.md is a symlink to it.
+        agents_md = repo / "AGENTS.md"
+        claude_link = repo / "CLAUDE.md"
+        is_link = claude_link.is_symlink()
+        points_to_agents = is_link and os.path.realpath(claude_link) == os.path.realpath(agents_md)
+        self.check("v14_model_agents_canonical_claude_symlink",
+                   agents_md.is_file() and is_link and points_to_agents,
+                   f"AGENTS.md={agents_md.is_file()}, CLAUDE.md symlink={is_link}, ->AGENTS.md={points_to_agents}")
+
         status = git(repo, "status", "--porcelain").strip()
         commits = len(git(repo, "log", "--oneline").strip().splitlines())
         self.check("nothing_committed", bool(status) and commits == 1,
@@ -195,14 +210,14 @@ class Grader:
         self.check("glossary_seeded_with_terms", rows >= 1,
                    f"{rows} term row(s) derived from the repo's domain" if rows >= 1
                    else "glossary table has no body rows — {{GLOSSARY_TABLE}} derivation produced nothing")
-        claude = (repo / "CLAUDE.md").read_text() if (repo / "CLAUDE.md").exists() else ""
+        agents = (repo / "AGENTS.md").read_text() if (repo / "AGENTS.md").exists() else ""
         missing_imports = [p for p in expected_owned()
-                           if p.startswith("docs/ai/rules/core/") and f"@{p}" not in claude]
-        self.check("claude_md_imports_all_core", not missing_imports,
+                           if p.startswith("docs/ai/rules/core/") and f"@{p}" not in agents]
+        self.check("agents_md_imports_all_core", not missing_imports,
                    "every core rule imported" if not missing_imports
                    else f"core rules on disk but not imported: {missing_imports}")
-        self.check("claude_md_imports_rules", "@docs/ai/rules/core/" in claude,
-                   "@import block present" if "@docs/ai/rules/core/" in claude else "no @import lines in CLAUDE.md")
+        self.check("agents_md_imports_rules", "@docs/ai/rules/core/" in agents,
+                   "@import block present" if "@docs/ai/rules/core/" in agents else "no @import lines in AGENTS.md")
         rules_dir = repo / ".claude/rules"
         self.check("project_rules_dir_scaffolded", rules_dir.is_dir(),
                    ".claude/rules/ exists" if rules_dir.is_dir()
@@ -224,10 +239,10 @@ def grade_migration(ws: Path) -> Grader:
     g.common_checks(repo)
     g.scaffold_checks(repo)
     g.no_unresolved_tokens(repo)
-    claude = (repo / "CLAUDE.md").read_text() if (repo / "CLAUDE.md").exists() else ""
-    v2_wired = "@docs/okf/codebase-map.md" in claude and "## Boundaries" in claude
-    g.check("claude_md_v2_wiring_written_directly", v2_wired,
-            "map import + Boundaries section present in rewritten CLAUDE.md" if v2_wired
+    agents = (repo / "AGENTS.md").read_text() if (repo / "AGENTS.md").exists() else ""
+    v2_wired = "@docs/okf/codebase-map.md" in agents and "## Boundaries" in agents
+    g.check("agents_md_v2_wiring_written_directly", v2_wired,
+            "map import + Boundaries section present in rewritten AGENTS.md" if v2_wired
             else "migration left v2 wiring as Step 7 proposals instead of writing it")
     report_path = ws / "legacy-migration" / "outputs" / "step7-report.md"
     has_report = report_path.exists()
@@ -258,7 +273,7 @@ def grade_migration(ws: Path) -> Grader:
         ["grep", "-rl", "bl/NNN-short-description", str(pr_dir)],
         capture_output=True, text=True).stdout.strip() if pr_dir.is_dir() else ""
     g.check("instance_data_not_in_project_rules", pr_dir.is_dir() and not conv_hits,
-            "branch convention correctly stayed in CLAUDE.md" if pr_dir.is_dir() and not conv_hits
+            "branch convention correctly stayed in AGENTS.md" if pr_dir.is_dir() and not conv_hits
             else f"instance data leaked into .claude/rules/ (or dir missing): {conv_hits.splitlines() if conv_hits else 'dir missing'}")
     for needle in MIGRATION_PRESERVED:
         hits = subprocess.run(
@@ -309,9 +324,11 @@ def grade_upgrade(ws: Path) -> Grader:
             "deletion propagation removed it" if not retired.exists() else "retired rule still on disk")
 
     # Project-owned files must be untouched: tracked-file diff limited to them
-    # must be empty. CLAUDE.md included — the skill only PROPOSES import-line
-    # changes in its report; it never edits the file (Step 7).
-    protected = ["CLAUDE.md", "CHANGELOG.md", "docs/backlog.md",
+    # must be empty. Under v14 the constitution file is AGENTS.md (project-owned;
+    # upgrade only proposes import-line changes to it, never edits) and CLAUDE.md
+    # is a managed symlink — both legitimately change in a v13->v14 upgrade
+    # (rename + symlink created + opencode.json added), so neither is protected.
+    protected = ["CHANGELOG.md", "docs/backlog.md",
                  "docs/okf/index.md", "docs/okf/log.md", "docs/journal/README.md"]
     touched = [p for p in git(repo, "diff", "HEAD", "--name-only").splitlines() if p in protected]
     g.check("project_owned_files_untouched", not touched,
@@ -382,9 +399,9 @@ def grade_restructure(ws: Path) -> Grader:
             "byte-identical at original path" if kept_ok
             else "kept file moved, edited, or deleted")
 
-    claude = (repo / "CLAUDE.md").read_text() if (repo / "CLAUDE.md").exists() else ""
+    claude = (repo / "AGENTS.md").read_text() if (repo / "AGENTS.md").exists() else ""
     g.check("conflict_not_auto_resolved", meta["conflict_marker"] in claude,
-            "conflicting line still in CLAUDE.md" if meta["conflict_marker"] in claude
+            "conflicting line still in AGENTS.md" if meta["conflict_marker"] in claude
             else "conflict line gone — auto-resolved without the user")
     decision_open = "[decision]" in report and "We do not maintain CHANGELOG.md" in report
     g.check("conflict_surfaced_as_decision", decision_open,
@@ -447,7 +464,7 @@ def grade_restructure(ws: Path) -> Grader:
             else ".cursorrules still present")
     g.check("ghost_import_fixed", "ghost-rule.md" not in claude,
             "dangling import gone" if "ghost-rule.md" not in claude
-            else "ghost-rule import still in CLAUDE.md")
+            else "ghost-rule import still in AGENTS.md")
 
     src = SKILL / "assets/rules/core/okf.md"
     okf = repo / "docs/ai/rules/core/okf.md"

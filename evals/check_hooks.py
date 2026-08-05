@@ -83,6 +83,20 @@ with tempfile.TemporaryDirectory() as tmp:
     check(proc.returncode == 0, "non-rules file in legislated repo allowed (exit 0)",
           f"got exit {proc.returncode}, stderr={proc.stderr!r}")
 
+    # Case 3: editing the owned root wiring file opencode.json → blocked.
+    oc_file = repo / "opencode.json"
+    oc_file.write_text("{}")
+    proc = run_hook(GUARD, edit_payload(str(oc_file)))
+    check(proc.returncode == 2, "owned root opencode.json blocked (exit 2)",
+          f"got exit {proc.returncode}, stderr={proc.stderr!r}")
+
+    # Case 4: a different root config (package.json) is NOT guarded → allowed.
+    pkg_file = repo / "package.json"
+    pkg_file.write_text("{}")
+    proc = run_hook(GUARD, edit_payload(str(pkg_file)))
+    check(proc.returncode == 0, "non-owned root package.json allowed (exit 0)",
+          f"got exit {proc.returncode}, stderr={proc.stderr!r}")
+
 with tempfile.TemporaryDirectory() as tmp:
     # Case 3: same rules-shaped path, but no manifest.json anywhere upward
     # → not a legislated repo → allowed.

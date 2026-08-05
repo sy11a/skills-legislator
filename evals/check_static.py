@@ -8,6 +8,7 @@ every commit, before spending any tokens on e2e runs.
 Usage: python3 evals/check_static.py
 Exit code 0 = all checks pass; 1 = at least one failure (printed).
 """
+import json
 import re
 import sys
 from pathlib import Path
@@ -72,12 +73,22 @@ for rf in rule_files:
     check(text.startswith("## "), f"{rel} starts with a '## ' heading")
     check(len(text.strip()) > 0, f"{rel} is non-empty")
 
-print("== CLAUDE.md.tpl imports every core rule ==")
-tpl_text = (SKILL / "assets" / "templates" / "CLAUDE.md.tpl").read_text()
+print("== AGENTS.md.tpl imports every core rule ==")
+tpl_text = (SKILL / "assets" / "templates" / "AGENTS.md.tpl").read_text()
 for rf in sorted((SKILL / "assets" / "rules" / "core").glob("*.md")):
     check(f"@docs/ai/rules/core/{rf.name}" in tpl_text,
-          f"CLAUDE.md.tpl imports core/{rf.name}",
+          f"AGENTS.md.tpl imports core/{rf.name}",
           "missing from the tpl core import block")
+
+print("== opencode.json.tpl well-formed owned wiring ==")
+oc_text = (SKILL / "assets" / "templates" / "opencode.json.tpl").read_text()
+try:
+    oc = json.loads(oc_text)
+    oc_ok = isinstance(oc, dict) and isinstance(oc.get("instructions"), list) and len(oc["instructions"]) >= 3
+except Exception as e:
+    oc, oc_ok = None, False
+check(oc_ok, "opencode.json.tpl is valid JSON with an instructions array",
+      f"instructions={oc.get('instructions') if oc else 'parse error'}")
 
 print("== stack rule-file naming (README content discipline) ==")
 allowed = {"architecture.md", "coding-standards.md", "data-access.md"}

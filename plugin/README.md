@@ -1,11 +1,44 @@
 # legislator-hooks
 
 The deterministic enforcement arm of the legislator constitution: CLAUDE.md
-and rule files are advisory (an agent can ignore them); these three hooks are
-guaranteed by Claude Code itself. See
+and rule files are advisory (an agent can ignore them); these hooks are
+guaranteed by the harness itself. See
 `docs/superpowers/specs/2026-07-09-hooks-plugin-design.md` in the legislator
 repo for the full design and rationale — this README covers what ships and
 how to check it works.
+
+The enforcement ships for **two harnesses** from one repo:
+
+- **Claude Code** — `plugin/hooks/*.py` + `hooks/hooks.json` (PreToolUse /
+  PostToolUse / Stop). Install below.
+- **opencode** — `plugin/opencode/legislator-guard.ts` (a global opencode
+  plugin). Install with `tools/link-opencode-plugin.sh`, which symlinks it
+  into `~/.config/opencode/plugins/`. It is a silent no-op outside legislated
+  repos, so loading it globally is safe.
+
+### opencode event mapping
+
+| Claude Code hook | opencode mapping |
+|---|---|
+| `guard_owned_files.py` (PreToolUse, blocks) | `tool.execute.before` on edit/write/patch → `throw` (opencode surfaces the message to the agent; verified to block) |
+| `format_on_edit.py` (PostToolUse, best-effort) | `tool.execute.after` on edit/write — dotnet-format / prettier, never blocks |
+| `okf_sync_check.py` (Stop reminder) | `event` `session.idle` — warns via `client.app.log` |
+
+**Accepted limitation of the opencode port:** opencode's event model has no
+"Stop with feedback fed back to the model" equivalent, so the OKF-sync
+reminder is **logged** (`client.app.log`, warn level) rather than
+force-feeding the agent the way Claude Code's Stop `exit 2` does. The
+write-guard — the load-bearing hook — is a true block in both harnesses.
+
+### opencode tests
+
+`node evals/check_opencode_plugin.mjs` — 12 deterministic checks (no agent,
+no opencode runtime): owned-rule edits blocked for edit/write/patch, new
+files under `docs/ai/rules/**` blocked, non-owned paths allowed, manifest
+and `.claude/rules/**` intentionally unguarded, non-edit tools ignored,
+non-legislated repos no-op, relative-path resolution, malformed-args safety.
+Manual acceptance (real `opencode run` in a legislated repo): an edit of
+`docs/ai/rules/core/okf.md` is blocked and the file's hash is unchanged.
 
 ## Install
 

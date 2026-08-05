@@ -13,24 +13,24 @@ Detailed mechanics for SKILL.md's "Restructure — approval-gated repair" sectio
 | Backlog / task lists | `docs/backlog.md` |
 | Dev journal entries | `docs/journal/` |
 | Changelog | `CHANGELOG.md` |
-| Foreign AI configs (`.cursorrules`, `.cursor/`, `AGENTS.md`, `.github/copilot-instructions.md`) | law-shaped rules merged into `.claude/rules/<topic>.md`; narrative prose into CLAUDE.md's project sections; the file removed after the merge |
+| Foreign AI configs (`.cursorrules`, `.cursor/`, `.github/copilot-instructions.md`) | law-shaped rules merged into `.claude/rules/<topic>.md`; narrative prose into AGENTS.md's project sections; the file removed after the merge. (`AGENTS.md` is the canonical constitution, never foreign; `CLAUDE.md` is its symlink, never foreign.) |
 | Foreign glossary/domain stores (`CONTEXT.md`, `CONTEXT-MAP.md`, `UBIQUITOUS_LANGUAGE.md`) | term definitions merged into `docs/okf/glossary.md` rows; law-shaped lines into `.claude/rules/<topic>.md` per §3; the file removed after the merge |
 | Project-specific rules (law for this repo only) | `.claude/rules/<topic>.md` — see `core/project-rules.md` |
 | Stray rulebooks (review/refactoring checklists or rule lists parked outside the law homes — audit check 12) | law-shaped lines merged into `.claude/rules/<topic>.md` per the §3 carve-outs; the file removed after the merge. Conflicts with owned law are `decision` items, never merged silently |
-| Narrative AI rules prose | CLAUDE.md project sections — **never** `docs/ai/rules/**` (machine-managed law; only `heal` touches it, via Steps 2–3) |
+| Narrative AI rules prose | AGENTS.md project sections — **never** `docs/ai/rules/**` (machine-managed law; only `heal` touches it, via Steps 2–3) |
 
 ## 2. The action set
 
 - **move** — relocate a file to its standard home, preserving the filename. Grep the repo for references to the old path and update them. Remove the source directory if the move emptied it.
 - **merge** — fold each content line of the source into its target home (fit the target's existing sections; add a section only when nothing fits). Verify every content line is present at the target, then — and only then — delete the source file.
-- **link** — wire an orphan into the layer: add a markdown link from `docs/okf/index.md` (or a pointer from CLAUDE.md when it is clearly a CLAUDE-level concern). Linking never rewrites the linked file.
+- **link** — wire an orphan into the layer: add a markdown link from `docs/okf/index.md` (or a pointer from AGENTS.md when it is clearly an AGENTS-level concern). Linking never rewrites the linked file.
 - **fix** — repair in place: dangling `@import`/link lines removed (or retargeted when the file moved elsewhere in this plan); unresolved `{{TOKEN}}`s filled per SKILL.md Step 4's derivation rules; stale codebase-map rows corrected from the actual tree; an empty glossary (check 13) seeded per SKILL.md Step 4's `{{GLOSSARY_TABLE}}` derivation rule — terms proposed in the plan item itself so approving the item approves the terms.
 - **heal** — owned-layer drift or staleness: run SKILL.md Steps 2–3 as-is (byte-for-byte Bash copy, deletions, manifest rewrite with `keep` carried forward). Never hand-edit anything under `docs/ai/`.
 - **decision** — presented, never executed. Typical: project text contradicting an owned rule (e.g. a "we don't keep a changelog" note vs `core/changelog.md`), two plausible homes for the same content, or a foreign structure whose removal would lose semantics a merge cannot carry.
 
 ## 3. Content carve-outs
 
-When merging foreign or misplaced prose, apply the same three-way classification as migration (`references/migration.md` §1): law-shaped project rules go to `.claude/rules/<topic>.md`; project-specific instance data is kept verbatim in CLAUDE.md; boilerplate that merely restates an owned rule is replaced by the import that covers it. Under restructure, that replacement is allowed **only** for text that restates an owned rule — anything differing in substance from the owned rule is a `decision` item, never a silent deletion.
+When merging foreign or misplaced prose, apply the same three-way classification as migration (`references/migration.md` §1): law-shaped project rules go to `.claude/rules/<topic>.md`; project-specific instance data is kept verbatim in AGENTS.md; boilerplate that merely restates an owned rule is replaced by the import that covers it. Under restructure, that replacement is allowed **only** for text that restates an owned rule — anything differing in substance from the owned rule is a `decision` item, never a silent deletion.
 
 ## 4. The fidelity pass
 
@@ -41,5 +41,5 @@ Before applying, inventory every content line of each file a plan item will move
 - Delete project content — `merge` removes a file only after its content verifiably lives elsewhere; `link` deletes nothing; no plan item may propose deleting content (if the user wants something gone, that is their explicit call, not a proposal).
 - Invent content — journal entries, overviews the derivation rules cannot produce, or any prose the team must author.
 - Resolve owned-rule conflicts on its own authority.
-- Touch source code or anything outside the AI layer (the AI layer being: CLAUDE.md, `.claude/rules/**`, `docs/**`, and root-level foreign AI configs).
+- Touch source code or anything outside the AI layer (the AI layer being: AGENTS.md (+ the `CLAUDE.md` symlink), `.claude/rules/**`, `docs/**`, and root-level foreign AI configs).
 - Commit.
