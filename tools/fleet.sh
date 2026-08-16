@@ -28,7 +28,7 @@
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SKILL_DIR="$HERE/../skill"
+SKILL_DIR="$(cd "$HERE/../skill" && pwd)"
 SKILL_MD="$SKILL_DIR/SKILL.md"
 CURRENT_VERSION="$(cat "$SKILL_DIR/VERSION")"
 SCAN_ROOTS="${SCAN_ROOTS:-$HOME/Repository $HOME/Agent}"
