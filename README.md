@@ -151,19 +151,74 @@ law for (no empty placeholder files).
 
 ### Fleet delivery — `tools/fleet.sh`
 
-Step 4 at scale. There is no fleet registry to maintain: the repos'
-`docs/ai/manifest.json` files ARE the database — `tools/fleet.sh status`
-scans for them (`SCAN_ROOTS` overrides the default `~/Repository ~/Agent`)
-and prints every legislated repo's version against `skill/VERSION`, exit 1
-when any repo is behind. `tools/fleet.sh upgrade` runs one headless
-`opencode run` per stale repo, sequentially — pilot with `--only <name>`
-first, park archives with `--exclude <name>`, preview with `--dry-run`.
-Each run refreshes the owned layer (deterministic, write-guarded,
-idempotent), never commits, and writes its Step 7 report — including the
-AGENTS.md `@import` proposals, which stay yours to apply — to
-`~/Knowledge/_generated/legislator-proposals/<repo>.md` (`PROPOSALS_DIR`
-overrides) for one batched review session. Dirty working trees are skipped
-so upgrade diffs never mix with unrelated edits.
+Step 4 at scale, for a human or an agent on any machine where this repo is
+checked out. Core fact first: **there is no fleet registry to maintain.**
+A repo is "in the fleet" if and only if it carries
+`docs/ai/manifest.json` — which every legislated repo does. Membership,
+version, everything is read from the repos themselves at run time.
+
+**Adding a project to the fleet** = legislating it: `cd` into the repo and
+run `/legislator` (fresh scaffold or legacy migration — the skill detects
+the mode). That writes the manifest, and from that moment `fleet.sh` sees
+the repo automatically. There is no list to append, nothing to register —
+if you find yourself looking for one, stop; the manifest is the
+registration. Removing a repo from the fleet = deleting its
+`docs/ai/manifest.json` (de-legislation); archiving a repo without
+de-legislating it is fine — pass it via `--exclude` during rollouts.
+
+**One-time machine setup** (each machine independently):
+
+1. Clone this repo; symlink the skill:
+   `ln -s "$(pwd)/skill" ~/.claude/skills/legislator` (plus
+   `tools/link-opencode-plugin.sh` for the opencode write-guard).
+2. Headless delivery permissions — `fleet.sh upgrade` drives
+   `opencode run`, which auto-rejects access outside the target repo, so
+   the machine's `~/.config/opencode/opencode.jsonc` needs (adjust the
+   clone path):
+
+   ```jsonc
+   "permission": {
+     "external_directory": {
+       "/path/to/legislator/skill/**": "allow",
+       "~/Knowledge/_generated/legislator-proposals/**": "allow"
+     }
+   }
+   ```
+
+**Commands** (defaults suit a `~/Repository`-per-repo layout; override
+with env vars):
+
+```bash
+tools/fleet.sh status        # repo → version vs skill/VERSION; exit 1 if any behind
+tools/fleet.sh upgrade       # one headless opencode run per stale repo, sequential
+  --dry-run                  #   preview, run nothing
+  --only NAME                #   pilot a single repo (repeatable)
+  --exclude NAME             #   skip a repo, e.g. an archive (repeatable)
+  --model provider/model     #   pass through to opencode run
+SCAN_ROOTS="..."             # dirs whose children are scanned (default: ~/Repository ~/Agent)
+PROPOSALS_DIR="..."          # where Step 7 reports land (default: ~/Knowledge/_generated/legislator-proposals)
+```
+
+**Rollout runbook** (after a VERSION bump + green eval suite):
+
+1. `tools/fleet.sh upgrade --only <one-repo>` — pilot; check the diff is
+   exactly the changed owned file(s) + manifest.
+2. `tools/fleet.sh upgrade --exclude <archives>` — the rest. Dirty
+   working trees are skipped by design (upgrade diffs must never mix with
+   unrelated edits) — commit or stash there and re-run; already-current
+   repos are skipped by version.
+3. Review the proposals: each `PROPOSALS_DIR/<repo>.md` carries the run's
+   full report and the `@import` line(s) for that repo's project-owned
+   `AGENTS.md` — the one edit no run makes for you.
+4. Integrate per the pair-development law: per repo, branch → apply the
+   `@import` line → commit the manifest + rule diff → PR/MR; merging is
+   the user's act. Delete each proposal file once applied.
+
+Every upgrade run refreshes the owned layer byte-for-byte (deterministic,
+write-guarded, idempotent) and never commits. The kbo dashboard's
+"Constitution fleet" panel (ADR-0037 there) shows the same scan
+continuously once its registry's `constitution:` block points at this
+repo's `skill/VERSION`.
 
 ## Test and benchmark
 
