@@ -149,6 +149,22 @@ law for (no empty placeholder files).
 5. Review the `git diff` — only the changed owned file(s) and the manifest
    should appear — then commit.
 
+### Fleet delivery — `tools/fleet.sh`
+
+Step 4 at scale. There is no fleet registry to maintain: the repos'
+`docs/ai/manifest.json` files ARE the database — `tools/fleet.sh status`
+scans for them (`SCAN_ROOTS` overrides the default `~/Repository ~/Agent`)
+and prints every legislated repo's version against `skill/VERSION`, exit 1
+when any repo is behind. `tools/fleet.sh upgrade` runs one headless
+`opencode run` per stale repo, sequentially — pilot with `--only <name>`
+first, park archives with `--exclude <name>`, preview with `--dry-run`.
+Each run refreshes the owned layer (deterministic, write-guarded,
+idempotent), never commits, and writes its Step 7 report — including the
+AGENTS.md `@import` proposals, which stay yours to apply — to
+`~/Knowledge/_generated/legislator-proposals/<repo>.md` (`PROPOSALS_DIR`
+overrides) for one batched review session. Dirty working trees are skipped
+so upgrade diffs never mix with unrelated edits.
+
 ## Test and benchmark
 
 `evals/` is the skill's regression suite — see [evals/README.md](evals/README.md)
