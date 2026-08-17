@@ -171,7 +171,11 @@ de-legislating it is fine — pass it via `--exclude` during rollouts.
 1. Clone this repo; symlink the skill:
    `ln -s "$(pwd)/skill" ~/.claude/skills/legislator` (plus
    `tools/link-opencode-plugin.sh` for the opencode write-guard).
-2. Headless delivery permissions — `fleet.sh upgrade` drives
+2. A `service-fleet` opencode agent (any minimal definition in
+   `~/.config/opencode/agents/service-fleet.md`) — `fleet.sh` launches
+   upgrades under it so knowledge observability can exclude the runs from
+   practice metrics (kbo ADR-0039).
+3. Headless delivery permissions — `fleet.sh upgrade` drives
    `opencode run`, which auto-rejects access outside the target repo, so
    the machine's `~/.config/opencode/opencode.jsonc` needs (adjust the
    clone path):
