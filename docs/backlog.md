@@ -850,23 +850,63 @@ Ride along with the next benchmarked `skill/**` cycle:
 
 ## BL-026 — SDD gap harvest: execute the G1–G9 decisions from the landscape research
 
-**What:** work through the gap table in
-`docs/superpowers/specs/2026-08-19-sdd-landscape-research.md` (the diff of
-the legislator's spec/plan workflow against OpenSpec, SpecKit, Kiro, BMAD,
-and EARS — sources and the stage×instrument matrix live there). Per gap,
-an adopt/adapt/reject decision through the normal cycle (brainstorm →
-spec → plan → e2e benchmark per the testing law — every accepted gap is a
-behavioral change). Session recommendation to stress-test per gap:
-**G2–G4 first** (EARS-lite acceptance lines; SpecKit clarify protocol —
-taxonomy, cap, write-answers-into-spec; SpecKit converge — gap taxonomy +
-append-only remediation), **G1 in exactly one repo** (living behavioral
-baseline à la OpenSpec delta+archive — the only structural gap; collides
-with the artifact-lifecycle law, needs new artifact class + role
-declaration + kbo registry touch), then G5/G7 batched as spec tooling;
-G6 partially self-solves if G2/G4 land; G8/G9 minor. **The kbo gold panel
-lands before the first enrichment rollout** (spec-before-code ordering,
-writes-by-content-type docs-vs-code ratio, SDD-skill rate — recipe in the
-research spec) so the before/after is measurable.
+**Status: REVISED 2026-08-20** — the deep audit D0–D5
+(`docs/superpowers/specs/2026-08-20-deep-audit-d0-d5.md`, second pass over
+the stage × instrument matrix with fleet evidence) turned every gap into a
+concrete decision. Per-gap verdicts:
+
+- **G1 (living baseline): DECIDED — architecture D.** EARS lines carry
+  stable ids (R-NNN) in specs → tests annotated with the same ids → a
+  generator writes `baseline.md` (do-not-edit, like the manifest). Rot
+  impossible by construction; converge checks both directions
+  (missing-test / unrequested). The OpenSpec living-tree variant is
+  conserved for Vector A / second hands. Non-testable norms live in ADRs
+  + a marked baseline section. Implemented inside BL-033 (kbo pilot).
+- **G2 (requirements syntax): DECIDED — EARS lines mandatory** (5
+  patterns), at least one named Gherkin "hurting case" per spec,
+  observability as the quality test; no RFC 2119 table. → BL-032.
+- **G3 (clarification): DECIDED — grill protocol codified**: taxonomy
+  shrunk to 5–6 solo categories, budget max 5 / one at a time,
+  recommended-first, **answers written into the spec** (`##
+  Clarifications`), post-answer validation. → BL-032.
+- **G4 (convergence): DECIDED — converge is a mandatory case-cycle
+  gate**: gap taxonomy missing/partial/contradicts/unrequested,
+  append-only traceable tasks in the case plan, loop to "✅ Converged",
+  constitutional MUSTs as CRITICAL findings; plus the `stale-doc` axis.
+  → BL-032.
+- **G5 (cross-artifact analysis): DECIDED — analyze gate paired with
+  converge** (before implementation): five mechanical passes (coverage
+  R↔task, dangling refs, vagueness, duplicates, terminology) + two
+  judgment axes (reuse-first, over-engineering, from Agent OS). → BL-032;
+  mechanical passes run in the BL-033 engine.
+- **G6 (monolithic plans): DECIDED — plan as a package in the case
+  file**: research/data-model/contracts/quickstart domain-optional;
+  split mandatory past ~10–15 KB or 2+ domains; one task = one session;
+  [P] file-disjointness markers; ADR boundary rule. → BL-032.
+- **G7 (spec validation): DECIDED — one engine, three jobs**: spec/plan
+  linter + OKF anchor checks (source-symbol grounding) + baseline
+  generation, a single tool. → BL-033.
+- **G8 (parallelism markers): DECIDED — [P] markers** (machine-readable
+  declaration of the existing Wave-1 practice). → BL-032.
+- **G9 (process sizing): DECIDED — three ceremony tiers as law** (0
+  direct / 1 light / 2 full), chosen at case opening on blast radius ×
+  novelty, declared in the case header; converge may raise a tier.
+  → BL-032.
+- Also decided in D-pass: spec typology (feature / bugfix / exploration,
+  type in the header; bugfix carries current/expected/unchanged;
+  boundary + right-size rules), cross-repo case convention (case file in
+  the initiating repo, reference rows + same bl/NNN branches in
+  siblings), OKF v2 decomposition (generated / anchored / human), OKF
+  hygiene (stale-doc in-cycle + sync-debt audit check), and the first
+  steward cycle scheduled after the harvest lands. Rejected with
+  reasons: Agent OS product layer, standards compilation, improve-skills;
+  SpecKit pre/post constitution gate, auto-waves, MVP markers; Kiro
+  conditional loading (D0); Vortex (unresolved — could not confirm it
+  exists).
+
+**Execution order (revised):** kbo gold panel (unchanged gate) → **BL-032**
+(+ BL-028/030 riding its benchmark) → **BL-033** (kbo pilot) → BL-029/031
+→ first steward cycle.
 
 **Why:** the workflow was built intuitively from practice and works (fleet
 usage evidence in the research spec), but with nothing to compare against,
@@ -875,11 +915,11 @@ read from the tools' own repos, not their marketing — close gaps without
 adopting any foreign structure: techniques get translated into legislator
 assets, nothing external survives contact with the law.
 
-**Done when:** each G1–G9 gap carries a recorded adopt/adapt/reject
-decision with reasoning (rejected ones are future-ADR fodder); every
-adopted gap ships through its full cycle with a green benchmark; the kbo
-panel is live before the first rollout; session grilling decisions are
-recorded in the cycle's spec.
+**Done when:** BL-032 and BL-033 ship green through their full cycles; the
+kbo pilot demonstrates EARS+baseline+converge end to end; the kbo panel is
+live before the first rollout; rejected decisions are recorded (this entry
++ the deep-audit spec serve as the record; ADR them at implementation time
+if they need permanence).
 
 ## BL-027 — Enterprise sidecar placement mode (Vector A: external-layer legislation)
 
@@ -1010,14 +1050,90 @@ things from the artifact.
 case has exactly one register row; DONE history survives as register
 records; template decision recorded; benchmark green if templates moved.
 
+## BL-032 — `core/sdd.md`: the SDD law (spec format, clarify protocol, ceremony tiers, converge/analyze gates)
+
+**Status: queued 2026-08-20 (behavioral — skill/ changes, VERSION bump + full e2e)**
+
+**What:** give the SDD process its constitutional home (deep-audit D1
+finding: the process is an orphan — practiced fleet-wide, governed
+nowhere; hence 0 acceptance lines in ~20 specs and 92 KB plan monoliths).
+New owned rule `core/sdd.md` + a spec template in assets, delivering the
+D0–D5 decisions: spec typology (feature / bugfix / exploration, type in
+the header; bugfix carries current/expected/unchanged); boundary
+(in/out-of-scope) and right-size rules; EARS requirement lines (5
+patterns) with stable ids R-NNN; at least one named Gherkin hurting-case
+scenario per spec; the observability test; the grill clarification
+protocol (5–6 solo categories, max 5 questions one at a time,
+recommended-first, answers written into `## Clarifications`); ceremony
+tiers 0/1/2 chosen at case opening on blast radius × novelty (converge
+may raise); plan-as-package (research/data-model/contracts/quickstart
+domain-optional, split past ~10–15 KB, one task = one session, [P]
+file-disjointness markers, task traceability per R-NNN, ADR boundary
+rule); **converge as a mandatory closing gate** (gap taxonomy
+missing/partial/contradicts/unrequested, append-only traceable tasks,
+loop to converged, constitutional MUSTs CRITICAL, stale-doc axis);
+**analyze as the paired pre-gate** (reuse-first + over-engineering axes;
+mechanical passes provided by the BL-033 engine); the cross-repo case
+convention (case file in the initiating repo, reference rows + same
+bl/NNN branches in siblings). Riding items: BL-028 (manifest key
+profiles→stacks) and BL-030 (constitution disambiguation sweep) join
+this cycle's benchmark.
+
+**Why:** one rule file replaces muscle memory: the fleet already reached
+for scenario form (kbo Testing lines) and parallelism discipline
+(Wave-1) on its own — the law makes the existing instincts deliverable,
+auditable, and harvestable, and the tier law makes both
+under-ceremony (unrequested gifts, debris) and over-ceremony (monoliths)
+fixable.
+
+**Done when:** `core/sdd.md` + template shipped, VERSION bumped, full
+e2e benchmark green including new scenarios (a spec written under the
+law passes analyze; a converged case shows the append-only findings
+trail); BL-028/030 riding items verified; fleet re-run delivers the rule
+everywhere.
+
+## BL-033 — OKF v2 + the one engine: generated baseline, source anchors, spec linter (kbo pilot)
+
+**Status: queued 2026-08-20 (behavioral — skill/ changes, VERSION bump + full e2e)**
+
+**What:** two interlocking pieces from deep-audit D2/D4. (1) **OKF v2
+decomposition by link hardness**: generated (baseline.md from annotated
+tests; codebase-map from code; index from docs), anchored (concept docs
+stay handwritten but every backticked symbol/path is verified against
+src/ — source-symbol grounding), human (glossary, log) — codified as an
+amendment to `core/okf.md`, migrating the fleet forward-only. (2) **The
+G7 engine — one tool, three jobs**: spec/plan linter (dangling R-NNN,
+coverage R↔task, unresolved placeholders), OKF anchor checker, and
+baseline generator (EARS ids from specs ↔ annotated tests → generated
+`baseline.md`, do-not-edit; converge consumes its both-direction gaps).
+Includes the G1 architecture-D pilot in **kbo** (R-NNN + annotated tests
++ baseline + converge end to end in the smallest active repo, home of
+the proto-EARS Testing lines) and the new audit check "OKF-sync debt"
+(commits touching concept files after a doc's timestamp with no linked
+OKF update; repair via restructure only). Legalizes the open "OKF
+content-accuracy" note below into a designed mechanism.
+
+**Why:** hand-maintained truth always rots — RKruiterApi's six docs about
+a removed model proved it in our own fleet; our rot-free artifacts (law
+stratum, manifest) are machine-written. Generation gives norms and maps
+a mechanical bond to code; anchors make the remaining handwritten layer
+detectably stale instead of silently wrong; one engine avoids three
+half-maintained tools.
+
+**Done when:** the engine exists and passes its own verification ladder;
+the kbo pilot shows a converged case with a regenerated baseline and
+both-direction converge findings; OKF v2 template + rule amendment
+shipped with VERSION bump and green e2e benchmark; fleet re-run
+migrates repos forward-only (no history rewritten).
+
 ## Note — OKF content-accuracy check is an open idea, not yet a backlog item
 
 The RKruiterApi v11 backfill (2026-07-12) found six `docs/okf/domain/*.md`
 files still describing a domain model an ADR had removed — no audit check
 covers OKF *content accuracy against source* (check 5 covers links, check 6
-the map's shape). A deterministic version is hard (needs source-symbol
-grounding, e.g. "every type name an OKF doc cites in backticks exists in
-src/"); promote to a BL item when the shape is clear.
+the map's shape). **Resolved 2026-08-20: promoted into BL-033** — the
+source-symbol grounding (anchors) + the OKF-sync-debt audit check are the
+designed mechanism; this note stays as the origin record.
 
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
 
