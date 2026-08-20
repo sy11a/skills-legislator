@@ -848,6 +848,168 @@ Ride along with the next benchmarked `skill/**` cycle:
    scope to `For the team:`; fresh/migration could cross-check backticked
    skill names in the scaffolded stage map against `~/.claude/skills/`.
 
+## BL-026 — SDD gap harvest: execute the G1–G9 decisions from the landscape research
+
+**What:** work through the gap table in
+`docs/superpowers/specs/2026-08-19-sdd-landscape-research.md` (the diff of
+the legislator's spec/plan workflow against OpenSpec, SpecKit, Kiro, BMAD,
+and EARS — sources and the stage×instrument matrix live there). Per gap,
+an adopt/adapt/reject decision through the normal cycle (brainstorm →
+spec → plan → e2e benchmark per the testing law — every accepted gap is a
+behavioral change). Session recommendation to stress-test per gap:
+**G2–G4 first** (EARS-lite acceptance lines; SpecKit clarify protocol —
+taxonomy, cap, write-answers-into-spec; SpecKit converge — gap taxonomy +
+append-only remediation), **G1 in exactly one repo** (living behavioral
+baseline à la OpenSpec delta+archive — the only structural gap; collides
+with the artifact-lifecycle law, needs new artifact class + role
+declaration + kbo registry touch), then G5/G7 batched as spec tooling;
+G6 partially self-solves if G2/G4 land; G8/G9 minor. **The kbo gold panel
+lands before the first enrichment rollout** (spec-before-code ordering,
+writes-by-content-type docs-vs-code ratio, SDD-skill rate — recipe in the
+research spec) so the before/after is measurable.
+
+**Why:** the workflow was built intuitively from practice and works (fleet
+usage evidence in the research spec), but with nothing to compare against,
+non-optimal solutions and gaps are invisible. The field's instruments —
+read from the tools' own repos, not their marketing — close gaps without
+adopting any foreign structure: techniques get translated into legislator
+assets, nothing external survives contact with the law.
+
+**Done when:** each G1–G9 gap carries a recorded adopt/adapt/reject
+decision with reasoning (rejected ones are future-ADR fodder); every
+adopted gap ships through its full cycle with a green benchmark; the kbo
+panel is live before the first rollout; session grilling decisions are
+recorded in the cycle's spec.
+
+## BL-027 — Enterprise sidecar placement mode (Vector A: external-layer legislation)
+
+**What:** a placement mode for legislating a repo the operator **cannot
+commit to** (real enterprise case, anonymized — large fast-mutating
+codebase, team doesn't use the legislator, MCPs to Jira/Confluence and a
+documented DB exist; user runs own Claude Code on a local clone;
+untracked files tolerable, commits not). Mechanics settled in the
+2026-08-19 grill (rationale in the research spec's vectors section):
+(1) **sidecar repo hosts the owned layer** — `docs/ai/rules/**`,
+  `manifest.json`, and a personal-context OKF (own ADRs, tips, dead ends,
+  blast-radius contracts only; company KB is a probe target via its MCPs,
+  never a mirror — a codebase mirror rots in days there);
+(2) **untracked stub in the target clone** — thin `CLAUDE.md`/`AGENTS.md`
+  `@import`-ing the sidecar, excluded via `.git/info/exclude` (local-only,
+  never leaves the machine); re-runs restore the stub after `git clean`;
+(3) **probe-first doctrine + blast-radius documentation** as
+  `enterprise-solo` profile law (the existing stacks mechanism — no fork:
+  law overlap is ~90%, harvest/evals/steward stay shared in one lineage);
+(4) **outbound redirection inversion** — backlog → Jira, durable
+  reference → Confluence, via the already-approved MCP scope (read-only
+  DB, no GitHub/ticketing automation per BL-008); in-repo artifacts
+  become lifecycle working copies that die at feature merge;
+(5) progressive-rigor floor (small feature in a big organism = lowest
+  ceremony tier by law); (6) kbo registry root addition for the sidecar.
+Full e2e benchmark when implemented (behavioral change; placement mode
+inverts Step 3's owned-files-land-in-target-repo assumption — the biggest
+structural change the skill has faced; design needs its own brainstorm
+cycle for Step 0/3/6/7 rework, stub-restore semantics, and how audit/
+restructure run against a sidecar).
+
+**Why:** the enterprise adapter is one of two application vectors (the
+other — solo fleet — is home ground and needs nothing structural). Without
+a placement mode, Vector A either stays unlegislated or forces a fork,
+and a fork costs permanent rent: doubled evals, split harvest, two
+steward reviews forever.
+
+**Done when:** a sidecar-legislated enterprise repo (anonymized in all
+artifacts — masking law) carries the full constitution ambiently via the
+stub; `git status` in the target clone stays clean; `git clean -fd` +
+re-run restores the stub; probe-first/blast-radius law demonstrably keeps
+the sidecar OKF personal-observation-only; benchmark green including a
+new sidecar-placement eval scenario.
+
+## BL-028 — Manifest key `profiles` → `stacks` (single-concept naming)
+
+**Status: queued (behavioral — skill/ changes, VERSION bump + full e2e)**
+
+**What:** rename the manifest's stack-subscription key from `profiles` to
+`stacks` so the key carries the concept's only name (ontology R5-T1,
+2026-08-20: "profile" has no standalone meaning — it is a leftover second
+name for *stack*). Upgrade mode reads `stacks` and falls back to the legacy
+`profiles` key (reconstruct, rewrite in the new serialization order);
+fresh scaffolds write only `stacks`. Sweep SKILL.md prose, templates, and
+audit check references for the old key and the compound "stack profile".
+Fleet re-run migrates all field manifests.
+
+**Why:** one word, one meaning (ontology §3.4) — the manifest is the most
+visible artifact the skill owns, and it currently carries the only
+remaining "profile" naming for a concept everywhere else called a stack.
+
+**Done when:** fresh scaffold writes `stacks`; upgrade on a legacy
+`profiles` manifest migrates without data loss (`keep` / `ownedFiles`
+preserved); every eval scenario green including a legacy-manifest fixture;
+fleet re-run leaves every manifest on the new key.
+
+## BL-029 — Case-file home `docs/cases/` in the scaffold
+
+**Status: queued (behavioral — skill/ changes, VERSION bump + full e2e)**
+
+**What:** give upgrade/scaffold modes a create-once `docs/cases/` home
+(a README or template file — git does not track empty directories; same
+pattern as audit check 11's `.claude/rules/` mkdir advice). New cases are
+born in their home (`docs/cases/BL-NNN/`: spec, plan, summary); register
+rows link into it. Migration is forward-only (ontology R2-T3): historical
+specs/plans stay where they lie and their register rows link to legacy
+paths; moving an active case's artifacts is optional per-repo restructure
+work, never forced.
+
+**Why:** A2 — a case is currently scattered across four homes (backlog
+status line, specs/, plans/, journal) with no cover object saying "this is
+the case, whole." The ontology fixes the concept (case file = one case,
+one home); the scaffold must give the concept a place to exist.
+
+**Done when:** scaffold creates the home create-once (never overwrites);
+a fresh case demonstrably lands inside it; legacy register rows still
+resolve to their historical paths; benchmark green.
+
+## BL-030 — Constitution disambiguation sweep in skill prose (A5)
+
+**Status: queued (behavioral — skill/ changes, VERSION bump + full e2e)**
+
+**What:** sweep `skill/` prose so "constitution" means exactly one thing
+(`docs/ai/rules/**` @ VERSION — ontology R1-T1): SKILL.md's "constitution
+file" for AGENTS.md becomes "AGENTS.md" (the entry document);
+`references/*` and any rule file carrying the same drift follow; glossary
+pointers updated. No mechanical behavior change intended — prose only —
+but it ships through the full cycle anyway per the testing law.
+
+**Why:** A5 — one word meant three things (rules corpus, AGENTS.md,
+loosely the whole installed layer). The ontology review fixed the concept;
+the prose must follow or the ambiguity regrows from the skill's own text.
+
+**Done when:** no prose under `skill/` uses "constitution" for anything
+but the rules corpus @ VERSION; benchmark green with zero behavioral
+diffs beyond the expected prose changes.
+
+## BL-031 — Split backlog.md into queue + case register sections
+
+**Status: queued (behavioral if templates change — decide in-cycle)**
+
+**What:** restructure `docs/backlog.md` into two named sections per the
+ontology (R2-T2): **queue** — pending/active cases only, in intended work
+order, kept short and living; **case register** — one row per case ever
+opened, with status; today's DONE blocks become register records (their
+history is preserved, compressed to record shape). A later split into two
+files is possible but not required — the section boundary is the seed.
+If the skill scaffolds a backlog template for target repos, the section
+structure rides the same cycle (VERSION + benchmark); if the template
+turns out repo-specific, this stays a legislator-repo docs change.
+
+**Why:** A1 — one file smears two roles: a queue wants to be short,
+ordered, and disposable; a register wants to be complete, stable, and
+permanent. Each role's readers (planner vs archaeologist) want different
+things from the artifact.
+
+**Done when:** the queue section contains only pending/active work; every
+case has exactly one register row; DONE history survives as register
+records; template decision recorded; benchmark green if templates moved.
+
 ## Note — OKF content-accuracy check is an open idea, not yet a backlog item
 
 The RKruiterApi v11 backfill (2026-07-12) found six `docs/okf/domain/*.md`
