@@ -1,18 +1,18 @@
 # Legacy Repo Migration Guide
 
-Detailed guidance for SKILL.md Step 5 (legacy migration mode) — when a constitution file exists (`AGENTS.md`, or a pre-v14 real `CLAUDE.md`) but `docs/ai/manifest.json` does not.
+Detailed guidance for SKILL.md Step 5 (legacy migration mode) — when an entry document exists (`AGENTS.md`, or a pre-v14 real `CLAUDE.md`) but `docs/ai/manifest.json` does not.
 
-## 0. Canonicalize the constitution file
+## 0. Canonicalize the entry document
 
-Before splitting content, put the repo into the v14+ file model: the canonical constitution file is **`AGENTS.md`**, and `CLAUDE.md` is a symlink to it.
+Before splitting content, put the repo into the v14+ file model: the canonical entry document is **`AGENTS.md`**, and `CLAUDE.md` is a symlink to it.
 
 - If a real `CLAUDE.md` exists and no `AGENTS.md` does: rename `CLAUDE.md` → `AGENTS.md` (`git mv CLAUDE.md AGENTS.md` if tracked, else Bash `mv`). The renamed file is now canonical.
 - If `AGENTS.md` already exists, it stays canonical.
 - Ensure `CLAUDE.md` exists as a symlink → `AGENTS.md` (`ln -s AGENTS.md CLAUDE.md`). After the rename above there is no real `CLAUDE.md` left, so the symlink is created fresh.
 
-All "the constitution file" references below mean `AGENTS.md` (the canonical file).
+All "the entry document" references below mean `AGENTS.md` (the canonical file).
 
-## 1. Splitting the constitution file
+## 1. Splitting the entry document
 
 Read the existing `AGENTS.md` top to bottom and classify each section:
 
