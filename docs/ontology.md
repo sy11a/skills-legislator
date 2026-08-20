@@ -60,6 +60,14 @@ Flow directions:
   file. Owned (machine): `docs/ai/rules/**`, `opencode.json` — never
   hand-edited, refreshed by re-run. Project-owned: everything else; the keep
   list protects named project-owned files from restructure.
+- **generated** — the third ownership class (decided 2026-08-20, deep-audit
+  D2): artifacts written by a machine **locally in the repo**, not delivered
+  from the center and not hand-maintained — `baseline.md` (from annotated
+  tests), the generated halves of OKF v2 (codebase-map, index). Properties:
+  do-not-edit, regenerated from their source on demand, die together with
+  their source; not listed in `ownedFiles` (nothing is byte-copied onto
+  them), not keepable. The artifact-lifecycle law names them a role class
+  of their own — neither reference nor lifecycle in the hand-written sense.
 
 ### Work
 
@@ -71,11 +79,14 @@ Flow directions:
 - **case register** — the registry of all cases with their statuses
   (pending / active / done / dormant). Currently a named section of
   `docs/backlog.md`; the split into two artifacts is queued (BL-031).
-- **case file** — one case, one home: everything a case produces lives in its
-  own place (`docs/cases/BL-NNN/`), and the register row links to it.
-  Migration is forward-only (R2-T3): history stays where it lies, the
-  scaffold gains the home create-once (BL-029), moving active cases is
-  optional restructure work per repo.
+- **case file** — one case, one home: everything a case produces lives in
+  its own place (`docs/cases/BL-NNN/` — spec, plan package, summary), and
+  the register row links to it. Every work kind is a case, including
+  explorations (the 2026-08-20 consistency review retracted the earlier
+  exception — no second spec home). Migration is forward-only (R2-T3):
+  history stays where it lies (`docs/superpowers/**` is the legacy path),
+  the home ships with the SDD law (BL-032 absorbed BL-029); moving active
+  cases is optional restructure work per repo.
 
 ### Processes (skill verbs)
 
@@ -111,6 +122,27 @@ register is the brand.
   pass; each rung must be green before the next means anything.
 - **artifact lifecycle** — artifacts carry declared lifetimes and die on
   schedule; nothing accumulates by default.
+
+### Placement modes — inner / outer
+
+Two ways a legislated AI layer can sit relative to the codebase, named
+2026-08-20 on the axis "relation of the docs to the code":
+
+- **inner mode** (default) — the owned layer lives inside the git repo
+  itself: `docs/ai/rules/**`, manifest, OKF, cases, journal all committed
+  beside the code they govern. Every fleet repo today is inner.
+- **outer mode** — the layer sits outside the codebase for an operator who
+  cannot commit to the target repo: a sidecar repo hosts the owned layer,
+  an untracked stub in the local clone imports it, knowledge flows through
+  probes at external systems (Jira/Confluence). The **sidecar is the
+  mechanism, not the mode's name**; outer names the whole placement:
+  sidecar + stub + probe-first doctrine + outbound redirection +
+  progressive-rigor floor (BL-027, edition v19+).
+
+The mode is a property of a legislated repo, declared in its manifest.
+One core, no fork: law overlap between modes is ~90%; the differences are
+placement mechanics and ceremony defaults, decided in BL-027's design
+cycle.
 
 ## 3. Naming conventions — how terms enter and stay
 

@@ -226,3 +226,41 @@ Fleet: read-only inventory of 9 repos (structure, sizes, dates, quotes).
   kbo pilot) added as behavioral cases.
 - Order: kbo gold panel → BL-032 (+ BL-028/030 riding) → BL-033 (kbo
   pilot) → BL-029/031 → the first steward cycle.
+
+## Addendum — consistency review against prior decisions (2026-08-20, same day)
+
+Before execution, the full backlog and current laws were re-read against
+this pass's verdicts. Four real contradictions surfaced; the day's
+decisions are primary (everything older adapts or is excluded):
+
+| # | Conflict | Resolution |
+|---|---|---|
+| 1 | D1's typology said "one home `docs/superpowers/specs/`" while D3/BL-029/BL-032 say specs are born in `docs/cases/BL-NNN/` — two canonical homes at once | **Case file wins, no exceptions** (P1). Every work kind is a case, including explorations — the earlier carve-out for exploration was retracted as a concession to the old structure. `docs/superpowers/**` becomes purely legacy (forward-only). |
+| 2 | `core/artifact-lifecycle.md` (v15) enumerates lifecycle homes exhaustively (`docs/superpowers/`, `docs/journal/`) — `docs/cases/` would sit outside the law; its binary reference/lifecycle model has no slot for generated artifacts | **Lifecycle amendment is a green condition** of BL-032 (home) and BL-033 (generated class), not a rider (P3). |
+| 3 | Ownership model was binary (owned / project-owned); generated artifacts fit neither | **Third class "generated"** added to the ontology immediately (docs-only); lifecycle wording rides the editions (P4). |
+| 4 | BL-032's tier is "declared in the case header" but the case home (BL-029) was queued *after* BL-032 — law referencing a nonexistent home | **BL-029 absorbed into BL-032** (P2): the home ships with the law, same edition. |
+
+Interactions caught (not contradictions): BL-025's seven v13 follow-ups
+get a ride-or-exclude triage when BL-032 opens (they were promised to
+"the next benchmarked skill/** cycle"); the kbo gold panel must exclude
+generated writes from the docs-vs-code metric and the registry gains a
+`generated` content-type; BL-027 gains the outer-mode rename (sidecar =
+mechanism) with regeneration-aware stub-restore semantics.
+
+**Edition split decided:** v17 = the SDD law (BL-032 + absorbed case home
++ lifecycle home amendment + riders BL-028/030); v18 = truth-bonding
+(BL-033: engine, OKF v2, baseline, generated lifecycle class, kbo pilot)
+after a v17 soak; v19+ = outer placement (BL-027). The dependency of
+sdd.md on the v18 engine is severed by a fallback clause (mechanical
+analyze passes run by the agent when the engine is absent — the v12/v13
+absent-bindings precedent).
+
+**Also decided in the same session:** BL-034 (self-legislation — the
+legislator repo legislates itself after v18; deliver-to-self becomes a
+release step: bump → benchmark → upgrade onto itself → byte-verify →
+fleet; version-skew during development is branch-normal, master-clean)
+and BL-035 (docs-only: a `docs/philosophy.md` manifest — philosophy,
+practices, application, and the inner/outer placement modes; no VERSION).
+Naming reviewed and accepted: inner/outer (axis: relation of docs to
+code; "harness-framework" was considered and rejected — "harness" means
+an agent runtime in the field, not a governance layer).

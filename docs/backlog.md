@@ -904,9 +904,14 @@ concrete decision. Per-gap verdicts:
   conditional loading (D0); Vortex (unresolved — could not confirm it
   exists).
 
-**Execution order (revised):** kbo gold panel (unchanged gate) → **BL-032**
-(+ BL-028/030 riding its benchmark) → **BL-033** (kbo pilot) → BL-029/031
-→ first steward cycle.
+**Execution order (revised 2026-08-20, evening — edition split):** kbo
+gold panel (unchanged gate; excludes generated writes) → **edition v17**
+= BL-032 (SDD law + absorbed case home + lifecycle home amendment +
+riders BL-028/030 + BL-025 triage) → soak → **edition v18** = BL-033
+(engine, OKF v2, baseline, kbo pilot; BL-031 rides if templates move) →
+BL-034 (self-legislation) → **edition v19+** = BL-027 (outer mode, own
+design cycle) → first steward cycle. BL-035 (docs-only, no VERSION) runs
+anytime. Full consistency record: the deep-audit spec's addendum.
 
 **Why:** the workflow was built intuitively from practice and works (fleet
 usage evidence in the research spec), but with nothing to compare against,
@@ -921,7 +926,9 @@ live before the first rollout; rejected decisions are recorded (this entry
 + the deep-audit spec serve as the record; ADR them at implementation time
 if they need permanence).
 
-## BL-027 — Enterprise sidecar placement mode (Vector A: external-layer legislation)
+## BL-027 — Outer placement mode (Vector A: legislation outside the codebase)
+
+**Status: queued (behavioral — skill/ changes, VERSION bump + full e2e) → edition v19+, after its own design cycle. Renamed 2026-08-20 from "Enterprise sidecar placement mode": outer names the mode (the AI layer sits outside the codebase — ontology §Placement modes), the sidecar is only the mechanism that hosts it.**
 
 **What:** a placement mode for legislating a repo the operator **cannot
 commit to** (real enterprise case, anonymized — large fast-mutating
@@ -945,8 +952,17 @@ untracked files tolerable, commits not). Mechanics settled in the
   become lifecycle working copies that die at feature merge;
 (5) progressive-rigor floor (small feature in a big organism = lowest
   ceremony tier by law); (6) kbo registry root addition for the sidecar.
-Full e2e benchmark when implemented (behavioral change; placement mode
-inverts Step 3's owned-files-land-in-target-repo assumption — the biggest
+**Design notes added 2026-08-20 (consistency review):** (a) the outer
+**execution profile** — what changes in each law for an outer repo
+(ceremony defaults, converge/analyze semantics when the baseline and
+engine live untracked in the clone, harvest/steward without git access
+to the target) — is decided **inside this case's design cycle**, not as
+a separate case: one owner per topic; (b) generated artifacts
+(baseline/codebase-map, BL-033) in an outer repo are untracked by
+definition — the stub-restore semantics after `git clean -fd` must cover
+**regeneration**, not just re-copy, of everything generated. Full e2e
+benchmark when implemented (behavioral change; placement mode inverts
+Step 3's owned-files-land-in-target-repo assumption — the biggest
 structural change the skill has faced; design needs its own brainstorm
 cycle for Step 0/3/6/7 rework, stub-restore semantics, and how audit/
 restructure run against a sidecar).
@@ -988,9 +1004,14 @@ fleet re-run leaves every manifest on the new key.
 
 ## BL-029 — Case-file home `docs/cases/` in the scaffold
 
-**Status: queued (behavioral — skill/ changes, VERSION bump + full e2e)**
+**Status: ABSORBED into BL-032 (2026-08-20, consistency-review P2)** — the
+case home is a mandatory component of the SDD law's edition (v17), not a
+separate unit: a law that declares tiers in case headers and specs in
+case files cannot land without the home. The original scope below ships
+inside BL-032.
 
-**What:** give upgrade/scaffold modes a create-once `docs/cases/` home
+**What (original, ships via BL-032):** give upgrade/scaffold modes a
+create-once `docs/cases/` home
 (a README or template file — git does not track empty directories; same
 pattern as audit check 11's `.claude/rules/` mkdir advice). New cases are
 born in their home (`docs/cases/BL-NNN/`: spec, plan, summary); register
@@ -1052,7 +1073,7 @@ records; template decision recorded; benchmark green if templates moved.
 
 ## BL-032 — `core/sdd.md`: the SDD law (spec format, clarify protocol, ceremony tiers, converge/analyze gates)
 
-**Status: queued 2026-08-20 (behavioral — skill/ changes, VERSION bump + full e2e)**
+**Status: queued 2026-08-20 → edition v17 (behavioral — skill/ changes, VERSION bump + full e2e)**
 
 **What:** give the SDD process its constitutional home (deep-audit D1
 finding: the process is an orphan — practiced fleet-wide, governed
@@ -1073,20 +1094,37 @@ rule); **converge as a mandatory closing gate** (gap taxonomy
 missing/partial/contradicts/unrequested, append-only traceable tasks,
 loop to converged, constitutional MUSTs CRITICAL, stale-doc axis);
 **analyze as the paired pre-gate** (reuse-first + over-engineering axes;
-mechanical passes provided by the BL-033 engine); the cross-repo case
-convention (case file in the initiating repo, reference rows + same
-bl/NNN branches in siblings). Riding items: BL-028 (manifest key
-profiles→stacks) and BL-030 (constitution disambiguation sweep) join
-this cycle's benchmark.
+mechanical passes provided by the BL-033 engine when available,
+**otherwise by the agent** — the fallback clause that decouples this
+edition from v18); the cross-repo case convention (case file in the
+initiating repo, reference rows + same bl/NNN branches in siblings).
+**The case home ships here (absorbs BL-029, 2026-08-20):** every work
+kind is a case and every spec lives in its case file `docs/cases/BL-NNN/`
+— `docs/superpowers/specs/` becomes a purely legacy path, forward-only,
+history never moves. **The artifact-lifecycle amendment is a green
+condition of this cycle, not a rider:** `core/artifact-lifecycle.md`
+must learn the new conventional home `docs/cases/` and the third role
+class **generated** (machine-written locally, do-not-edit, dies with its
+source) — the law currently enumerates lifecycle homes exhaustively
+(`docs/superpowers/`, `docs/journal/`) and its binary reference/lifecycle
+model has no slot for generated artifacts. Riding items: BL-028 (manifest
+key profiles→stacks) and BL-030 (constitution disambiguation sweep) join
+this cycle's benchmark. **On opening, triage BL-025** (seven v13-era
+follow-ups promised as riders to "the next benchmarked skill/** cycle" —
+this is it; each item rides or is excluded with a reason, some may have
+gone stale over v14–v16).
 
 **Why:** one rule file replaces muscle memory: the fleet already reached
 for scenario form (kbo Testing lines) and parallelism discipline
 (Wave-1) on its own — the law makes the existing instincts deliverable,
 auditable, and harvestable, and the tier law makes both
 under-ceremony (unrequested gifts, debris) and over-ceremony (monoliths)
-fixable.
+fixable. The case home cannot lag: the law declares the tier in the case
+header and specs in the case file — a law referencing a nonexistent home
+would be born contradicting itself.
 
-**Done when:** `core/sdd.md` + template shipped, VERSION bumped, full
+**Done when:** `core/sdd.md` + template + case home + lifecycle amendment
+shipped, VERSION bumped, full
 e2e benchmark green including new scenarios (a spec written under the
 law passes analyze; a converged case shows the append-only findings
 trail); BL-028/030 riding items verified; fleet re-run delivers the rule
@@ -1094,37 +1132,123 @@ everywhere.
 
 ## BL-033 — OKF v2 + the one engine: generated baseline, source anchors, spec linter (kbo pilot)
 
-**Status: queued 2026-08-20 (behavioral — skill/ changes, VERSION bump + full e2e)**
+**Status: queued 2026-08-20 → edition v18, after a v17 soak (behavioral — skill/ changes, VERSION bump + full e2e)**
 
 **What:** two interlocking pieces from deep-audit D2/D4. (1) **OKF v2
 decomposition by link hardness**: generated (baseline.md from annotated
 tests; codebase-map from code; index from docs), anchored (concept docs
 stay handwritten but every backticked symbol/path is verified against
 src/ — source-symbol grounding), human (glossary, log) — codified as an
-amendment to `core/okf.md`, migrating the fleet forward-only. (2) **The
-G7 engine — one tool, three jobs**: spec/plan linter (dangling R-NNN,
-coverage R↔task, unresolved placeholders), OKF anchor checker, and
-baseline generator (EARS ids from specs ↔ annotated tests → generated
-`baseline.md`, do-not-edit; converge consumes its both-direction gaps).
-Includes the G1 architecture-D pilot in **kbo** (R-NNN + annotated tests
-+ baseline + converge end to end in the smallest active repo, home of
-the proto-EARS Testing lines) and the new audit check "OKF-sync debt"
-(commits touching concept files after a doc's timestamp with no linked
-OKF update; repair via restructure only). Legalizes the open "OKF
-content-accuracy" note below into a designed mechanism.
+amendment to `core/okf.md`, migrating the fleet forward-only. The
+**generated** role class enters `core/artifact-lifecycle.md` here in
+full (BL-032 seeds the class; this edition populates it with real
+artifacts and regeneration rules). (2) **The G7 engine — one tool, three
+jobs**: spec/plan linter (dangling R-NNN, coverage R↔task, unresolved
+placeholders), OKF anchor checker, and baseline generator (EARS ids from
+specs ↔ annotated tests → generated `baseline.md`, do-not-edit; converge
+consumes its both-direction gaps; the engine takes its place on the
+verification ladder as a static rung — bindings in `core/verification`
+project rules, absent-engine fallback per BL-032's clause). Includes the
+G1 architecture-D pilot in **kbo** (R-NNN + annotated tests + baseline +
+converge end to end in the smallest active repo, home of the proto-EARS
+Testing lines) and the new audit check "OKF-sync debt" (commits touching
+concept files after a doc's timestamp with no linked OKF update; repair
+via restructure only). Legalizes the open "OKF content-accuracy" note
+below into a designed mechanism. **kbo accounting:** the registry gains
+a `generated` content-type, and the gold-panel docs-vs-code metric
+excludes generated writes — machine-written baseline/map entries must
+not read as documentation discipline, or the panel lies after rollout.
+BL-031 rides this cycle if it touches the backlog template.
 
 **Why:** hand-maintained truth always rots — RKruiterApi's six docs about
 a removed model proved it in our own fleet; our rot-free artifacts (law
 stratum, manifest) are machine-written. Generation gives norms and maps
 a mechanical bond to code; anchors make the remaining handwritten layer
 detectably stale instead of silently wrong; one engine avoids three
-half-maintained tools.
+half-maintained tools. Its own edition (v18) because a transform of what
+"docs" means across nine repos must not share a landing with the new
+process law — a failure here must not roll the SDD law back with it.
 
 **Done when:** the engine exists and passes its own verification ladder;
 the kbo pilot shows a converged case with a regenerated baseline and
 both-direction converge findings; OKF v2 template + rule amendment
 shipped with VERSION bump and green e2e benchmark; fleet re-run
 migrates repos forward-only (no history rewritten).
+
+## BL-034 — Self-legislation: the legislator repo joins its own fleet
+
+**Status: queued 2026-08-20 (process + one behavioral cycle) — after v18 lands. Not an edition of its own.**
+
+**What:** apply the legislator to itself (A4, already seeded by
+`docs/ontology.md`): scaffold the repo that hosts the skill — its own
+manifest, owned copies, OKF, cases home, audit. From then on the repo is
+fleet member #0 and every later edition updates the AI layer that
+governs the skill's own development. Mechanics: (1) **deliver-to-self
+becomes a release step** — bump → benchmark → upgrade onto this repo →
+byte-verify → fleet; (2) **version-skew rule:** while developing v(N+1)
+on a branch, the repo is legislated @ N while assets contain N+1 drafts —
+that drift is branch-normal; owned-integrity drift on master is a
+finding; (3) **migration of current practice:** this repo's existing
+docs (`docs/superpowers/**`, manual spec/plan conventions) migrate
+forward-only into the new law's homes (`docs/cases/`), and the manual
+benchmark/release practice becomes an execution of `core/sdd.md` —
+dogfooding before fleet rollout; (4) harvest/steward/audit close on the
+repo itself. Recursive application is sound because it is
+bootstrap-compilation, not self-modification: the using step never edits
+the source (the law stratum stays byte-identical; changes flow only
+through the normal edit → bump → deliver loop).
+
+**Why:** every new law gets exercised by the skill's own development
+before fleet rollout; the manual practices this repo already runs
+(specs, plans, benchmarks) become instances of the law they built —
+closing the loop is the strongest honesty test the system has.
+
+**Done when:** the repo carries a current manifest and owned layer
+byte-verified against its own assets; a real case runs end to end under
+`core/sdd.md` in this repo (tier declared, analyze/converge executed);
+the release runbook includes deliver-to-self; audit on the repo reports
+clean or explains its findings.
+
+## BL-035 — Docs overhaul: the philosophy manifest (`docs/philosophy.md`) + inner/outer modes
+
+**Status: queued 2026-08-20 (docs-only — no VERSION, no benchmark; can run anytime, independently of the editions)**
+
+**What:** a standalone manifest document, `docs/philosophy.md` (English),
+stating what the legislator is and how it is applied — the document a
+stranger reads first: (1) **philosophy** — law-centrism (one constitution
+delivered byte-identical, agents work under law rather than vibes),
+mechanical truth-bonding (anything that can be generated or anchored to
+code must be — hand-maintained truth always rots, proven in this fleet),
+declarative lifecycles (artifacts carry death terms at birth), the
+I/O-asymmetry (downward delivery is automatic, upward feedback is
+proposal-only through harvest; the user is the sole decision authority);
+(2) **practices** — the SDD case cycle (tiers, EARS/R-NNN, grill
+clarify, analyze/converge gates), the fleet (VERSION editions,
+deliver-to-self for the legislator's own repo), audit/restructure/
+harvest/steward, the verification ladder; (3) **application** — how a
+repo gets legislated, upgraded, audited; scenarios; (4) **placement
+modes** — inner (default: the AI layer lives in the repo) and outer (the
+layer sits outside the codebase — sidecar repo, untracked stub,
+probe-first, outbound redirection; names decided 2026-08-20 on the axis
+"relation of docs to code"; sidecar is the mechanism, outer is the
+mode; the outer execution profile is decided in BL-027's design cycle).
+README and `docs/ontology.md` gain pointers to the manifest; the
+ontology stays the canonical term model, the manifest is the narrative
+layer above it.
+
+**Why:** the system's rationale is currently scattered across README,
+ontology, rule files, and two research specs — a stranger (or a future
+session) meets mechanics without the why. One manifest, referenced from
+everywhere, written against the ontology's terms. Naming reviewed:
+"inner/outer" accepted (non-colliding, self-explaining, sized by
+placement not by company scale); "harness-/ai-framework" rejected —
+"harness" names an agent runtime in the field, a meaning this system
+does not have.
+
+**Done when:** `docs/philosophy.md` exists covering the four sections;
+README, ontology, and glossary cross-reference it; every term the
+manifest uses exists in the glossary (no orphan vocabulary); static
+checks pass.
 
 ## Note — OKF content-accuracy check is an open idea, not yet a backlog item
 
