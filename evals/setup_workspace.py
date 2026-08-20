@@ -164,7 +164,7 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
     (dest / "docs/ai/manifest.json").write_text(
         "{\n"
         f'  "legislatorVersion": {version - 1},\n'
-        '  "profiles": ["dotnet"],\n'
+        '  "stacks": ["dotnet"],\n'
         '  "keep": [\n'
         '    {"path": "docs/notes/special-sauce.md", "reason": "works as-is"}\n'
         "  ],\n"
@@ -332,6 +332,14 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
             "dry-run mode before a real import",  # harvest: candidate quoted
             "must be reversible",  # harvest: stray-rulebook generic line quoted
             "### Constitution candidates",  # harvest appendix present with pinned heading
+        ],
+        # BL-025 item 2: Critical findings must sit under the Critical
+        # severity heading, not merely appear somewhere in the report
+        # (severity-anchored presence; section = ## <Severity> ... next ##).
+        "severity_anchored_markers": [
+            ["ghost-rule.md", "Critical"],
+            ["overview-draft.md", "Critical"],
+            ["docs/ai/rules/core/okf.md", "Critical"],
         ],
         # BL-011 regression lock: the audit must NOT flag the constitution's
         # hub files as orphans (they are referenced by inline-code mention).

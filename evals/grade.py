@@ -51,6 +51,7 @@ SCAFFOLD_ARTIFACTS = [
     "docs/adr/template.md",
     "docs/journal/README.md",
     "CHANGELOG.md",
+    "docs/cases/README.md",
 ]
 
 # Migration fixture content that must never be silently dropped.
@@ -124,16 +125,16 @@ class Grader:
         self.check("manifest_version_matches_skill_VERSION",
                    bool(manifest and manifest.get("legislatorVersion") == version),
                    f"expected {version}, got {manifest.get('legislatorVersion') if manifest else None}")
-        self.check("manifest_profiles_correct",
-                   bool(manifest and manifest.get("profiles") == PROFILES),
-                   f"profiles={manifest.get('profiles') if manifest else None}")
+        self.check("manifest_stacks_correct",
+                   bool(manifest and manifest.get("stacks") == PROFILES),
+                   f"stacks={manifest.get('stacks') if manifest else None}")
         self.check("manifest_ownedFiles_exact_sorted",
                    bool(manifest and manifest.get("ownedFiles") == sorted(owned)),
                    "matches files derived from skill source" if manifest and manifest.get("ownedFiles") == sorted(owned)
                    else f"expected {sorted(owned)}, got {manifest.get('ownedFiles') if manifest else None}")
-        inline = bool(re.search(r'^  "profiles": \[[^\n\]]*\],$', raw, re.M))
-        self.check("manifest_profiles_single_line_inline", inline,
-                   "profiles array on one line per Step 3.7" if inline else "profiles array expanded across lines")
+        inline = bool(re.search(r'^  "stacks": \[[^\n\]]*\],$', raw, re.M))
+        self.check("manifest_stacks_single_line_inline", inline,
+                   "stacks array on one line per Step 3.7" if inline else "stacks array expanded across lines")
 
         expected_keep = expected_keep or []
         keep = manifest.get("keep") if manifest else None
@@ -141,10 +142,10 @@ class Grader:
                    f"expected {expected_keep}, got {keep}")
 
         idx = [raw.find(f'"{k}"') for k in
-               ("legislatorVersion", "profiles", "keep", "ownedFiles")]
+               ("legislatorVersion", "stacks", "keep", "ownedFiles")]
         order_ok = all(i >= 0 for i in idx) and idx == sorted(idx)
         self.check("manifest_key_order", order_ok,
-                   "legislatorVersion, profiles, keep, ownedFiles" if order_ok
+                   "legislatorVersion, stacks, keep, ownedFiles" if order_ok
                    else "keys missing or out of order")
 
         if isinstance(keep, list) and keep:
@@ -351,6 +352,18 @@ def grade_audit(ws: Path) -> Grader:
         g.check(f"report names {marker!r}", marker in report,
                 "named in report" if marker in report else "absent from report")
 
+    # BL-025 item 2: severity-anchored presence — the marker must appear
+    # inside the section under its pinned severity heading (## <Severity>
+    # up to the next heading), not merely anywhere in the report.
+    for marker, severity in meta.get("severity_anchored_markers", []):
+        m = re.search(rf"^## {re.escape(severity)}\s*\n(.*?)(?=^## |\Z)", report,
+                      re.S | re.M)
+        section = m.group(1) if m else ""
+        anchored = marker in section
+        g.check(f"report anchors {marker!r} under ## {severity}", anchored,
+                f"present in the {severity} section" if anchored
+                else f"not under ## {severity} (heading found={bool(m)})")
+
     for marker in meta.get("absent_markers", []):
         g.check(f"report does NOT contain {marker!r}", marker not in report,
                 "correctly absent" if marker not in report else "false-positive finding present")
@@ -437,10 +450,17 @@ def grade_restructure(ws: Path) -> Grader:
 
     skf = repo / meta["skills_rules_path"]
     skf_ok = skf.exists() and skf.read_text() == meta["skills_rules_content"]
-    named = "made-up-skill" in report
+    # BL-025 item 6: the skill-binding finding is machine-install territory —
+    # it must be routed to the report's "For the team:" block, not proposed
+    # as a restructure plan item (scoped presence, not report-wide).
+    ftt = re.search(r"^For the team:\s*\n(.*?)(?=^Kept \(immovable\)|\Z)", report,
+                    re.S | re.M)
+    ftt_section = ftt.group(1) if ftt else ""
+    named = "made-up-skill" in ftt_section
     g.check("skill_binding_for_the_team_not_a_plan_item", skf_ok and named,
-            "skills.md byte-unchanged, finding routed to the report" if skf_ok and named
-            else f"file untouched={skf_ok}, named in report={named}")
+            "skills.md byte-unchanged, finding routed under 'For the team:'"
+            if skf_ok and named
+            else f"file untouched={skf_ok}, named under 'For the team:'={named}")
 
     stray = repo / meta["stray_rulebook_path"]
     g.check("stray_rulebook_merged_away", not stray.exists(),
