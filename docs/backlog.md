@@ -1250,6 +1250,109 @@ README, ontology, and glossary cross-reference it; every term the
 manifest uses exists in the glossary (no orphan vocabulary); static
 checks pass.
 
+## BL-036 — Eval authenticity: honest triggers, agents-first migration, gap closures, contract derivation
+
+**Status: queued 2026-08-21 (behavioral — evals/ + one law line each in migration.md §0 and SKILL.md Step 5; rides at the head of the v18/BL-033 cycle; the law lines make it VERSION-relevant — same edition as BL-033 unless split cheaply)**
+
+**What:** four parts, one theme — the eval suite must test the skill, not
+the prompt.
+
+1. **Trigger minimization.** All five `evals.json` triggers shrink to the
+   honest user voice: "Set this repo up for AI development" /
+   "re-run the legislator here" — no deliverable enumeration ("rules, OKF
+   docs, backlog, the works" leaks Step 4's table), no mode leak ("I just
+   spun up" tells the agent it is fresh; "we changed the core rules and
+   bumped VERSION" tells it why it is upgrading). Runner waiver block
+   becomes: "every confirmation the skill asks for is pre-approved; answer
+   with the skill's own default plus what the repo evidences; the skill
+   knows what to deploy". evals/README gains the rule: a trigger never
+   names deliverables — Step 4's table is the only source. v17 runs on
+   the historical prompts (pass-rate comparability with v16); the model
+   switch is recorded as a confound in benchmarks/v17.md.
+2. **Agents-first migration fixture.** New fixture
+   `legacy-migration-agents-first/` (hand-written AGENTS.md, no CLAUDE.md,
+   the same law/instance markers) + scenario + grader branch: the
+   migration asserts minus rename expectations, plus "CLAUDE.md created
+   fresh as symlink". The law already specifies the branch
+   ("If AGENTS.md already exists, it stays canonical") — the suite never
+   exercised it. **Companion law line** (migration.md §0 + SKILL.md
+   Step 5): both a real AGENTS.md and a real CLAUDE.md present = two
+   canonical candidates = decision gate ("which is canonical?"), never a
+   silent overwrite — today `ln -s` over a lingering real file would
+   silently destroy content, the exact loss class migration exists to
+   prevent.
+3. **Upgrade gap closures.** (a) `grade_upgrade` gains
+   `upgrade_creates_missing_artifacts` — the v17 fixture has no
+   `docs/cases/README.md`, upgrade must create it, nothing asserted that
+   (found by review 2026-08-21); (b) keep-refusal branch — the upgrade
+   trigger adds "also protect `docs/ai/rules/core/okf.md`" (an owned
+   path → the skill must refuse with a reason in the `### Keep list`
+   section; one grader assert); (c) new mini-fixture
+   `upgrade-drop-stack` (manifest with dotnet+aurelia, prompt asks to
+   drop aurelia) — asserts aurelia owned files deleted, dotnet
+   untouched: the only deletion-semantics-by-stack branch, currently
+   untested; `PROFILES` hardcode dissolves into per-fixture meta.
+4. **Contract derivation.** `SCAFFOLD_ARTIFACTS` stops being a hand-list
+   (README's "the one thing to maintain by hand" dies): it is parsed
+   from SKILL.md Step 4's table at grade time — the table and the
+   asserts cannot diverge (this exact divergence happened twice: v17's
+   cases README was added by hand, and upgrade's copy stayed unasserted).
+   Manifest pins (key order, inline arrays, keep serialization) gather
+   into one `expected_manifest_schema()` oracle beside `expected_owned()`.
+   Deliberately left manual: fixture content markers (decimal-money,
+   bl/NNN) — those are intentional test-data oracles, not contract.
+
+**Why:** three defects surfaced in one review session (2026-08-21): the
+prompts leak answers, one law branch and three upgrade branches are
+untested, and the grader hand-duplicates the skill's contracts — every
+edition pays a manual toll and twice the duplication actually split.
+
+**Done when:** minimized triggers in evals.json + README rule;
+agents-first scenario graded green; both-exist decision gate in law and
+exercised; the three upgrade asserts/fixture in; SCAFFOLD_ARTIFACTS
+derived from Step 4's table with a test proving divergence is impossible
+(manually editing the list breaks); full suite green on the cycle's
+benchmark.
+
+## BL-037 — Background eval runner with staged execution and notifications
+
+**Status: queued 2026-08-21 (tools/ + evals/ process — docs-only for the repo, no VERSION, no benchmark of its own; verified live during the v17 run)**
+
+**What:** the orchestration that the v17 benchmark improvised in /tmp,
+productized. (1) `tools/evals-bg.sh` — detached sequential runner:
+stall detection (log size + repo dirty-count frozen → kill), resume
+ladder (`opencode run --continue`, up to N resumes per attempt), full
+fixture reset between attempts (`git reset` → `checkout -- .` →
+`clean -fd` — staged renames survive a bare checkout and poison the
+next attempt; found the hard way), confirmation-waiver prompt block,
+MODEL env passthrough (glm-5.3 drops long streams on this endpoint —
+313 stream errors logged; glm-5-turbo verified streaming 27 KB/3.8k
+words in one 5-minute probe). (2) **Staged execution kills duplicate
+agent runs:** `check_static` (seconds) → smoke gate = the upgrade
+scenario (most change-sensitive: owned layer, manifest, keep, Step 7) →
+the full remaining corpus only on green smoke; idempotency ×3 launches
+only after a green main corpus (no relaxation — every assert still runs;
+what disappears is running five scenarios × retries off a dead-on-
+arrival change). (3) **Notifications:** desktop `notify-send` on
+per-scenario DONE / whole-run DONE / FAILED; a machine-readable
+`$WS/status.md` (stage, attempt, last log line) as the session contract —
+the interactive session polls a file, never a process, and its context
+does not grow with run logs. Workspace stays outside the repo
+(`/tmp/legislator-eval-vN/`). (4) evals/README documents the background
+procedure beside the manual one.
+
+**Why:** the v17 benchmark could not run in-session: provider stream
+drops × five parallel agents killed the night run; interactive polling
+starved the session (multi-minute sleeps inside tool calls); every
+failed attempt re-ran everything. The runner is already de-facto
+specified by two days of live iteration — this case writes it down.
+
+**Done when:** `tools/evals-bg.sh` runs a full corpus unattended to
+completion with resume surviving an induced stall; notify-send fires on
+scenario and run boundaries; status.md contract documented; staged
+order (static → smoke → corpus → idempotency) enforced by the script;
+README section landed.
+
 ## Note — OKF content-accuracy check is an open idea, not yet a backlog item
 
 The RKruiterApi v11 backfill (2026-07-12) found six `docs/okf/domain/*.md`
