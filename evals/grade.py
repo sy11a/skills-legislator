@@ -400,8 +400,12 @@ def grade_restructure(ws: Path) -> Grader:
             str(report_path) if has_report else f"missing: {report_path}")
 
     for s in meta["fidelity_sentences"]:
+        # -i: the law's carve-outs lawfully REFORMAT lines while carrying
+        # them ("definitions become glossary rows") — a sentence-initial
+        # lowercase word becomes table-capitalized. Fidelity means the
+        # concept survived, not the casing (observed 2026-08-21).
         hits = subprocess.run(
-            ["grep", "-rl", "--exclude-dir=.git", s, str(repo)],
+            ["grep", "-rli", "--exclude-dir=.git", s, str(repo)],
             capture_output=True, text=True).stdout.strip()
         g.check(f"fidelity: {s[:44]!r}", bool(hits),
                 f"survives in {hits.splitlines()}" if hits
