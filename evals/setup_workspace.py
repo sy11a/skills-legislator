@@ -225,7 +225,8 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
         f'  "legislatorVersion": {version - 1},\n'
         '  "stacks": ["dotnet"],\n'
         '  "keep": [\n'
-        '    {"path": "docs/notes/special-sauce.md", "reason": "works as-is"}\n'
+        '    {"path": "docs/notes/special-sauce.md", "reason": "works as-is"},\n'
+        '    {"path": "docs/notes/gone-runbook.md", "reason": "deleted last sprint, entry forgot"}\n'
         "  ],\n"
         '  "ownedFiles": [\n'
         + ",\n".join(f'    "{p}"' for p in sorted(owned))
@@ -380,9 +381,18 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
 
     git(dest, "init", "-q")
     commit_dated(dest, "fixture: rotted-layer at 2026-01-15", "2026-01-15T12:00:00")
+    # Defect (check 9): agent-tooling working-dir debris — foreign dump.
+    (dest / ".superpowers/sdd").mkdir(parents=True)
+    (dest / ".superpowers/sdd/task-9-report.md").write_text(
+        "# task 9 report\n\nDone. Diff attached elsewhere.\n")
+
     # Second commit: code change months after the last journal entry.
     with open(dest / "src/LegacyBilling/Endpoints.cs", "w") as fh:
         fh.write("// new endpoint added long after the journal went quiet\n")
+    # Defect (check 16): a spec BORN in the legacy home after legislation.
+    (dest / "docs/superpowers/specs").mkdir(parents=True, exist_ok=True)
+    (dest / "docs/superpowers/specs/late-feature-spec.md").write_text(
+        "# Late feature spec\n\nWritten after legislation, parked in the legacy home.\n")
     commit_dated(dest, "Add endpoints (no journal entry)", "2026-07-01T12:00:00")
 
     meta = {
@@ -402,6 +412,9 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
             "foreign-structures] UBIQUITOUS_LANGUAGE.md",  # defect 14: foreign glossary store
             "glossary-vitality] docs/okf/glossary.md",  # defect 13: empty glossary, src/ exists
             "skill-bindings] made-up-skill",  # defect 15: sanctioned but uninstalled
+            ".superpowers/",          # defect (check 9): working-dir debris
+            "gone-runbook.md",        # defect (check 10a): dangling keep entry
+            "legacy-home-violation] docs/superpowers/specs/late-feature-spec.md",  # defect (check 16)
             "dry-run mode before a real import",  # harvest: candidate quoted
             "must be reversible",  # harvest: stray-rulebook generic line quoted
             "### Constitution candidates",  # harvest appendix present with pinned heading

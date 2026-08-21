@@ -492,6 +492,17 @@ def grade_audit(ws: Path) -> Grader:
         g.check(f"report names {marker!r}", marker in report,
                 "named in report" if marker in report else "absent from report")
 
+    # Parity law (BL-036 Wave B): every audit check the law pins must have
+    # a planted defect exercising it, and vice versa. Derived check slugs
+    # vs slug-markers in the fixture — a new check without its defect (or
+    # an orphaned marker) is red at grade time, not discovered by rot.
+    law_slugs = set(audit_check_severities())
+    slug_markers = {m.split("]")[0] for m in meta["report_markers"] if "]" in m and not m.startswith("(")}
+    uncovered = law_slugs - slug_markers
+    g.check("parity_every_check_has_a_defect", not uncovered,
+            f"all {len(law_slugs)} law checks exercised by markers" if not uncovered
+            else f"checks with no planted defect: {sorted(uncovered)}")
+
     # BL-025 item 2: severity-anchored presence — the marker must appear
     # inside the section under its pinned severity heading (## <Severity>
     # up to the next heading), not merely anywhere in the report.
