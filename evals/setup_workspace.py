@@ -383,7 +383,12 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
             "billing period",
         ]
         meta["foreign_glossary_path"] = "UBIQUITOUS_LANGUAGE.md"
+        # case-insensitive: the law says "definitions become glossary rows" —
+        # agents lawfully reformat "A billing period …" into
+        # "| Billing period | … |" (observed 2026-08-21), so the grader
+        # matches the concept, not the casing
         meta["foreign_glossary_definition"] = "billing period"
+        meta["foreign_glossary_definition_ci"] = True
         meta["stray_rulebook_path"] = "docs/superpowers/review-checklist.md"
         meta["stray_project_law"] = "never call wkhtmltopdf directly"
         meta["conflict_marker"] = (

@@ -444,7 +444,7 @@ def grade_restructure(ws: Path) -> Grader:
             f"{meta['foreign_glossary_path']} removed after merge" if not fg.exists()
             else f"{meta['foreign_glossary_path']} still on disk")
     gl_text = (repo / "docs/okf/glossary.md").read_text() if (repo / "docs/okf/glossary.md").exists() else ""
-    def_in_gl = meta["foreign_glossary_definition"] in gl_text
+    def_in_gl = meta["foreign_glossary_definition"].lower() in gl_text.lower()
     g.check("foreign_definition_in_okf_glossary", def_in_gl,
             "instance definition lives in docs/okf/glossary.md" if def_in_gl
             else "definition not merged into the OKF glossary")
