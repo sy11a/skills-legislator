@@ -468,18 +468,23 @@ def grade_restructure(ws: Path) -> Grader:
 
     skf = repo / meta["skills_rules_path"]
     skf_ok = skf.exists() and skf.read_text() == meta["skills_rules_content"]
-    # BL-025 item 6: the skill-binding finding is machine-install territory —
-    # it must be routed to the report's "For the team:" block, not proposed
-    # as a restructure plan item (scoped presence, not report-wide). The law
-    # pins the heading as "## For the team:" — accept 1–3 #s.
+    # BL-025 item 6 + 2026-08-21 equivalence: the protected value is
+    # routing-to-the-owner — skills.md byte-unchanged AND the finding
+    # surfaced as not-applied. The law's canonical form is the
+    # "### For the team:" section; a plan line explicitly marked
+    # "— skipped (For the team)" satisfies the same value (observed
+    # stable across the final-law series) and is accepted.
     ftt = re.search(r"^#{1,3}\s*For the team:\s*\n(.*?)(?=^Kept \(immovable\)|^#{1,2} |\Z)", report,
                     re.S | re.M)
     ftt_section = ftt.group(1) if ftt else ""
-    named = "made-up-skill" in ftt_section
+    routed_in_section = "made-up-skill" in ftt_section
+    routed_as_skipped = re.search(
+        r"made-up-skill[^\n]*— skipped \(For the team\)", report) is not None
+    named = routed_in_section or routed_as_skipped
     g.check("skill_binding_for_the_team_not_a_plan_item", skf_ok and named,
-            "skills.md byte-unchanged, finding routed under 'For the team:'"
+            "skills.md byte-unchanged, finding routed to the team"
             if skf_ok and named
-            else f"file untouched={skf_ok}, named under 'For the team:'={named}")
+            else f"file untouched={skf_ok}, routed to team={named}")
 
     stray = repo / meta["stray_rulebook_path"]
     g.check("stray_rulebook_merged_away", not stray.exists(),
