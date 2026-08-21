@@ -129,6 +129,65 @@ def materialize_upgrade(dest: Path) -> None:
     (dest.parent / "fixture_meta.json").write_text(json.dumps(meta, indent=2) + "\n")
 
 
+def materialize_upgrade_drop_stack(dest: Path) -> None:
+    """BL-036 Wave B: a repo subscribed to dotnet+aurelia whose user asks
+    to drop aurelia. Asserts the only deletion-semantics-by-stack branch:
+    aurelia owned files must be deleted, dotnet untouched. Aurelia has
+    exactly one rule file in the current corpus — copy it as-is."""
+    shutil.copytree(EVALS / "fixtures" / "upgrade-base", dest)
+    core_src = sorted((SKILL / "assets/rules/core").glob("*.md"))
+    dotnet_src = sorted((SKILL / "assets/rules/stacks/dotnet").glob("*.md"))
+    aurelia_src = sorted((SKILL / "assets/rules/stacks/aurelia").glob("*.md"))
+    if not aurelia_src:
+        sys.exit("drop-stack fixture needs at least one aurelia rule")
+
+    rules_dst = dest / "docs/ai/rules"
+    (rules_dst / "core").mkdir(parents=True)
+    (rules_dst / "stacks/dotnet").mkdir(parents=True)
+    (rules_dst / "stacks/aurelia").mkdir(parents=True)
+
+    owned: list[str] = []
+    for f in core_src:
+        shutil.copy2(f, rules_dst / "core" / f.name)
+        owned.append(f"docs/ai/rules/core/{f.name}")
+    for f in dotnet_src:
+        shutil.copy2(f, rules_dst / "stacks/dotnet" / f.name)
+        owned.append(f"docs/ai/rules/stacks/dotnet/{f.name}")
+    aurelia_names = []
+    for f in aurelia_src:
+        shutil.copy2(f, rules_dst / "stacks/aurelia" / f.name)
+        owned.append(f"docs/ai/rules/stacks/aurelia/{f.name}")
+        aurelia_names.append(f.name)
+
+    version = int((SKILL / "VERSION").read_text().strip())
+    owned_sorted = sorted(owned)
+    manifest = (
+        "{\n"
+        f'  "legislatorVersion": {version - 1},\n'
+        '  "profiles": ["dotnet", "aurelia"],\n'
+        '  "keep": [],\n'
+        '  "ownedFiles": [\n'
+        + ",\n".join(f'    "{p}"' for p in owned_sorted)
+        + "\n  ]\n}\n"
+    )
+    (dest / "docs" / "ai" / "manifest.json").write_text(manifest)
+
+    imports = "\n".join(f"@{p}" for p in owned_sorted)
+    (dest / "CLAUDE.md").write_text(
+        "# BillingApi\n\n" + imports +
+        "\n\n## Project notes\n\nBillingApi handles invoice generation and "
+        "payment webhooks. Legislated one constitution version ago.\n"
+    )
+
+    meta = {
+        "stacks": ["dotnet"],           # the post-drop subscription
+        "dropped_stack": "aurelia",
+        "dropped_stack_files": [f"docs/ai/rules/stacks/aurelia/{n}" for n in aurelia_names],
+        "expected_keep": [],
+    }
+    (dest.parent / "fixture_meta.json").write_text(json.dumps(meta, indent=2) + "\n")
+
+
 def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
     """Legislated repo with fifteen planted defects for the audit scenario.
 
@@ -285,6 +344,14 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
         "- **pre-plan:** `grilling`\n"
         "- **implement:** `made-up-skill`\n")
 
+    # Negative control (BL-036 Wave B): a healthy case file in the v17
+    # case home. Not a defect — checks 7/12 exempt docs/cases/**; its
+    # absence from the audit report is the assert (absent-marker).
+    (dest / "docs/cases/BL-0042").mkdir(parents=True)
+    (dest / "docs/cases/BL-0042/summary.md").write_text(
+        "# BL-0042 — settled invoice export\n\n"
+        "Tier: 1 (light). Converged 2026-01-20.\n")
+
     # Defect 12 -- stray rulebook: law-shaped review rules parked at
     # docs/superpowers/ top level (exempt from orphan check 7, invisible to
     # every session). Audit check 12 must flag it under its slug; the
@@ -304,6 +371,12 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
         (dest / ".claude/plans/2026-01-importer-plan.md").write_text(
             "# Importer split plan\n\n"
             "Planned: split the importer into reader and writer stages.\n")
+        # BL-036 Wave B bait: a case directory misplaced in the legacy home
+        # — §1's cases row sends it to docs/cases/BL-0007/ (a `move`).
+        (dest / "docs/superpowers/BL-0007").mkdir(parents=True)
+        (dest / "docs/superpowers/BL-0007/plan.md").write_text(
+            "# BL-0007 — invoice numbering\n\n"
+            "Tier: 1 (light). Plan: sequential per tenant.\n")
 
     git(dest, "init", "-q")
     commit_dated(dest, "fixture: rotted-layer at 2026-01-15", "2026-01-15T12:00:00")
@@ -346,6 +419,9 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
         "absent_markers": [
             "orphan-docs] docs/okf/index.md",
             "orphan-docs] docs/okf/glossary.md",
+            # the healthy case file is exempt (docs/cases/** scan-set):
+            "BL-0042",
+            "stray-rulebooks] docs/cases",
             # not-law suppression: the marked statement must not be proposed
             "Never delete rows from the invoices table",
         ],
@@ -414,7 +490,8 @@ def main() -> None:
     if ws.exists():
         sys.exit(f"refusing to overwrite existing workspace: {ws}")
 
-    for name in ("fresh-scaffold-dotnet", "legacy-migration"):
+    for name in ("fresh-scaffold-dotnet", "legacy-migration",
+                 "legacy-migration-agents-first"):
         repo = ws / name / "repo"
         shutil.copytree(EVALS / "fixtures" / name, repo)
         init_commit(repo, f"fixture: {name}")
@@ -422,6 +499,10 @@ def main() -> None:
     repo = ws / "upgrade" / "repo"
     materialize_upgrade(repo)
     init_commit(repo, "fixture: upgrade (one version behind, one retired rule)")
+
+    repo = ws / "upgrade-drop-stack" / "repo"
+    materialize_upgrade_drop_stack(repo)
+    init_commit(repo, "fixture: upgrade-drop-stack (dotnet+aurelia, dropping aurelia)")
 
     repo = ws / "rotted-layer" / "repo"
     materialize_rotted(repo)

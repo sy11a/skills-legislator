@@ -8,6 +8,7 @@ Before splitting content, put the repo into the v14+ file model: the canonical e
 
 - If a real `CLAUDE.md` exists and no `AGENTS.md` does: rename `CLAUDE.md` → `AGENTS.md` (`git mv CLAUDE.md AGENTS.md` if tracked, else Bash `mv`). The renamed file is now canonical.
 - If `AGENTS.md` already exists, it stays canonical.
+- If BOTH a real `AGENTS.md` and a real `CLAUDE.md` exist, that is two canonical candidates — stop and ask the user which one is canonical (decision gate). Never resolve it silently: `ln -s` over the loser would destroy its content, the exact loss class migration exists to prevent. Only after the user's choice: the loser's content is merged or discarded per their instruction, then the symlink step proceeds.
 - Ensure `CLAUDE.md` exists as a symlink → `AGENTS.md` (`ln -s AGENTS.md CLAUDE.md`). After the rename above there is no real `CLAUDE.md` left, so the symlink is created fresh.
 
 All "the entry document" references below mean `AGENTS.md` (the canonical file).

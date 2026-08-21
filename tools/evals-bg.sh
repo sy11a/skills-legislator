@@ -55,8 +55,8 @@ print(e['prompt'] if e else '')" "$1"; }
 
 REPORT_OF() { # <scenario-dir-name> -> relative expected deliverable
   case "$1" in
-    legacy-migration) echo "outputs/migration-report.md";;
-    upgrade) echo "outputs/upgrade-report.md";;
+    legacy-migration|legacy-migration-agents-first) echo "outputs/migration-report.md";;
+    upgrade|upgrade-drop-stack) echo "outputs/upgrade-report.md";;
     rotted-layer) echo "outputs/audit-report.md";;
     restructure) echo "outputs/restructure-report.md";;
     *) echo "";;
@@ -106,7 +106,7 @@ msg_block() { # <dir>
   p="$(prompt_of "$(SC_OF "$sc")")"
   out="$WS/$sc/outputs"
   case "$sc" in
-    legacy-migration|upgrade) report="Write your full Step 7 report (all sections, including Health and any Constitution candidates) to $out/$(basename "$(REPORT_OF "$sc")") — overwrite if it exists.";;
+    legacy-migration|legacy-migration-agents-first|upgrade|upgrade-drop-stack) report="Write your full Step 7 report (all sections, including Health and any Constitution candidates) to $out/$(basename "$(REPORT_OF "$sc")") — overwrite if it exists.";;
     rotted-layer) report="Save your full audit report to $out/audit-report.md — outside the target repo (which you must not touch: zero writes).";;
     restructure) report="Write your final restructure report to $out/restructure-report.md — overwrite if it exists.";;
     *) report="";;
@@ -123,6 +123,7 @@ MSG
 spawn() { # <dir> <fresh|resume> — self-contained: no /tmp helper
   local sc="$1" log="$WS/$1/outputs/run.log" msg
   : >> "$log"
+  [ "$2" = fresh ] && msg_block "$sc" > "$WS/$sc/outputs/prompt.txt"
   if [ "$2" = resume ]; then
     msg="Continue exactly where you left off (the previous stream dropped). Re-check current file state on disk before acting — you may have already completed some steps. CONFIRMATION WAIVER still applies: never end your turn on a question."
     setsid opencode run --dir "$WS/$sc" -m "$MODEL" --continue "$msg" \

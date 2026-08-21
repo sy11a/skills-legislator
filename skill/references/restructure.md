@@ -6,8 +6,9 @@ Detailed mechanics for SKILL.md's "Restructure — approval-gated repair" sectio
 
 | Artifact type | Standard home |
 |---|---|
-| Implementation plans | `docs/superpowers/plans/` |
-| Design specs | `docs/superpowers/specs/` |
+| Case files (any `BL-NNN` directory) | `docs/cases/BL-NNN/` — the one home for a case's spec, plan package, and summary |
+| Implementation plans (historical, or stray non-case plans) | `docs/superpowers/plans/` — **legacy home**: historical artifacts live and die here; new work is born in its case file, never here |
+| Design specs (historical, or explorations outside a case) | `docs/superpowers/specs/` — **legacy home**, same rule |
 | ADRs (any `adrs/`, `doc/adr/` variant) | `docs/adr/` |
 | Knowledge docs, overviews, glossaries, maps | `docs/okf/` |
 | Backlog / task lists | `docs/backlog.md` |

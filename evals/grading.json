@@ -29,12 +29,22 @@
       "text": "restructure_actions_derived",
       "passed": true,
       "evidence": "closed action set parsed: ['decision', 'fix', 'heal', 'link', 'merge', 'move']"
+    },
+    {
+      "text": "layout_table_has_cases_row",
+      "passed": true,
+      "evidence": "\u00a71 maps case directories to docs/cases/"
+    },
+    {
+      "text": "layout_table_marks_legacy_homes",
+      "passed": true,
+      "evidence": "\u00a71 qualifies superpowers rows as legacy homes"
     }
   ],
   "summary": {
-    "passed": 6,
+    "passed": 8,
     "failed": 0,
-    "total": 6,
+    "total": 8,
     "pass_rate": 1.0
   }
 }

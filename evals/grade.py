@@ -370,6 +370,33 @@ def grade_migration(ws: Path) -> Grader:
     return g
 
 
+def grade_migration_agents_first(ws: Path) -> Grader:
+    """The AGENTS-native migration branch: hand-written AGENTS.md, no
+    CLAUDE.md. Same migration contract minus rename expectations, plus
+    'CLAUDE.md created fresh as symlink'. The law branch ('If AGENTS.md
+    already exists, it stays canonical') was specified but never
+    exercised before BL-036."""
+    repo = ws / "legacy-migration-agents-first" / "repo"
+    g = Grader()
+    g.common_checks(repo)
+    g.scaffold_checks(repo)
+    g.no_unresolved_tokens(repo)
+    agents = (repo / "AGENTS.md").read_text() if (repo / "AGENTS.md").exists() else ""
+    v2_wired = all(w in agents for w in migration_wiring())
+    g.check("agents_md_v2_wiring_written_directly", v2_wired,
+            f"all {len(migration_wiring())} template wiring strings present (derived from AGENTS.md.tpl)" if v2_wired
+            else "migration left v2 wiring as proposals instead of writing it")
+    agents_preserved = "Money values are always" in agents and "bl/NNN-short-description" in agents
+    g.check("agents_md_content_preserved", agents_preserved,
+            "law + instance markers survived in the canonical AGENTS.md" if agents_preserved
+            else "markers lost from AGENTS.md")
+    report_path = ws / "legacy-migration-agents-first" / "outputs" / "migration-report.md"
+    has_report = report_path.exists()
+    g.check("migration_report_saved", has_report,
+            str(report_path) if has_report else f"missing: {report_path}")
+    return g
+
+
 def grade_upgrade(ws: Path) -> Grader:
     repo = ws / "upgrade" / "repo"
     meta = json.loads((ws / "upgrade" / "fixture_meta.json").read_text())
@@ -409,6 +436,26 @@ def grade_upgrade(ws: Path) -> Grader:
     g.check("retired_rule_deleted", not retired.exists(),
             "deletion propagation removed it" if not retired.exists() else "retired rule still on disk")
 
+    # BL-036 Wave B: upgrade is also a scaffold for artifacts the repo
+    # never had — the v17 fixture predates docs/cases/, so the upgrade run
+    # must create the case home (found unasserted by review 2026-08-21).
+    missing_artifacts = [a for a in SCAFFOLD_ARTIFACTS if not (repo / a).exists()]
+    g.check("upgrade_creates_missing_artifacts", not missing_artifacts,
+            "all Step 4 artifacts exist after upgrade (derived list)" if not missing_artifacts
+            else f"upgrade failed to scaffold: {missing_artifacts}")
+
+    # BL-036 Wave B: the keep-refusal branch — when the run's prompt (saved
+    # by the runner to outputs/prompt.txt) asks to protect an OWNED path,
+    # the skill must refuse with a reason under ### Keep list.
+    prompt_file = ws / "upgrade" / "outputs" / "prompt.txt"
+    if prompt_file.exists() and "protect docs/ai/rules/core/okf.md" in prompt_file.read_text():
+        refusal = re.search(r"### Keep list\n(.*?)(?=###|\Z)", report, re.S | re.M)
+        seg = refusal.group(1) if refusal else ""
+        refused = "okf.md" in seg and "owned" in seg.lower()
+        g.check("keep_refusal_for_owned_path", refused,
+                "owned-path keep request refused with a reason" if refused
+                else "no refusal recorded for the owned-path keep request")
+
     # Project-owned files must be untouched: tracked-file diff limited to them
     # must be empty. Derived from the scaffold table (BL-036 Wave A): the
     # entry-document pair is excluded — AGENTS.md only ever receives
@@ -431,6 +478,15 @@ def grade_audit(ws: Path) -> Grader:
     report = report_path.read_text() if has_report else ""
     g.check("audit_report_saved", has_report,
             str(report_path) if has_report else f"missing: {report_path}")
+
+    # BL-036 Wave B: the report must live OUTSIDE the repo — the audit's
+    # zero-writes contract means even its own output may not land in the
+    # tree (the zero_writes check below would catch a written file, but
+    # this names the intent explicitly).
+    inside = [p.name for p in (repo / "docs").rglob("*report*")]
+    g.check("audit_report_outside_repo", not inside,
+            "no report artifacts inside the repo" if not inside
+            else f"report written into the repo: {inside}")
 
     for marker in meta["report_markers"]:
         g.check(f"report names {marker!r}", marker in report,
@@ -571,13 +627,22 @@ def grade_restructure(ws: Path) -> Grader:
     moved_ok = (not (repo / ".claude/plans").exists()
                 and (repo / "docs/superpowers/plans/2026-01-importer-plan.md").exists())
     g.check("plans_relocated_to_standard_home", moved_ok,
-            ".claude/plans/ gone, file at docs/superpowers/plans/" if moved_ok
+            ".claude/plans/ gone, file at docs/superpowers/plans/ (legacy home — stray non-case plans stay there)" if moved_ok
             else "plan file not moved (or old dir left behind)")
+
+    # BL-036 Wave B: the misplaced case directory (docs/superpowers/BL-0007)
+    # must reach the case home per §1's cases row — content preserved.
+    case_src = repo / "docs/superpowers/BL-0007/plan.md"
+    case_dst = repo / "docs/cases/BL-0007/plan.md"
+    case_moved = (not case_src.exists() and case_dst.exists()
+                  and "sequential per tenant" in case_dst.read_text())
+    g.check("misplaced_case_relocated_to_case_home", case_moved,
+            "BL-0007 lives in docs/cases/ with content intact" if case_moved
+            else f"src gone={not case_src.exists()}, dst ok={case_dst.exists()}")
     g.check("cursorrules_merged_away", not (repo / ".cursorrules").exists(),
             ".cursorrules removed after merge" if not (repo / ".cursorrules").exists()
             else ".cursorrules still present")
-    g.check("ghost_import_fixed", "ghost-rule.md" not in claude,
-            "dangling import gone" if "ghost-rule.md" not in claude
+    g.check("ghost_import_fixed", "ghost-rule.md" not in claude,            "dangling import gone" if "ghost-rule.md" not in claude
             else "ghost-rule import still in AGENTS.md")
 
     src = SKILL / "assets/rules/core/okf.md"
@@ -614,6 +679,19 @@ def grade_restructure(ws: Path) -> Grader:
             "orphan linked into the layer" if linked
             else "orphan survives with an open deletion [decision]" if orphan_decision
             else "orphan deleted without a decision item, or unreferenced with no decision")
+
+    # BL-036 Wave B: post-state asserts — the [link] outcome must be visible
+    # in the index (not only named in the plan), and the stale map row must
+    # be gone from the map (post-state, not report-only).
+    if linked:
+        idx_text = (repo / "docs/okf/index.md").read_text() if (repo / "docs/okf/index.md").exists() else ""
+        g.check("link_post_state_in_index", "orphan-notes.md" in idx_text,
+                "index.md references the linked orphan" if "orphan-notes.md" in idx_text
+                else "[link] applied but the index does not reference the file")
+    map_text = (repo / "docs/okf/codebase-map.md").read_text() if (repo / "docs/okf/codebase-map.md").exists() else ""
+    g.check("stale_map_row_gone", "legacy/" not in map_text,
+            "stale legacy/ row removed from codebase-map" if "legacy/" not in map_text
+            else "stale row still in codebase-map.md")
 
     fid = "Fidelity: verified" in report
     g.check("fidelity_line_reported", fid,
@@ -660,6 +738,52 @@ def grade_derivation_selftest() -> Grader:
     g.check("restructure_actions_derived",
             actions == {"move", "merge", "link", "fix", "heal", "decision"},
             f"closed action set parsed: {sorted(actions)}")
+    # §1 lock (BL-036 Wave B): the standard-layout table must carry the
+    # cases row and the legacy qualifiers — the grader's relocation
+    # expectations are only lawful while the table says so.
+    layout = (SKILL / "references/restructure.md").read_text().split("## 1.", 1)[1].split("## 2.", 1)[0]
+    g.check("layout_table_has_cases_row",
+            "| Case files (any `BL-NNN` directory) | `docs/cases/BL-NNN/`" in layout,
+            "§1 maps case directories to docs/cases/")
+    g.check("layout_table_marks_legacy_homes",
+            "**legacy home**" in layout,
+            "§1 qualifies superpowers rows as legacy homes")
+    return g
+
+
+def grade_upgrade_drop_stack(ws: Path) -> Grader:
+    """BL-036 Wave B: the only deletion-semantics-by-stack branch — the
+    prompt drops aurelia from a dotnet+aurelia subscription."""
+    repo = ws / "upgrade-drop-stack" / "repo"
+    meta = json.loads((ws / "upgrade-drop-stack" / "fixture_meta.json").read_text())
+    g = Grader()
+    g.common_checks(repo, expected_keep=meta.get("expected_keep", []), fixture_meta=meta)
+
+    dropped_left = [p for p in meta["dropped_stack_files"] if (repo / p).exists()]
+    g.check("dropped_stack_files_deleted", not dropped_left,
+            f"{meta['dropped_stack']} owned files removed" if not dropped_left
+            else f"still on disk: {dropped_left}")
+
+    dotnet_dir = repo / "docs/ai/rules/stacks/dotnet"
+    dotnet_left = sorted(p.name for p in dotnet_dir.glob("*.md")) if dotnet_dir.is_dir() else []
+    expected_dotnet = sorted((SKILL / "assets/rules/stacks/dotnet").glob("*.md"))
+    g.check("kept_stack_untouched_and_refreshed",
+            dotnet_left == sorted(f.name for f in expected_dotnet),
+            f"dotnet rules present and refreshed ({len(dotnet_left)})" if
+            dotnet_left == sorted(f.name for f in expected_dotnet)
+            else f"dotnet mismatch: {dotnet_left}")
+
+    report_path = ws / "upgrade-drop-stack" / "outputs" / "upgrade-report.md"
+    has_report = report_path.exists()
+    g.check("upgrade_report_saved", has_report,
+            str(report_path) if has_report else f"missing: {report_path}")
+    if has_report:
+        report = report_path.read_text()
+        review_idx = report.find("eeds your review")
+        proposed = review_idx >= 0 and "stacks/aurelia" in report[review_idx:]
+        g.check("report_proposes_aurelia_import_removal", proposed,
+                "aurelia import removal proposed under Needs your review" if proposed
+                else "no proposal to remove the aurelia import line")
     return g
 
 
@@ -675,6 +799,10 @@ def main() -> None:
             g, outdir = grade_fresh(ws), ws / name
         elif name == "legacy-migration":
             g, outdir = grade_migration(ws), ws / name
+        elif name == "legacy-migration-agents-first":
+            g, outdir = grade_migration_agents_first(ws), ws / name
+        elif name == "upgrade-drop-stack":
+            g, outdir = grade_upgrade_drop_stack(ws), ws / name
         elif name == "upgrade":
             g, outdir = grade_upgrade(ws), ws / name
         elif name == "audit":
