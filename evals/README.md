@@ -150,3 +150,69 @@ Without-skill baseline runs (what does a bare agent produce?) answered the
 "does the skill add value" question once (+33 pass-rate points, 2026-07-09)
 and are **not** part of the per-version regression loop — regressions are
 measured against the previous version's with-skill results, at half the cost.
+
+## Trigger discipline (BL-036)
+
+A trigger never names deliverables, modes, or reasons. The user's voice is
+minimal — "Set this repo up for AI development", "Re-run the legislator in
+this repo" — because anything more answers the skill's questions for it:
+"rules, OKF docs, backlog, the works" leaks Step 4's table; "I just spun
+up" tells the agent the mode; "we changed the core rules" tells it why it
+is upgrading. What the skill must know, the repo evidences; what the repo
+cannot evidence, the runner's CONFIRMATION WAIVER pre-approves ("every
+confirmation is pre-approved; answer with the skill's own default plus
+what the repo evidences; never end your turn on a question"). The
+deliverables checklist lives in `expected_output` for humans and in
+`grade.py`'s derived contracts for machines — never in the prompt.
+
+## Derived contracts (BL-036)
+
+`grade.py` derives its expectations from the skill source at grade time —
+`SCAFFOLD_ARTIFACTS` is parsed from SKILL.md Step 4's table, the protected
+set from it, migration wiring from `AGENTS.md.tpl`, audit check
+severities from the SKILL.md check list, the restructure action set from
+`restructure.md` §2. A divergence between law and grader is impossible to
+introduce silently; `python3 evals/grade.py <ws> selftest:derivation`
+asserts the derivations are alive (it is a pure check — no agent run).
+Deliberately manual: fixture content markers (decimal-money, bl/NNN) —
+intentional test-data oracles, not contract.
+
+## Grade history and flaky analysis
+
+Every grading appends `outputs/grade-history.jsonl` with a **generation
+stamp** — skill VERSION, repo HEAD, and a hash of the grader itself
+(`v17-<commit>-g<hash>`). The dashboard's flaky panel counts persistent
+(every run) vs flaky (some runs) failures **within one generation only**:
+a law fix or grader fix starts a new population, and pre-fix runs never
+vote on post-fix stability.
+
+## Background procedure (BL-037) — the recommended way to run a benchmark
+
+```bash
+tools/evals-bg.sh /tmp/legislator-eval-vN [--only SCEN] [--skip-smoke]
+```
+
+Staged, in order, each stage only on the previous green:
+`check_static` → **smoke** (the upgrade scenario — the most
+change-sensitive surface) → the full corpus → idempotency ×3 (run-1
+results committed in-fixture, second pass, zero-diff grade). The runner
+is detached: stall detection (log size + repo dirty-count frozen), a
+resume ladder (`opencode run --continue`), a full fixture reset on every
+invocation, prompts read from `evals.json` (single source), auto-grade
+after every scenario, desktop notifications (`notify-send`) on scenario
+and run boundaries, and `queue.json` + `status.md` as the machine-readable
+contract — the interactive session polls a file, never a process.
+
+The **live dashboard** (`evals/dashboard.py <ws> [--open]`) renders it:
+per-scenario state (done / w-errors / failed / running / queued #N),
+grade bars, full-log modals (newest first; refresh pauses while a log is
+open or text is selected), flaky-vs-persistent panels, and the
+orchestrator tail. Static HTML + meta-refresh — the kbo pattern: no
+server, nothing leaves the machine. `NO_BROWSER=1` for service runs.
+
+Notes and known bounds: the suite assumes the machine's installed skills
+when deriving `.claude/rules/skills.md` (the `stages ≥ 1` assert is
+weakened accordingly); idempotency has no migration carrier by design (a
+second migration run is an upgrade in disguise — the manifest exists);
+new-stack fixtures (aurelia-class) are a known gap; cross-repo case
+conventions cannot be exercised by single-repo fixtures.

@@ -20,6 +20,7 @@ from __future__ import annotations
 import argparse
 import html
 import json
+import os
 import re
 import subprocess
 import time
@@ -468,14 +469,28 @@ def main() -> None:
     ap.add_argument("workspace", type=Path)
     ap.add_argument("--interval", type=float, default=3.0)
     ap.add_argument("--once", action="store_true")
+    ap.add_argument("--open", action="store_true",
+                    help="open the dashboard in the default browser after the "
+                         "first render (skip under NO_BROWSER/KBO_EVALS_NO_BROWSER)")
     ap.add_argument("--timeline", type=Path,
-                    default=Path("/tmp/opencode/orchestrate-all.log"))
+                    default=None,
+                    help="orchestrator log (default: <ws>/orchestrate.log, "
+                         "falling back to /tmp/opencode/orchestrate-all.log)")
     a = ap.parse_args()
+    timeline = a.timeline or a.workspace / "orchestrate.log"
+    if not timeline.exists():
+        timeline = Path("/tmp/opencode/orchestrate-all.log")
     out = a.workspace / "dashboard.html"
+    first = True
     while True:
-        out.write_text(render(a.workspace, a.timeline))
-        if a.once:
+        out.write_text(render(a.workspace, timeline))
+        if first:
+            first = False
             print(out)
+            if a.open and not os.environ.get("NO_BROWSER") and not os.environ.get("KBO_EVALS_NO_BROWSER"):
+                import webbrowser
+                webbrowser.open(out.as_uri())
+        if a.once:
             return
         time.sleep(a.interval)
 

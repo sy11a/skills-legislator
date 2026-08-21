@@ -40,21 +40,84 @@ from pathlib import Path
 EVALS = Path(__file__).resolve().parent
 SKILL = EVALS.parent / "skill"
 
-PROFILES = ["dotnet"]  # all fixtures are dotnet-only
+# ---------------------------------------------------------------------------
+# Contract derivation (BL-036 Wave A): every place the grader used to
+# hand-duplicate a skill contract is derived from the skill source at
+# grade time. A divergence between law and grader must be impossible,
+# not merely noticed. Deliberately manual: fixture content markers
+# (decimal-money, bl/NNN) — intentional test-data oracles, not contract.
+# ---------------------------------------------------------------------------
 
-# Mirrors SKILL.md Step 4's table (static-checked against assets/templates/).
-SCAFFOLD_ARTIFACTS = [
-    "docs/okf/index.md",
-    "docs/okf/log.md",
-    "docs/okf/codebase-map.md",
-    "docs/okf/glossary.md",
-    "docs/backlog.md",
-    "docs/adr/0001-record-architecture-decisions.md",
-    "docs/adr/template.md",
-    "docs/journal/README.md",
-    "CHANGELOG.md",
-    "docs/cases/README.md",
-]
+def _skill_md() -> str:
+    return (SKILL / "SKILL.md").read_text()
+
+
+def scaffold_artifacts() -> list[str]:
+    """File targets parsed from SKILL.md Step 4's table — the table is the
+    only source of what a scaffold must create (README's 'maintain by
+    hand' note is dead). Rows: `| <target> | <template> | ...`; empty-dir
+    rows (template column '(empty directory)') are skipped: no file to
+    assert, the scaffold_checks directory assertions cover them."""
+    text = _skill_md()
+    step4 = text.split("## Step 4", 1)[1].split("## Step 5", 1)[0]
+    out = []
+    for m in re.finditer(r"^\| `([^`]+)` \| ([^|]+) \|", step4, re.M):
+        target, template = m.group(1), m.group(2).strip()
+        if template.startswith("(empty"):
+            continue
+        out.append(target)
+    return sorted(out)
+
+
+SCAFFOLD_ARTIFACTS = scaffold_artifacts()
+
+
+def protected_project_files() -> list[str]:
+    """Tracked project-owned files upgrade must not touch: the scaffold's
+    create-once artifacts minus the entry-document pair (AGENTS.md is
+    never edited — only proposed to — and CLAUDE.md is a managed
+    symlink; both legitimately change across a file-model upgrade)."""
+    return [a for a in SCAFFOLD_ARTIFACTS
+            if a not in ("AGENTS.md", "CLAUDE.md")]
+
+
+def expected_stacks(fixture_meta: dict | None = None) -> list[str]:
+    """The manifest's stack subscription comes from the fixture's own
+    meta (per-fixture, not a global hardcode): upgrade/drop-stack
+    fixtures carry theirs; everything else is dotnet-only."""
+    if fixture_meta and "stacks" in fixture_meta:
+        return list(fixture_meta["stacks"])
+    return ["dotnet"]
+
+
+def migration_wiring() -> list[str]:
+    """Strings migration must write directly into AGENTS.md (the v2
+    wiring), derived from AGENTS.md.tpl: every import line the template
+    carries plus the section headings it pins."""
+    tpl = (SKILL / "assets/templates/AGENTS.md.tpl").read_text()
+    imports = ["@" + i for i in re.findall(r"^@(docs/[^\s]+)$", tpl, re.M)]
+    return imports + ["## Boundaries"]
+
+
+def audit_check_severities() -> dict[str, str]:
+    """Pinned check slug -> severity, parsed from SKILL.md's Audit list
+    ('N. **<name> (<severity>):**'). The severity-anchored markers and
+    the parity law derive from this map."""
+    text = _skill_md()
+    out = {}
+    audit = text.split("Perform these checks", 1)[1]
+    for m in re.finditer(r"\d+\.\s+\*\*([^*]+?)\s*\((Critical|Warning|Info)\):\*\*", audit):
+        out[m.group(1)] = m.group(2)
+    return out
+
+
+def restructure_actions() -> set[str]:
+    """The closed action set, parsed from restructure.md §2's bold
+    definitions."""
+    text = (SKILL / "references/restructure.md").read_text()
+    section2 = text.split("## 2.", 1)[1].split("## 3.", 1)[0]
+    return set(re.findall(r"^- \*\*(\w+)\*\*", section2, re.M))
+
 
 # Migration fixture content that must never be silently dropped.
 MIGRATION_PRESERVED = [
@@ -111,7 +174,7 @@ def expected_owned() -> dict[str, Path]:
     owned: dict[str, Path] = {}
     for f in sorted((SKILL / "assets/rules/core").glob("*.md")):
         owned[f"docs/ai/rules/core/{f.name}"] = f
-    for profile in PROFILES:
+    for profile in expected_stacks():
         for f in sorted((SKILL / "assets/rules/stacks" / profile).glob("*.md")):
             owned[f"docs/ai/rules/stacks/{profile}/{f.name}"] = f
     # v14: the root owned wiring file opencode.json (no placeholders; byte-copied
@@ -129,7 +192,8 @@ class Grader:
     def check(self, name: str, passed: bool, evidence: str) -> None:
         self.exps.append({"text": name, "passed": bool(passed), "evidence": evidence})
 
-    def common_checks(self, repo: Path, expected_keep: list | None = None) -> None:
+    def common_checks(self, repo: Path, expected_keep: list | None = None,
+                      fixture_meta: dict | None = None) -> None:
         owned = expected_owned()
         version = int((SKILL / "VERSION").read_text().strip())
 
@@ -147,7 +211,7 @@ class Grader:
                    bool(manifest and manifest.get("legislatorVersion") == version),
                    f"expected {version}, got {manifest.get('legislatorVersion') if manifest else None}")
         self.check("manifest_stacks_correct",
-                   bool(manifest and manifest.get("stacks") == PROFILES),
+                   bool(manifest and manifest.get("stacks") == expected_stacks(fixture_meta)),
                    f"stacks={manifest.get('stacks') if manifest else None}")
         self.check("manifest_ownedFiles_exact_sorted",
                    bool(manifest and manifest.get("ownedFiles") == sorted(owned)),
@@ -262,9 +326,9 @@ def grade_migration(ws: Path) -> Grader:
     g.scaffold_checks(repo)
     g.no_unresolved_tokens(repo)
     agents = (repo / "AGENTS.md").read_text() if (repo / "AGENTS.md").exists() else ""
-    v2_wired = "@docs/okf/codebase-map.md" in agents and "## Boundaries" in agents
+    v2_wired = all(w in agents for w in migration_wiring())
     g.check("agents_md_v2_wiring_written_directly", v2_wired,
-            "map import + Boundaries section present in rewritten AGENTS.md" if v2_wired
+            f"all {len(migration_wiring())} template wiring strings present in rewritten AGENTS.md (derived from AGENTS.md.tpl)" if v2_wired
             else "migration left v2 wiring as Step 7 proposals instead of writing it")
     report_path = ws / "legacy-migration" / "outputs" / "migration-report.md"
     has_report = report_path.exists()
@@ -310,7 +374,7 @@ def grade_upgrade(ws: Path) -> Grader:
     repo = ws / "upgrade" / "repo"
     meta = json.loads((ws / "upgrade" / "fixture_meta.json").read_text())
     g = Grader()
-    g.common_checks(repo, expected_keep=meta.get("expected_keep", []))
+    g.common_checks(repo, expected_keep=meta.get("expected_keep", []), fixture_meta=meta)
 
     withheld = repo / "docs/ai/rules/core" / meta["withheld_core_rule"]
     g.check("newly_added_rule_present", withheld.exists(),
@@ -346,12 +410,11 @@ def grade_upgrade(ws: Path) -> Grader:
             "deletion propagation removed it" if not retired.exists() else "retired rule still on disk")
 
     # Project-owned files must be untouched: tracked-file diff limited to them
-    # must be empty. Under v14 the constitution file is AGENTS.md (project-owned;
-    # upgrade only proposes import-line changes to it, never edits) and CLAUDE.md
-    # is a managed symlink — both legitimately change in a v13->v14 upgrade
-    # (rename + symlink created + opencode.json added), so neither is protected.
-    protected = ["CHANGELOG.md", "docs/backlog.md",
-                 "docs/okf/index.md", "docs/okf/log.md", "docs/journal/README.md"]
+    # must be empty. Derived from the scaffold table (BL-036 Wave A): the
+    # entry-document pair is excluded — AGENTS.md only ever receives
+    # proposals and CLAUDE.md is a managed symlink, both legitimately
+    # change across a file-model upgrade.
+    protected = protected_project_files()
     touched = [p for p in git(repo, "diff", "HEAD", "--name-only").splitlines() if p in protected]
     g.check("project_owned_files_untouched", not touched,
             "no tracked project-owned file modified" if not touched else f"modified: {touched}")
@@ -570,6 +633,36 @@ def grade_idempotency(ws: Path, scenario: str) -> Grader:
     return g
 
 
+def grade_derivation_selftest() -> Grader:
+    """BL-036 Wave A: prove the derived contracts track the skill source.
+    If someone hand-edits a stale list back in or the source moves, these
+    invariants go red — divergence becomes impossible to miss. No agent
+    run: pure derivation checks."""
+    g = Grader()
+    g.check("scaffold_artifacts_derived_nonempty", len(SCAFFOLD_ARTIFACTS) >= 10,
+            f"{len(SCAFFOLD_ARTIFACTS)} targets parsed from Step 4's table")
+    g.check("scaffold_artifacts_include_cases_home",
+            "docs/cases/README.md" in SCAFFOLD_ARTIFACTS,
+            "the v17 case home is in the derived list")
+    g.check("protected_excludes_entry_document_pair",
+            "AGENTS.md" not in protected_project_files()
+            and "CLAUDE.md" not in protected_project_files(),
+            "entry-document pair excluded from the protected set")
+    wiring = migration_wiring()
+    g.check("migration_wiring_derived_from_template",
+            "@docs/okf/codebase-map.md" in wiring and "## Boundaries" in wiring,
+            f"{len(wiring)} wiring strings parsed from AGENTS.md.tpl")
+    sev = audit_check_severities()
+    g.check("audit_severities_derived",
+            len(sev) >= 14 and sev.get("Owned-layer integrity") == "Critical",
+            f"{len(sev)} checks with parsed severities")
+    actions = restructure_actions()
+    g.check("restructure_actions_derived",
+            actions == {"move", "merge", "link", "fix", "heal", "decision"},
+            f"closed action set parsed: {sorted(actions)}")
+    return g
+
+
 def main() -> None:
     if len(sys.argv) < 2:
         sys.exit(__doc__)
@@ -591,6 +684,8 @@ def main() -> None:
         elif name.startswith("idempotency:"):
             target = name.split(":", 1)[1]
             g, outdir = grade_idempotency(ws, target), ws / target
+        elif name == "selftest:derivation":
+            g, outdir = grade_derivation_selftest(), EVALS
         else:
             sys.exit(f"unknown scenario: {name}")
 
@@ -610,7 +705,7 @@ def main() -> None:
         # the law GENERATION (skill VERSION + repo commit): flaky counting
         # is only meaningful within one generation — a fix changes the
         # population, and pre-fix runs must not vote on post-fix stability.
-        if not name.startswith("idempotency:"):
+        if not name.startswith(("idempotency:", "selftest:")):
             hist = outdir / "outputs" / "grade-history.jsonl"
             entry = {"ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
                      "law": law_stamp(),
