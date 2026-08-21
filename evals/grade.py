@@ -798,6 +798,56 @@ def grade_upgrade_drop_stack(ws: Path) -> Grader:
     return g
 
 
+def grade_case_practice(ws: Path) -> Grader:
+    """BL-036 Wave C — the acceptance test: a fresh agent EXECUTES
+    core/sdd.md on ordinary feature work. Graded: the practice (case
+    home, tier header, EARS ids, hurting case, task traceability,
+    converge trail). Not graded: the code itself."""
+    repo = ws / "case-practice" / "repo"
+    g = Grader()
+
+    cases = sorted((repo / "docs/cases").glob("BL-*")) if (repo / "docs/cases").is_dir() else []
+    case_dir = cases[0] if cases else None
+    g.check("case_born_in_case_home", case_dir is not None and case_dir.is_dir(),
+            f"new case at {case_dir}" if case_dir else "no BL-* directory under docs/cases/")
+
+    if case_dir is None:
+        return g
+
+    all_text = "\n".join(p.read_text(errors="ignore") for p in case_dir.rglob("*.md"))
+
+    tier = re.search(r"Tier:\s*([012])", all_text)
+    g.check("tier_declared_in_case_header", tier is not None,
+            f"tier {tier.group(1)} declared" if tier else "no 'Tier: N' line anywhere in the case")
+
+    ears = re.findall(r"\bR-\d{3}\b", all_text)
+    g.check("ears_lines_with_ids", len(set(ears)) >= 2,
+            f"{len(set(ears))} distinct R-NNN ids" if len(set(ears)) >= 2
+            else f"only {len(set(ears))} R-NNN id(s) — need >=2 EARS lines")
+
+    hurting = re.search(r"(?i)GIVEN\b.*\n.*WHEN\b.*\n.*THEN\b", all_text)
+    g.check("gherkin_hurting_case_present", hurting is not None,
+            "GIVEN/WHEN/THEN scenario present" if hurting
+            else "no GIVEN/WHEN/THEN scenario in the case")
+
+    per_trace = re.search(r"per\s+R-\d{3}", all_text)
+    g.check("tasks_trace_per_rnnn", per_trace is not None,
+            "at least one task traces 'per R-NNN'" if per_trace
+            else "no task carries per R-NNN traceability")
+
+    converged = ("Converged" in all_text) or re.search(r"\((?:missing|partial|contradicts|unrequested)\)", all_text)
+    g.check("converge_trail_present", converged is not None,
+            "converge statement or append-only gap findings present" if converged
+            else "no converge trail — the case cannot lawfully close")
+
+    # the pre-existing README must survive untouched (create-once discipline)
+    readme = repo / "docs/cases/README.md"
+    g.check("case_home_readmark_untouched",
+            readme.exists() and readme.read_text() == (SKILL / "assets/templates/cases-README.md.tpl").read_text(),
+            "docs/cases/README.md byte-identical to the template" if readme.exists() else "README missing")
+    return g
+
+
 def main() -> None:
     if len(sys.argv) < 2:
         sys.exit(__doc__)
@@ -814,6 +864,8 @@ def main() -> None:
             g, outdir = grade_migration_agents_first(ws), ws / name
         elif name == "upgrade-drop-stack":
             g, outdir = grade_upgrade_drop_stack(ws), ws / name
+        elif name == "case-practice":
+            g, outdir = grade_case_practice(ws), ws / name
         elif name == "upgrade":
             g, outdir = grade_upgrade(ws), ws / name
         elif name == "audit":

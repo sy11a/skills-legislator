@@ -23,7 +23,7 @@
     {
       "text": "audit_severities_derived",
       "passed": true,
-      "evidence": "14 checks with parsed severities"
+      "evidence": "15 checks with parsed severities"
     },
     {
       "text": "restructure_actions_derived",

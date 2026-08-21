@@ -129,6 +129,47 @@ def materialize_upgrade(dest: Path) -> None:
     (dest.parent / "fixture_meta.json").write_text(json.dumps(meta, indent=2) + "\n")
 
 
+def materialize_case_practice(dest: Path) -> None:
+    """BL-036 Wave C: a clean legislated repo (current VERSION, full
+    corpus, manifest, case home) with a tiny src tree. The scenario task
+    is ordinary feature work — the grader asserts the case landed per
+    core/sdd.md (the only test that EXECUTES the law rather than its
+    delivery)."""
+    shutil.copytree(EVALS / "fixtures" / "upgrade-base", dest)
+    rules_dst = dest / "docs/ai/rules"
+    (rules_dst / "core").mkdir(parents=True)
+    (rules_dst / "stacks/dotnet").mkdir(parents=True)
+    owned: list[str] = []
+    for f in sorted((SKILL / "assets/rules/core").glob("*.md")):
+        shutil.copy2(f, rules_dst / "core" / f.name)
+        owned.append(f"docs/ai/rules/core/{f.name}")
+    for f in sorted((SKILL / "assets/rules/stacks/dotnet").glob("*.md")):
+        shutil.copy2(f, rules_dst / "stacks/dotnet" / f.name)
+        owned.append(f"docs/ai/rules/stacks/dotnet/{f.name}")
+
+    version = int((SKILL / "VERSION").read_text().strip())
+    owned_sorted = sorted(owned)
+    (dest / "docs/ai/manifest.json").write_text(
+        "{\n"
+        f'  "legislatorVersion": {version},\n'
+        '  "stacks": ["dotnet"],\n'
+        '  "keep": [],\n'
+        '  "ownedFiles": [\n'
+        + ",\n".join(f'    "{p}"' for p in owned_sorted)
+        + "\n  ]\n}\n")
+    (dest / "docs/cases").mkdir(parents=True)
+    shutil.copy2(SKILL / "assets/templates/cases-README.md.tpl",
+                 dest / "docs/cases/README.md")
+
+    imports = "\n".join(f"@{p}" for p in owned_sorted)
+    (dest / "AGENTS.md").write_text(
+        "# BillingApi\n\n" + imports +
+        "\n\n## Project notes\n\nBillingApi handles invoice generation and "
+        "payment webhooks. Fully legislated.\n")
+    import os
+    os.symlink("AGENTS.md", dest / "CLAUDE.md")
+
+
 def materialize_upgrade_drop_stack(dest: Path) -> None:
     """BL-036 Wave B: a repo subscribed to dotnet+aurelia whose user asks
     to drop aurelia. Asserts the only deletion-semantics-by-stack branch:
@@ -516,6 +557,10 @@ def main() -> None:
     repo = ws / "upgrade-drop-stack" / "repo"
     materialize_upgrade_drop_stack(repo)
     init_commit(repo, "fixture: upgrade-drop-stack (dotnet+aurelia, dropping aurelia)")
+
+    repo = ws / "case-practice" / "repo"
+    materialize_case_practice(repo)
+    init_commit(repo, "fixture: case-practice (clean legislated repo)")
 
     repo = ws / "rotted-layer" / "repo"
     materialize_rotted(repo)

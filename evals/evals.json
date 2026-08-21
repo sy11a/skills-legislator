@@ -56,6 +56,13 @@
       "prompt": "Re-run the legislator in this repo. We also dropped the Aurelia frontend — remove that stack; dotnet stays.",
       "expected_output": "Stack-drop upgrade: aurelia owned files deleted from docs/ai/rules/stacks/aurelia/, dotnet owned files untouched and refreshed to current VERSION, manifest rewritten with stacks [dotnet] (legacy profiles key migrated), keep carried. Report to <ws>/upgrade-drop-stack/outputs/upgrade-report.md proposing removal of the aurelia @import line.",
       "assertions": "see grade.py grade_upgrade_drop_stack"
+    },
+    {
+      "id": 8,
+      "name": "case-practice",
+      "prompt": "Add a CSV export of settled invoices to this repo — an endpoint returning all invoices settled in the last 30 days as CSV. Work the way this repo's law prescribes for feature work.",
+      "expected_output": "A case executed under core/sdd.md: a new docs/cases/BL-NNN/ directory (spec + plan); a tier line in the case header (any declared tier 0-2 is accepted; tier is the agent's blast-radius x novelty call, and CSV export is observably tier 1+); >=2 EARS requirement lines carrying R-NNN ids; >=1 named GIVEN/WHEN/THEN scenario; tasks tracing per R-NNN; a converge trail (append-only findings or an explicit Converged statement). Implementation code in src/ is welcome but NOT graded — this scenario grades the practice, not the code.",
+      "assertions": "see grade.py grade_case_practice"
     }
   ]
 }

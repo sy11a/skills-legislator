@@ -97,6 +97,7 @@ expected_ok() {
   local sc="$1" ws="$2" report
   report="$(REPORT_OF "$sc")"
   if [ -n "$report" ]; then [ -s "$ws/$sc/$report" ]
+  elif [ "$sc" = case-practice ]; then ls "$ws/$sc/repo/docs/cases/" 2>/dev/null | grep -q "^BL-"
   else [ -f "$ws/$sc/repo/docs/ai/manifest.json" ] && [ -f "$ws/$sc/repo/docs/cases/README.md" ]
   fi
 }
@@ -107,6 +108,7 @@ msg_block() { # <dir>
   out="$WS/$sc/outputs"
   case "$sc" in
     legacy-migration|legacy-migration-agents-first|upgrade|upgrade-drop-stack) report="Write your full Step 7 report (all sections, including Health and any Constitution candidates) to $out/$(basename "$(REPORT_OF "$sc")") — overwrite if it exists.";;
+    case-practice) report="";;
     rotted-layer) report="Save your full audit report to $out/audit-report.md — outside the target repo (which you must not touch: zero writes).";;
     restructure) report="Write your final restructure report to $out/restructure-report.md — overwrite if it exists.";;
     *) report="";;
