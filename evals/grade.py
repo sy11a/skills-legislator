@@ -28,6 +28,7 @@ Scenarios (default: the first five):
 Writes grading.json into <ws>/<scenario>/ (viewer-compatible schema) and
 prints a pass/fail table. Exit code 1 if any assertion failed.
 """
+import hashlib
 import json
 import os
 import re
@@ -68,16 +69,22 @@ def git(repo: Path, *args: str) -> str:
 
 
 def law_stamp() -> str:
-    """The law generation this grading ran against: skill VERSION + the
-    legislator repo's short commit. Runs graded under different stamps
-    are different populations — the dashboard's flaky counter never
-    mixes them."""
+    """The generation this grading ran against: skill VERSION + repo HEAD
+    + a hash of THIS grader. Runs graded under different stamps are
+    different populations — the dashboard's flaky counter never mixes
+    them. The grader hash matters as much as the law hash: a grader fix
+    (observed 2026-08-21, twice) changes verdicts without touching the
+    law, and working-tree grader edits precede their commit."""
     version = (SKILL / "VERSION").read_text().strip()
     try:
         head = git(SKILL.parent, "rev-parse", "--short", "HEAD").strip() or "?"
     except Exception:
         head = "?"
-    return f"v{version}-{head}"
+    try:
+        grader = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()[:7]
+    except Exception:
+        grader = "?"
+    return f"v{version}-{head}-g{grader}"
 
 
 def glossary_rows(repo: Path) -> int:
