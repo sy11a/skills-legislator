@@ -210,7 +210,7 @@ import json,sys;sys.exit(0 if json.load(open('$g'))['summary']['failed']==0 else
 }
 
 # ---- dashboard + browser ----
-if [ -z "${NO_BROWSER}${KBO_EVALS_NO_BROWSER}" ]; then
+if [ -z "${NO_BROWSER:-}${KBO_EVALS_NO_BROWSER:-}" ]; then
   setsid nohup python3 "$REPO/evals/dashboard.py" "$WS" --interval 3 --open \
     > "$WS/dashboard.log" 2>&1 &
 fi
