@@ -317,10 +317,14 @@ def render(ws: Path, timeline_log: Path) -> str:
 
     tl_tail = esc("\n".join(timeline_log.read_text(errors="ignore")
                             .splitlines()[-8:])) if timeline_log.exists() else "(no orchestrator log)"
+    tl_full_lines = (strip_ansi(timeline_log.read_text(errors="ignore"))[-131072:].splitlines()
+                     if timeline_log.exists() else ["(no orchestrator log)"])
+    tl_full = esc("\n".join(reversed(tl_full_lines)))
     return f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <title>legislator eval — live</title>
 <script>
 let paused = false;
+let copyPauseUntil = 0;
 function openLog(id) {{ paused = true;
   document.getElementById("pausetag").style.display = "inline";
   document.getElementById("m-" + id).style.display = "flex"; }}
@@ -330,7 +334,22 @@ function closeLogX() {{
   paused = false;
   document.getElementById("pausetag").style.display = "none"; }}
 document.addEventListener("keydown", e => {{ if (e.key === "Escape") closeLogX(); }});
-setInterval(() => {{ if (!paused) location.reload(); }}, 3000);
+// copy protection: an active text selection (or a copy event just fired)
+// pauses the refresh so a 3s reload cannot wipe the selection mid-copy.
+// Any click clears the selection and the pause lifts; the copy-event grace
+// is bounded (10s) so a forgotten selection cannot freeze the page forever.
+document.addEventListener("copy", () => {{
+  copyPauseUntil = Date.now() + 10000;
+  document.getElementById("pausetag").style.display = "inline"; }});
+document.addEventListener("selectionchange", () => {{
+  if (document.getSelection().toString().length > 0) {{
+    document.getElementById("pausetag").style.display = "inline";
+  }} else if (!paused && Date.now() >= copyPauseUntil) {{
+    document.getElementById("pausetag").style.display = "none"; }} }});
+setInterval(() => {{
+  const selecting = document.getSelection().toString().length > 0;
+  const copyGrace = Date.now() < copyPauseUntil;
+  if (!paused && !selecting && !copyGrace) location.reload(); }}, 3000);
 </script>
 <style>
  body{{background:#111;color:#ddd;font:13px/1.45 ui-monospace,monospace;
@@ -354,6 +373,9 @@ setInterval(() => {{ if (!paused) location.reload(); }}, 3000);
       text-overflow:ellipsis}}
  .warn{{color:#fb0;margin-top:4px}} .dim{{color:#888}}
  .tailopen{{cursor:pointer}} .tailopen:hover{{outline:1px solid #3a6ea5}}
+ .orchbox{{border:1px solid #333;border-radius:8px;background:#181818;
+          padding:8px;margin-top:6px}}
+ .orchbox pre{{margin:0;white-space:pre-wrap;color:#aaa}}
  .logbtn{{background:#222;color:#8ab;border:1px solid #333;border-radius:4px;
          padding:0 6px;margin-top:4px;cursor:pointer;font:inherit}}
  .mback{{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);
@@ -389,8 +411,18 @@ setInterval(() => {{ if (!paused) location.reload(); }}, 3000);
  <span style="color:#f88">failed: {len(failed)}</span>
 </div>
 <div class="grid">{''.join(cards)}</div>
-<h2 style="font-size:13px;margin-top:16px">orchestrator tail</h2>
-<pre>{tl_tail}</pre>
+<h2 style="font-size:13px;margin-top:16px">orchestrator tail
+  <button class="logbtn" onclick="openLog('orchestrator')">log \u29e2</button></h2>
+<div class="orchbox">
+  <pre class="tailopen" onclick="openLog('orchestrator')">{tl_tail}</pre>
+</div>
+<div class="mback" id="m-orchestrator" onclick="closeLog(event)">
+  <div class="mwin" onclick="event.stopPropagation()">
+    <div class="mhead"><span>orchestrator — full log (newest first)</span>
+      <button onclick="closeLogX()">close \u00d7</button></div>
+    <pre class="mlog">{tl_full}</pre>
+  </div>
+</div>
 </body></html>"""
 
 
