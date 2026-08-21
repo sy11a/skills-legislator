@@ -67,6 +67,19 @@ def git(repo: Path, *args: str) -> str:
                           capture_output=True, text=True).stdout
 
 
+def law_stamp() -> str:
+    """The law generation this grading ran against: skill VERSION + the
+    legislator repo's short commit. Runs graded under different stamps
+    are different populations — the dashboard's flaky counter never
+    mixes them."""
+    version = (SKILL / "VERSION").read_text().strip()
+    try:
+        head = git(SKILL.parent, "rev-parse", "--short", "HEAD").strip() or "?"
+    except Exception:
+        head = "?"
+    return f"v{version}-{head}"
+
+
 def glossary_rows(repo: Path) -> int:
     """Body rows of the glossary's term table specifically: consecutive pipe
     lines following the '| Term |' header, minus header and separator."""
@@ -581,10 +594,14 @@ def main() -> None:
         # Append-only grade history: the flaky-vs-persistent oracle. Every
         # grading of this scenario lands here; the dashboard (and humans)
         # read which asserts fail in SOME runs (flaky) vs EVERY run
-        # (persistent, a real defect or a grader bug).
+        # (persistent, a real defect or a grader bug). The "law" stamp is
+        # the law GENERATION (skill VERSION + repo commit): flaky counting
+        # is only meaningful within one generation — a fix changes the
+        # population, and pre-fix runs must not vote on post-fix stability.
         if not name.startswith("idempotency:"):
             hist = outdir / "outputs" / "grade-history.jsonl"
             entry = {"ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                     "law": law_stamp(),
                      "passed": passed, "failed": total - passed, "total": total,
                      "fails": [e["text"] for e in g.exps if not e["passed"]]}
             with hist.open("a") as fh:

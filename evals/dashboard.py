@@ -159,13 +159,43 @@ def history(d: Path) -> list[dict]:
     return out
 
 
-def flaky_panel(d: Path) -> str:
-    """From ≥2 graded runs: which asserts fail in EVERY run (persistent —
-    a real defect or a grader bug) vs SOME runs (flaky — nondeterminism
-    to keep under control)."""
+def current_law(ws: Path) -> str | None:
+    """The newest law stamp across all scenarios' histories — the generation
+    of the latest graded run. Entries without a stamp predate the mechanism
+    (older generations by definition)."""
+    newest = None
+    for sc in SCENARIOS:
+        for r in history(ws / sc):
+            law = r.get("law")
+            if law:
+                if newest is None or r["ts"] > newest[0]:
+                    newest = (r["ts"], law)
+    return newest[1] if newest else None
+
+
+def flaky_panel(d: Path, law: str | None = None) -> str:
+    """From ≥2 graded runs ON ONE LAW GENERATION: which asserts fail in
+    EVERY run (persistent — a real defect or a grader bug) vs SOME runs
+    (flaky — nondeterminism to keep under control). Runs from older law
+    generations are excluded from counting: a law fix changes the
+    population, and pre-fix runs must not vote on post-fix stability."""
     runs = history(d)
+    if law:
+        excluded = sum(1 for r in runs if r.get("law") != law)
+        runs = [r for r in runs if r.get("law") == law]
+    else:
+        # no stamped run anywhere yet: every existing entry predates
+        # generation tracking — its generation is unknowable, so it cannot
+        # vote on stability. Show the count, count nothing.
+        excluded = len(runs)
+        runs = []
     if len(runs) < 2:
-        return ""
+        base = '<div class="dim" style="margin-top:4px">flaky analysis: '
+        base += f"{len(runs)} run(s) on this law generation"
+        if excluded:
+            base += f" ({excluded} pre-tracking/older-law runs excluded)"
+        base += " — need ≥2</div>"
+        return base
     counts: dict[str, int] = {}
     for r in runs:
         for name in r.get("fails", []):
@@ -179,8 +209,12 @@ def flaky_panel(d: Path) -> str:
     for k, v in sorted(flaky, key=lambda x: -x[1])[:4]:
         rows.append(f'<div class="flaky">flaky ({v}/{n}): {esc(k[:70])}</div>')
     if not rows:
-        return f'<div class="dim" style="margin-top:4px">history: {n} runs, no repeats</div>'
-    return (f'<div class="dim" style="margin-top:4px">grade history: {n} runs</div>'
+        return (f'<div class="dim" style="margin-top:4px">grade history: {n} runs'
+                + (f' + {excluded} older-law excluded' if excluded else '')
+                + ', no repeats</div>')
+    return (f'<div class="dim" style="margin-top:4px">grade history: {n} runs on this law'
+            + (f' ({excluded} older-law excluded)' if excluded else '')
+            + f' — {esc(law or "unstamped")}</div>'
             + "".join(rows))
 
 
@@ -218,6 +252,7 @@ def render(ws: Path, timeline_log: Path) -> str:
     partial = [sc for sc in SCENARIOS if states[sc] == "partial"]
 
     cards = []
+    law = current_law(ws)
     for sc in SCENARIOS:
         d = ws / sc
         log = d / "outputs" / "run.log"
@@ -275,7 +310,7 @@ def render(ws: Path, timeline_log: Path) -> str:
                               f' ({rate}%)</div>{fail_rows}{more}')
         elif state == "done":
             grade_html = '<div class="dim">grading pending…</div>'
-        flaky_html = flaky_panel(d) if state in ("done", "partial", "failed") else ""
+        flaky_html = flaky_panel(d, law) if state in ("done", "partial", "failed") else ""
         errs = log_errors(log)
         err_html = "".join(f'<div class="err">{esc(e)}</div>' for e in errs)
         tail = esc(log_tail(log))
