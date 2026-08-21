@@ -182,20 +182,31 @@ def render(ws: Path, timeline_log: Path) -> str:
         if gr:
             sm = gr["summary"]
             rate = int(sm["pass_rate"] * 100)
-            cls = "gok" if sm["failed"] == 0 else ("gsome" if rate >= 80 else "gbad")
-            fails = [e for e in gr["expectations"] if not e["passed"]]
-            fail_rows = "".join(
-                f'<div class="gfail">✗ {esc(e["text"])} — {esc(e["evidence"][:120])}</div>'
-                for e in fails[:5])
-            more = f'<div class="dim">… +{len(fails) - 5} more</div>' if len(fails) > 5 else ""
-            grade_html = (f'<div class="grade {cls}">graded: {sm["passed"]}/{sm["total"]}'
-                          f' ({rate}%)</div>{fail_rows}{more}')
+            if state in ("running", "pending", "stalled", "retrying"):
+                # a grade from a previous run must not pose as current
+                grade_html = (f'<div class="dim prevgrade">prev run: {sm["passed"]}/{sm["total"]}'
+                              f' ({rate}%) — stale while {state}</div>')
+            else:
+                cls = "gok" if sm["failed"] == 0 else ("gsome" if rate >= 80 else "gbad")
+                fails = [e for e in gr["expectations"] if not e["passed"]]
+                fail_rows = "".join(
+                    f'<div class="gfail">✗ {esc(e["text"])} — {esc(e["evidence"][:120])}</div>'
+                    for e in fails[:5])
+                more = f'<div class="dim">… +{len(fails) - 5} more</div>' if len(fails) > 5 else ""
+                grade_html = (f'<div class="grade {cls}">graded: {sm["passed"]}/{sm["total"]}'
+                              f' ({rate}%)</div>{fail_rows}{more}')
         elif state == "done":
             grade_html = '<div class="dim">grading pending…</div>'
         errs = log_errors(log)
         err_html = "".join(f'<div class="err">{esc(e)}</div>' for e in errs)
         tail = esc(log_tail(log))
-        full = esc(strip_ansi(log.read_text(errors="ignore"))[-131072:]) if log.exists() else "(no log yet)"
+        # newest first: the modal opens on the latest activity, no need to
+        # scroll to the bottom of a 128 KB wall
+        if log.exists():
+            lines = strip_ansi(log.read_text(errors="ignore"))[-131072:].splitlines()
+            full = esc("\n".join(reversed(lines)))
+        else:
+            full = "(no log yet)"
         attempts = sum(1 for e in events[sc] if "attempt" in e and "start" in e)
         resumes = sum(1 for e in events[sc] if "resume" in e and "start" in e)
         mid = sc.replace("-", "_")
@@ -230,7 +241,7 @@ def render(ws: Path, timeline_log: Path) -> str:
   <button class="logbtn" onclick="openLog('{mid}')">log \u29e2</button>
   <div class="mback" id="m-{mid}" onclick="closeLog(event)">
     <div class="mwin" onclick="event.stopPropagation()">
-      <div class="mhead"><span>{esc(DISPLAY.get(sc, sc))} — full log</span>
+      <div class="mhead"><span>{esc(DISPLAY.get(sc, sc))} — full log (newest first)</span>
         <button onclick="closeLogX()">close \u00d7</button></div>
       <pre class="mlog">{full}</pre>
     </div>
@@ -291,6 +302,7 @@ setInterval(() => {{ if (!paused) location.reload(); }}, 3000);
  .grade{{margin-top:6px;font-weight:bold;border-radius:4px;padding:2px 6px;display:inline-block}}
  .grade.gok{{background:#1b3a1f;color:#8f8}} .grade.gsome{{background:#3a3000;color:#fc6}}
  .grade.gbad{{background:#4a1515;color:#f88}}
+ .prevgrade{{margin-top:6px;font-size:12px}}
  .gfail{{color:#f88;margin-top:3px;font-size:12px;white-space:nowrap;overflow:hidden;
         text-overflow:ellipsis}}
  pre{{white-space:pre-wrap;background:#0c0c0c;border-radius:6px;
