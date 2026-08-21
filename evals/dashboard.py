@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import html
+import json
 import re
 import subprocess
 import time
@@ -127,6 +128,16 @@ def log_tail(log: Path, n: int = 4) -> str:
     return "\n".join(l[-160:] for l in lines[-n:])
 
 
+def grading(d: Path) -> dict | None:
+    f = d / "grading.json"
+    if not f.exists():
+        return None
+    try:
+        return json.loads(f.read_text())
+    except (json.JSONDecodeError, OSError):
+        return None
+
+
 def render(ws: Path, timeline_log: Path) -> str:
     now = datetime.now(timezone.utc)
     events = parse_timeline(timeline_log)
@@ -155,11 +166,28 @@ def render(ws: Path, timeline_log: Path) -> str:
         elif state in ("running",):
             stall_hint = f'<div class="dim">stream age {int(age)}s</div>' if age is not None else ""
         raw_dirty, dirty = git_dirty(repo) if repo.exists() else (0, 0)
+        gr = grading(d)
+        grade_html = ""
+        if gr:
+            sm = gr["summary"]
+            rate = int(sm["pass_rate"] * 100)
+            cls = "gok" if sm["failed"] == 0 else ("gsome" if rate >= 80 else "gbad")
+            fails = [e for e in gr["expectations"] if not e["passed"]]
+            fail_rows = "".join(
+                f'<div class="gfail">✗ {esc(e["text"])} — {esc(e["evidence"][:120])}</div>'
+                for e in fails[:5])
+            more = f'<div class="dim">… +{len(fails) - 5} more</div>' if len(fails) > 5 else ""
+            grade_html = (f'<div class="grade {cls}">graded: {sm["passed"]}/{sm["total"]}'
+                          f' ({rate}%)</div>{fail_rows}{more}')
+        elif state == "done":
+            grade_html = '<div class="dim">grading pending…</div>'
         errs = log_errors(log)
         err_html = "".join(f'<div class="err">{esc(e)}</div>' for e in errs)
         tail = esc(log_tail(log))
+        full = esc(strip_ansi(log.read_text(errors="ignore"))[-131072:]) if log.exists() else "(no log yet)"
         attempts = sum(1 for e in events[sc] if "attempt" in e and "start" in e)
         resumes = sum(1 for e in events[sc] if "resume" in e and "start" in e)
+        mid = sc.replace("-", "_")
         cards.append(f"""
 <div class="card {state}">
   <div class="head"><span class="name">{esc(DISPLAY.get(sc, sc))}</span>
@@ -169,15 +197,35 @@ def render(ws: Path, timeline_log: Path) -> str:
   <div>attempts: {attempts} · resumes: {resumes} · log: {size//1024} KB ·
     dirty: {dirty} (+{raw_dirty-dirty} obj)</div>
   <div class="tags">{art_html}</div>
-  {stall_hint}{err_html}
-  <pre>{tail}</pre>
+  {stall_hint}{grade_html}{err_html}
+  <pre class="tailopen" onclick="openLog('{mid}')">{tail}</pre>
+  <button class="logbtn" onclick="openLog('{mid}')">log \u29e2</button>
+  <div class="mback" id="m-{mid}" onclick="closeLog(event)">
+    <div class="mwin" onclick="event.stopPropagation()">
+      <div class="mhead"><span>{esc(DISPLAY.get(sc, sc))} — full log</span>
+        <button onclick="closeLogX()">close \u00d7</button></div>
+      <pre class="mlog">{full}</pre>
+    </div>
+  </div>
 </div>""")
 
     tl_tail = esc("\n".join(timeline_log.read_text(errors="ignore")
                             .splitlines()[-8:])) if timeline_log.exists() else "(no orchestrator log)"
     return f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
-<meta http-equiv="refresh" content="3">
 <title>legislator eval — live</title>
+<script>
+let paused = false;
+function openLog(id) {{ paused = true;
+  document.getElementById("pausetag").style.display = "inline";
+  document.getElementById("m-" + id).style.display = "flex"; }}
+function closeLog(ev) {{ if (ev.target === ev.currentTarget) closeLogX(); }}
+function closeLogX() {{
+  document.querySelectorAll(".mback").forEach(m => m.style.display = "none");
+  paused = false;
+  document.getElementById("pausetag").style.display = "none"; }}
+document.addEventListener("keydown", e => {{ if (e.key === "Escape") closeLogX(); }});
+setInterval(() => {{ if (!paused) location.reload(); }}, 3000);
+</script>
 <style>
  body{{background:#111;color:#ddd;font:13px/1.45 ui-monospace,monospace;
       margin:16px;}}
@@ -199,13 +247,31 @@ def render(ws: Path, timeline_log: Path) -> str:
  .err{{color:#f66;margin-top:4px;white-space:nowrap;overflow:hidden;
       text-overflow:ellipsis}}
  .warn{{color:#fb0;margin-top:4px}} .dim{{color:#888}}
+ .tailopen{{cursor:pointer}} .tailopen:hover{{outline:1px solid #3a6ea5}}
+ .logbtn{{background:#222;color:#8ab;border:1px solid #333;border-radius:4px;
+         padding:0 6px;margin-top:4px;cursor:pointer;font:inherit}}
+ .mback{{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);
+        z-index:10;align-items:center;justify-content:center}}
+ .mwin{{background:#141414;border:1px solid #444;border-radius:8px;
+       width:min(90vw,1100px);display:flex;flex-direction:column}}
+ .mhead{{display:flex;justify-content:space-between;align-items:center;
+        padding:8px 12px;border-bottom:1px solid #333}}
+ .mhead button{{background:#333;color:#ddd;border:0;border-radius:4px;
+               padding:2px 8px;cursor:pointer;font:inherit}}
+ .mlog{{margin:0;padding:10px;overflow:auto;max-height:80vh;
+       white-space:pre-wrap;color:#bbb}}
+ .grade{{margin-top:6px;font-weight:bold;border-radius:4px;padding:2px 6px;display:inline-block}}
+ .grade.gok{{background:#1b3a1f;color:#8f8}} .grade.gsome{{background:#3a3000;color:#fc6}}
+ .grade.gbad{{background:#4a1515;color:#f88}}
+ .gfail{{color:#f88;margin-top:3px;font-size:12px;white-space:nowrap;overflow:hidden;
+        text-overflow:ellipsis}}
  pre{{white-space:pre-wrap;background:#0c0c0c;border-radius:6px;
      padding:6px;margin:8px 0 0;color:#aaa;max-height:120px;overflow:hidden}}
  .summary span{{margin-right:14px}}
 </style></head><body>
 <h1>legislator eval — live</h1>
 <div class="dim">generated {now.strftime("%Y-%m-%d %H:%M:%S")} UTC ·
- refresh 3s · opencode runs alive: {alive}</div>
+ refresh 3s <span id="pausetag" class="warn" style="display:none">— PAUSED (log open)</span> · opencode runs alive: {alive}</div>
 <div class="summary" style="margin-top:8px">
  <span>scenarios: {total_started}/{len(SCENARIOS)} started</span>
  <span style="color:#8f8">done: {len(done)}</span>
