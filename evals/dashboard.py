@@ -150,14 +150,26 @@ def render(ws: Path, timeline_log: Path) -> str:
     now = datetime.now(timezone.utc)
     events = parse_timeline(timeline_log)
     alive = count_opencode()
-    total_started = sum(1 for sc in SCENARIOS if events[sc])
-    done = [sc for sc in SCENARIOS if state_of(events[sc])[0] == "done"]
-    failed = [sc for sc in SCENARIOS if state_of(events[sc])[0] == "failed"]
-
-    cards = []
     queue = load_queue(ws) or {}
     q_statuses = queue.get("statuses", {})
     q_order = queue.get("order", [])
+
+    def final_state(sc: str) -> str:
+        """Queue view when present (it is current), timeline otherwise."""
+        q_state = q_statuses.get(sc)
+        if q_state == "running":
+            return "running"
+        if q_state in ("done", "failed", "queued"):
+            return "pending" if q_state == "queued" else q_state
+        return state_of(events[sc])[0]
+
+    total_started = sum(1 for sc in SCENARIOS if events[sc] or sc in q_statuses)
+    states = {sc: final_state(sc) for sc in SCENARIOS}
+    done = [sc for sc in SCENARIOS if states[sc] == "done"]
+    failed = [sc for sc in SCENARIOS if states[sc] == "failed"]
+    running = [sc for sc in SCENARIOS if states[sc] in ("running", "retrying")]
+
+    cards = []
     for sc in SCENARIOS:
         d = ws / sc
         log = d / "outputs" / "run.log"
@@ -171,11 +183,6 @@ def render(ws: Path, timeline_log: Path) -> str:
             for p, p2 in artifacts)
         size = log.stat().st_size if log.exists() else 0
         age = (time.time() - log.stat().st_mtime) if log.exists() else None
-        stall_hint = ""
-        if state in ("running", "stalled") and age is not None and age > STALL_AFTER_S:
-            stall_hint = f'<div class="warn">log frozen {int(age)}s — stall suspected</div>'
-        elif state in ("running",):
-            stall_hint = f'<div class="dim">stream age {int(age)}s</div>' if age is not None else ""
         raw_dirty, dirty = git_dirty(repo) if repo.exists() else (0, 0)
         gr = grading(d)
         grade_html = ""
@@ -227,6 +234,13 @@ def render(ws: Path, timeline_log: Path) -> str:
             detail = "queue: " + q_state
         else:
             state, detail = state_of(events[sc])
+        # stall hint derives from the FINAL state (queue may have just flipped
+        # running->done; a frozen log under a green card is noise, not a stall)
+        stall_hint = ""
+        if state in ("running", "stalled", "retrying") and age is not None and age > STALL_AFTER_S:
+            stall_hint = f'<div class="warn">log frozen {int(age)}s — stall suspected</div>'
+        elif state in ("running",):
+            stall_hint = f'<div class="dim">stream age {int(age)}s</div>' if age is not None else ""
         cards.append(f"""
 <div class="card {state}">
   <div class="head"><span class="name">{esc(DISPLAY.get(sc, sc))}</span>
@@ -314,6 +328,7 @@ setInterval(() => {{ if (!paused) location.reload(); }}, 3000);
  refresh 3s <span id="pausetag" class="warn" style="display:none">— PAUSED (log open)</span> · opencode runs alive: {alive}</div>
 <div class="summary" style="margin-top:8px">
  <span>scenarios: {total_started}/{len(SCENARIOS)} started</span>
+ <span style="color:#6bf">running: {len(running)}</span>
  <span style="color:#8f8">done: {len(done)}</span>
  <span style="color:#f88">failed: {len(failed)}</span>
 </div>
