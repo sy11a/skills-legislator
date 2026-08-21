@@ -27,10 +27,19 @@ from pathlib import Path
 
 EXPECTED = {
     "fresh-scaffold-dotnet": ["repo/docs/ai/manifest.json", "repo/docs/cases/README.md"],
-    "legacy-migration": ["outputs/step7-report.md"],
-    "upgrade": ["outputs/step7-report.md"],
+    "legacy-migration": ["outputs/migration-report.md"],
+    "upgrade": ["outputs/upgrade-report.md"],
     "rotted-layer": ["outputs/audit-report.md"],
     "restructure": ["outputs/restructure-report.md"],
+}
+# Display names: the mode each fixture exercises (the rotted-layer dir IS
+# the audit scenario — the dashboard speaks in modes, not raw dir names).
+DISPLAY = {
+    "fresh-scaffold-dotnet": "scaffold",
+    "legacy-migration": "migration",
+    "upgrade": "upgrade",
+    "rotted-layer": "audit",
+    "restructure": "restructure",
 }
 SCENARIOS = list(EXPECTED)
 STALL_AFTER_S = 180
@@ -153,7 +162,8 @@ def render(ws: Path, timeline_log: Path) -> str:
         resumes = sum(1 for e in events[sc] if "resume" in e and "start" in e)
         cards.append(f"""
 <div class="card {state}">
-  <div class="head"><span class="name">{esc(sc)}</span>
+  <div class="head"><span class="name">{esc(DISPLAY.get(sc, sc))}</span>
+    <span class="dim" style="font-weight:normal">{esc(sc)}/</span>
     <span class="state {state}">{state}</span></div>
   <div class="dim">{esc(detail)}</div>
   <div>attempts: {attempts} · resumes: {resumes} · log: {size//1024} KB ·

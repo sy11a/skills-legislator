@@ -245,7 +245,7 @@ def grade_migration(ws: Path) -> Grader:
     g.check("agents_md_v2_wiring_written_directly", v2_wired,
             "map import + Boundaries section present in rewritten AGENTS.md" if v2_wired
             else "migration left v2 wiring as Step 7 proposals instead of writing it")
-    report_path = ws / "legacy-migration" / "outputs" / "step7-report.md"
+    report_path = ws / "legacy-migration" / "outputs" / "migration-report.md"
     has_report = report_path.exists()
     report = report_path.read_text() if has_report else ""
     g.check("step7_report_saved", has_report,
@@ -300,7 +300,7 @@ def grade_upgrade(ws: Path) -> Grader:
             f"{meta['withheld_stack_rule']} copied in by the upgrade" if withheld_stack.exists()
             else f"{meta['withheld_stack_rule']} still missing")
 
-    report_path = ws / "upgrade" / "outputs" / "step7-report.md"
+    report_path = ws / "upgrade" / "outputs" / "upgrade-report.md"
     has_report = report_path.exists()
     report = report_path.read_text() if has_report else ""
     g.check("step7_report_saved", has_report,

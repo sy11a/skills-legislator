@@ -79,10 +79,16 @@ warrants re-running that scenario 2–3 times before drawing a conclusion.
    save its report to `<ws>/rotted-layer/outputs/audit-report.md` — outside
    the target repo, which the audit must not touch). The migration and
    upgrade agents must likewise be told to save their Step 7 reports to
-   `<ws>/legacy-migration/outputs/step7-report.md` and
-   `<ws>/upgrade/outputs/step7-report.md` respectively — the harvest and
+   `<ws>/legacy-migration/outputs/migration-report.md` and
+   `<ws>/upgrade/outputs/upgrade-report.md` respectively — the harvest and
    proposed-import assertions grade those files.
    The restructure agent gets the restructure prompt (blanket approval minus decision items is part of it) and must save its final report to <ws>/restructure/outputs/restructure-report.md.
+
+   Naming convention (one format, no exceptions): every scenario's final
+   report is `<mode>-report.md` in its `outputs/` directory —
+   `migration-report.md`, `upgrade-report.md`, `audit-report.md`,
+   `restructure-report.md`. Never named after a skill step, never mixed
+   formats.
 
 3. **Grade:**
 
