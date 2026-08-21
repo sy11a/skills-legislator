@@ -1,0 +1,228 @@
+#!/usr/bin/env python3
+"""Live eval dashboard — renders the state of a background eval run.
+
+Usage:
+  python3 evals/dashboard.py <workspace> [--interval 3]   # render loop
+  python3 evals/dashboard.py <workspace> --once            # single render
+
+Reads (never writes) the orchestrator's artifacts:
+  <ws>/<scenario>/outputs/run.log        agent stream (size/mtime = liveness)
+  <ws>/<scenario>/outputs/*.md           expected deliverables
+  <ws>/<scenario>/repo/                  fixture (dirty count, artifacts)
+  /tmp/opencode/orchestrate-all.log      orchestrator timeline (optional)
+
+Writes <ws>/dashboard.html — static file, meta-refresh, no server, nothing
+leaves the machine (the kbo dashboard pattern). A stale render must look
+stale: the generated-at stamp is the first thing on the page.
+"""
+from __future__ import annotations
+
+import argparse
+import html
+import re
+import subprocess
+import time
+from datetime import datetime, timezone
+from pathlib import Path
+
+EXPECTED = {
+    "fresh-scaffold-dotnet": ["repo/docs/ai/manifest.json", "repo/docs/cases/README.md"],
+    "legacy-migration": ["outputs/step7-report.md"],
+    "upgrade": ["outputs/step7-report.md"],
+    "rotted-layer": ["outputs/audit-report.md"],
+    "restructure": ["outputs/restructure-report.md"],
+}
+SCENARIOS = list(EXPECTED)
+STALL_AFTER_S = 180
+
+EVENT_RE = re.compile(r"^\[(?P<sc>[^]]+)\] (?P<ev>.*)$")
+TIME_RE = re.compile(r"(\d{2}:\d{2}:\d{2})")
+
+
+def esc(s: str) -> str:
+    return html.escape(s, quote=True)
+
+
+def strip_ansi(s: str) -> str:
+    return re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", s)
+
+
+def parse_timeline(log: Path) -> dict[str, list[str]]:
+    events: dict[str, list[str]] = {sc: [] for sc in SCENARIOS}
+    if not log.exists():
+        return events
+    for line in log.read_text(errors="ignore").splitlines():
+        m = EVENT_RE.match(line)
+        if not m:
+            continue
+        sc, ev = m.group("sc"), m.group("ev").strip()
+        if sc in events:
+            events[sc].append(ev)
+    return events
+
+
+def state_of(events: list[str]) -> tuple[str, str]:
+    """(state, detail) from the event tail; state in
+    pending|running|stalled|retrying|done|failed."""
+    if not events:
+        return "pending", ""
+    last = events[-1]
+    t = TIME_RE.search(last)
+    stamp = t.group(1) if t else ""
+    if "FAILED after" in last:
+        return "failed", f"final — {stamp}"
+    if " DONE " in f" {last} " or last.split(" ", 1)[0] in {"attempt", "resume"} and " DONE " in last:
+        return "done", last
+    if "stalled" in last:
+        return "stalled", f"{last} {stamp}".strip()
+    if "without expected output" in last:
+        return "retrying", f"{last} {stamp}".strip()
+    if last.endswith("start") or " start " in last or "start" in last:
+        return "running", f"{last} {stamp}".strip()
+    return "running", last
+
+
+def count_opencode() -> int:
+    r = subprocess.run(["ps", "-eo", "cmd"], capture_output=True, text=True)
+    return sum(1 for l in r.stdout.splitlines()
+               if "opencode" in l and " run" in l and "dashboard" not in l)
+
+
+def git_dirty(repo: Path) -> tuple[int, int]:
+    r = subprocess.run(["git", "-C", str(repo), "status", "--porcelain"],
+                       capture_output=True, text=True)
+    lines = r.stdout.splitlines()
+    non_obj = [l for l in lines if "/obj/" not in l]
+    return len(lines), len(non_obj)
+
+
+def log_errors(log: Path, tail_chars: int = 6000) -> list[str]:
+    if not log.exists():
+        return []
+    text = strip_ansi(log.read_text(errors="ignore")[-tail_chars:])
+    hits = []
+    for line in text.splitlines():
+        if re.search(r"(?i)(stream error|permission denied|aborted|fatal|"
+                     r"Cannot connect|API.?error|exit code [1-9])", line):
+            line = line.strip()
+            if line and line not in hits:
+                hits.append(line[:200])
+    return hits[-2:]
+
+
+def log_tail(log: Path, n: int = 4) -> str:
+    if not log.exists():
+        return ""
+    text = strip_ansi(log.read_text(errors="ignore"))
+    lines = [l.rstrip() for l in text.splitlines() if l.strip()]
+    return "\n".join(l[-160:] for l in lines[-n:])
+
+
+def render(ws: Path, timeline_log: Path) -> str:
+    now = datetime.now(timezone.utc)
+    events = parse_timeline(timeline_log)
+    alive = count_opencode()
+    total_started = sum(1 for sc in SCENARIOS if events[sc])
+    done = [sc for sc in SCENARIOS if state_of(events[sc])[0] == "done"]
+    failed = [sc for sc in SCENARIOS if state_of(events[sc])[0] == "failed"]
+
+    cards = []
+    for sc in SCENARIOS:
+        d = ws / sc
+        log = d / "outputs" / "run.log"
+        repo = d / "repo"
+        state, detail = state_of(events[sc])
+        expected = EXPECTED[sc]
+        artifacts = [(Path(d) / p, p) for p in expected]
+        art_html = "".join(
+            f'<span class="tag {"ok" if p.exists() else "miss"}">'
+            f'{esc(p2.split("/")[-1])}</span>'
+            for p, p2 in artifacts)
+        size = log.stat().st_size if log.exists() else 0
+        age = (time.time() - log.stat().st_mtime) if log.exists() else None
+        stall_hint = ""
+        if state in ("running", "stalled") and age is not None and age > STALL_AFTER_S:
+            stall_hint = f'<div class="warn">log frozen {int(age)}s — stall suspected</div>'
+        elif state in ("running",):
+            stall_hint = f'<div class="dim">stream age {int(age)}s</div>' if age is not None else ""
+        raw_dirty, dirty = git_dirty(repo) if repo.exists() else (0, 0)
+        errs = log_errors(log)
+        err_html = "".join(f'<div class="err">{esc(e)}</div>' for e in errs)
+        tail = esc(log_tail(log))
+        attempts = sum(1 for e in events[sc] if "attempt" in e and "start" in e)
+        resumes = sum(1 for e in events[sc] if "resume" in e and "start" in e)
+        cards.append(f"""
+<div class="card {state}">
+  <div class="head"><span class="name">{esc(sc)}</span>
+    <span class="state {state}">{state}</span></div>
+  <div class="dim">{esc(detail)}</div>
+  <div>attempts: {attempts} · resumes: {resumes} · log: {size//1024} KB ·
+    dirty: {dirty} (+{raw_dirty-dirty} obj)</div>
+  <div class="tags">{art_html}</div>
+  {stall_hint}{err_html}
+  <pre>{tail}</pre>
+</div>""")
+
+    tl_tail = esc("\n".join(timeline_log.read_text(errors="ignore")
+                            .splitlines()[-8:])) if timeline_log.exists() else "(no orchestrator log)"
+    return f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta http-equiv="refresh" content="3">
+<title>legislator eval — live</title>
+<style>
+ body{{background:#111;color:#ddd;font:13px/1.45 ui-monospace,monospace;
+      margin:16px;}}
+ h1{{font-size:16px;margin:0 0 4px}}
+ .grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));
+       gap:12px;margin-top:12px}}
+ .card{{border:1px solid #333;border-radius:8px;padding:10px;background:#181818}}
+ .card.running{{border-color:#3a6ea5}} .card.done{{border-color:#2e7d32}}
+ .card.failed{{border-color:#c62828}} .card.stalled{{border-color:#e65100}}
+ .card.retrying{{border-color:#8d6e63}} .card.pending{{opacity:.55}}
+ .head{{display:flex;justify-content:space-between;font-weight:bold}}
+ .state{{padding:0 8px;border-radius:4px}}
+ .state.running{{background:#1c3a5e}} .state.done{{background:#1b3a1f}}
+ .state.failed{{background:#4a1515}} .state.stalled{{background:#4a2c00}}
+ .state.retrying{{background:#3a2c24}} .state.pending{{background:#222}}
+ .tag{{display:inline-block;margin:2px 4px 2px 0;padding:0 6px;
+      border-radius:4px;background:#222}}
+ .tag.ok{{background:#1b3a1f;color:#8f8}} .tag.miss{{color:#777}}
+ .err{{color:#f66;margin-top:4px;white-space:nowrap;overflow:hidden;
+      text-overflow:ellipsis}}
+ .warn{{color:#fb0;margin-top:4px}} .dim{{color:#888}}
+ pre{{white-space:pre-wrap;background:#0c0c0c;border-radius:6px;
+     padding:6px;margin:8px 0 0;color:#aaa;max-height:120px;overflow:hidden}}
+ .summary span{{margin-right:14px}}
+</style></head><body>
+<h1>legislator eval — live</h1>
+<div class="dim">generated {now.strftime("%Y-%m-%d %H:%M:%S")} UTC ·
+ refresh 3s · opencode runs alive: {alive}</div>
+<div class="summary" style="margin-top:8px">
+ <span>scenarios: {total_started}/{len(SCENARIOS)} started</span>
+ <span style="color:#8f8">done: {len(done)}</span>
+ <span style="color:#f88">failed: {len(failed)}</span>
+</div>
+<div class="grid">{''.join(cards)}</div>
+<h2 style="font-size:13px;margin-top:16px">orchestrator tail</h2>
+<pre>{tl_tail}</pre>
+</body></html>"""
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("workspace", type=Path)
+    ap.add_argument("--interval", type=float, default=3.0)
+    ap.add_argument("--once", action="store_true")
+    ap.add_argument("--timeline", type=Path,
+                    default=Path("/tmp/opencode/orchestrate-all.log"))
+    a = ap.parse_args()
+    out = a.workspace / "dashboard.html"
+    while True:
+        out.write_text(render(a.workspace, a.timeline))
+        if a.once:
+            print(out)
+            return
+        time.sleep(a.interval)
+
+
+if __name__ == "__main__":
+    main()
