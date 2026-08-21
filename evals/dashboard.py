@@ -222,7 +222,26 @@ def render(ws: Path, timeline_log: Path) -> str:
         d = ws / sc
         log = d / "outputs" / "run.log"
         repo = d / "repo"
-        state, detail = state_of(events[sc])
+        # effective state FIRST (queue-merged) — the grade block and every
+        # hint below must classify against the final state, not the raw one
+        q_state = q_statuses.get(sc)
+        if q_state == "running":
+            state, detail = "running", "orchestrator chain: active"
+        elif q_state in ("done", "failed") and grading(d) is not None:
+            gr_state = grading(d)
+            if q_state == "done" and gr_state is not None and gr_state["summary"]["failed"] > 0:
+                state, detail = "partial", "completed — graded with failures"
+            else:
+                state = "done" if q_state == "done" else "failed"
+                detail = "queue: " + q_state
+        elif q_state == "queued":
+            pos = q_order.index(sc) + 1 if sc in q_order else "?"
+            state, detail = "pending", f"queued (#{pos} in chain)"
+        elif q_state in ("done", "failed"):
+            state = "done" if q_state == "done" else "failed"
+            detail = "queue: " + q_state
+        else:
+            state, detail = state_of(events[sc])
         expected = EXPECTED[sc]
         artifacts = [(Path(d) / p, p) for p in expected]
         art_html = "".join(
@@ -270,27 +289,6 @@ def render(ws: Path, timeline_log: Path) -> str:
         attempts = sum(1 for e in events[sc] if "attempt" in e and "start" in e)
         resumes = sum(1 for e in events[sc] if "resume" in e and "start" in e)
         mid = sc.replace("-", "_")
-        # Queue status outranks the timeline: an active orchestration chain
-        # writes queue.json, and its view is current (the timeline log only
-        # ever grows and its tail may describe a finished chain).
-        q_state = q_statuses.get(sc)
-        if q_state == "running":
-            state, detail = "running", "orchestrator chain: active"
-        elif q_state in ("done", "failed") and grading(d) is not None:
-            gr_state = grading(d)
-            if q_state == "done" and gr_state is not None and gr_state["summary"]["failed"] > 0:
-                state, detail = "partial", "completed — graded with failures"
-            else:
-                state = "done" if q_state == "done" else "failed"
-                detail = "queue: " + q_state
-        elif q_state == "queued":
-            pos = q_order.index(sc) + 1 if sc in q_order else "?"
-            state, detail = "pending", f"queued (#{pos} in chain)"
-        elif q_state in ("done", "failed"):
-            state = "done" if q_state == "done" else "failed"
-            detail = "queue: " + q_state
-        else:
-            state, detail = state_of(events[sc])
         # stall hint derives from the FINAL state (queue may have just flipped
         # running->done; a frozen log under a green card is noise, not a stall)
         stall_hint = ""
