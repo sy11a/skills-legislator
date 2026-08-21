@@ -241,7 +241,11 @@ def render(ws: Path, timeline_log: Path) -> str:
                 # a grade from a previous run must not pose as current
                 grade_html = (f'<div class="dim prevgrade">prev run: {sm["passed"]}/{sm["total"]}'
                               f' ({rate}%) — stale while {state}</div>')
+            elif state == "failed" and not (d / "outputs" / "run.log").exists():
+                grade_html = ""
             else:
+                # terminal states: the orchestrator grades BEFORE flipping the
+                # queue to done, so a grade here is this run's grade
                 cls = "gok" if sm["failed"] == 0 else ("gsome" if rate >= 80 else "gbad")
                 fails = [e for e in gr["expectations"] if not e["passed"]]
                 fail_rows = "".join(
