@@ -146,6 +146,44 @@ def load_queue(ws: Path) -> dict | None:
         return None
 
 
+def history(d: Path) -> list[dict]:
+    f = d / "outputs" / "grade-history.jsonl"
+    if not f.exists():
+        return []
+    out = []
+    for line in f.read_text(errors="ignore").splitlines():
+        try:
+            out.append(json.loads(line))
+        except json.JSONDecodeError:
+            continue
+    return out
+
+
+def flaky_panel(d: Path) -> str:
+    """From ≥2 graded runs: which asserts fail in EVERY run (persistent —
+    a real defect or a grader bug) vs SOME runs (flaky — nondeterminism
+    to keep under control)."""
+    runs = history(d)
+    if len(runs) < 2:
+        return ""
+    counts: dict[str, int] = {}
+    for r in runs:
+        for name in r.get("fails", []):
+            counts[name] = counts.get(name, 0) + 1
+    n = len(runs)
+    persistent = [(k, v) for k, v in counts.items() if v == n]
+    flaky = [(k, v) for k, v in counts.items() if 0 < v < n]
+    rows = []
+    for k, v in sorted(persistent, key=lambda x: -x[1])[:3]:
+        rows.append(f'<div class="flaky persist">persistent ({v}/{n}): {esc(k[:70])}</div>')
+    for k, v in sorted(flaky, key=lambda x: -x[1])[:4]:
+        rows.append(f'<div class="flaky">flaky ({v}/{n}): {esc(k[:70])}</div>')
+    if not rows:
+        return f'<div class="dim" style="margin-top:4px">history: {n} runs, no repeats</div>'
+    return (f'<div class="dim" style="margin-top:4px">grade history: {n} runs</div>'
+            + "".join(rows))
+
+
 def render(ws: Path, timeline_log: Path) -> str:
     now = datetime.now(timezone.utc)
     events = parse_timeline(timeline_log)
@@ -155,12 +193,21 @@ def render(ws: Path, timeline_log: Path) -> str:
     q_order = queue.get("order", [])
 
     def final_state(sc: str) -> str:
-        """Queue view when present (it is current), timeline otherwise."""
+        """Effective status: queue view when present (it is current), timeline
+        otherwise. Three terminal states, three different questions:
+        done — completed AND graded clean; partial ('w/ errors') — completed
+        but graded with failures; failed — the run itself crashed or never
+        produced its expected output."""
         q_state = q_statuses.get(sc)
         if q_state == "running":
             return "running"
         if q_state in ("done", "failed", "queued"):
-            return "pending" if q_state == "queued" else q_state
+            state = "pending" if q_state == "queued" else q_state
+            if state == "done":
+                gr = grading(ws / sc)
+                if gr is not None and gr["summary"]["failed"] > 0:
+                    return "partial"
+            return state
         return state_of(events[sc])[0]
 
     total_started = sum(1 for sc in SCENARIOS if events[sc] or sc in q_statuses)
@@ -168,6 +215,7 @@ def render(ws: Path, timeline_log: Path) -> str:
     done = [sc for sc in SCENARIOS if states[sc] == "done"]
     failed = [sc for sc in SCENARIOS if states[sc] == "failed"]
     running = [sc for sc in SCENARIOS if states[sc] in ("running", "retrying")]
+    partial = [sc for sc in SCENARIOS if states[sc] == "partial"]
 
     cards = []
     for sc in SCENARIOS:
@@ -204,6 +252,7 @@ def render(ws: Path, timeline_log: Path) -> str:
                               f' ({rate}%)</div>{fail_rows}{more}')
         elif state == "done":
             grade_html = '<div class="dim">grading pending…</div>'
+        flaky_html = flaky_panel(d) if state in ("done", "partial", "failed") else ""
         errs = log_errors(log)
         err_html = "".join(f'<div class="err">{esc(e)}</div>' for e in errs)
         tail = esc(log_tail(log))
@@ -224,8 +273,12 @@ def render(ws: Path, timeline_log: Path) -> str:
         if q_state == "running":
             state, detail = "running", "orchestrator chain: active"
         elif q_state in ("done", "failed") and grading(d) is not None:
-            state = "done" if q_state == "done" else "failed"
-            detail = "queue: " + q_state
+            gr_state = grading(d)
+            if q_state == "done" and gr_state is not None and gr_state["summary"]["failed"] > 0:
+                state, detail = "partial", "completed — graded with failures"
+            else:
+                state = "done" if q_state == "done" else "failed"
+                detail = "queue: " + q_state
         elif q_state == "queued":
             pos = q_order.index(sc) + 1 if sc in q_order else "?"
             state, detail = "pending", f"queued (#{pos} in chain)"
@@ -245,12 +298,12 @@ def render(ws: Path, timeline_log: Path) -> str:
 <div class="card {state}">
   <div class="head"><span class="name">{esc(DISPLAY.get(sc, sc))}</span>
     <span class="dim" style="font-weight:normal">{esc(sc)}/</span>
-    <span class="state {state}">{state}</span></div>
+    <span class="state {state}">{"w/ errors" if state == "partial" else state}</span></div>
   <div class="dim">{esc(detail)}</div>
   <div>attempts: {attempts} · resumes: {resumes} · log: {size//1024} KB ·
     dirty: {dirty} (+{raw_dirty-dirty} obj)</div>
   <div class="tags">{art_html}</div>
-  {stall_hint}{grade_html}{err_html}
+  {stall_hint}{grade_html}{flaky_html}{err_html}
   <pre class="tailopen" onclick="openLog('{mid}')">{tail}</pre>
   <button class="logbtn" onclick="openLog('{mid}')">log \u29e2</button>
   <div class="mback" id="m-{mid}" onclick="closeLog(event)">
@@ -287,12 +340,12 @@ setInterval(() => {{ if (!paused) location.reload(); }}, 3000);
        gap:12px;margin-top:12px}}
  .card{{border:1px solid #333;border-radius:8px;padding:10px;background:#181818}}
  .card.running{{border-color:#3a6ea5}} .card.done{{border-color:#2e7d32}}
- .card.failed{{border-color:#c62828}} .card.stalled{{border-color:#e65100}}
+ .card.failed{{border-color:#c62828}} .card.partial{{border-color:#b8860b}} .card.stalled{{border-color:#e65100}}
  .card.retrying{{border-color:#8d6e63}} .card.pending{{opacity:.55}}
  .head{{display:flex;justify-content:space-between;font-weight:bold}}
  .state{{padding:0 8px;border-radius:4px}}
  .state.running{{background:#1c3a5e}} .state.done{{background:#1b3a1f}}
- .state.failed{{background:#4a1515}} .state.stalled{{background:#4a2c00}}
+ .state.failed{{background:#4a1515}} .state.partial{{background:#4a3a00;color:#fc6}} .state.stalled{{background:#4a2c00}}
  .state.retrying{{background:#3a2c24}} .state.pending{{background:#222}}
  .tag{{display:inline-block;margin:2px 4px 2px 0;padding:0 6px;
       border-radius:4px;background:#222}}
@@ -317,6 +370,8 @@ setInterval(() => {{ if (!paused) location.reload(); }}, 3000);
  .grade.gok{{background:#1b3a1f;color:#8f8}} .grade.gsome{{background:#3a3000;color:#fc6}}
  .grade.gbad{{background:#4a1515;color:#f88}}
  .prevgrade{{margin-top:6px;font-size:12px}}
+ .flaky{{color:#e9a23b;font-size:12px;margin-top:2px}}
+ .flaky.persist{{color:#f66}}
  .gfail{{color:#f88;margin-top:3px;font-size:12px;white-space:nowrap;overflow:hidden;
         text-overflow:ellipsis}}
  pre{{white-space:pre-wrap;background:#0c0c0c;border-radius:6px;
@@ -330,6 +385,7 @@ setInterval(() => {{ if (!paused) location.reload(); }}, 3000);
  <span>scenarios: {total_started}/{len(SCENARIOS)} started</span>
  <span style="color:#6bf">running: {len(running)}</span>
  <span style="color:#8f8">done: {len(done)}</span>
+ <span style="color:#fc6">w/ errors: {len(partial)}</span>
  <span style="color:#f88">failed: {len(failed)}</span>
 </div>
 <div class="grid">{''.join(cards)}</div>

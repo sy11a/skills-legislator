@@ -33,6 +33,7 @@ import os
 import re
 import subprocess
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 EVALS = Path(__file__).resolve().parent
@@ -452,8 +453,9 @@ def grade_restructure(ws: Path) -> Grader:
     skf_ok = skf.exists() and skf.read_text() == meta["skills_rules_content"]
     # BL-025 item 6: the skill-binding finding is machine-install territory —
     # it must be routed to the report's "For the team:" block, not proposed
-    # as a restructure plan item (scoped presence, not report-wide).
-    ftt = re.search(r"^For the team:\s*\n(.*?)(?=^Kept \(immovable\)|\Z)", report,
+    # as a restructure plan item (scoped presence, not report-wide). The law
+    # pins the heading as "## For the team:" — accept 1–3 #s.
+    ftt = re.search(r"^#{1,3}\s*For the team:\s*\n(.*?)(?=^Kept \(immovable\)|^#{1,2} |\Z)", report,
                     re.S | re.M)
     ftt_section = ftt.group(1) if ftt else ""
     named = "made-up-skill" in ftt_section
@@ -563,6 +565,18 @@ def main() -> None:
                            "total": total, "pass_rate": round(passed / total, 3)}}
         fname = "grading_idempotency.json" if name.startswith("idempotency:") else "grading.json"
         (outdir / fname).write_text(json.dumps(out, indent=2) + "\n")
+
+        # Append-only grade history: the flaky-vs-persistent oracle. Every
+        # grading of this scenario lands here; the dashboard (and humans)
+        # read which asserts fail in SOME runs (flaky) vs EVERY run
+        # (persistent, a real defect or a grader bug).
+        if not name.startswith("idempotency:"):
+            hist = outdir / "grade-history.jsonl"
+            entry = {"ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                     "passed": passed, "failed": total - passed, "total": total,
+                     "fails": [e["text"] for e in g.exps if not e["passed"]]}
+            with hist.open("a") as fh:
+                fh.write(json.dumps(entry) + "\n")
 
         print(f"\n== {name}: {passed}/{total} ==")
         for e in g.exps:
