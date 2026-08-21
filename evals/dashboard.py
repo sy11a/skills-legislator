@@ -138,6 +138,14 @@ def grading(d: Path) -> dict | None:
         return None
 
 
+def load_queue(ws: Path) -> dict | None:
+    f = ws / "queue.json"
+    try:
+        return json.loads(f.read_text())
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
 def render(ws: Path, timeline_log: Path) -> str:
     now = datetime.now(timezone.utc)
     events = parse_timeline(timeline_log)
@@ -147,6 +155,9 @@ def render(ws: Path, timeline_log: Path) -> str:
     failed = [sc for sc in SCENARIOS if state_of(events[sc])[0] == "failed"]
 
     cards = []
+    queue = load_queue(ws) or {}
+    q_statuses = queue.get("statuses", {})
+    q_order = queue.get("order", [])
     for sc in SCENARIOS:
         d = ws / sc
         log = d / "outputs" / "run.log"
@@ -188,6 +199,23 @@ def render(ws: Path, timeline_log: Path) -> str:
         attempts = sum(1 for e in events[sc] if "attempt" in e and "start" in e)
         resumes = sum(1 for e in events[sc] if "resume" in e and "start" in e)
         mid = sc.replace("-", "_")
+        # Queue status outranks the timeline: an active orchestration chain
+        # writes queue.json, and its view is current (the timeline log only
+        # ever grows and its tail may describe a finished chain).
+        q_state = q_statuses.get(sc)
+        if q_state == "running":
+            state, detail = "running", "orchestrator chain: active"
+        elif q_state in ("done", "failed") and grading(d) is not None:
+            state = "done" if q_state == "done" else "failed"
+            detail = "queue: " + q_state
+        elif q_state == "queued":
+            pos = q_order.index(sc) + 1 if sc in q_order else "?"
+            state, detail = "pending", f"queued (#{pos} in chain)"
+        elif q_state in ("done", "failed"):
+            state = "done" if q_state == "done" else "failed"
+            detail = "queue: " + q_state
+        else:
+            state, detail = state_of(events[sc])
         cards.append(f"""
 <div class="card {state}">
   <div class="head"><span class="name">{esc(DISPLAY.get(sc, sc))}</span>
