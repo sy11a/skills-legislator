@@ -904,14 +904,7 @@ concrete decision. Per-gap verdicts:
   conditional loading (D0); Vortex (unresolved — could not confirm it
   exists).
 
-**Execution order (revised 2026-08-20, evening — edition split):** kbo
-gold panel (unchanged gate; excludes generated writes) → **edition v17**
-= BL-032 (SDD law + absorbed case home + lifecycle home amendment +
-riders BL-028/030 + BL-025 triage) → soak → **edition v18** = BL-033
-(engine, OKF v2, baseline, kbo pilot; BL-031 rides if templates move) →
-BL-034 (self-legislation) → **edition v19+** = BL-027 (outer mode, own
-design cycle) → first steward cycle. BL-035 (docs-only, no VERSION) runs
-anytime. Full consistency record: the deep-audit spec's addendum.
+**Execution order (revised 2026-08-21, evening — eval hardening joins v17):** kbo gold panel ✓ DONE (PR#19, before-snapshot 22%) → **edition v17** = BL-032 (SDD law + absorbed case home + lifecycle + riders BL-028/030 + BL-025 triage) **closing green first**, then BL-036 waves A–C on the same branch (BL-037 runs as Wave A; case-practice is the v17 release gate) → soak → **edition v18** = BL-033 (engine, OKF v2, baseline, kbo pilot; BL-031 rides if templates move) → BL-034 (self-legislation) → **edition v19+** = BL-027 (outer mode, own design cycle) → first steward cycle. Rationale for the v17 expansion: the SDD law is a program for target-repo agents — shipping it without a suite that executes it (case-practice) and with a grader that hand-duplicates the skill's contracts would repeat the orphan problem the law exists to cure. BL-035 (docs-only, no VERSION) runs anytime. Full consistency record: the deep-audit spec's addendum.
 
 **Why:** the workflow was built intuitively from practice and works (fleet
 usage evidence in the research spec), but with nothing to compare against,
@@ -1073,7 +1066,7 @@ records; template decision recorded; benchmark green if templates moved.
 
 ## BL-032 — `core/sdd.md`: the SDD law (spec format, clarify protocol, ceremony tiers, converge/analyze gates)
 
-**Status: queued 2026-08-20 → edition v17 (behavioral — skill/ changes, VERSION bump + full e2e)**
+**Status: IN PROGRESS 2026-08-21 — edition v17, branch `feature/bl-032-sdd-law-v17`; law + delivery surface + graders + VERSION 17 committed; e2e corpus running (glm-5-turbo; glm-5.3 drops long streams — 313 logged errors, probe-verified); fresh DONE with artifacts, migration/upgrade failed 3 attempts each (diagnosis pending — stall vs exit-127 distinction in the logs), audit/restructure queued in the runner. Close order: green corpus → BL-036 waves A–C on this branch → full benchmark incl. case-practice = the v17 release gate**
 
 **What:** give the SDD process its constitutional home (deep-audit D1
 finding: the process is an orphan — practiced fleet-wide, governed
@@ -1252,7 +1245,39 @@ checks pass.
 
 ## BL-036 — Eval authenticity: honest triggers, agents-first migration, gap closures, contract derivation
 
-**Status: queued 2026-08-21 (behavioral — evals/ + one law line each in migration.md §0 and SKILL.md Step 5; rides at the head of the v18/BL-033 cycle; the law lines make it VERSION-relevant — same edition as BL-033 unless split cheaply)**
+**Status: REVISED 2026-08-21 — executes INSIDE edition v17, before its release.** v17's branch is unmerged and the edition undelivered, so the rider is legal: the SDD law and the suite that proves it ship as one edition. Order of execution: first close BL-032's own benchmark green (the running v17 corpus + diagnosis of the failed migration/upgrade attempts), then the waves below on the same branch; the final full benchmark including case-practice is the v17 release gate. This postpones BL-033 (OKF v2) and shifts the edition map: v17 = SDD law + eval hardening; v18 = BL-033; v19+ = BL-027.
+
+**Execution waves (priority order):**
+
+- **Wave A — test infrastructure (nothing else is reliable without it):**
+  BL-037's background runner (staged execution, notifications, status
+  contract) + trigger minimization + waiver rework + contract derivation
+  (SCAFFOLD_ARTIFACTS parsed from Step 4's table, `protected` derived
+  from it, manifest pins into one oracle, migration wiring derived from
+  AGENTS.md.tpl, severity+slug parsed from SKILL.md, restructure action
+  set parsed from restructure.md — every place the grader hand-duplicated
+  the skill's contract dies here) + README additions (machine-dependence
+  prerequisite and the weakened `stages >= 1` assert, why idempotency
+  has no migration carrier, new-stack fixtures as a known gap).
+- **Wave B — coverage and law lines:** agents-first fixture + both-exist
+  decision gate (migration.md §0 + SKILL.md Step 5); upgrade gap
+  closures (missing-artifact assert, keep-refusal branch, drop-stack
+  fixture); audit additions (cases-exempt planted artifact,
+  report-outside-repo assert); restructure package (§1 table gains the
+  cases row and legacy-only qualifiers for the superpowers rows, grader
+  lock on §1, misplaced-case relocatable, link/map post-state asserts,
+  stray plans always relocate to the legacy home); the parity law (every
+  audit check ↔ a planted defect marker, enforced by a setup-time
+  assert) with the three new rot checks it demands: new-home violation
+  (file born in a legacy home after the legislation date), working-dir
+  debris (`.superpowers/sdd/`-class) in check 9, dangling keep entry in
+  check 10.
+- **Wave C — the acceptance test:** the case-practice scenario
+  (legislated fixture, "add feature X, tier 1" task; the grader asserts
+  the case home, tier header, EARS R-NNN lines, hurting case,
+  Clarifications, append-only converge trail) — the only test that
+  executes `core/sdd.md` rather than merely asserting its delivery, and
+  the point of the whole edition: the law ships proven executable.
 
 **What:** four parts, one theme — the eval suite must test the skill, not
 the prompt.
@@ -1316,7 +1341,7 @@ benchmark.
 
 ## BL-037 — Background eval runner with staged execution and notifications
 
-**Status: queued 2026-08-21 (tools/ + evals/ process — docs-only for the repo, no VERSION, no benchmark of its own; verified live during the v17 run)**
+**Status: REVISED 2026-08-21 — Wave A of BL-036 (rides inside edition v17, before release); the benchmark-template "Coverage delta" section lands with it.**
 
 **What:** the orchestration that the v17 benchmark improvised in /tmp,
 productized. (1) `tools/evals-bg.sh` — detached sequential runner:
