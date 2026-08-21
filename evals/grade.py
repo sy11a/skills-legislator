@@ -511,9 +511,17 @@ def grade_restructure(ws: Path) -> Grader:
          "orphan-notes.md", str(repo)],
         capture_output=True, text=True).stdout.strip().splitlines()
     linked = orphan.exists() and any(Path(r) != orphan for r in map(Path, refs))
-    g.check("orphan_linked_not_deleted", linked,
-            "orphan still exists and is now referenced" if linked
-            else "orphan deleted or still unreferenced")
+    # Law B (2026-08-21): a deletion proposal is lawful ONLY as an open
+    # [decision] item the owner executes — so the accepted outcomes are
+    # (a) the orphan was linked, or (b) it still exists and the report
+    # carries an open [decision] proposing its deletion. Vanishing without
+    # a decision item, or an unreferenced survivor with no decision, fail.
+    orphan_decision = orphan.exists() and re.search(
+        r"\[decision\][^\n]*orphan-notes\.md", report) is not None
+    g.check("orphan_linked_not_deleted", linked or orphan_decision,
+            "orphan linked into the layer" if linked
+            else "orphan survives with an open deletion [decision]" if orphan_decision
+            else "orphan deleted without a decision item, or unreferenced with no decision")
 
     fid = "Fidelity: verified" in report
     g.check("fidelity_line_reported", fid,
@@ -571,7 +579,7 @@ def main() -> None:
         # read which asserts fail in SOME runs (flaky) vs EVERY run
         # (persistent, a real defect or a grader bug).
         if not name.startswith("idempotency:"):
-            hist = outdir / "grade-history.jsonl"
+            hist = outdir / "outputs" / "grade-history.jsonl"
             entry = {"ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
                      "passed": passed, "failed": total - passed, "total": total,
                      "fails": [e["text"] for e in g.exps if not e["passed"]]}

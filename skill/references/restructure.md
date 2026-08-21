@@ -26,7 +26,7 @@ Detailed mechanics for SKILL.md's "Restructure — approval-gated repair" sectio
 - **link** — wire an orphan into the layer: add a markdown link from `docs/okf/index.md` (or a pointer from AGENTS.md when it is clearly an AGENTS-level concern). Linking never rewrites the linked file.
 - **fix** — repair in place: dangling `@import`/link lines removed (or retargeted when the file moved elsewhere in this plan); unresolved `{{TOKEN}}`s filled per SKILL.md Step 4's derivation rules; stale codebase-map rows corrected from the actual tree; an empty glossary (check 13) seeded per SKILL.md Step 4's `{{GLOSSARY_TABLE}}` derivation rule — terms proposed in the plan item itself so approving the item approves the terms.
 - **heal** — owned-layer drift or staleness: run SKILL.md Steps 2–3 as-is (byte-for-byte Bash copy, deletions, manifest rewrite with `keep` carried forward). Never hand-edit anything under `docs/ai/`.
-- **decision** — presented, never executed. Typical: project text contradicting an owned rule (e.g. a "we don't keep a changelog" note vs `core/changelog.md`), two plausible homes for the same content, or a foreign structure whose removal would lose semantics a merge cannot carry. In the final report each item is repeated **verbatim as printed in the plan** — same wording, same `<where> ↔ <owned rule>` line — with only the outcome suffix appended.
+- **decision** — presented, never executed. Typical: project text contradicting an owned rule (e.g. a "we don't keep a changelog" note vs `core/changelog.md`), two plausible homes for the same content, or a foreign structure whose removal would lose semantics a merge cannot carry. **Deletion proposals live here and only here:** a plan may propose deleting a file solely as a `[decision]` item — the run never executes a deletion; removing content is the owner's hands alone (blanket approval must never be able to destroy anything). A check-7 orphan is a `[link]` item by default; when the orphan looks genuinely dead, the honest form is a `[decision]` item saying so — an owner's call, not a "safe to delete" aside. In the final report each item is repeated **verbatim as printed in the plan** — same wording, same `<where> ↔ <owned rule>` line — with only the outcome suffix appended.
 
 ## 3. Content carve-outs
 
@@ -38,7 +38,7 @@ Before applying, inventory every content line of each file a plan item will move
 
 ## 5. What restructure never does
 
-- Delete project content — `merge` removes a file only after its content verifiably lives elsewhere; `link` deletes nothing; no plan item may propose deleting content (if the user wants something gone, that is their explicit call, not a proposal).
+- Delete content on its own authority — `merge` removes a file only after its content verifiably lives elsewhere and the fidelity pass confirms it; `link` deletes nothing; a deletion proposal exists only as a `[decision]` item the owner executes (if the user wants something gone, the decision item is the proposal, and their hands are the executor).
 - Invent content — journal entries, overviews the derivation rules cannot produce, or any prose the team must author.
 - Resolve owned-rule conflicts on its own authority.
 - Touch source code or anything outside the AI layer (the AI layer being: AGENTS.md (+ the `CLAUDE.md` symlink), `.claude/rules/**`, `docs/**`, and root-level foreign AI configs).
