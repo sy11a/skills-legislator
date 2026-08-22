@@ -69,11 +69,10 @@ Gate 0/1 — that ordering is what makes the parallelism safe.
     derivation.
   - **BL-030** — the constitution disambiguation sweep; same prose surface
     as BL-038 (SKILL.md, `references/**`), so the two ride one cycle rather
-    than colliding in two.
+    than colliding in two — shipped in v17, residue only.
   - **BL-028** — manifest key `profiles` → `stacks`, with the legacy-key
-    upgrade path and a legacy-manifest fixture.
-  - **BL-031** — rides the cycle; whether it is behavioral is decided
-    in-cycle (it is docs-only unless a scaffolded template moves).
+    upgrade path and a legacy-manifest fixture — shipped in v17, residue only.
+  - **BL-031** — leaves the cycle (docs-only).
 - **v19 — OKF v2 and the one engine.** **BL-033** alone, for the reason its
   own entry gives: a transform of what "docs" means across the fleet must
   not share a landing with anything else.
@@ -998,7 +997,7 @@ new sidecar-placement eval scenario.
 
 ## BL-028 — Manifest key `profiles` → `stacks` (single-concept naming)
 
-**Status: queued → edition v18 (scope decided 2026-08-22; behavioral — skill/ changes, VERSION bump + full e2e)**
+**Status: DONE in v17 (92d1e3d — stacks key + legacy fallback, upgrade fixture carries a `profiles` manifest); prose residue ("stack profile") closed in v18.**
 
 **What:** rename the manifest's stack-subscription key from `profiles` to
 `stacks` so the key carries the concept's only name (ontology R5-T1,
@@ -1047,7 +1046,7 @@ resolve to their historical paths; benchmark green.
 
 ## BL-030 — Constitution disambiguation sweep in skill prose (A5)
 
-**Status: queued → edition v18 (scope decided 2026-08-22; behavioral — skill/ changes, VERSION bump + full e2e)**
+**Status: DONE in v17 (92d1e3d — sweep); residue ("AGENTS.md is the canonical constitution" ×3) closed in v18.**
 
 **What:** sweep `skill/` prose so "constitution" means exactly one thing
 (`docs/ai/rules/**` @ VERSION — ontology R1-T1): SKILL.md's "constitution
@@ -1066,7 +1065,7 @@ diffs beyond the expected prose changes.
 
 ## BL-031 — Split backlog.md into queue + case register sections
 
-**Status: queued → rides the v18 cycle (scope decided 2026-08-22; behavioral if templates change — decide in-cycle)**
+**Status: queued (docs-only — `backlog.md.tpl` carries no queue/register structure, so the split concerns this repo's `docs/backlog.md` only; no VERSION, no benchmark; any time). Left the v18 cycle 2026-08-22.**
 
 **What:** restructure `docs/backlog.md` into two named sections per the
 ontology (R2-T2): **queue** — pending/active cases only, in intended work
@@ -1433,7 +1432,7 @@ designed mechanism; this note stays as the origin record.
 
 ## BL-038 — File-authority matrix: one table resolves every mode's rights over every artifact class
 
-**Status: queued 2026-08-22 → edition v18, its anchor case (raised by the v17 benchmark, deferred past that edition; behavioral — skill/ changes, VERSION bump + full e2e)**
+**Status: IN PROGRESS 2026-08-22 — edition v18 branch `feature/v18-file-authority`; spec `docs/superpowers/specs/2026-08-22-file-authority-matrix-design.md`, plan `docs/superpowers/plans/2026-08-22-file-authority-matrix.md`. Benchmark pending (Task 8).**
 
 **What:** replace the prose statements of "may this mode write this file?"
 with a single matrix — artifact class × mode → one permission from a closed

@@ -309,10 +309,6 @@ outlive what it describes.
   the source, and the linter that catches dangling ids and uncovered
   requirements. Until these land, the truth-bonding principle above is stated
   more strongly than it is enforced.
-- **The file-authority matrix** (BL-038) — who may write what, per mode, is
-  today stated correctly but in prose, in several places. It becomes one table
-  that the grader derives its expectations from, so that law and measurement
-  cannot silently disagree.
 - **Self-legislation** (BL-034) — the repository that hosts the skill is not
   yet legislated by it. When it is, every new edition will be exercised on the
   skill's own development before it reaches the fleet, and the manual practices
