@@ -28,30 +28,107 @@ Scenarios (default: the first five):
 Writes grading.json into <ws>/<scenario>/ (viewer-compatible schema) and
 prints a pass/fail table. Exit code 1 if any assertion failed.
 """
+import hashlib
 import json
 import os
 import re
 import subprocess
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 EVALS = Path(__file__).resolve().parent
 SKILL = EVALS.parent / "skill"
 
-PROFILES = ["dotnet"]  # all fixtures are dotnet-only
+# ---------------------------------------------------------------------------
+# Contract derivation (BL-036 Wave A): every place the grader used to
+# hand-duplicate a skill contract is derived from the skill source at
+# grade time. A divergence between law and grader must be impossible,
+# not merely noticed. Deliberately manual: fixture content markers
+# (decimal-money, bl/NNN) — intentional test-data oracles, not contract.
+# ---------------------------------------------------------------------------
 
-# Mirrors SKILL.md Step 4's table (static-checked against assets/templates/).
-SCAFFOLD_ARTIFACTS = [
-    "docs/okf/index.md",
-    "docs/okf/log.md",
-    "docs/okf/codebase-map.md",
-    "docs/okf/glossary.md",
-    "docs/backlog.md",
-    "docs/adr/0001-record-architecture-decisions.md",
-    "docs/adr/template.md",
-    "docs/journal/README.md",
-    "CHANGELOG.md",
-]
+def _skill_md() -> str:
+    return (SKILL / "SKILL.md").read_text()
+
+
+def scaffold_artifacts() -> list[str]:
+    """File targets parsed from SKILL.md Step 4's table — the table is the
+    only source of what a scaffold must create (README's 'maintain by
+    hand' note is dead). Rows: `| <target> | <template> | ...`; empty-dir
+    rows (template column '(empty directory)') are skipped: no file to
+    assert, the scaffold_checks directory assertions cover them."""
+    text = _skill_md()
+    step4 = text.split("## Step 4", 1)[1].split("## Step 5", 1)[0]
+    out = []
+    for m in re.finditer(r"^\| `([^`]+)` \| ([^|]+) \|", step4, re.M):
+        target, template = m.group(1), m.group(2).strip()
+        if template.startswith("(empty"):
+            continue
+        out.append(target)
+    return sorted(out)
+
+
+SCAFFOLD_ARTIFACTS = scaffold_artifacts()
+
+
+def protected_project_files() -> list[str]:
+    """Tracked project-owned files upgrade must not touch: the scaffold's
+    create-once artifacts minus the entry-document pair (AGENTS.md is
+    never edited — only proposed to — and CLAUDE.md is a managed
+    symlink; both legitimately change across a file-model upgrade)."""
+    return [a for a in SCAFFOLD_ARTIFACTS
+            if a not in ("AGENTS.md", "CLAUDE.md")]
+
+
+def expected_stacks(fixture_meta: dict | None = None) -> list[str]:
+    """The manifest's stack subscription comes from the fixture's own
+    meta (per-fixture, not a global hardcode): upgrade/drop-stack
+    fixtures carry theirs; everything else is dotnet-only."""
+    if fixture_meta and "stacks" in fixture_meta:
+        return list(fixture_meta["stacks"])
+    return ["dotnet"]
+
+
+def migration_wiring() -> list[str]:
+    """Strings migration must write directly into AGENTS.md (the v2
+    wiring), derived from AGENTS.md.tpl: every import line the template
+    carries plus the section headings it pins."""
+    tpl = (SKILL / "assets/templates/AGENTS.md.tpl").read_text()
+    imports = ["@" + i for i in re.findall(r"^@(docs/[^\s]+)$", tpl, re.M)]
+    return imports + ["## Boundaries"]
+
+
+def audit_check_severities() -> dict[str, str]:
+    """Pinned check slug -> severity, parsed from SKILL.md's Audit list
+    ('N. **<name> (<severity>):**'). The severity-anchored markers and
+    the parity law derive from this map."""
+    text = _skill_md()
+    out = {}
+    audit = text.split("Perform these checks", 1)[1]
+    for m in re.finditer(r"\d+\.\s+\*\*([^*]+?)\s*\((Critical|Warning|Info)\):\*\*", audit):
+        out[m.group(1)] = m.group(2)
+    return out
+
+
+def audit_check_slugs() -> set[str]:
+    """The pinned finding slugs, parsed from SKILL.md's "In findings,
+    `[check-name]` is the check's pinned slug — use exactly these: ..."
+    line. Parity is measured in THIS namespace: the earlier version
+    compared check titles against slug markers — two disjoint namespaces,
+    so the assert was red by construction and never passed a live grade
+    (found 2026-08-22)."""
+    m = re.search(r"pinned slug — use exactly these:(.+)", _skill_md())
+    return set(re.findall(r"`([a-z][a-z0-9-]+)`", m.group(1))) if m else set()
+
+
+def restructure_actions() -> set[str]:
+    """The closed action set, parsed from restructure.md §2's bold
+    definitions."""
+    text = (SKILL / "references/restructure.md").read_text()
+    section2 = text.split("## 2.", 1)[1].split("## 3.", 1)[0]
+    return set(re.findall(r"^- \*\*(\w+)\*\*", section2, re.M))
+
 
 # Migration fixture content that must never be silently dropped.
 MIGRATION_PRESERVED = [
@@ -63,6 +140,25 @@ MIGRATION_PRESERVED = [
 def git(repo: Path, *args: str) -> str:
     return subprocess.run(["git", "-C", str(repo), *args],
                           capture_output=True, text=True).stdout
+
+
+def law_stamp() -> str:
+    """The generation this grading ran against: skill VERSION + repo HEAD
+    + a hash of THIS grader. Runs graded under different stamps are
+    different populations — the dashboard's flaky counter never mixes
+    them. The grader hash matters as much as the law hash: a grader fix
+    (observed 2026-08-21, twice) changes verdicts without touching the
+    law, and working-tree grader edits precede their commit."""
+    version = (SKILL / "VERSION").read_text().strip()
+    try:
+        head = git(SKILL.parent, "rev-parse", "--short", "HEAD").strip() or "?"
+    except Exception:
+        head = "?"
+    try:
+        grader = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()[:7]
+    except Exception:
+        grader = "?"
+    return f"v{version}-{head}-g{grader}"
 
 
 def glossary_rows(repo: Path) -> int:
@@ -89,7 +185,7 @@ def expected_owned() -> dict[str, Path]:
     owned: dict[str, Path] = {}
     for f in sorted((SKILL / "assets/rules/core").glob("*.md")):
         owned[f"docs/ai/rules/core/{f.name}"] = f
-    for profile in PROFILES:
+    for profile in expected_stacks():
         for f in sorted((SKILL / "assets/rules/stacks" / profile).glob("*.md")):
             owned[f"docs/ai/rules/stacks/{profile}/{f.name}"] = f
     # v14: the root owned wiring file opencode.json (no placeholders; byte-copied
@@ -107,7 +203,8 @@ class Grader:
     def check(self, name: str, passed: bool, evidence: str) -> None:
         self.exps.append({"text": name, "passed": bool(passed), "evidence": evidence})
 
-    def common_checks(self, repo: Path, expected_keep: list | None = None) -> None:
+    def common_checks(self, repo: Path, expected_keep: list | None = None,
+                      fixture_meta: dict | None = None) -> None:
         owned = expected_owned()
         version = int((SKILL / "VERSION").read_text().strip())
 
@@ -124,16 +221,16 @@ class Grader:
         self.check("manifest_version_matches_skill_VERSION",
                    bool(manifest and manifest.get("legislatorVersion") == version),
                    f"expected {version}, got {manifest.get('legislatorVersion') if manifest else None}")
-        self.check("manifest_profiles_correct",
-                   bool(manifest and manifest.get("profiles") == PROFILES),
-                   f"profiles={manifest.get('profiles') if manifest else None}")
+        self.check("manifest_stacks_correct",
+                   bool(manifest and manifest.get("stacks") == expected_stacks(fixture_meta)),
+                   f"stacks={manifest.get('stacks') if manifest else None}")
         self.check("manifest_ownedFiles_exact_sorted",
                    bool(manifest and manifest.get("ownedFiles") == sorted(owned)),
                    "matches files derived from skill source" if manifest and manifest.get("ownedFiles") == sorted(owned)
                    else f"expected {sorted(owned)}, got {manifest.get('ownedFiles') if manifest else None}")
-        inline = bool(re.search(r'^  "profiles": \[[^\n\]]*\],$', raw, re.M))
-        self.check("manifest_profiles_single_line_inline", inline,
-                   "profiles array on one line per Step 3.7" if inline else "profiles array expanded across lines")
+        inline = bool(re.search(r'^  "stacks": \[[^\n\]]*\],$', raw, re.M))
+        self.check("manifest_stacks_single_line_inline", inline,
+                   "stacks array on one line per Step 3.7" if inline else "stacks array expanded across lines")
 
         expected_keep = expected_keep or []
         keep = manifest.get("keep") if manifest else None
@@ -141,10 +238,10 @@ class Grader:
                    f"expected {expected_keep}, got {keep}")
 
         idx = [raw.find(f'"{k}"') for k in
-               ("legislatorVersion", "profiles", "keep", "ownedFiles")]
+               ("legislatorVersion", "stacks", "keep", "ownedFiles")]
         order_ok = all(i >= 0 for i in idx) and idx == sorted(idx)
         self.check("manifest_key_order", order_ok,
-                   "legislatorVersion, profiles, keep, ownedFiles" if order_ok
+                   "legislatorVersion, stacks, keep, ownedFiles" if order_ok
                    else "keys missing or out of order")
 
         if isinstance(keep, list) and keep:
@@ -240,16 +337,16 @@ def grade_migration(ws: Path) -> Grader:
     g.scaffold_checks(repo)
     g.no_unresolved_tokens(repo)
     agents = (repo / "AGENTS.md").read_text() if (repo / "AGENTS.md").exists() else ""
-    v2_wired = "@docs/okf/codebase-map.md" in agents and "## Boundaries" in agents
+    v2_wired = all(w in agents for w in migration_wiring())
     g.check("agents_md_v2_wiring_written_directly", v2_wired,
-            "map import + Boundaries section present in rewritten AGENTS.md" if v2_wired
+            f"all {len(migration_wiring())} template wiring strings present in rewritten AGENTS.md (derived from AGENTS.md.tpl)" if v2_wired
             else "migration left v2 wiring as Step 7 proposals instead of writing it")
-    report_path = ws / "legacy-migration" / "outputs" / "step7-report.md"
+    report_path = ws / "legacy-migration" / "outputs" / "migration-report.md"
     has_report = report_path.exists()
     report = report_path.read_text() if has_report else ""
     g.check("step7_report_saved", has_report,
             str(report_path) if has_report else f"missing: {report_path}")
-    m = re.search(r"### Constitution candidates\n(.*?)(?=\nClean checks:|\n#|\Z)", report, re.S)
+    m = re.search(r"## Constitution candidates\n(.*?)(?=\nClean checks:|\n#|\Z)", report, re.S)
     section = m.group(1) if m else ""
     # Coupled to the constitution's CURRENT content: if a decimal-for-money
     # rule is ever promoted into assets/rules/**, criterion 2 flips and this
@@ -284,11 +381,49 @@ def grade_migration(ws: Path) -> Grader:
     return g
 
 
+def grade_migration_agents_first(ws: Path) -> Grader:
+    """The AGENTS-native migration branch: hand-written AGENTS.md, no
+    CLAUDE.md. Same migration contract minus rename expectations, plus
+    'CLAUDE.md created fresh as symlink'. The law branch ('If AGENTS.md
+    already exists, it stays canonical') was specified but never
+    exercised before BL-036."""
+    repo = ws / "legacy-migration-agents-first" / "repo"
+    g = Grader()
+    g.common_checks(repo)
+    g.scaffold_checks(repo)
+    g.no_unresolved_tokens(repo)
+    agents = (repo / "AGENTS.md").read_text() if (repo / "AGENTS.md").exists() else ""
+    v2_wired = all(w in agents for w in migration_wiring())
+    g.check("agents_md_v2_wiring_written_directly", v2_wired,
+            f"all {len(migration_wiring())} template wiring strings present (derived from AGENTS.md.tpl)" if v2_wired
+            else "migration left v2 wiring as proposals instead of writing it")
+    # The three-way split, not a location pin: law-shaped constraints are
+    # carved into .claude/rules/ (grade_migration asserts exactly that for
+    # the same fixture line), and only instance data stays in the canonical
+    # entry document. The earlier form demanded the money rule stay inside
+    # AGENTS.md and so contradicted the law it was testing (found
+    # 2026-08-22 — the agent was right, the assert was wrong).
+    law_hits = subprocess.run(
+        ["grep", "-rl", "--exclude-dir=.git", "Money values are always", str(repo)],
+        capture_output=True, text=True).stdout.strip()
+    instance_kept = "bl/NNN-short-description" in agents
+    agents_preserved = bool(law_hits) and instance_kept
+    g.check("agents_md_content_preserved", agents_preserved,
+            f"law carved to {law_hits.splitlines()}, instance data kept in AGENTS.md"
+            if agents_preserved
+            else f"law preserved={bool(law_hits)}, instance data in AGENTS.md={instance_kept}")
+    report_path = ws / "legacy-migration-agents-first" / "outputs" / "migration-report.md"
+    has_report = report_path.exists()
+    g.check("migration_report_saved", has_report,
+            str(report_path) if has_report else f"missing: {report_path}")
+    return g
+
+
 def grade_upgrade(ws: Path) -> Grader:
     repo = ws / "upgrade" / "repo"
     meta = json.loads((ws / "upgrade" / "fixture_meta.json").read_text())
     g = Grader()
-    g.common_checks(repo, expected_keep=meta.get("expected_keep", []))
+    g.common_checks(repo, expected_keep=meta.get("expected_keep", []), fixture_meta=meta)
 
     withheld = repo / "docs/ai/rules/core" / meta["withheld_core_rule"]
     g.check("newly_added_rule_present", withheld.exists(),
@@ -299,7 +434,7 @@ def grade_upgrade(ws: Path) -> Grader:
             f"{meta['withheld_stack_rule']} copied in by the upgrade" if withheld_stack.exists()
             else f"{meta['withheld_stack_rule']} still missing")
 
-    report_path = ws / "upgrade" / "outputs" / "step7-report.md"
+    report_path = ws / "upgrade" / "outputs" / "upgrade-report.md"
     has_report = report_path.exists()
     report = report_path.read_text() if has_report else ""
     g.check("step7_report_saved", has_report,
@@ -323,13 +458,32 @@ def grade_upgrade(ws: Path) -> Grader:
     g.check("retired_rule_deleted", not retired.exists(),
             "deletion propagation removed it" if not retired.exists() else "retired rule still on disk")
 
+    # BL-036 Wave B: upgrade is also a scaffold for artifacts the repo
+    # never had — the v17 fixture predates docs/cases/, so the upgrade run
+    # must create the case home (found unasserted by review 2026-08-21).
+    missing_artifacts = [a for a in SCAFFOLD_ARTIFACTS if not (repo / a).exists()]
+    g.check("upgrade_creates_missing_artifacts", not missing_artifacts,
+            "all Step 4 artifacts exist after upgrade (derived list)" if not missing_artifacts
+            else f"upgrade failed to scaffold: {missing_artifacts}")
+
+    # BL-036 Wave B: the keep-refusal branch — when the run's prompt (saved
+    # by the runner to outputs/prompt.txt) asks to protect an OWNED path,
+    # the skill must refuse with a reason under ## Keep list.
+    prompt_file = ws / "upgrade" / "outputs" / "prompt.txt"
+    if prompt_file.exists() and "protect docs/ai/rules/core/okf.md" in prompt_file.read_text():
+        refusal = re.search(r"## Keep list\n(.*?)(?=\n#|\Z)", report, re.S | re.M)
+        seg = refusal.group(1) if refusal else ""
+        refused = "okf.md" in seg and "owned" in seg.lower()
+        g.check("keep_refusal_for_owned_path", refused,
+                "owned-path keep request refused with a reason" if refused
+                else "no refusal recorded for the owned-path keep request")
+
     # Project-owned files must be untouched: tracked-file diff limited to them
-    # must be empty. Under v14 the constitution file is AGENTS.md (project-owned;
-    # upgrade only proposes import-line changes to it, never edits) and CLAUDE.md
-    # is a managed symlink — both legitimately change in a v13->v14 upgrade
-    # (rename + symlink created + opencode.json added), so neither is protected.
-    protected = ["CHANGELOG.md", "docs/backlog.md",
-                 "docs/okf/index.md", "docs/okf/log.md", "docs/journal/README.md"]
+    # must be empty. Derived from the scaffold table (BL-036 Wave A): the
+    # entry-document pair is excluded — AGENTS.md only ever receives
+    # proposals and CLAUDE.md is a managed symlink, both legitimately
+    # change across a file-model upgrade.
+    protected = protected_project_files()
     touched = [p for p in git(repo, "diff", "HEAD", "--name-only").splitlines() if p in protected]
     g.check("project_owned_files_untouched", not touched,
             "no tracked project-owned file modified" if not touched else f"modified: {touched}")
@@ -347,9 +501,44 @@ def grade_audit(ws: Path) -> Grader:
     g.check("audit_report_saved", has_report,
             str(report_path) if has_report else f"missing: {report_path}")
 
+    # BL-036 Wave B: the report must live OUTSIDE the repo — the audit's
+    # zero-writes contract means even its own output may not land in the
+    # tree (the zero_writes check below would catch a written file, but
+    # this names the intent explicitly).
+    inside = [p.name for p in (repo / "docs").rglob("*report*")]
+    g.check("audit_report_outside_repo", not inside,
+            "no report artifacts inside the repo" if not inside
+            else f"report written into the repo: {inside}")
+
     for marker in meta["report_markers"]:
         g.check(f"report names {marker!r}", marker in report,
                 "named in report" if marker in report else "absent from report")
+
+    # Parity law (BL-036 Wave B): every audit check the law pins must have
+    # a planted defect exercising it, and vice versa. Derived check slugs
+    # vs slug-markers in the fixture — a new check without its defect (or
+    # an orphaned marker) is red at grade time, not discovered by rot.
+    law_slugs = audit_check_slugs()
+    covered = set(meta.get("check_slugs_covered", []))
+    uncovered = law_slugs - covered
+    orphaned = covered - law_slugs
+    parity_ok = bool(law_slugs) and not uncovered and not orphaned
+    g.check("parity_every_check_has_a_defect", parity_ok,
+            f"all {len(law_slugs)} law checks exercised by a planted defect" if parity_ok
+            else f"checks with no planted defect: {sorted(uncovered)}; "
+                 f"markers for no law check: {sorted(orphaned)}")
+
+    # BL-025 item 2: severity-anchored presence — the marker must appear
+    # inside the section under its pinned severity heading (## <Severity>
+    # up to the next heading), not merely anywhere in the report.
+    for marker, severity in meta.get("severity_anchored_markers", []):
+        m = re.search(rf"^## {re.escape(severity)}\s*\n(.*?)(?=^## |\Z)", report,
+                      re.S | re.M)
+        section = m.group(1) if m else ""
+        anchored = marker in section
+        g.check(f"report anchors {marker!r} under ## {severity}", anchored,
+                f"present in the {severity} section" if anchored
+                else f"not under ## {severity} (heading found={bool(m)})")
 
     for marker in meta.get("absent_markers", []):
         g.check(f"report does NOT contain {marker!r}", marker not in report,
@@ -357,7 +546,7 @@ def grade_audit(ws: Path) -> Grader:
 
     # Scoped to the candidates section: findings may name these statements
     # legitimately, but proposing them as fleet candidates is a failure.
-    m = re.search(r"### Constitution candidates\n(.*?)(?=\nClean checks:|\n#|\Z)", report, re.S)
+    m = re.search(r"## Constitution candidates\n(.*?)(?=\nClean checks:|\n#|\Z)", report, re.S)
     section = m.group(1) if m else ""
     for marker in meta.get("candidate_absent_markers", []):
         g.check(f"candidates section does NOT contain {marker!r}",
@@ -385,9 +574,22 @@ def grade_restructure(ws: Path) -> Grader:
     g.check("restructure_report_saved", has_report,
             str(report_path) if has_report else f"missing: {report_path}")
 
+    # Audit check 2 is Critical and filling `{{TOKEN}}`s is inside
+    # restructure's closed `fix` scope, but only fresh/migration graded it —
+    # so a run could leave the planted {{PROJECT_OVERVIEW}} unresolved and
+    # still score 100%. The idempotency pass is what exposed it: run 1 left
+    # the token, run 2 filled it, and the second run wrote (found
+    # 2026-08-22). Third time this cycle that idempotency caught what the
+    # corpus asserts missed.
+    g.no_unresolved_tokens(repo)
+
     for s in meta["fidelity_sentences"]:
+        # -i: the law's carve-outs lawfully REFORMAT lines while carrying
+        # them ("definitions become glossary rows") — a sentence-initial
+        # lowercase word becomes table-capitalized. Fidelity means the
+        # concept survived, not the casing (observed 2026-08-21).
         hits = subprocess.run(
-            ["grep", "-rl", "--exclude-dir=.git", s, str(repo)],
+            ["grep", "-rli", "--exclude-dir=.git", s, str(repo)],
             capture_output=True, text=True).stdout.strip()
         g.check(f"fidelity: {s[:44]!r}", bool(hits),
                 f"survives in {hits.splitlines()}" if hits
@@ -399,10 +601,32 @@ def grade_restructure(ws: Path) -> Grader:
             "byte-identical at original path" if kept_ok
             else "kept file moved, edited, or deleted")
 
-    claude = (repo / "AGENTS.md").read_text() if (repo / "AGENTS.md").exists() else ""
-    g.check("conflict_not_auto_resolved", meta["conflict_marker"] in claude,
-            "conflicting line still in AGENTS.md" if meta["conflict_marker"] in claude
-            else "conflict line gone — auto-resolved without the user")
+    # The entry document under whichever name it currently carries. Reading
+    # only AGENTS.md reported a *missing* file as "the conflict line was
+    # auto-resolved" — a confident wrong diagnosis for a real but entirely
+    # different defect, and it also made ghost_import_fixed pass trivially
+    # whenever AGENTS.md was absent (found 2026-08-22).
+    agents_f, claude_f = repo / "AGENTS.md", repo / "CLAUDE.md"
+    entry_f = agents_f if agents_f.exists() else claude_f
+    claude = entry_f.read_text() if entry_f.exists() else ""
+    conflict_kept = meta["conflict_marker"] in claude
+    g.check("conflict_not_auto_resolved", conflict_kept,
+            f"conflicting line still in {entry_f.name}" if conflict_kept
+            else (f"conflict line gone from {entry_f.name} — auto-resolved "
+                  "without the user" if entry_f.exists()
+                  else "no entry document on disk at all"))
+
+    # v14 file model: a real CLAUDE.md with no AGENTS.md is renamed, with
+    # CLAUDE.md left as a symlink — the law pins this inside restructure's
+    # closed `fix` scope, so it is applied, never proposed. Nothing asserted
+    # it, so a run that skipped the canonicalization stayed green here and
+    # surfaced only as the misleading failure above.
+    v14_ok = (agents_f.exists() and not agents_f.is_symlink()
+              and claude_f.is_symlink())
+    g.check("v14_model_canonicalized", v14_ok,
+            "AGENTS.md canonical, CLAUDE.md a symlink to it" if v14_ok
+            else f"AGENTS.md exists={agents_f.exists()}, "
+                 f"CLAUDE.md is symlink={claude_f.is_symlink()}")
     decision_open = "[decision]" in report and "We do not maintain CHANGELOG.md" in report
     g.check("conflict_surfaced_as_decision", decision_open,
             "[decision] item names the conflict" if decision_open
@@ -430,17 +654,30 @@ def grade_restructure(ws: Path) -> Grader:
             f"{meta['foreign_glossary_path']} removed after merge" if not fg.exists()
             else f"{meta['foreign_glossary_path']} still on disk")
     gl_text = (repo / "docs/okf/glossary.md").read_text() if (repo / "docs/okf/glossary.md").exists() else ""
-    def_in_gl = meta["foreign_glossary_definition"] in gl_text
+    def_in_gl = meta["foreign_glossary_definition"].lower() in gl_text.lower()
     g.check("foreign_definition_in_okf_glossary", def_in_gl,
             "instance definition lives in docs/okf/glossary.md" if def_in_gl
             else "definition not merged into the OKF glossary")
 
     skf = repo / meta["skills_rules_path"]
     skf_ok = skf.exists() and skf.read_text() == meta["skills_rules_content"]
-    named = "made-up-skill" in report
+    # BL-025 item 6 + 2026-08-21 equivalence: the protected value is
+    # routing-to-the-owner — skills.md byte-unchanged AND the finding
+    # surfaced as not-applied. The law's canonical form is the
+    # "## For the team:" section; a plan line explicitly marked
+    # "— skipped (For the team)" satisfies the same value (observed
+    # stable across the final-law series) and is accepted.
+    ftt = re.search(r"^## For the team:\s*\n(.*?)(?=^Kept \(immovable\)|^#{1,2} |\Z)", report,
+                    re.S | re.M)
+    ftt_section = ftt.group(1) if ftt else ""
+    routed_in_section = "made-up-skill" in ftt_section
+    routed_as_skipped = re.search(
+        r"made-up-skill[^\n]*— skipped \(For the team\)", report) is not None
+    named = routed_in_section or routed_as_skipped
     g.check("skill_binding_for_the_team_not_a_plan_item", skf_ok and named,
-            "skills.md byte-unchanged, finding routed to the report" if skf_ok and named
-            else f"file untouched={skf_ok}, named in report={named}")
+            "skills.md byte-unchanged, finding routed to the team"
+            if skf_ok and named
+            else f"file untouched={skf_ok}, routed to team={named}")
 
     stray = repo / meta["stray_rulebook_path"]
     g.check("stray_rulebook_merged_away", not stray.exists(),
@@ -457,13 +694,22 @@ def grade_restructure(ws: Path) -> Grader:
     moved_ok = (not (repo / ".claude/plans").exists()
                 and (repo / "docs/superpowers/plans/2026-01-importer-plan.md").exists())
     g.check("plans_relocated_to_standard_home", moved_ok,
-            ".claude/plans/ gone, file at docs/superpowers/plans/" if moved_ok
+            ".claude/plans/ gone, file at docs/superpowers/plans/ (legacy home — stray non-case plans stay there)" if moved_ok
             else "plan file not moved (or old dir left behind)")
+
+    # BL-036 Wave B: the misplaced case directory (docs/superpowers/BL-0007)
+    # must reach the case home per §1's cases row — content preserved.
+    case_src = repo / "docs/superpowers/BL-0007/plan.md"
+    case_dst = repo / "docs/cases/BL-0007/plan.md"
+    case_moved = (not case_src.exists() and case_dst.exists()
+                  and "sequential per tenant" in case_dst.read_text())
+    g.check("misplaced_case_relocated_to_case_home", case_moved,
+            "BL-0007 lives in docs/cases/ with content intact" if case_moved
+            else f"src gone={not case_src.exists()}, dst ok={case_dst.exists()}")
     g.check("cursorrules_merged_away", not (repo / ".cursorrules").exists(),
             ".cursorrules removed after merge" if not (repo / ".cursorrules").exists()
             else ".cursorrules still present")
-    g.check("ghost_import_fixed", "ghost-rule.md" not in claude,
-            "dangling import gone" if "ghost-rule.md" not in claude
+    g.check("ghost_import_fixed", "ghost-rule.md" not in claude,            "dangling import gone" if "ghost-rule.md" not in claude
             else "ghost-rule import still in AGENTS.md")
 
     src = SKILL / "assets/rules/core/okf.md"
@@ -489,9 +735,34 @@ def grade_restructure(ws: Path) -> Grader:
          "orphan-notes.md", str(repo)],
         capture_output=True, text=True).stdout.strip().splitlines()
     linked = orphan.exists() and any(Path(r) != orphan for r in map(Path, refs))
+    # Law B (2026-08-21) also accepted a second lawful outcome: the orphan
+    # left unlinked with an open [decision] proposing its deletion. The
+    # idempotency pass showed the price of two lawful outcomes — run 1 filed
+    # the decision, run 2 linked the file, so the second run wrote and the
+    # zero-diff promise broke; worse, a decision a previous run had left OPEN
+    # was silently reclassified into an auto-applied item under a blanket
+    # approval, because reports do not live in the repo and the later run had
+    # no trace of the earlier ruling (found 2026-08-22). The law now pins
+    # `link` as unconditional, so exactly one outcome is lawful: the orphan
+    # survives AND something references it.
     g.check("orphan_linked_not_deleted", linked,
-            "orphan still exists and is now referenced" if linked
-            else "orphan deleted or still unreferenced")
+            "orphan linked into the layer" if linked
+            else ("orphan still unreferenced — link is unconditional for a "
+                  "check-7 orphan" if orphan.exists()
+                  else "orphan deleted by the run"))
+
+    # BL-036 Wave B: post-state asserts — the [link] outcome must be visible
+    # in the index (not only named in the plan), and the stale map row must
+    # be gone from the map (post-state, not report-only).
+    if linked:
+        idx_text = (repo / "docs/okf/index.md").read_text() if (repo / "docs/okf/index.md").exists() else ""
+        g.check("link_post_state_in_index", "orphan-notes.md" in idx_text,
+                "index.md references the linked orphan" if "orphan-notes.md" in idx_text
+                else "[link] applied but the index does not reference the file")
+    map_text = (repo / "docs/okf/codebase-map.md").read_text() if (repo / "docs/okf/codebase-map.md").exists() else ""
+    g.check("stale_map_row_gone", "legacy/" not in map_text,
+            "stale legacy/ row removed from codebase-map" if "legacy/" not in map_text
+            else "stale row still in codebase-map.md")
 
     fid = "Fidelity: verified" in report
     g.check("fidelity_line_reported", fid,
@@ -511,6 +782,145 @@ def grade_idempotency(ws: Path, scenario: str) -> Grader:
     return g
 
 
+def grade_derivation_selftest() -> Grader:
+    """BL-036 Wave A: prove the derived contracts track the skill source.
+    If someone hand-edits a stale list back in or the source moves, these
+    invariants go red — divergence becomes impossible to miss. No agent
+    run: pure derivation checks."""
+    g = Grader()
+    g.check("scaffold_artifacts_derived_nonempty", len(SCAFFOLD_ARTIFACTS) >= 10,
+            f"{len(SCAFFOLD_ARTIFACTS)} targets parsed from Step 4's table")
+    g.check("scaffold_artifacts_include_cases_home",
+            "docs/cases/README.md" in SCAFFOLD_ARTIFACTS,
+            "the v17 case home is in the derived list")
+    g.check("protected_excludes_entry_document_pair",
+            "AGENTS.md" not in protected_project_files()
+            and "CLAUDE.md" not in protected_project_files(),
+            "entry-document pair excluded from the protected set")
+    wiring = migration_wiring()
+    g.check("migration_wiring_derived_from_template",
+            "@docs/okf/codebase-map.md" in wiring and "## Boundaries" in wiring,
+            f"{len(wiring)} wiring strings parsed from AGENTS.md.tpl")
+    sev = audit_check_severities()
+    g.check("audit_severities_derived",
+            len(sev) >= 14 and sev.get("Owned-layer integrity") == "Critical",
+            f"{len(sev)} checks with parsed severities")
+    slugs = audit_check_slugs()
+    g.check("audit_slugs_derived",
+            len(slugs) == len(sev) and "imports-resolve" in slugs,
+            f"{len(slugs)} pinned slugs parsed, one per severity-carrying check")
+    actions = restructure_actions()
+    g.check("restructure_actions_derived",
+            actions == {"move", "merge", "link", "fix", "heal", "decision"},
+            f"closed action set parsed: {sorted(actions)}")
+    # §1 lock (BL-036 Wave B): the standard-layout table must carry the
+    # cases row and the legacy qualifiers — the grader's relocation
+    # expectations are only lawful while the table says so.
+    layout = (SKILL / "references/restructure.md").read_text().split("## 1.", 1)[1].split("## 2.", 1)[0]
+    g.check("layout_table_has_cases_row",
+            "| Case files (any `BL-NNN` directory) | `docs/cases/BL-NNN/`" in layout,
+            "§1 maps case directories to docs/cases/")
+    g.check("layout_table_marks_legacy_homes",
+            "**legacy home**" in layout,
+            "§1 qualifies superpowers rows as legacy homes")
+    return g
+
+
+def grade_upgrade_drop_stack(ws: Path) -> Grader:
+    """BL-036 Wave B: the only deletion-semantics-by-stack branch — the
+    prompt drops aurelia from a dotnet+aurelia subscription."""
+    repo = ws / "upgrade-drop-stack" / "repo"
+    meta = json.loads((ws / "upgrade-drop-stack" / "fixture_meta.json").read_text())
+    g = Grader()
+    g.common_checks(repo, expected_keep=meta.get("expected_keep", []), fixture_meta=meta)
+
+    dropped_left = [p for p in meta["dropped_stack_files"] if (repo / p).exists()]
+    g.check("dropped_stack_files_deleted", not dropped_left,
+            f"{meta['dropped_stack']} owned files removed" if not dropped_left
+            else f"still on disk: {dropped_left}")
+
+    dotnet_dir = repo / "docs/ai/rules/stacks/dotnet"
+    dotnet_left = sorted(p.name for p in dotnet_dir.glob("*.md")) if dotnet_dir.is_dir() else []
+    expected_dotnet = sorted((SKILL / "assets/rules/stacks/dotnet").glob("*.md"))
+    g.check("kept_stack_untouched_and_refreshed",
+            dotnet_left == sorted(f.name for f in expected_dotnet),
+            f"dotnet rules present and refreshed ({len(dotnet_left)})" if
+            dotnet_left == sorted(f.name for f in expected_dotnet)
+            else f"dotnet mismatch: {dotnet_left}")
+
+    report_path = ws / "upgrade-drop-stack" / "outputs" / "upgrade-report.md"
+    has_report = report_path.exists()
+    g.check("upgrade_report_saved", has_report,
+            str(report_path) if has_report else f"missing: {report_path}")
+    if has_report:
+        report = report_path.read_text()
+        review_idx = report.find("eeds your review")
+        proposed = review_idx >= 0 and "stacks/aurelia" in report[review_idx:]
+        g.check("report_proposes_aurelia_import_removal", proposed,
+                "aurelia import removal proposed under Needs your review" if proposed
+                else "no proposal to remove the aurelia import line")
+    return g
+
+
+def grade_case_practice(ws: Path) -> Grader:
+    """BL-036 Wave C — the acceptance test: a fresh agent EXECUTES
+    core/sdd.md on ordinary feature work. Graded: the practice (case
+    home, tier header, EARS ids, hurting case, task traceability,
+    converge trail). Not graded: the code itself."""
+    repo = ws / "case-practice" / "repo"
+    g = Grader()
+
+    cases = sorted((repo / "docs/cases").glob("BL-*")) if (repo / "docs/cases").is_dir() else []
+    case_dir = cases[0] if cases else None
+    g.check("case_born_in_case_home", case_dir is not None and case_dir.is_dir(),
+            f"new case at {case_dir}" if case_dir else "no BL-* directory under docs/cases/")
+
+    if case_dir is None:
+        return g
+
+    all_text = "\n".join(p.read_text(errors="ignore") for p in case_dir.rglob("*.md"))
+
+    tier = re.search(r"Tier:\s*([012])", all_text)
+    g.check("tier_declared_in_case_header", tier is not None,
+            f"tier {tier.group(1)} declared" if tier else "no 'Tier: N' line anywhere in the case")
+
+    ears = re.findall(r"\bR-\d{3}\b", all_text)
+    g.check("ears_lines_with_ids", len(set(ears)) >= 2,
+            f"{len(set(ears))} distinct R-NNN ids" if len(set(ears)) >= 2
+            else f"only {len(set(ears))} R-NNN id(s) — need >=2 EARS lines")
+
+    # Order and proximity, not line layout: the law asks for "at least one
+    # named GIVEN/WHEN/THEN scenario" and says nothing about where the line
+    # breaks fall. The three-consecutive-lines form missed a correct hurting
+    # case written as a wrapped paragraph (found 2026-08-22) — same class as
+    # the "## For the team:" heading regex and the fidelity case-sensitivity
+    # fix: measuring typography instead of the value. The bounded gaps keep
+    # the match inside one scenario, so a stray GIVEN cannot pair with an
+    # EARS line's WHEN/THEN elsewhere in the document.
+    hurting = re.search(r"(?is)\bGIVEN\b.{0,600}?\bWHEN\b.{0,400}?\bTHEN\b",
+                        all_text)
+    g.check("gherkin_hurting_case_present", hurting is not None,
+            "GIVEN/WHEN/THEN scenario present" if hurting
+            else "no GIVEN/WHEN/THEN scenario in the case")
+
+    per_trace = re.search(r"per\s+R-\d{3}", all_text)
+    g.check("tasks_trace_per_rnnn", per_trace is not None,
+            "at least one task traces 'per R-NNN'" if per_trace
+            else "no task carries per R-NNN traceability")
+
+    converged = ("Converged" in all_text) or re.search(r"\((?:missing|partial|contradicts|unrequested)\)", all_text)
+    g.check("converge_trail_present", converged is not None,
+            "converge statement or append-only gap findings present" if converged
+            else "no converge trail — the case cannot lawfully close")
+
+    # the pre-existing README must survive untouched (create-once discipline)
+    readme = repo / "docs/cases/README.md"
+    g.check("case_home_readmark_untouched",
+            readme.exists() and readme.read_text() == (SKILL / "assets/templates/cases-README.md.tpl").read_text(),
+            "docs/cases/README.md byte-identical to the template" if readme.exists() else "README missing")
+    return g
+
+
 def main() -> None:
     if len(sys.argv) < 2:
         sys.exit(__doc__)
@@ -523,6 +933,12 @@ def main() -> None:
             g, outdir = grade_fresh(ws), ws / name
         elif name == "legacy-migration":
             g, outdir = grade_migration(ws), ws / name
+        elif name == "legacy-migration-agents-first":
+            g, outdir = grade_migration_agents_first(ws), ws / name
+        elif name == "upgrade-drop-stack":
+            g, outdir = grade_upgrade_drop_stack(ws), ws / name
+        elif name == "case-practice":
+            g, outdir = grade_case_practice(ws), ws / name
         elif name == "upgrade":
             g, outdir = grade_upgrade(ws), ws / name
         elif name == "audit":
@@ -532,17 +948,56 @@ def main() -> None:
         elif name.startswith("idempotency:"):
             target = name.split(":", 1)[1]
             g, outdir = grade_idempotency(ws, target), ws / target
+        elif name == "selftest:derivation":
+            # ws, never EVALS: writing a run artifact into the repo tree
+            # is how evals/grading.json ended up committed in the first
+            # place. Graded output belongs in the throwaway workspace.
+            g, outdir = grade_derivation_selftest(), ws
         else:
             sys.exit(f"unknown scenario: {name}")
 
         passed = sum(1 for e in g.exps if e["passed"])
         total = len(g.exps)
         any_failed |= passed < total
+        # run.json's shape is {"current": {...}, "runs": [...]} — reading
+        # .get("run_id") off the TOP level always returned None, so every
+        # grade landed unattributed and the dashboard's per-run rows could
+        # never match a run (found 2026-08-22). Provenance travels with the
+        # grade: which run, which runner profile, which model.
+        run = {}
+        run_file = ws / "run.json"
+        if run_file.exists():
+            try:
+                run = json.loads(run_file.read_text()).get("current", {})
+            except json.JSONDecodeError:
+                pass
+        run_id, runner, model = (run.get("run_id"), run.get("runner"),
+                                 run.get("model"))
         out = {"expectations": g.exps,
+               "ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+               "run_id": run_id, "runner": runner, "model": model,
                "summary": {"passed": passed, "failed": total - passed,
                            "total": total, "pass_rate": round(passed / total, 3)}}
         fname = "grading_idempotency.json" if name.startswith("idempotency:") else "grading.json"
-        (outdir / fname).write_text(json.dumps(out, indent=2) + "\n")
+        (outdir / "outputs").mkdir(exist_ok=True)
+        (outdir / "outputs" / fname).write_text(json.dumps(out, indent=2) + "\n")
+
+        # Append-only grade history: the flaky-vs-persistent oracle. Every
+        # grading of this scenario lands here; the dashboard (and humans)
+        # read which asserts fail in SOME runs (flaky) vs EVERY run
+        # (persistent, a real defect or a grader bug). The "law" stamp is
+        # the law GENERATION (skill VERSION + repo commit): flaky counting
+        # is only meaningful within one generation — a fix changes the
+        # population, and pre-fix runs must not vote on post-fix stability.
+        if not name.startswith(("idempotency:", "selftest:")):
+            hist = outdir / "outputs" / "grade-history.jsonl"
+            entry = {"ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                     "law": law_stamp(),
+                     "run_id": run_id, "runner": runner, "model": model,
+                     "passed": passed, "failed": total - passed, "total": total,
+                     "fails": [e["text"] for e in g.exps if not e["passed"]]}
+            with hist.open("a") as fh:
+                fh.write(json.dumps(entry) + "\n")
 
         print(f"\n== {name}: {passed}/{total} ==")
         for e in g.exps:

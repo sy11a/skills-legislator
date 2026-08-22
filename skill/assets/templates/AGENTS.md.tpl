@@ -19,6 +19,7 @@ Stack: {{STACK_SUMMARY}}
 @docs/ai/rules/core/changelog.md
 @docs/ai/rules/core/artifact-lifecycle.md
 @docs/ai/rules/core/project-rules.md
+@docs/ai/rules/core/sdd.md
 @docs/ai/rules/core/skills.md
 @docs/ai/rules/core/verification.md
 {{STACK_IMPORTS}}

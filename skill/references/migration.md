@@ -1,23 +1,24 @@
 # Legacy Repo Migration Guide
 
-Detailed guidance for SKILL.md Step 5 (legacy migration mode) — when a constitution file exists (`AGENTS.md`, or a pre-v14 real `CLAUDE.md`) but `docs/ai/manifest.json` does not.
+Detailed guidance for SKILL.md Step 5 (legacy migration mode) — when an entry document exists (`AGENTS.md`, or a pre-v14 real `CLAUDE.md`) but `docs/ai/manifest.json` does not.
 
-## 0. Canonicalize the constitution file
+## 0. Canonicalize the entry document
 
-Before splitting content, put the repo into the v14+ file model: the canonical constitution file is **`AGENTS.md`**, and `CLAUDE.md` is a symlink to it.
+Before splitting content, put the repo into the v14+ file model: the canonical entry document is **`AGENTS.md`**, and `CLAUDE.md` is a symlink to it.
 
 - If a real `CLAUDE.md` exists and no `AGENTS.md` does: rename `CLAUDE.md` → `AGENTS.md` (`git mv CLAUDE.md AGENTS.md` if tracked, else Bash `mv`). The renamed file is now canonical.
 - If `AGENTS.md` already exists, it stays canonical.
+- If BOTH a real `AGENTS.md` and a real `CLAUDE.md` exist, that is two canonical candidates — stop and ask the user which one is canonical (decision gate). Never resolve it silently: `ln -s` over the loser would destroy its content, the exact loss class migration exists to prevent. Only after the user's choice: the loser's content is merged or discarded per their instruction, then the symlink step proceeds.
 - Ensure `CLAUDE.md` exists as a symlink → `AGENTS.md` (`ln -s AGENTS.md CLAUDE.md`). After the rename above there is no real `CLAUDE.md` left, so the symlink is created fresh.
 
-All "the constitution file" references below mean `AGENTS.md` (the canonical file).
+All "the entry document" references below mean `AGENTS.md` (the canonical file).
 
-## 1. Splitting the constitution file
+## 1. Splitting the entry document
 
 Read the existing `AGENTS.md` top to bottom and classify each section:
 
 - **Project-specific and law-shaped — carve into `.claude/rules/<topic>.md`, verbatim:** imperative, diff-checkable project rules (e.g. "Money values are always `decimal`, never `double` or `float`.") move to one topic file each (or a shared topic file when they clearly group, e.g. `architecture.md`) under `.claude/rules/` — Claude Code auto-loads them and opencode loads them via `opencode.json`'s `instructions`, so no import line is added. This keeps `AGENTS.md` lean per `core/project-rules.md`.
-- **Project-specific instance data — keep verbatim in `AGENTS.md`:** project overview, tech stack description, architecture *instances* (e.g. "CareerPlatform.Domain has zero NuGet dependencies" — an instance of the generic `stacks/dotnet/architecture.md` rule), branch conventions, build/test commands, CI notes, environment/contact facts. Instance data is not law; it stays in `AGENTS.md`'s sections.
+- **Project-specific instance data — keep verbatim in `AGENTS.md`:** project overview, tech stack description, architecture *instances* (e.g. "the domain project has zero NuGet dependencies" — an instance of the generic `stacks/dotnet/architecture.md` rule), branch conventions, build/test commands, CI notes, environment/contact facts. Instance data is not law; it stays in `AGENTS.md`'s sections.
 - **Now covered by an owned rule — remove and replace with an import:** the OKF Documentation Rule section, the Pair Development Protocol section, the Decision gate section. If the existing text differs from the owned rule's wording, that's expected — the owned rule supersedes it. Do not try to preserve project-specific *phrasing* of these sections; the import replaces the prose entirely.
 - **Concrete project-specific facts embedded in a replaced section — carve out and keep as a short callout, even though the surrounding section is removed.** A section being "covered by an owned rule" means its boilerplate prose is superseded — it does not mean every fact inside it is disposable. Before deleting a section, scan it for concrete instance data the owned rule itself expects to find in `AGENTS.md` (the owned rules are written assuming this): a branch-naming pattern (e.g. `bl/NNN-short-description` — `pair-development.md` explicitly says "or this project's backlog-ticket convention — see this repo's AGENTS.md", so if you delete this without a replacement, that rule's cross-reference goes dangling), a specific escalation contact or channel, or any other fact that isn't restating the rule but instantiating it for this project. Keep these as one or two lines near the import block (a short "Project Conventions" callout works well), the same way an architecture instance like "Domain has zero NuGet dependencies" survives even though the general rule lives in `stacks/dotnet/architecture.md`.
 - **Definition-like content — carve into `docs/okf/glossary.md` rows:** a terms/vocabulary section, or inline "X means Y in this codebase" statements, become `| term | meaning |` rows in the glossary (they also count toward Step 4's `{{GLOSSARY_TABLE}}` derivation — don't duplicate a term the derivation already seeded). Definitions are knowledge, not law and not `AGENTS.md` prose.

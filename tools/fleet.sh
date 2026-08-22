@@ -69,7 +69,7 @@ upgrade_prompt() {
   cat <<EOF
 Read $SKILL_MD and follow it EXACTLY, including any referenced files under $SKILL_DIR/. This repo is already legislated (docs/ai/manifest.json exists) — upgrade mode is expected; take profiles from the manifest without re-asking. Re-run the legislator so the repo picks up the current constitution.
 
-Ground rules: NEVER run git commit — leave all changes uncommitted for review. AGENTS.md is project-owned — never edit it; every proposed AGENTS.md change (@import lines to add or remove, wiring) goes in the Step 7 report only. When the skill requires byte-for-byte copies via Bash cp, use Bash cp exactly as instructed. Write your full Step 7 report (all sections, including Health and any Constitution candidates) to $PROPOSALS_DIR/$repo_name.md — overwrite it if it exists.
+Ground rules: NEVER run git commit — leave all changes uncommitted for review. The skill's own law governs what each mode may write to the entry document — do not infer extra prohibitions from these ground rules. When the skill requires byte-for-byte copies via Bash cp, use Bash cp exactly as instructed. Write your full Step 7 report (all sections, including Health and any Constitution candidates) to $PROPOSALS_DIR/$repo_name.md — overwrite it if it exists.
 EOF
 }
 
@@ -106,7 +106,7 @@ cmd_upgrade() {
     echo "== $name: v$version → v$CURRENT_VERSION =="
     # </dev/null: opencode reads stdin and would swallow the rest of the repo list.
     # --agent service-fleet marks the session as a service run so knowledge
-    # observability excludes it from practice metrics (kbo ADR-0039); the agent
+    # observability excludes it from practice metrics (fleet-obs ADR-0039); the agent
     # must exist in the machine's opencode config (~/.config/opencode/agents/).
     if opencode run --dir "$repo" --agent service-fleet ${model:+--model "$model"} "$(upgrade_prompt "$name")" </dev/null; then
       after="$(python3 -c "import json,sys;print(json.load(open(sys.argv[1])).get('legislatorVersion','?'))" "$repo/docs/ai/manifest.json" 2>/dev/null || echo '?')"

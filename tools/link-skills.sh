@@ -45,12 +45,15 @@ case "${1:-}" in
 esac
 
 drift=0
+unresolved=0   # conditions a run cannot fix (missing source, real dir)
+mkdir -p "$DST"
 
 for name in "${KEEP[@]}"; do
   src="$SRC/$name" dst="$DST/$name"
   if [[ ! -d "$src" ]]; then
     echo "MISSING SOURCE  $name  (not in $SRC — skill not installed there)"
     drift=1
+    unresolved=1
     continue
   fi
   if [[ -L "$dst" ]]; then
@@ -63,6 +66,7 @@ for name in "${KEEP[@]}"; do
   elif [[ -e "$dst" ]]; then
     echo "REAL DIR        $name  (exists as a non-link at $dst — left untouched)"
     drift=1
+    unresolved=1
   else
     echo "NOT LINKED      $name"
     drift=1
@@ -86,5 +90,11 @@ fi
 if [[ "$MODE" == "check" ]]; then
   [[ $drift -eq 0 ]] && echo "clean: all keep-list skills correctly linked"
   exit $drift
+fi
+# link/prune modes: fixable drift was fixed above; what remains unresolved
+# (MISSING SOURCE, REAL DIR) is an error, not a silent partial run
+if [[ $unresolved -ne 0 ]]; then
+  echo "unresolved drift remains after run (see above)" >&2
+  exit 1
 fi
 echo "done"

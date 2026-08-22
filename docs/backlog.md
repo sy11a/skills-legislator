@@ -452,7 +452,7 @@ plants an owned-rule-restating line in a merged source should lock it.
 
 **What:** two-part cycle (spec:
 `docs/superpowers/specs/2026-07-10-stray-rulebooks-design.md`). (a) Generic
-refactoring law absorbed from CareerPlatform's orphaned
+refactoring law absorbed from fleet-platform's orphaned
 `docs/superpowers/refactoring-checklist.md` into concern-named files —
 async/cleanliness bullets in `stacks/dotnet/coding-standards.md`, DI bullets
 in `stacks/dotnet/architecture.md`, new `stacks/dotnet/data-access.md`
@@ -463,11 +463,11 @@ into `.claude/rules/<topic>.md` and removes the file. BL-015 rides along
 (all four items).
 
 **Why:** a rulebook parked in an unorthodox folder is law no agent ever
-sees — CareerPlatform's checklist was invisible to CLAUDE.md, harvest, and
+sees — fleet-platform's checklist was invisible to CLAUDE.md, harvest, and
 every audit check. After this cycle "refactor X" in a legislated repo hits
 v9 law (imported), project law (`.claude/rules/`, auto-loaded), and the
 generic dotnet-refactoring skill — nothing orphaned. User-settled
-2026-07-10 (concern-named law home + full loop incl. CareerPlatform
+2026-07-10 (concern-named law home + full loop incl. fleet-platform
 validation).
 
 **Done when:** benchmark `evals/benchmarks/v9.md` green — audit names the
@@ -475,7 +475,7 @@ planted `docs/superpowers/review-checklist.md` under the `stray-rulebooks`
 slug and proposes its generic line as a candidate (project line + check-11
 contradiction line absent from candidates); restructure merges it into
 `.claude/rules/` and removes it; fresh/upgrade carry `data-access.md`;
-idempotency zero-diff; then CareerPlatform live validation (upgrade +
+idempotency zero-diff; then fleet-platform live validation (upgrade +
 restructure) succeeds end-to-end.
 
 ## BL-017 — Stray-rulebook follow-ups from the v9 final review (skill-file items)
@@ -514,7 +514,7 @@ Original items:
    new `@...` import line. Fix: also withhold the alphabetically last
    stack rule and assert the proposed import line.
 5. **Captive-dependency law candidate (Minor, v10).** "No singleton
-   services holding scoped/DbContext references" from the CareerPlatform
+   services holding scoped/DbContext references" from the fleet-platform
    checklist is generic + diff-checkable and covered by neither new DI
    bullet — promote in the next law cycle.
 6. **Check 12 × check 9 double-report on root `AGENTS.md` (Minor)** — same
@@ -536,7 +536,7 @@ clean). Upgrade scenario delivered a withheld stack rule and proposed its
 import line (the v9 fleet-action path, now locked); check-12 keep exemption
 fired unprompted in the idempotency run; all idempotency passes zero-diff.
 BL-017 shipped with it. **Fleet action: run `/legislator` in each
-downstream repo to deliver v10.** Companion CareerPlatform
+downstream repo to deliver v10.** Companion fleet-platform
 `.claude/rules/branching.md` pending re-land (orphaned commit 0dd0ebd,
 awaiting repo-idle signal from the user).
 
@@ -548,11 +548,11 @@ freshly-pulled main; merging stays the user's act (**`assets/rules/**`
 change: VERSION 9→10**). BL-017 riders 1–4 ride along (check-12 keep/
 referrer/conventional-doc hardening, upgrade fixture withholds a stack
 rule) plus BL-017 item 5 (captive-dependency bullet in dotnet
-architecture.md). Companion project law: CareerPlatform
+architecture.md). Companion project law: fleet-platform
 `.claude/rules/branching.md` (concrete mechanics — stacking commands,
 2-day cap, chore batching).
 
-**Why:** at AI-assisted pace, tasks outrun merges: CareerPlatform hit 30+
+**Why:** at AI-assisted pace, tasks outrun merges: fleet-platform hit 30+
 local branches (mostly squash-merge ghosts plus stale real work), each new
 branch cut from a staler master. Control comes from the gates (build/test,
 review checklist, decision gate), not branch count — so the law makes
@@ -614,7 +614,7 @@ there was judgment-dependent). Fresh run seeded 5 terms, migration carved
 3 definitions into rows, restructure healed the empty glossary with 4
 derived terms, all idempotency zero-diff. BL-019 shipped with it.
 **Fleet action: run `/legislator` in each downstream repo to deliver v11**
-(phase 2 backfill covers CareerPlatform + RKruiterApi + RKruiterAgent).
+(phase 2 backfill covers fleet-platform + fleet-api + fleet-agent).
 
 **What:** three levers to stop OKF glossaries dying empty (spec:
 `docs/superpowers/specs/2026-07-12-glossary-vitality-design.md`).
@@ -626,8 +626,8 @@ the repo's own domain) instead of an intentionally empty table; (2)
 source code, healable by restructure via the Step 4 derivation rules
 (token-fill precedent). BL-019 rides along (all five items).
 
-**Why:** review of the fleet (2026-07-12) found CareerPlatform and
-RKruiterApi glossaries byte-empty since legislation while RKruiterAgent's
+**Why:** review of the fleet (2026-07-12) found fleet-platform and
+fleet-api glossaries byte-empty since legislation while fleet-agent's
 thrives — terms "emerge" only in design sessions; code-resident terms
 never do. The glossary had no law behind it: not on the completion
 checklist, not audited, seeded empty by design.
@@ -636,7 +636,7 @@ checklist, not audited, seeded empty by design.
 migration runs seed ≥1 real term; audit names the empty planted glossary
 under the `glossary-vitality` slug; restructure heals it approval-gated;
 idempotency zero-diff ×3; then live backfill lands real domain terms in
-CareerPlatform and RKruiterApi on feature branches.
+fleet-platform and fleet-api on feature branches.
 
 ## BL-021 — Glossary-vitality follow-ups from the v11 final review (skill-file items)
 
@@ -720,7 +720,7 @@ explicitly.
 showed any installed skill pack can out-instruct the constitution — a
 parallel intake, parallel glossaries, auto-commits. The missing law was
 precedence, not the pack. And verification had no law at all: the
-build/test gate lived in a skill, and CareerPlatform grew its own e2e
+build/test gate lived in a skill, and fleet-platform grew its own e2e
 project rule (harvest signal) — agents need a pinned ladder to keep
 control of what they build.
 
@@ -848,14 +848,738 @@ Ride along with the next benchmarked `skill/**` cycle:
    scope to `For the team:`; fresh/migration could cross-check backticked
    skill names in the scaffolded stage map against `~/.claude/skills/`.
 
+## BL-026 — SDD gap harvest: execute the G1–G9 decisions from the landscape research
+
+**Status: REVISED 2026-08-20** — the deep audit D0–D5
+(`docs/superpowers/specs/2026-08-20-deep-audit-d0-d5.md`, second pass over
+the stage × instrument matrix with fleet evidence) turned every gap into a
+concrete decision. Per-gap verdicts:
+
+- **G1 (living baseline): DECIDED — architecture D.** EARS lines carry
+  stable ids (R-NNN) in specs → tests annotated with the same ids → a
+  generator writes `baseline.md` (do-not-edit, like the manifest). Rot
+  impossible by construction; converge checks both directions
+  (missing-test / unrequested). The OpenSpec living-tree variant is
+  conserved for Vector A / second hands. Non-testable norms live in ADRs
+  + a marked baseline section. Implemented inside BL-033 (fleet-obs pilot).
+- **G2 (requirements syntax): DECIDED — EARS lines mandatory** (5
+  patterns), at least one named Gherkin "hurting case" per spec,
+  observability as the quality test; no RFC 2119 table. → BL-032.
+- **G3 (clarification): DECIDED — grill protocol codified**: taxonomy
+  shrunk to 5–6 solo categories, budget max 5 / one at a time,
+  recommended-first, **answers written into the spec** (`##
+  Clarifications`), post-answer validation. → BL-032.
+- **G4 (convergence): DECIDED — converge is a mandatory case-cycle
+  gate**: gap taxonomy missing/partial/contradicts/unrequested,
+  append-only traceable tasks in the case plan, loop to "✅ Converged",
+  constitutional MUSTs as CRITICAL findings; plus the `stale-doc` axis.
+  → BL-032.
+- **G5 (cross-artifact analysis): DECIDED — analyze gate paired with
+  converge** (before implementation): five mechanical passes (coverage
+  R↔task, dangling refs, vagueness, duplicates, terminology) + two
+  judgment axes (reuse-first, over-engineering, from Agent OS). → BL-032;
+  mechanical passes run in the BL-033 engine.
+- **G6 (monolithic plans): DECIDED — plan as a package in the case
+  file**: research/data-model/contracts/quickstart domain-optional;
+  split mandatory past ~10–15 KB or 2+ domains; one task = one session;
+  [P] file-disjointness markers; ADR boundary rule. → BL-032.
+- **G7 (spec validation): DECIDED — one engine, three jobs**: spec/plan
+  linter + OKF anchor checks (source-symbol grounding) + baseline
+  generation, a single tool. → BL-033.
+- **G8 (parallelism markers): DECIDED — [P] markers** (machine-readable
+  declaration of the existing Wave-1 practice). → BL-032.
+- **G9 (process sizing): DECIDED — three ceremony tiers as law** (0
+  direct / 1 light / 2 full), chosen at case opening on blast radius ×
+  novelty, declared in the case header; converge may raise a tier.
+  → BL-032.
+- Also decided in D-pass: spec typology (feature / bugfix / exploration,
+  type in the header; bugfix carries current/expected/unchanged;
+  boundary + right-size rules), cross-repo case convention (case file in
+  the initiating repo, reference rows + same bl/NNN branches in
+  siblings), OKF v2 decomposition (generated / anchored / human), OKF
+  hygiene (stale-doc in-cycle + sync-debt audit check), and the first
+  steward cycle scheduled after the harvest lands. Rejected with
+  reasons: Agent OS product layer, standards compilation, improve-skills;
+  SpecKit pre/post constitution gate, auto-waves, MVP markers; Kiro
+  conditional loading (D0); Vortex (unresolved — could not confirm it
+  exists).
+
+**Execution order (revised 2026-08-21, evening — eval hardening joins v17):** fleet-obs gold panel ✓ DONE (PR#19, before-snapshot 22%) → **edition v17** = BL-032 (SDD law + absorbed case home + lifecycle + riders BL-028/030 + BL-025 triage) **closing green first**, then BL-036 waves A–C on the same branch (BL-037 runs as Wave A; case-practice is the v17 release gate) → soak → **edition v18** = BL-033 (engine, OKF v2, baseline, fleet-obs pilot; BL-031 rides if templates move) → BL-034 (self-legislation) → **edition v19+** = BL-027 (outer mode, own design cycle) → first steward cycle. Rationale for the v17 expansion: the SDD law is a program for target-repo agents — shipping it without a suite that executes it (case-practice) and with a grader that hand-duplicates the skill's contracts would repeat the orphan problem the law exists to cure. BL-035 (docs-only, no VERSION) runs anytime. Full consistency record: the deep-audit spec's addendum.
+
+**Why:** the workflow was built intuitively from practice and works (fleet
+usage evidence in the research spec), but with nothing to compare against,
+non-optimal solutions and gaps are invisible. The field's instruments —
+read from the tools' own repos, not their marketing — close gaps without
+adopting any foreign structure: techniques get translated into legislator
+assets, nothing external survives contact with the law.
+
+**Done when:** BL-032 and BL-033 ship green through their full cycles; the
+fleet-obs pilot demonstrates EARS+baseline+converge end to end; the fleet-obs panel is
+live before the first rollout; rejected decisions are recorded (this entry
++ the deep-audit spec serve as the record; ADR them at implementation time
+if they need permanence).
+
+## BL-027 — Outer placement mode (Vector A: legislation outside the codebase)
+
+**Status: queued (behavioral — skill/ changes, VERSION bump + full e2e) → edition v19+, after its own design cycle. Renamed 2026-08-20 from "Enterprise sidecar placement mode": outer names the mode (the AI layer sits outside the codebase — ontology §Placement modes), the sidecar is only the mechanism that hosts it.**
+
+**What:** a placement mode for legislating a repo the operator **cannot
+commit to** (real enterprise case, anonymized — large fast-mutating
+codebase, team doesn't use the legislator, MCPs to Jira/Confluence and a
+documented DB exist; user runs own Claude Code on a local clone;
+untracked files tolerable, commits not). Mechanics settled in the
+2026-08-19 grill (rationale in the research spec's vectors section):
+(1) **sidecar repo hosts the owned layer** — `docs/ai/rules/**`,
+  `manifest.json`, and a personal-context OKF (own ADRs, tips, dead ends,
+  blast-radius contracts only; company KB is a probe target via its MCPs,
+  never a mirror — a codebase mirror rots in days there);
+(2) **untracked stub in the target clone** — thin `CLAUDE.md`/`AGENTS.md`
+  `@import`-ing the sidecar, excluded via `.git/info/exclude` (local-only,
+  never leaves the machine); re-runs restore the stub after `git clean`;
+(3) **probe-first doctrine + blast-radius documentation** as
+  `enterprise-solo` profile law (the existing stacks mechanism — no fork:
+  law overlap is ~90%, harvest/evals/steward stay shared in one lineage);
+(4) **outbound redirection inversion** — backlog → Jira, durable
+  reference → Confluence, via the already-approved MCP scope (read-only
+  DB, no GitHub/ticketing automation per BL-008); in-repo artifacts
+  become lifecycle working copies that die at feature merge;
+(5) progressive-rigor floor (small feature in a big organism = lowest
+  ceremony tier by law); (6) fleet-obs registry root addition for the sidecar.
+**Design notes added 2026-08-20 (consistency review):** (a) the outer
+**execution profile** — what changes in each law for an outer repo
+(ceremony defaults, converge/analyze semantics when the baseline and
+engine live untracked in the clone, harvest/steward without git access
+to the target) — is decided **inside this case's design cycle**, not as
+a separate case: one owner per topic; (b) generated artifacts
+(baseline/codebase-map, BL-033) in an outer repo are untracked by
+definition — the stub-restore semantics after `git clean -fd` must cover
+**regeneration**, not just re-copy, of everything generated. Full e2e
+benchmark when implemented (behavioral change; placement mode inverts
+Step 3's owned-files-land-in-target-repo assumption — the biggest
+structural change the skill has faced; design needs its own brainstorm
+cycle for Step 0/3/6/7 rework, stub-restore semantics, and how audit/
+restructure run against a sidecar).
+
+**Why:** the enterprise adapter is one of two application vectors (the
+other — solo fleet — is home ground and needs nothing structural). Without
+a placement mode, Vector A either stays unlegislated or forces a fork,
+and a fork costs permanent rent: doubled evals, split harvest, two
+steward reviews forever.
+
+**Done when:** a sidecar-legislated enterprise repo (anonymized in all
+artifacts — masking law) carries the full constitution ambiently via the
+stub; `git status` in the target clone stays clean; `git clean -fd` +
+re-run restores the stub; probe-first/blast-radius law demonstrably keeps
+the sidecar OKF personal-observation-only; benchmark green including a
+new sidecar-placement eval scenario.
+
+## BL-028 — Manifest key `profiles` → `stacks` (single-concept naming)
+
+**Status: queued (behavioral — skill/ changes, VERSION bump + full e2e)**
+
+**What:** rename the manifest's stack-subscription key from `profiles` to
+`stacks` so the key carries the concept's only name (ontology R5-T1,
+2026-08-20: "profile" has no standalone meaning — it is a leftover second
+name for *stack*). Upgrade mode reads `stacks` and falls back to the legacy
+`profiles` key (reconstruct, rewrite in the new serialization order);
+fresh scaffolds write only `stacks`. Sweep SKILL.md prose, templates, and
+audit check references for the old key and the compound "stack profile".
+Fleet re-run migrates all field manifests.
+
+**Why:** one word, one meaning (ontology §3.4) — the manifest is the most
+visible artifact the skill owns, and it currently carries the only
+remaining "profile" naming for a concept everywhere else called a stack.
+
+**Done when:** fresh scaffold writes `stacks`; upgrade on a legacy
+`profiles` manifest migrates without data loss (`keep` / `ownedFiles`
+preserved); every eval scenario green including a legacy-manifest fixture;
+fleet re-run leaves every manifest on the new key.
+
+## BL-029 — Case-file home `docs/cases/` in the scaffold
+
+**Status: ABSORBED into BL-032 (2026-08-20, consistency-review P2)** — the
+case home is a mandatory component of the SDD law's edition (v17), not a
+separate unit: a law that declares tiers in case headers and specs in
+case files cannot land without the home. The original scope below ships
+inside BL-032.
+
+**What (original, ships via BL-032):** give upgrade/scaffold modes a
+create-once `docs/cases/` home
+(a README or template file — git does not track empty directories; same
+pattern as audit check 11's `.claude/rules/` mkdir advice). New cases are
+born in their home (`docs/cases/BL-NNN/`: spec, plan, summary); register
+rows link into it. Migration is forward-only (ontology R2-T3): historical
+specs/plans stay where they lie and their register rows link to legacy
+paths; moving an active case's artifacts is optional per-repo restructure
+work, never forced.
+
+**Why:** A2 — a case is currently scattered across four homes (backlog
+status line, specs/, plans/, journal) with no cover object saying "this is
+the case, whole." The ontology fixes the concept (case file = one case,
+one home); the scaffold must give the concept a place to exist.
+
+**Done when:** scaffold creates the home create-once (never overwrites);
+a fresh case demonstrably lands inside it; legacy register rows still
+resolve to their historical paths; benchmark green.
+
+## BL-030 — Constitution disambiguation sweep in skill prose (A5)
+
+**Status: queued (behavioral — skill/ changes, VERSION bump + full e2e)**
+
+**What:** sweep `skill/` prose so "constitution" means exactly one thing
+(`docs/ai/rules/**` @ VERSION — ontology R1-T1): SKILL.md's "constitution
+file" for AGENTS.md becomes "AGENTS.md" (the entry document);
+`references/*` and any rule file carrying the same drift follow; glossary
+pointers updated. No mechanical behavior change intended — prose only —
+but it ships through the full cycle anyway per the testing law.
+
+**Why:** A5 — one word meant three things (rules corpus, AGENTS.md,
+loosely the whole installed layer). The ontology review fixed the concept;
+the prose must follow or the ambiguity regrows from the skill's own text.
+
+**Done when:** no prose under `skill/` uses "constitution" for anything
+but the rules corpus @ VERSION; benchmark green with zero behavioral
+diffs beyond the expected prose changes.
+
+## BL-031 — Split backlog.md into queue + case register sections
+
+**Status: queued (behavioral if templates change — decide in-cycle)**
+
+**What:** restructure `docs/backlog.md` into two named sections per the
+ontology (R2-T2): **queue** — pending/active cases only, in intended work
+order, kept short and living; **case register** — one row per case ever
+opened, with status; today's DONE blocks become register records (their
+history is preserved, compressed to record shape). A later split into two
+files is possible but not required — the section boundary is the seed.
+If the skill scaffolds a backlog template for target repos, the section
+structure rides the same cycle (VERSION + benchmark); if the template
+turns out repo-specific, this stays a legislator-repo docs change.
+
+**Why:** A1 — one file smears two roles: a queue wants to be short,
+ordered, and disposable; a register wants to be complete, stable, and
+permanent. Each role's readers (planner vs archaeologist) want different
+things from the artifact.
+
+**Done when:** the queue section contains only pending/active work; every
+case has exactly one register row; DONE history survives as register
+records; template decision recorded; benchmark green if templates moved.
+
+## BL-032 — `core/sdd.md`: the SDD law (spec format, clarify protocol, ceremony tiers, converge/analyze gates)
+
+**Status: GREEN 2026-08-22 — corpus 177/177 and idempotency ×3 zero-diff**
+(`evals/benchmarks/v17.md`, phase 2; model floor `sonnet` on Claude Code
+2.1.239). Riders delivered with the cycle: **BL-028** (stacks key + legacy
+fallback), **BL-030** (constitution sweep), **BL-025 triage** (items
+1,2,4,5,6; item 3 excluded-stale). Phase 2 forced three further law
+amendments, all benchmark-caused: entry-document authority stated once
+(Step 7 had written one mode's constraint as a property of the file, and
+Step 5 contradicted it in the same run), check-7 orphans pinned to `[link]`
+(two lawful outcomes broke idempotency *and* let an open `[decision]` be
+reclassified into an applied write), and check-11 findings routed to
+`[decision]` explicitly. VERSION stays 17 — none of it touches
+`assets/rules/**`. **Remaining: merge.**
+
+**What:** give the SDD process its constitutional home (deep-audit D1
+finding: the process is an orphan — practiced fleet-wide, governed
+nowhere; hence 0 acceptance lines in ~20 specs and 92 KB plan monoliths).
+New owned rule `core/sdd.md` + a spec template in assets, delivering the
+D0–D5 decisions: spec typology (feature / bugfix / exploration, type in
+the header; bugfix carries current/expected/unchanged); boundary
+(in/out-of-scope) and right-size rules; EARS requirement lines (5
+patterns) with stable ids R-NNN; at least one named Gherkin hurting-case
+scenario per spec; the observability test; the grill clarification
+protocol (5–6 solo categories, max 5 questions one at a time,
+recommended-first, answers written into `## Clarifications`); ceremony
+tiers 0/1/2 chosen at case opening on blast radius × novelty (converge
+may raise); plan-as-package (research/data-model/contracts/quickstart
+domain-optional, split past ~10–15 KB, one task = one session, [P]
+file-disjointness markers, task traceability per R-NNN, ADR boundary
+rule); **converge as a mandatory closing gate** (gap taxonomy
+missing/partial/contradicts/unrequested, append-only traceable tasks,
+loop to converged, constitutional MUSTs CRITICAL, stale-doc axis);
+**analyze as the paired pre-gate** (reuse-first + over-engineering axes;
+mechanical passes provided by the BL-033 engine when available,
+**otherwise by the agent** — the fallback clause that decouples this
+edition from v18); the cross-repo case convention (case file in the
+initiating repo, reference rows + same bl/NNN branches in siblings).
+**The case home ships here (absorbs BL-029, 2026-08-20):** every work
+kind is a case and every spec lives in its case file `docs/cases/BL-NNN/`
+— `docs/superpowers/specs/` becomes a purely legacy path, forward-only,
+history never moves. **The artifact-lifecycle amendment is a green
+condition of this cycle, not a rider:** `core/artifact-lifecycle.md`
+must learn the new conventional home `docs/cases/` and the third role
+class **generated** (machine-written locally, do-not-edit, dies with its
+source) — the law currently enumerates lifecycle homes exhaustively
+(`docs/superpowers/`, `docs/journal/`) and its binary reference/lifecycle
+model has no slot for generated artifacts. Riding items: BL-028 (manifest
+key profiles→stacks) and BL-030 (constitution disambiguation sweep) join
+this cycle's benchmark. **On opening, triage BL-025** (seven v13-era
+follow-ups promised as riders to "the next benchmarked skill/** cycle" —
+this is it; each item rides or is excluded with a reason, some may have
+gone stale over v14–v16).
+
+**Why:** one rule file replaces muscle memory: the fleet already reached
+for scenario form (fleet-obs Testing lines) and parallelism discipline
+(Wave-1) on its own — the law makes the existing instincts deliverable,
+auditable, and harvestable, and the tier law makes both
+under-ceremony (unrequested gifts, debris) and over-ceremony (monoliths)
+fixable. The case home cannot lag: the law declares the tier in the case
+header and specs in the case file — a law referencing a nonexistent home
+would be born contradicting itself.
+
+**Done when:** `core/sdd.md` + template + case home + lifecycle amendment
+shipped, VERSION bumped, full
+e2e benchmark green including new scenarios (a spec written under the
+law passes analyze; a converged case shows the append-only findings
+trail); BL-028/030 riding items verified; fleet re-run delivers the rule
+everywhere.
+
+## BL-033 — OKF v2 + the one engine: generated baseline, source anchors, spec linter (fleet-obs pilot)
+
+**Status: queued 2026-08-20 → edition v18, after a v17 soak (behavioral — skill/ changes, VERSION bump + full e2e)**
+
+**What:** two interlocking pieces from deep-audit D2/D4. (1) **OKF v2
+decomposition by link hardness**: generated (baseline.md from annotated
+tests; codebase-map from code; index from docs), anchored (concept docs
+stay handwritten but every backticked symbol/path is verified against
+src/ — source-symbol grounding), human (glossary, log) — codified as an
+amendment to `core/okf.md`, migrating the fleet forward-only. The
+**generated** role class enters `core/artifact-lifecycle.md` here in
+full (BL-032 seeds the class; this edition populates it with real
+artifacts and regeneration rules). (2) **The G7 engine — one tool, three
+jobs**: spec/plan linter (dangling R-NNN, coverage R↔task, unresolved
+placeholders), OKF anchor checker, and baseline generator (EARS ids from
+specs ↔ annotated tests → generated `baseline.md`, do-not-edit; converge
+consumes its both-direction gaps; the engine takes its place on the
+verification ladder as a static rung — bindings in `core/verification`
+project rules, absent-engine fallback per BL-032's clause). Includes the
+G1 architecture-D pilot in **fleet-obs** (R-NNN + annotated tests + baseline +
+converge end to end in the smallest active repo, home of the proto-EARS
+Testing lines) and the new audit check "OKF-sync debt" (commits touching
+concept files after a doc's timestamp with no linked OKF update; repair
+via restructure only). Legalizes the open "OKF content-accuracy" note
+below into a designed mechanism. **fleet-obs accounting:** the registry gains
+a `generated` content-type, and the gold-panel docs-vs-code metric
+excludes generated writes — machine-written baseline/map entries must
+not read as documentation discipline, or the panel lies after rollout.
+BL-031 rides this cycle if it touches the backlog template.
+
+**Why:** hand-maintained truth always rots — fleet-api's six docs about
+a removed model proved it in our own fleet; our rot-free artifacts (law
+stratum, manifest) are machine-written. Generation gives norms and maps
+a mechanical bond to code; anchors make the remaining handwritten layer
+detectably stale instead of silently wrong; one engine avoids three
+half-maintained tools. Its own edition (v18) because a transform of what
+"docs" means across nine repos must not share a landing with the new
+process law — a failure here must not roll the SDD law back with it.
+
+**Done when:** the engine exists and passes its own verification ladder;
+the fleet-obs pilot shows a converged case with a regenerated baseline and
+both-direction converge findings; OKF v2 template + rule amendment
+shipped with VERSION bump and green e2e benchmark; fleet re-run
+migrates repos forward-only (no history rewritten).
+
+## BL-034 — Self-legislation: the legislator repo joins its own fleet
+
+**Status: queued 2026-08-20 (process + one behavioral cycle) — after v18 lands. Not an edition of its own.**
+
+**What:** apply the legislator to itself (A4, already seeded by
+`docs/ontology.md`): scaffold the repo that hosts the skill — its own
+manifest, owned copies, OKF, cases home, audit. From then on the repo is
+fleet member #0 and every later edition updates the AI layer that
+governs the skill's own development. Mechanics: (1) **deliver-to-self
+becomes a release step** — bump → benchmark → upgrade onto this repo →
+byte-verify → fleet; (2) **version-skew rule:** while developing v(N+1)
+on a branch, the repo is legislated @ N while assets contain N+1 drafts —
+that drift is branch-normal; owned-integrity drift on master is a
+finding; (3) **migration of current practice:** this repo's existing
+docs (`docs/superpowers/**`, manual spec/plan conventions) migrate
+forward-only into the new law's homes (`docs/cases/`), and the manual
+benchmark/release practice becomes an execution of `core/sdd.md` —
+dogfooding before fleet rollout; (4) harvest/steward/audit close on the
+repo itself. Recursive application is sound because it is
+bootstrap-compilation, not self-modification: the using step never edits
+the source (the law stratum stays byte-identical; changes flow only
+through the normal edit → bump → deliver loop).
+
+**Why:** every new law gets exercised by the skill's own development
+before fleet rollout; the manual practices this repo already runs
+(specs, plans, benchmarks) become instances of the law they built —
+closing the loop is the strongest honesty test the system has.
+
+**Done when:** the repo carries a current manifest and owned layer
+byte-verified against its own assets; a real case runs end to end under
+`core/sdd.md` in this repo (tier declared, analyze/converge executed);
+the release runbook includes deliver-to-self; audit on the repo reports
+clean or explains its findings.
+
+## BL-035 — Docs overhaul: the philosophy manifest (`docs/philosophy.md`) + inner/outer modes
+
+**Status: queued 2026-08-20 (docs-only — no VERSION, no benchmark; can run anytime, independently of the editions)**
+
+**What:** a standalone manifest document, `docs/philosophy.md` (English),
+stating what the legislator is and how it is applied — the document a
+stranger reads first: (1) **philosophy** — law-centrism (one constitution
+delivered byte-identical, agents work under law rather than vibes),
+mechanical truth-bonding (anything that can be generated or anchored to
+code must be — hand-maintained truth always rots, proven in this fleet),
+declarative lifecycles (artifacts carry death terms at birth), the
+I/O-asymmetry (downward delivery is automatic, upward feedback is
+proposal-only through harvest; the user is the sole decision authority);
+(2) **practices** — the SDD case cycle (tiers, EARS/R-NNN, grill
+clarify, analyze/converge gates), the fleet (VERSION editions,
+deliver-to-self for the legislator's own repo), audit/restructure/
+harvest/steward, the verification ladder; (3) **application** — how a
+repo gets legislated, upgraded, audited; scenarios; (4) **placement
+modes** — inner (default: the AI layer lives in the repo) and outer (the
+layer sits outside the codebase — sidecar repo, untracked stub,
+probe-first, outbound redirection; names decided 2026-08-20 on the axis
+"relation of docs to code"; sidecar is the mechanism, outer is the
+mode; the outer execution profile is decided in BL-027's design cycle).
+README and `docs/ontology.md` gain pointers to the manifest; the
+ontology stays the canonical term model, the manifest is the narrative
+layer above it.
+
+**Why:** the system's rationale is currently scattered across README,
+ontology, rule files, and two research specs — a stranger (or a future
+session) meets mechanics without the why. One manifest, referenced from
+everywhere, written against the ontology's terms. Naming reviewed:
+"inner/outer" accepted (non-colliding, self-explaining, sized by
+placement not by company scale); "harness-/ai-framework" rejected —
+"harness" names an agent runtime in the field, a meaning this system
+does not have.
+
+**Done when:** `docs/philosophy.md` exists covering the four sections;
+README, ontology, and glossary cross-reference it; every term the
+manifest uses exists in the glossary (no orphan vocabulary); static
+checks pass.
+
+## BL-036 — Eval authenticity: honest triggers, agents-first migration, gap closures, contract derivation
+
+**Status: DONE 2026-08-22 — all waves delivered inside edition v17.**
+Honest triggers, the agents-first migration scenario, the gap closures and
+contract derivation all ship; `selftest:derivation` keeps the derivations
+alive. Phase 2 of the benchmark closed six further grader defects the waves
+had not reached — three of which had been passing *falsely* in every prior
+version. The suite's own bar is now written down in `evals/POLICY.md`.
+
+**Execution waves (priority order):**
+
+- **Wave A — test infrastructure (nothing else is reliable without it):**
+  BL-037's background runner (staged execution, notifications, status
+  contract) + trigger minimization + waiver rework + contract derivation
+  (SCAFFOLD_ARTIFACTS parsed from Step 4's table, `protected` derived
+  from it, manifest pins into one oracle, migration wiring derived from
+  AGENTS.md.tpl, severity+slug parsed from SKILL.md, restructure action
+  set parsed from restructure.md — every place the grader hand-duplicated
+  the skill's contract dies here) + README additions (machine-dependence
+  prerequisite and the weakened `stages >= 1` assert, why idempotency
+  has no migration carrier, new-stack fixtures as a known gap).
+- **Wave B — coverage and law lines:** agents-first fixture + both-exist
+  decision gate (migration.md §0 + SKILL.md Step 5); upgrade gap
+  closures (missing-artifact assert, keep-refusal branch, drop-stack
+  fixture); audit additions (cases-exempt planted artifact,
+  report-outside-repo assert); restructure package (§1 table gains the
+  cases row and legacy-only qualifiers for the superpowers rows, grader
+  lock on §1, misplaced-case relocatable, link/map post-state asserts,
+  stray plans always relocate to the legacy home); the parity law (every
+  audit check ↔ a planted defect marker, enforced by a setup-time
+  assert) with the three new rot checks it demands: new-home violation
+  (file born in a legacy home after the legislation date), working-dir
+  debris (`.superpowers/sdd/`-class) in check 9, dangling keep entry in
+  check 10.
+- **Wave C — the acceptance test:** the case-practice scenario
+  (legislated fixture, "add feature X, tier 1" task; the grader asserts
+  the case home, tier header, EARS R-NNN lines, hurting case,
+  Clarifications, append-only converge trail) — the only test that
+  executes `core/sdd.md` rather than merely asserting its delivery, and
+  the point of the whole edition: the law ships proven executable.
+
+**What:** four parts, one theme — the eval suite must test the skill, not
+the prompt.
+
+1. **Trigger minimization.** All five `evals.json` triggers shrink to the
+   honest user voice: "Set this repo up for AI development" /
+   "re-run the legislator here" — no deliverable enumeration ("rules, OKF
+   docs, backlog, the works" leaks Step 4's table), no mode leak ("I just
+   spun up" tells the agent it is fresh; "we changed the core rules and
+   bumped VERSION" tells it why it is upgrading). Runner waiver block
+   becomes: "every confirmation the skill asks for is pre-approved; answer
+   with the skill's own default plus what the repo evidences; the skill
+   knows what to deploy". evals/README gains the rule: a trigger never
+   names deliverables — Step 4's table is the only source. v17 runs on
+   the historical prompts (pass-rate comparability with v16); the model
+   switch is recorded as a confound in benchmarks/v17.md.
+2. **Agents-first migration fixture.** New fixture
+   `legacy-migration-agents-first/` (hand-written AGENTS.md, no CLAUDE.md,
+   the same law/instance markers) + scenario + grader branch: the
+   migration asserts minus rename expectations, plus "CLAUDE.md created
+   fresh as symlink". The law already specifies the branch
+   ("If AGENTS.md already exists, it stays canonical") — the suite never
+   exercised it. **Companion law line** (migration.md §0 + SKILL.md
+   Step 5): both a real AGENTS.md and a real CLAUDE.md present = two
+   canonical candidates = decision gate ("which is canonical?"), never a
+   silent overwrite — today `ln -s` over a lingering real file would
+   silently destroy content, the exact loss class migration exists to
+   prevent.
+3. **Upgrade gap closures.** (a) `grade_upgrade` gains
+   `upgrade_creates_missing_artifacts` — the v17 fixture has no
+   `docs/cases/README.md`, upgrade must create it, nothing asserted that
+   (found by review 2026-08-21); (b) keep-refusal branch — the upgrade
+   trigger adds "also protect `docs/ai/rules/core/okf.md`" (an owned
+   path → the skill must refuse with a reason in the `### Keep list`
+   section; one grader assert); (c) new mini-fixture
+   `upgrade-drop-stack` (manifest with dotnet+aurelia, prompt asks to
+   drop aurelia) — asserts aurelia owned files deleted, dotnet
+   untouched: the only deletion-semantics-by-stack branch, currently
+   untested; `PROFILES` hardcode dissolves into per-fixture meta.
+4. **Contract derivation.** `SCAFFOLD_ARTIFACTS` stops being a hand-list
+   (README's "the one thing to maintain by hand" dies): it is parsed
+   from SKILL.md Step 4's table at grade time — the table and the
+   asserts cannot diverge (this exact divergence happened twice: v17's
+   cases README was added by hand, and upgrade's copy stayed unasserted).
+   Manifest pins (key order, inline arrays, keep serialization) gather
+   into one `expected_manifest_schema()` oracle beside `expected_owned()`.
+   Deliberately left manual: fixture content markers (decimal-money,
+   bl/NNN) — those are intentional test-data oracles, not contract.
+
+**Why:** three defects surfaced in one review session (2026-08-21): the
+prompts leak answers, one law branch and three upgrade branches are
+untested, and the grader hand-duplicates the skill's contracts — every
+edition pays a manual toll and twice the duplication actually split.
+
+**Done when:** minimized triggers in evals.json + README rule;
+agents-first scenario graded green; both-exist decision gate in law and
+exercised; the three upgrade asserts/fixture in; SCAFFOLD_ARTIFACTS
+derived from Step 4's table with a test proving divergence is impossible
+(manually editing the list breaks); full suite green on the cycle's
+benchmark.
+
+## BL-037 — Background eval runner with staged execution and notifications
+
+**Status: DONE 2026-08-22 — shipped as `tools/evals-bg.sh`, and grown
+past the original scope.** Beyond staged execution and notifications it now
+carries two runner profiles (`--runner opencode|claude`), targeted
+idempotency (`--idem`), fixture reset anchored on an `eval-base` tag, and
+workspace-scoped process matching. Run provenance (runner, model, law
+commit) travels into every grade and onto the dashboard.
+
+**What:** the orchestration that the v17 benchmark improvised in /tmp,
+productized. (1) `tools/evals-bg.sh` — detached sequential runner:
+stall detection (log size + repo dirty-count frozen → kill), resume
+ladder (`opencode run --continue`, up to N resumes per attempt), full
+fixture reset between attempts (`git reset` → `checkout -- .` →
+`clean -fd` — staged renames survive a bare checkout and poison the
+next attempt; found the hard way), confirmation-waiver prompt block,
+MODEL env passthrough (glm-5.3 drops long streams on this endpoint —
+313 stream errors logged; glm-5-turbo verified streaming 27 KB/3.8k
+words in one 5-minute probe). (2) **Staged execution kills duplicate
+agent runs:** `check_static` (seconds) → smoke gate = the upgrade
+scenario (most change-sensitive: owned layer, manifest, keep, Step 7) →
+the full remaining corpus only on green smoke; idempotency ×3 launches
+only after a green main corpus (no relaxation — every assert still runs;
+what disappears is running five scenarios × retries off a dead-on-
+arrival change). (3) **Notifications:** desktop `notify-send` on
+per-scenario DONE / whole-run DONE / FAILED; a machine-readable
+`$WS/status.md` (stage, attempt, last log line) as the session contract —
+the interactive session polls a file, never a process, and its context
+does not grow with run logs. Workspace stays outside the repo
+(`/tmp/legislator-eval-vN/`). (4) evals/README documents the background
+procedure beside the manual one.
+
+**Why:** the v17 benchmark could not run in-session: provider stream
+drops × five parallel agents killed the night run; interactive polling
+starved the session (multi-minute sleeps inside tool calls); every
+failed attempt re-ran everything. The runner is already de-facto
+specified by two days of live iteration — this case writes it down.
+
+**Done when:** `tools/evals-bg.sh` runs a full corpus unattended to
+completion with resume surviving an induced stall; notify-send fires on
+scenario and run boundaries; status.md contract documented; staged
+order (static → smoke → corpus → idempotency) enforced by the script;
+README section landed.
+
 ## Note — OKF content-accuracy check is an open idea, not yet a backlog item
 
-The RKruiterApi v11 backfill (2026-07-12) found six `docs/okf/domain/*.md`
+The fleet-api v11 backfill (2026-07-12) found six `docs/okf/domain/*.md`
 files still describing a domain model an ADR had removed — no audit check
 covers OKF *content accuracy against source* (check 5 covers links, check 6
-the map's shape). A deterministic version is hard (needs source-symbol
-grounding, e.g. "every type name an OKF doc cites in backticks exists in
-src/"); promote to a BL item when the shape is clear.
+the map's shape). **Resolved 2026-08-20: promoted into BL-033** — the
+source-symbol grounding (anchors) + the OKF-sync-debt audit check are the
+designed mechanism; this note stays as the origin record.
+
+## BL-038 — File-authority matrix: one table resolves every mode's rights over every artifact class
+
+**Status: PROPOSED 2026-08-22 — raised by the v17 benchmark; deferred past the edition (v18 candidate).**
+
+**What:** replace the prose statements of "may this mode write this file?"
+with a single matrix — artifact class × mode → one permission from a closed
+vocabulary — and make every other mention a reference to it. The table is
+the law; nothing else states file rights.
+
+**Origin — the incident that raised it.** v17's benchmark caught the
+`legacy-migration-agents-first` scenario failing three asserts on a
+migration run that had left `AGENTS.md` untouched. Root cause was not the
+model: the same fact was stated in four places, and one of them stated a
+single mode's constraint as a property of the file — Step 7's "`AGENTS.md`
+is project-owned, so the Legislator never edits it directly", written
+unconditionally while Step 4 and Step 5 both write that very file. Step 5
+and Step 7 execute in the same migration run, so the procedure contradicted
+itself mid-run. The contradiction then propagated: the eval runner's ground
+rules quoted Step 7 near-verbatim, and the harness ended up forbidding
+exactly what it was testing. Two model families had been hiding it by
+ignoring the harness rule and following the skill; a third resolved the
+conflict the other way and exposed it. Fixed for v17 by stating the
+invariant once (SKILL.md's **Entry-document authority**), which is the
+narrow repair — this item is the general one.
+
+**Why a matrix and not more prose.** The invariant that resolved this case
+turned out to be structural, not verbal: the boundary is *whether
+`docs/ai/manifest.json` exists* — the layer is being installed (the entry
+document is the skill's to write) or it is being maintained (the document
+is the owner's, and the skill proposes). That boundary governs more than
+the entry document, and today each artifact class re-derives it in prose.
+A table makes the shared axis explicit and the exceptions visible as cells
+rather than as hedges ("even though AGENTS.md is otherwise project-owned"
+was a hedge around an overstated rule).
+
+**Sketch.** Rows: entry document, owned rules under `docs/ai/rules/**`,
+manifest, Step 4 scaffolded artifacts, project rules under
+`.claude/rules/`, OKF docs, foreign structures, kept paths. Columns: the
+modes, grouped by the state they act on rather than by verb (the naming
+question is part of the work — "installing" vs "maintaining" is the axis
+the incident exposed; per-mode names should say which repo state they
+assume). Cells: one of a closed set — `create-if-absent`, `write`,
+`rewrite-lossless`, `propose-only`, `delete-dead-wiring`, `read-only`,
+`never-touch`.
+
+**Why it pays beyond tidiness.** `grade.py` already derives its
+expectations from tables in the skill source — `SCAFFOLD_ARTIFACTS` from
+Step 4, the protected set from it, migration wiring from `AGENTS.md.tpl`,
+audit severities from the check list, restructure actions from
+`restructure.md` §2 — and `selftest:derivation` asserts those derivations
+stay alive (BL-036). A permission matrix is the natural next derivation:
+the grader's "project-owned files untouched" expectations would come from
+the table instead of hand-maintained lists, and a divergence between law
+and grader would become impossible to introduce silently. The eval prompt
+would stop restating law altogether, which is what let this defect spread.
+
+**Done when:** the matrix exists as one table; every prose statement of
+file rights is replaced by a reference to it; `grade.py` derives its
+protected/writable sets from the table; `selftest:derivation` asserts that
+derivation; the benchmark is green with no scenario regression.
+
+**Risks:** the permission vocabulary must stay small — a cell that needs a
+sentence is a sign the closed set is wrong. And the matrix must not become
+a *second* place stating file rights next to surviving prose; the migration
+is only done when the prose is gone.
+
+## BL-039 — Split the eval suite into its own repo
+
+**Status: PROPOSED 2026-08-22 — raised while hardening the artifact boundary
+in the v17 cycle.**
+
+**What:** move the suite — fixtures, `grade.py`, `setup_workspace.py`,
+`tools/evals-bg.sh`, `dashboard.py`, `streamfmt.py`, `POLICY.md` — into a
+repo of its own, which pulls in a version of the legislator skill and runs
+against it. The skill's repo keeps only what is *about the skill*.
+
+**Why — the boundary should be structural, not a discipline.** An eval run
+happens on a developer's machine and produces graded output, agent
+transcripts, raw event streams and a dashboard. Those carry absolute local
+paths, this machine's installed-skill list, and whatever prose an agent
+wrote here. Today nothing stops such a file from being committed except
+`.gitignore` and attention — and attention already failed once:
+`evals/grading.json` sat tracked in the repo long after the code stopped
+writing there, and `selftest:derivation` wrote a fresh artifact into the
+repo tree on every invocation. Both fixed 2026-08-22, but the fix is a
+patch on a category of mistake, not a wall against it. Two repos make the
+wall: nothing a run produces can even be staged in the skill's repo,
+because the run does not happen there.
+
+**Second reason — the suite has its own lifecycle.** It is now roughly as
+large as the thing it tests, and it has its own defects, its own fixes and
+its own release bar (`POLICY.md`). In the v17 cycle alone the suite
+accounted for more repaired defects than the law did — four grader defects
+and two harness defects against two law defects. Work of that weight
+deserves its own history, not entries interleaved with constitution
+changes.
+
+**Design questions to settle first — none of them obvious:**
+
+- **How the skill under test is supplied.** A git submodule pinned to a tag
+  is the honest form (the suite states which edition it measured), a path
+  argument is the convenient one (what the runner does today). Probably
+  both: a pinned default, a path override for local iteration.
+- **Where `benchmarks/v<N>.md` lives.** These record *the edition*, not the
+  suite — the pass rate, the model floor, the confounds and the defect
+  chronicle are properties of a legislator version. Argument for keeping
+  them with the skill; argument against: they are produced by the suite and
+  would then be the one artifact crossing the boundary. Decide deliberately.
+- **How the "testing is mandatory" rule reaches across two repos.** Today
+  `CLAUDE.md` can point at `evals/POLICY.md` by relative path. After a
+  split it must point somewhere real and enforceable, or the rule quietly
+  becomes advisory.
+- **Whether `check_static.py` follows.** It needs no agent, no workspace and
+  no artifacts — it is a lint of the skill source, and it plausibly belongs
+  with the skill even after everything else leaves.
+- **What the fixtures may name.** They are synthetic today (InvoiceApi,
+  LegacyBilling) and must stay that way; a separate repo is a good moment to
+  state that as a rule rather than a habit.
+
+**Interim measure (already applied 2026-08-22):** the stale tracked
+artifact removed, `selftest` redirected to write into the workspace instead
+of the repo tree, and `.gitignore` extended to cover graded output,
+transcripts, raw streams, prompts, queue/status files and the dashboard.
+
+**Done when:** the suite runs from its own repo against a pinned skill
+version; the skill's repo contains no eval machinery beyond whatever the
+`check_static` decision leaves; the benchmark-location question is answered
+in writing; and a full edition cycle has been driven end-to-end across the
+two repos at least once.
+
+## BL-040 — Redact git history, not just the working tree
+
+**Status: PROPOSED 2026-08-22 — the other half of the redaction done that
+day; deliberately deferred because it rewrites every commit hash.**
+
+**What:** rewrite the repository's history so that fleet repository names
+and absolute local paths are gone from past commits too, not only from the
+current tree — `git filter-repo` with the same mapping the working-tree
+redaction used (`~/.claude/legislator-fleet-aliases.md`).
+
+**Why it is not already done.** On 2026-08-22 the working tree was redacted
+in three commits: 34 mentions in live docs, 71 names and 46 absolute paths
+in historical specs and plans, plus a `check_static.py` guard so the names
+cannot grow back. None of that touches history. All ~110 original mentions
+and 46 paths remain reachable in earlier commits with a single command, so
+**the current state gives privacy against a reader of the tree and none
+against a reader of the repository.** Anyone treating the redaction as
+sufficient before publishing would be wrong.
+
+**Why deferred rather than done.** History rewriting changes every commit
+hash from the first affected commit onward. That invalidates any clone,
+requires a force-push, breaks every existing reference to a commit (this
+backlog and several specs cite short hashes; benchmark records carry law
+generation stamps of the form `v17-<commit>-g<hash>`), and cannot be
+undone selectively. It is a one-shot operation that wants a deliberate
+moment, not a Friday.
+
+**Do it before, and only before, one of these:** the repository becomes
+public or is pushed to a host outside the owner's control; it is shared
+with anyone outside the fleet; or BL-039 splits the eval suite out (a good
+moment, since the new repo starts clean and this one is already being
+restructured).
+
+**Done when:** history carries no fleet name and no absolute local path;
+the law-generation stamps in `evals/benchmarks/*.md` and the commit
+citations in `docs/` are reconciled with the new hashes, or explicitly
+declared stale with a note saying why; and the decoding key still resolves
+every alias used anywhere in the rewritten history.
+
+**Check first:** whether any commit message (not just file content) carries
+a name or path — `filter-repo` handles both, but the two need separate
+expressions, and a message is easy to forget.
 
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
 

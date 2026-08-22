@@ -6,9 +6,9 @@
 
 ## Problem
 
-All of the user's projects (CareerPlatform, RKruiterApi, future ones) are AI-development-first, built on the .NET stack (sometimes with Aurelia), and share the same creation flow: CLAUDE.md + OKF knowledge bundle + backlog + specs/plans. Three artifacts were forgotten in existing projects and must become standard: ADR, dev journal, changelog.
+All of the user's projects (fleet-platform, fleet-api, future ones) are AI-development-first, built on the .NET stack (sometimes with Aurelia), and share the same creation flow: CLAUDE.md + OKF knowledge bundle + backlog + specs/plans. Three artifacts were forgotten in existing projects and must become standard: ADR, dev journal, changelog.
 
-Today the common rules are copy-pasted into each project's CLAUDE.md, so improving a rule means manually editing every repo. The two existing repos have also drifted from each other (CareerPlatform gitignores `docs/superpowers/`; RKruiterApi keeps plans in `.claude/plans`).
+Today the common rules are copy-pasted into each project's CLAUDE.md, so improving a rule means manually editing every repo. The two existing repos have also drifted from each other (fleet-platform gitignores `docs/superpowers/`; fleet-api keeps plans in `.claude/plans`).
 
 ## Goal
 
@@ -65,11 +65,11 @@ legislator/                          # repo root
 │   │       ├── changelog.md.tpl
 │   │       └── agents-README.md.tpl # mini-agent space convention (cycle-2 hook)
 │   └── references/
-│       └── migration.md             # legacy-repo migration guide, incl. CareerPlatform/RKruiterApi specifics
+│       └── migration.md             # legacy-repo migration guide, incl. fleet-platform/fleet-api specifics
 └── README.md                        # repo purpose + install instructions
 ```
 
-Install: `ln -s /home/admin/Repository/custom_skills/legislator/skill ~/.claude/skills/legislator` (the symlink name gives the skill its `/legislator` invocation).
+Install: `ln -s <repo>/skill ~/.claude/skills/legislator` (the symlink name gives the skill its `/legislator` invocation).
 
 ### Rule content sources
 
@@ -81,7 +81,7 @@ The canonical rule files are extracted from the intersection/union of the two ex
 - **adr.md** — new: what warrants an ADR (any decision-gate resolution, any architecture invariant, any accepted antipattern), MADR-style format, numbering `NNNN-kebab-title.md` in `docs/adr/`.
 - **dev-journal.md** — new: `docs/journal/YYYY-MM-DD.md`, append-only during the day; what was worked on, decisions taken, dead ends, open questions for tomorrow. Written at task boundaries, not as a running log.
 - **changelog.md** — new: root `CHANGELOG.md`, Keep-a-Changelog format, `[Unreleased]` section updated as part of every task completion checklist.
-- **stacks/dotnet/architecture.md** — zero-NuGet-dependency Domain project, enforced layer reference graph, business logic never touches HttpContext (tenant-context abstraction), all AI/LLM calls behind a provider abstraction, EF query-filter/tenant-safety expectations. Written generically (no CareerPlatform/RKruiter class names); project-specific instances of these rules stay in the project CLAUDE.md.
+- **stacks/dotnet/architecture.md** — zero-NuGet-dependency Domain project, enforced layer reference graph, business logic never touches HttpContext (tenant-context abstraction), all AI/LLM calls behind a provider abstraction, EF query-filter/tenant-safety expectations. Written generically (no fleet-platform/RKruiter class names); project-specific instances of these rules stay in the project CLAUDE.md.
 - **stacks/dotnet/coding-standards.md** — merged superset of both repos' standards: meaningful names, explicit types over var, braces on all ifs, no comments unless the WHY is non-obvious, no empty catch blocks / swallowed exceptions, zero-warnings policy.
 - **stacks/aurelia/conventions.md** — seeded thin (pointer to the aurelia-developer skill + minimal conventions); grows over time via the normal update loop.
 
@@ -123,7 +123,7 @@ target-repo/
    - Move the project's OKF "what maps to what" table into `docs/okf/index.md` if not already represented there.
    - Relocate stray plans (`.claude/plans/*` → `docs/superpowers/plans/`), fix any references to moved files.
    - Remove `docs/superpowers/` (or equivalent) from `.gitignore`.
-   - Known-repo specifics for CareerPlatform and RKruiterApi are spelled out in `references/migration.md`.
+   - Known-repo specifics for fleet-platform and fleet-api are spelled out in `references/migration.md`.
 6. **Verify.** `diff -r` owned files against the skill's assets — must be byte-identical. Confirm every expected artifact exists.
 7. **Report.** Print a summary: created / overwritten / deleted / migrated / needs-your-review items. **Never commit** — the user reviews the diff and commits themselves (consistent with the pair-development rule).
 
@@ -152,8 +152,8 @@ Idempotency contract: running `/legislator` twice in a row produces zero diff on
 Built-skill acceptance, run against scratch copies (not the real repos):
 
 1. **Fresh scaffold:** empty dir → run → all artifacts exist, manifest correct, second run yields zero diff.
-2. **Legacy migration:** scratch copy of RKruiterApi (the harder case: `.claude/plans`, embedded rules) → run → CLAUDE.md keeps project content, imports resolve, plans relocated, second run yields zero diff.
+2. **Legacy migration:** scratch copy of fleet-api (the harder case: `.claude/plans`, embedded rules) → run → CLAUDE.md keeps project content, imports resolve, plans relocated, second run yields zero diff.
 3. **Upgrade propagation:** edit one rule file in the constitution, bump VERSION, re-run on the scratch copy → only that owned file (+ manifest) changes.
 4. **Rule removal:** delete a rule from the constitution, re-run → the owned copy is deleted in the target, import line flagged for removal.
 
-Real-repo migration of CareerPlatform and RKruiterApi happens after acceptance, one repo at a time, reviewed via git diff.
+Real-repo migration of fleet-platform and fleet-api happens after acceptance, one repo at a time, reviewed via git diff.

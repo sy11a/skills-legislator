@@ -1,12 +1,12 @@
 # Stray rulebooks + .NET refactoring law — design (BL-016, constitution v9)
 
 **Status:** approved 2026-07-10 (plan-mode approval; law home = concern-named
-files, scope = full loop including CareerPlatform validation). Historical
+files, scope = full loop including fleet-platform validation). Historical
 record — do not rewrite.
 
 ## Problem
 
-CareerPlatform carries `docs/superpowers/refactoring-checklist.md` — seven
+fleet-platform carries `docs/superpowers/refactoring-checklist.md` — seven
 sections of review/refactoring law referenced from nowhere. Legislator is
 structurally blind to it: audit check 7 exempts `docs/superpowers/**`,
 check 9's foreign-structures list names only known tool configs, and the
@@ -15,7 +15,7 @@ folder is law no session ever loads. Separately, the checklist's *generic*
 rules (async hygiene, EF data-access discipline) belong in the constitution,
 and the generic `dotnet-refactoring` skill — the pointer target of
 `stacks/dotnet/architecture.md`'s how-to line — is contaminated with
-CareerPlatform-specific rules (`ManagerLinks`, `CareerPlatform.Domain`).
+fleet-platform-specific rules (`ManagerLinks`, `fleet-platform.Domain`).
 
 ## Decisions
 
@@ -83,9 +83,9 @@ via generated fixtures/`expected_owned()`. Full benchmark →
 
 ## Downstream (phases 2–3, outside this repo)
 
-Genericize `~/.claude/skills/dotnet-refactoring` (drop `CareerPlatform.*`,
+Genericize `~/.claude/skills/dotnet-refactoring` (drop `fleet-platform.*`,
 `ManagerLinks` → generic centralized-links rule); then run upgrade +
-restructure in CareerPlatform: expect check 12 to flag
+restructure in fleet-platform: expect check 12 to flag
 `refactoring-checklist.md`, the merge to carve project law into
 `.claude/rules/refactoring.md`, and v9 law to arrive via the normal owned
 copy. User reviews and commits there.

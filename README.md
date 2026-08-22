@@ -174,7 +174,7 @@ de-legislating it is fine — pass it via `--exclude` during rollouts.
 2. A `service-fleet` opencode agent (any minimal definition in
    `~/.config/opencode/agents/service-fleet.md`) — `fleet.sh` launches
    upgrades under it so knowledge observability can exclude the runs from
-   practice metrics (kbo ADR-0039).
+   practice metrics (fleet-obs ADR-0039).
 3. Headless delivery permissions — `fleet.sh upgrade` drives
    `opencode run`, which auto-rejects access outside the target repo, so
    the machine's `~/.config/opencode/opencode.jsonc` needs (adjust the
@@ -219,7 +219,7 @@ PROPOSALS_DIR="..."          # where Step 7 reports land (default: ~/Knowledge/_
    the user's act. Delete each proposal file once applied.
 
 Every upgrade run refreshes the owned layer byte-for-byte (deterministic,
-write-guarded, idempotent) and never commits. The kbo dashboard's
+write-guarded, idempotent) and never commits. The fleet-obs dashboard's
 "Constitution fleet" panel (ADR-0037 there) shows the same scan
 continuously once its registry's `constitution:` block points at this
 repo's `skill/VERSION`.

@@ -4,3 +4,22 @@
 evals/fixtures/**/obj/
 evals/fixtures/**/bin/
 evals/__pycache__/
+
+# Eval run artifacts — never committed. A run produces graded output, agent
+# transcripts, raw event streams and a dashboard; those carry absolute local
+# paths, this machine's installed-skill list, and whatever prose an agent
+# wrote here. Only the summary record under evals/benchmarks/ is git material
+# (see evals/POLICY.md §9). Workspaces live in /tmp by convention; these
+# patterns are the belt for the days they do not.
+evals/outputs/
+evals/**/outputs/
+evals/**/grading*.json
+evals/**/grade-history.jsonl
+evals/**/run.log
+evals/**/run.jsonl
+evals/**/prompt.txt
+dashboard.html
+orchestrate.log
+status.md
+queue.json
+run.json

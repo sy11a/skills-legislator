@@ -129,6 +129,106 @@ def materialize_upgrade(dest: Path) -> None:
     (dest.parent / "fixture_meta.json").write_text(json.dumps(meta, indent=2) + "\n")
 
 
+def materialize_case_practice(dest: Path) -> None:
+    """BL-036 Wave C: a clean legislated repo (current VERSION, full
+    corpus, manifest, case home) with a tiny src tree. The scenario task
+    is ordinary feature work — the grader asserts the case landed per
+    core/sdd.md (the only test that EXECUTES the law rather than its
+    delivery)."""
+    shutil.copytree(EVALS / "fixtures" / "upgrade-base", dest)
+    rules_dst = dest / "docs/ai/rules"
+    (rules_dst / "core").mkdir(parents=True)
+    (rules_dst / "stacks/dotnet").mkdir(parents=True)
+    owned: list[str] = []
+    for f in sorted((SKILL / "assets/rules/core").glob("*.md")):
+        shutil.copy2(f, rules_dst / "core" / f.name)
+        owned.append(f"docs/ai/rules/core/{f.name}")
+    for f in sorted((SKILL / "assets/rules/stacks/dotnet").glob("*.md")):
+        shutil.copy2(f, rules_dst / "stacks/dotnet" / f.name)
+        owned.append(f"docs/ai/rules/stacks/dotnet/{f.name}")
+
+    version = int((SKILL / "VERSION").read_text().strip())
+    owned_sorted = sorted(owned)
+    (dest / "docs/ai/manifest.json").write_text(
+        "{\n"
+        f'  "legislatorVersion": {version},\n'
+        '  "stacks": ["dotnet"],\n'
+        '  "keep": [],\n'
+        '  "ownedFiles": [\n'
+        + ",\n".join(f'    "{p}"' for p in owned_sorted)
+        + "\n  ]\n}\n")
+    (dest / "docs/cases").mkdir(parents=True)
+    shutil.copy2(SKILL / "assets/templates/cases-README.md.tpl",
+                 dest / "docs/cases/README.md")
+
+    imports = "\n".join(f"@{p}" for p in owned_sorted)
+    (dest / "AGENTS.md").write_text(
+        "# BillingApi\n\n" + imports +
+        "\n\n## Project notes\n\nBillingApi handles invoice generation and "
+        "payment webhooks. Fully legislated.\n")
+    import os
+    os.symlink("AGENTS.md", dest / "CLAUDE.md")
+
+
+def materialize_upgrade_drop_stack(dest: Path) -> None:
+    """BL-036 Wave B: a repo subscribed to dotnet+aurelia whose user asks
+    to drop aurelia. Asserts the only deletion-semantics-by-stack branch:
+    aurelia owned files must be deleted, dotnet untouched. Aurelia has
+    exactly one rule file in the current corpus — copy it as-is."""
+    shutil.copytree(EVALS / "fixtures" / "upgrade-base", dest)
+    core_src = sorted((SKILL / "assets/rules/core").glob("*.md"))
+    dotnet_src = sorted((SKILL / "assets/rules/stacks/dotnet").glob("*.md"))
+    aurelia_src = sorted((SKILL / "assets/rules/stacks/aurelia").glob("*.md"))
+    if not aurelia_src:
+        sys.exit("drop-stack fixture needs at least one aurelia rule")
+
+    rules_dst = dest / "docs/ai/rules"
+    (rules_dst / "core").mkdir(parents=True)
+    (rules_dst / "stacks/dotnet").mkdir(parents=True)
+    (rules_dst / "stacks/aurelia").mkdir(parents=True)
+
+    owned: list[str] = []
+    for f in core_src:
+        shutil.copy2(f, rules_dst / "core" / f.name)
+        owned.append(f"docs/ai/rules/core/{f.name}")
+    for f in dotnet_src:
+        shutil.copy2(f, rules_dst / "stacks/dotnet" / f.name)
+        owned.append(f"docs/ai/rules/stacks/dotnet/{f.name}")
+    aurelia_names = []
+    for f in aurelia_src:
+        shutil.copy2(f, rules_dst / "stacks/aurelia" / f.name)
+        owned.append(f"docs/ai/rules/stacks/aurelia/{f.name}")
+        aurelia_names.append(f.name)
+
+    version = int((SKILL / "VERSION").read_text().strip())
+    owned_sorted = sorted(owned)
+    manifest = (
+        "{\n"
+        f'  "legislatorVersion": {version - 1},\n'
+        '  "profiles": ["dotnet", "aurelia"],\n'
+        '  "keep": [],\n'
+        '  "ownedFiles": [\n'
+        + ",\n".join(f'    "{p}"' for p in owned_sorted)
+        + "\n  ]\n}\n"
+    )
+    (dest / "docs" / "ai" / "manifest.json").write_text(manifest)
+
+    imports = "\n".join(f"@{p}" for p in owned_sorted)
+    (dest / "CLAUDE.md").write_text(
+        "# BillingApi\n\n" + imports +
+        "\n\n## Project notes\n\nBillingApi handles invoice generation and "
+        "payment webhooks. Legislated one constitution version ago.\n"
+    )
+
+    meta = {
+        "stacks": ["dotnet"],           # the post-drop subscription
+        "dropped_stack": "aurelia",
+        "dropped_stack_files": [f"docs/ai/rules/stacks/aurelia/{n}" for n in aurelia_names],
+        "expected_keep": [],
+    }
+    (dest.parent / "fixture_meta.json").write_text(json.dumps(meta, indent=2) + "\n")
+
+
 def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
     """Legislated repo with fifteen planted defects for the audit scenario.
 
@@ -164,9 +264,10 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
     (dest / "docs/ai/manifest.json").write_text(
         "{\n"
         f'  "legislatorVersion": {version - 1},\n'
-        '  "profiles": ["dotnet"],\n'
+        '  "stacks": ["dotnet"],\n'
         '  "keep": [\n'
-        '    {"path": "docs/notes/special-sauce.md", "reason": "works as-is"}\n'
+        '    {"path": "docs/notes/special-sauce.md", "reason": "works as-is"},\n'
+        '    {"path": "docs/notes/gone-runbook.md", "reason": "deleted last sprint, entry forgot"}\n'
         "  ],\n"
         '  "ownedFiles": [\n'
         + ",\n".join(f'    "{p}"' for p in sorted(owned))
@@ -285,6 +386,14 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
         "- **pre-plan:** `grilling`\n"
         "- **implement:** `made-up-skill`\n")
 
+    # Negative control (BL-036 Wave B): a healthy case file in the v17
+    # case home. Not a defect — checks 7/12 exempt docs/cases/**; its
+    # absence from the audit report is the assert (absent-marker).
+    (dest / "docs/cases/BL-0042").mkdir(parents=True)
+    (dest / "docs/cases/BL-0042/summary.md").write_text(
+        "# BL-0042 — settled invoice export\n\n"
+        "Tier: 1 (light). Converged 2026-01-20.\n")
+
     # Defect 12 -- stray rulebook: law-shaped review rules parked at
     # docs/superpowers/ top level (exempt from orphan check 7, invisible to
     # every session). Audit check 12 must flag it under its slug; the
@@ -304,12 +413,27 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
         (dest / ".claude/plans/2026-01-importer-plan.md").write_text(
             "# Importer split plan\n\n"
             "Planned: split the importer into reader and writer stages.\n")
+        # BL-036 Wave B bait: a case directory misplaced in the legacy home
+        # — §1's cases row sends it to docs/cases/BL-0007/ (a `move`).
+        (dest / "docs/superpowers/BL-0007").mkdir(parents=True)
+        (dest / "docs/superpowers/BL-0007/plan.md").write_text(
+            "# BL-0007 — invoice numbering\n\n"
+            "Tier: 1 (light). Plan: sequential per tenant.\n")
 
     git(dest, "init", "-q")
     commit_dated(dest, "fixture: rotted-layer at 2026-01-15", "2026-01-15T12:00:00")
+    # Defect (check 9): agent-tooling working-dir debris — foreign dump.
+    (dest / ".superpowers/sdd").mkdir(parents=True)
+    (dest / ".superpowers/sdd/task-9-report.md").write_text(
+        "# task 9 report\n\nDone. Diff attached elsewhere.\n")
+
     # Second commit: code change months after the last journal entry.
     with open(dest / "src/LegacyBilling/Endpoints.cs", "w") as fh:
         fh.write("// new endpoint added long after the journal went quiet\n")
+    # Defect (check 16): a spec BORN in the legacy home after legislation.
+    (dest / "docs/superpowers/specs").mkdir(parents=True, exist_ok=True)
+    (dest / "docs/superpowers/specs/late-feature-spec.md").write_text(
+        "# Late feature spec\n\nWritten after legislation, parked in the legacy home.\n")
     commit_dated(dest, "Add endpoints (no journal entry)", "2026-07-01T12:00:00")
 
     meta = {
@@ -329,15 +453,50 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
             "foreign-structures] UBIQUITOUS_LANGUAGE.md",  # defect 14: foreign glossary store
             "glossary-vitality] docs/okf/glossary.md",  # defect 13: empty glossary, src/ exists
             "skill-bindings] made-up-skill",  # defect 15: sanctioned but uninstalled
+            ".superpowers/",          # defect (check 9): working-dir debris
+            "gone-runbook.md",        # defect (check 10a): dangling keep entry
+            "legacy-home-violation] docs/superpowers/specs/late-feature-spec.md",  # defect (check 16)
             "dry-run mode before a real import",  # harvest: candidate quoted
             "must be reversible",  # harvest: stray-rulebook generic line quoted
-            "### Constitution candidates",  # harvest appendix present with pinned heading
+            "## Constitution candidates",  # harvest appendix present with pinned heading
+        ],
+        # Parity (BL-036 Wave B, repaired 2026-08-22): which pinned check
+        # slug each planted defect exercises. Measured against the slugs
+        # derived from SKILL.md — a check added to the law without a defect
+        # here (or a defect for no check) is red at grade time.
+        "check_slugs_covered": [
+            "imports-resolve",          # ghost-rule.md
+            "unresolved-placeholders",  # overview-draft.md
+            "owned-integrity",          # drifted docs/ai/rules/core/okf.md
+            "staleness",                # manifest one version behind
+            "okf-index-links",          # renamed-away.md
+            "codebase-map",             # stale legacy/ row
+            "orphan-docs",              # orphan-notes.md
+            "journal-recency",          # dead since 2026-01-15
+            "foreign-structures",       # .cursorrules, .superpowers/, UBIQUITOUS_LANGUAGE.md
+            "keep-list",                # special-sauce.md unlinked + gone-runbook.md missing
+            "project-rules",            # .claude/rules/journal.md vs owned law
+            "stray-rulebooks",          # docs/superpowers/review-checklist.md
+            "glossary-vitality",        # empty glossary with src/ present
+            "skill-bindings",           # sanctioned but uninstalled made-up-skill
+            "legacy-home-violation",    # late-feature-spec.md born into a legacy home
+        ],
+        # BL-025 item 2: Critical findings must sit under the Critical
+        # severity heading, not merely appear somewhere in the report
+        # (severity-anchored presence; section = ## <Severity> ... next ##).
+        "severity_anchored_markers": [
+            ["ghost-rule.md", "Critical"],
+            ["overview-draft.md", "Critical"],
+            ["docs/ai/rules/core/okf.md", "Critical"],
         ],
         # BL-011 regression lock: the audit must NOT flag the constitution's
         # hub files as orphans (they are referenced by inline-code mention).
         "absent_markers": [
             "orphan-docs] docs/okf/index.md",
             "orphan-docs] docs/okf/glossary.md",
+            # the healthy case file is exempt (docs/cases/** scan-set):
+            "BL-0042",
+            "stray-rulebooks] docs/cases",
             # not-law suppression: the marked statement must not be proposed
             "Never delete rows from the invoices table",
         ],
@@ -375,7 +534,12 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
             "billing period",
         ]
         meta["foreign_glossary_path"] = "UBIQUITOUS_LANGUAGE.md"
+        # case-insensitive: the law says "definitions become glossary rows" —
+        # agents lawfully reformat "A billing period …" into
+        # "| Billing period | … |" (observed 2026-08-21), so the grader
+        # matches the concept, not the casing
         meta["foreign_glossary_definition"] = "billing period"
+        meta["foreign_glossary_definition_ci"] = True
         meta["stray_rulebook_path"] = "docs/superpowers/review-checklist.md"
         meta["stray_project_law"] = "never call wkhtmltopdf directly"
         meta["conflict_marker"] = (
@@ -401,7 +565,8 @@ def main() -> None:
     if ws.exists():
         sys.exit(f"refusing to overwrite existing workspace: {ws}")
 
-    for name in ("fresh-scaffold-dotnet", "legacy-migration"):
+    for name in ("fresh-scaffold-dotnet", "legacy-migration",
+                 "legacy-migration-agents-first"):
         repo = ws / name / "repo"
         shutil.copytree(EVALS / "fixtures" / name, repo)
         init_commit(repo, f"fixture: {name}")
@@ -410,11 +575,28 @@ def main() -> None:
     materialize_upgrade(repo)
     init_commit(repo, "fixture: upgrade (one version behind, one retired rule)")
 
+    repo = ws / "upgrade-drop-stack" / "repo"
+    materialize_upgrade_drop_stack(repo)
+    init_commit(repo, "fixture: upgrade-drop-stack (dotnet+aurelia, dropping aurelia)")
+
+    repo = ws / "case-practice" / "repo"
+    materialize_case_practice(repo)
+    init_commit(repo, "fixture: case-practice (clean legislated repo)")
+
     repo = ws / "rotted-layer" / "repo"
     materialize_rotted(repo)
 
     repo = ws / "restructure" / "repo"
     materialize_rotted(repo, restructure_extras=True)
+
+    # Every fixture gets an `eval-base` tag at its materialized HEAD — the
+    # one anchor a full reset can trust. Resetting the working tree alone is
+    # not enough (the idempotency stage commits "run 1" into a fixture on
+    # purpose, and a later rerun inherited that commit), and resetting to the
+    # ROOT commit is wrong for the two-commit fixtures: rotted-layer and
+    # restructure plant a dated second commit as defect 8's evidence.
+    for repo in sorted(p for p in ws.glob("*/repo") if (p / ".git").exists()):
+        git(repo, "tag", "-f", "eval-base")
 
     print(f"workspace ready: {ws}")
     for p in sorted(ws.glob("*/repo")):

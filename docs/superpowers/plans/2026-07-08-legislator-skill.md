@@ -72,28 +72,28 @@ Each task below either creates one coherent group of these files (rules, templat
 - [ ] **Step 1: Create the skill directory tree**
 
 ```bash
-mkdir -p /home/admin/Repository/custom_skills/legislator/skill/assets/rules/core
-mkdir -p /home/admin/Repository/custom_skills/legislator/skill/assets/rules/stacks/dotnet
-mkdir -p /home/admin/Repository/custom_skills/legislator/skill/assets/rules/stacks/aurelia
-mkdir -p /home/admin/Repository/custom_skills/legislator/skill/assets/templates
-mkdir -p /home/admin/Repository/custom_skills/legislator/skill/references
+mkdir -p <repo>/skill/assets/rules/core
+mkdir -p <repo>/skill/assets/rules/stacks/dotnet
+mkdir -p <repo>/skill/assets/rules/stacks/aurelia
+mkdir -p <repo>/skill/assets/templates
+mkdir -p <repo>/skill/references
 ```
 
 - [ ] **Step 2: Verify the tree**
 
-Run: `find /home/admin/Repository/custom_skills/legislator/skill -type d | sort`
+Run: `find <repo>/skill -type d | sort`
 
 Expected output (order may vary, all 7 must be present):
 ```
-/home/admin/Repository/custom_skills/legislator/skill
-/home/admin/Repository/custom_skills/legislator/skill/assets
-/home/admin/Repository/custom_skills/legislator/skill/assets/rules
-/home/admin/Repository/custom_skills/legislator/skill/assets/rules/core
-/home/admin/Repository/custom_skills/legislator/skill/assets/rules/stacks
-/home/admin/Repository/custom_skills/legislator/skill/assets/rules/stacks/dotnet
-/home/admin/Repository/custom_skills/legislator/skill/assets/rules/stacks/aurelia
-/home/admin/Repository/custom_skills/legislator/skill/assets/templates
-/home/admin/Repository/custom_skills/legislator/skill/references
+<repo>/skill
+<repo>/skill/assets
+<repo>/skill/assets/rules
+<repo>/skill/assets/rules/core
+<repo>/skill/assets/rules/stacks
+<repo>/skill/assets/rules/stacks/dotnet
+<repo>/skill/assets/rules/stacks/aurelia
+<repo>/skill/assets/templates
+<repo>/skill/references
 ```
 
 - [ ] **Step 3: Write VERSION**
@@ -123,7 +123,7 @@ backlog, changelog, specs/plans) are created once and never touched again.
 ## Install
 
 ```bash
-ln -s /home/admin/Repository/custom_skills/legislator/skill ~/.claude/skills/legislator
+ln -s <repo>/skill ~/.claude/skills/legislator
 ```
 
 The symlink name (`legislator`) is what gives the skill its `/legislator`
@@ -147,7 +147,7 @@ specifics.
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /home/admin/Repository/custom_skills/legislator
+cd <repo>
 git add skill/VERSION README.md
 git commit -m "Scaffold legislator skill directory tree, VERSION, and README"
 ```
@@ -298,14 +298,14 @@ The root `CHANGELOG.md` follows the [Keep a Changelog](https://keepachangelog.co
 
 - [ ] **Step 7: Verify all six files exist and are non-empty**
 
-Run: `wc -l /home/admin/Repository/custom_skills/legislator/skill/assets/rules/core/*.md`
+Run: `wc -l <repo>/skill/assets/rules/core/*.md`
 
 Expected: 6 lines of output, each with a nonzero line count, plus a `total` line.
 
 - [ ] **Step 8: Commit**
 
 ```bash
-cd /home/admin/Repository/custom_skills/legislator
+cd <repo>
 git add skill/assets/rules/core
 git commit -m "Add core process rule files (OKF, pair-development, decision-gate, ADR, journal, changelog)"
 ```
@@ -364,19 +364,19 @@ This file holds only conventions specific to this constitution's projects:
 
 - [ ] **Step 4: Verify the stack directory names match what Task 5 will reference**
 
-Run: `find /home/admin/Repository/custom_skills/legislator/skill/assets/rules/stacks -name '*.md' | sort`
+Run: `find <repo>/skill/assets/rules/stacks -name '*.md' | sort`
 
 Expected:
 ```
-/home/admin/Repository/custom_skills/legislator/skill/assets/rules/stacks/aurelia/conventions.md
-/home/admin/Repository/custom_skills/legislator/skill/assets/rules/stacks/dotnet/architecture.md
-/home/admin/Repository/custom_skills/legislator/skill/assets/rules/stacks/dotnet/coding-standards.md
+<repo>/skill/assets/rules/stacks/aurelia/conventions.md
+<repo>/skill/assets/rules/stacks/dotnet/architecture.md
+<repo>/skill/assets/rules/stacks/dotnet/coding-standards.md
 ```
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /home/admin/Repository/custom_skills/legislator
+cd <repo>
 git add skill/assets/rules/stacks
 git commit -m "Add dotnet and aurelia stack rule files"
 ```
@@ -576,7 +576,7 @@ This convention is installed by the Legislator; the routing system that decides 
 
 - [ ] **Step 10: Verify all nine templates exist**
 
-Run: `ls /home/admin/Repository/custom_skills/legislator/skill/assets/templates/`
+Run: `ls <repo>/skill/assets/templates/`
 
 Expected (9 files, any order):
 ```
@@ -594,7 +594,7 @@ okf-log.md.tpl
 - [ ] **Step 11: Commit**
 
 ```bash
-cd /home/admin/Repository/custom_skills/legislator
+cd <repo>
 git add skill/assets/templates
 git commit -m "Add project-owned scaffold templates"
 ```
@@ -713,14 +713,14 @@ Do not run `git add` or `git commit`. The user reviews and commits.
 
 - [ ] **Step 2: Verify the SKILL.md frontmatter is valid**
 
-Run: `head -5 /home/admin/Repository/custom_skills/legislator/skill/SKILL.md`
+Run: `head -5 <repo>/skill/SKILL.md`
 
 Expected: starts with `---`, contains a `name: legislator` line and a `description:` line, closes with `---` on line 4 or 5.
 
 - [ ] **Step 3: Commit**
 
 ```bash
-cd /home/admin/Repository/custom_skills/legislator
+cd <repo>
 git add skill/SKILL.md
 git commit -m "Add SKILL.md run procedure"
 ```
@@ -747,7 +747,7 @@ Detailed guidance for SKILL.md Step 5 (legacy migration mode) — when `CLAUDE.m
 
 Read the existing `CLAUDE.md` top to bottom and classify each section:
 
-- **Project-specific — keep verbatim in the new CLAUDE.md:** project overview, tech stack description, project-specific architecture instances (e.g. "CareerPlatform.Domain has zero NuGet dependencies" — this is an *instance* of the generic `stacks/dotnet/architecture.md` rule and stays as a concrete callout), build/test commands, CI notes.
+- **Project-specific — keep verbatim in the new CLAUDE.md:** project overview, tech stack description, project-specific architecture instances (e.g. "fleet-platform.Domain has zero NuGet dependencies" — this is an *instance* of the generic `stacks/dotnet/architecture.md` rule and stays as a concrete callout), build/test commands, CI notes.
 - **Now covered by an owned rule — remove and replace with an import:** the OKF Documentation Rule section, the Pair Development Protocol section, the Decision gate section. If the existing text differs from the owned rule's wording, that's expected — the owned rule supersedes it. Do not try to preserve project-specific phrasing of these sections; the import replaces them entirely.
 - **New sections to add:** none go in CLAUDE.md itself — ADR, dev journal, and changelog disciplines are covered by their own owned rule files, imported via the same `@docs/ai/rules/core/...` block.
 
@@ -785,7 +785,7 @@ These are examples of what to expect, not an exhaustive list — always re-read 
 
 - [ ] **Step 2: Verify the file exists and section headers match SKILL.md's summary**
 
-Run: `grep -E '^## ' /home/admin/Repository/custom_skills/legislator/skill/references/migration.md`
+Run: `grep -E '^## ' <repo>/skill/references/migration.md`
 
 Expected:
 ```
@@ -800,7 +800,7 @@ Expected:
 - [ ] **Step 3: Commit**
 
 ```bash
-cd /home/admin/Repository/custom_skills/legislator
+cd <repo>
 git add skill/references/migration.md
 git commit -m "Add legacy repo migration reference guide"
 ```
@@ -825,7 +825,7 @@ Expected: either "No such file or directory" (proceed to Step 2), or an existing
 - [ ] **Step 2: Create the symlink**
 
 ```bash
-ln -s /home/admin/Repository/custom_skills/legislator/skill ~/.claude/skills/legislator
+ln -s <repo>/skill ~/.claude/skills/legislator
 ```
 
 - [ ] **Step 3: Verify the symlink resolves correctly**
@@ -834,7 +834,7 @@ Run: `readlink -f ~/.claude/skills/legislator`
 
 Expected:
 ```
-/home/admin/Repository/custom_skills/legislator/skill
+<repo>/skill
 ```
 
 - [ ] **Step 4: Verify SKILL.md is reachable through the symlink**
@@ -931,8 +931,8 @@ Expected: valid JSON matching this shape (whitespace may differ):
 - [ ] **Step 5: Verify owned files are byte-identical to the source**
 
 ```bash
-diff -r /tmp/legislator-accept/fresh/docs/ai/rules/core /home/admin/Repository/custom_skills/legislator/skill/assets/rules/core
-diff -r /tmp/legislator-accept/fresh/docs/ai/rules/stacks/dotnet /home/admin/Repository/custom_skills/legislator/skill/assets/rules/stacks/dotnet
+diff -r /tmp/legislator-accept/fresh/docs/ai/rules/core <repo>/skill/assets/rules/core
+diff -r /tmp/legislator-accept/fresh/docs/ai/rules/stacks/dotnet <repo>/skill/assets/rules/stacks/dotnet
 ```
 
 Expected: no output from either command (identical directory contents).
@@ -965,10 +965,10 @@ This task validates behavior; it does not modify the `legislator` repo, so there
 
 ---
 
-### Task 9: Acceptance test — legacy migration on a scratch copy of RKruiterApi
+### Task 9: Acceptance test — legacy migration on a scratch copy of fleet-api
 
 **Files:**
-- Create (scratch, not the skill repo): `/tmp/legislator-accept/rkruiter/` (a copy of `/home/admin/Repository/RKruiterApi`).
+- Create (scratch, not the skill repo): `/tmp/legislator-accept/rkruiter/` (a copy of `<fleet>/fleet-api`).
 
 **Interfaces:**
 - Consumes: the installed skill from Task 7, `references/migration.md` from Task 6
@@ -978,7 +978,7 @@ This task validates behavior; it does not modify the `legislator` repo, so there
 
 ```bash
 rm -rf /tmp/legislator-accept/rkruiter
-cp -r /home/admin/Repository/RKruiterApi /tmp/legislator-accept/rkruiter
+cp -r <fleet>/fleet-api /tmp/legislator-accept/rkruiter
 cd /tmp/legislator-accept/rkruiter
 ```
 
@@ -995,7 +995,7 @@ As the acting agent, follow the full procedure in `~/.claude/skills/legislator/S
 - [ ] **Step 4: Verify CLAUDE.md retains project-specific content and gains the import block**
 
 ```bash
-grep -q "RKruiterApi" CLAUDE.md && echo "project content kept"
+grep -q "fleet-api" CLAUDE.md && echo "project content kept"
 grep -q "@docs/ai/rules/core/okf.md" CLAUDE.md && echo "core import present"
 grep -q "@docs/ai/rules/core/pair-development.md" CLAUDE.md && echo "pair-dev import present"
 grep -q "@docs/ai/rules/core/decision-gate.md" CLAUDE.md && echo "decision-gate import present"
@@ -1006,7 +1006,7 @@ Expected: all four lines print (`project content kept`, `core import present`, `
 - [ ] **Step 5: Verify the pre-existing OKF bundle was left untouched**
 
 ```bash
-diff /tmp/legislator-accept/rkruiter/docs/okf/index.md /home/admin/Repository/RKruiterApi/docs/okf/index.md
+diff /tmp/legislator-accept/rkruiter/docs/okf/index.md <fleet>/fleet-api/docs/okf/index.md
 ```
 
 Expected: no output (file unchanged from the original).
@@ -1014,8 +1014,8 @@ Expected: no output (file unchanged from the original).
 - [ ] **Step 6: Verify owned rule files were created and are byte-identical to source**
 
 ```bash
-diff -r /tmp/legislator-accept/rkruiter/docs/ai/rules/core /home/admin/Repository/custom_skills/legislator/skill/assets/rules/core
-diff -r /tmp/legislator-accept/rkruiter/docs/ai/rules/stacks/dotnet /home/admin/Repository/custom_skills/legislator/skill/assets/rules/stacks/dotnet
+diff -r /tmp/legislator-accept/rkruiter/docs/ai/rules/core <repo>/skill/assets/rules/core
+diff -r /tmp/legislator-accept/rkruiter/docs/ai/rules/stacks/dotnet <repo>/skill/assets/rules/stacks/dotnet
 ```
 
 Expected: no output from either command.
@@ -1026,7 +1026,7 @@ Run: `cat /tmp/legislator-accept/rkruiter/docs/ai/manifest.json`
 
 Expected: valid JSON with `"legislatorVersion": 1`, `"profiles": ["dotnet"]`, and an `ownedFiles` array listing the 8 core+dotnet rule paths (same shape as Task 8 Step 4).
 
-- [ ] **Step 8: Verify newly-scaffolded artifacts that RKruiterApi lacked (ADR, journal, changelog) now exist**
+- [ ] **Step 8: Verify newly-scaffolded artifacts that fleet-api lacked (ADR, journal, changelog) now exist**
 
 Run:
 ```bash
@@ -1117,7 +1117,7 @@ Expected: `"legislatorVersion": 2,`
 - [ ] **Step 6: Verify the updated rule file matches the new source exactly**
 
 ```bash
-diff /tmp/legislator-accept/fresh/docs/ai/rules/core/decision-gate.md /home/admin/Repository/custom_skills/legislator/skill/assets/rules/core/decision-gate.md
+diff /tmp/legislator-accept/fresh/docs/ai/rules/core/decision-gate.md <repo>/skill/assets/rules/core/decision-gate.md
 ```
 
 Expected: no output.
@@ -1125,7 +1125,7 @@ Expected: no output.
 - [ ] **Step 7: Commit the rule improvement and VERSION bump in the skill repo (this is a real, permanent change — not reverted)**
 
 ```bash
-cd /home/admin/Repository/custom_skills/legislator
+cd <repo>
 git add skill/assets/rules/core/decision-gate.md skill/VERSION
 git commit -m "Add data-loss-without-backup to the decision gate; bump VERSION to 2"
 ```
@@ -1173,7 +1173,7 @@ Expected: `present`
 - [ ] **Step 4: Delete the throwaway rule file from the skill and bump VERSION to 4**
 
 ```bash
-rm /home/admin/Repository/custom_skills/legislator/skill/assets/rules/core/scratch-temp-rule.md
+rm <repo>/skill/assets/rules/core/scratch-temp-rule.md
 ```
 
 Change `legislator/skill/VERSION` from `3` to `4`.
@@ -1216,7 +1216,7 @@ rm -rf /tmp/legislator-accept
 - [ ] **Step 10: Commit the VERSION bump in the skill repo (the scratch rule file itself was already removed in Step 4 and never committed)**
 
 ```bash
-cd /home/admin/Repository/custom_skills/legislator
+cd <repo>
 git status --porcelain
 ```
 
@@ -1245,4 +1245,4 @@ git commit -m "Bump VERSION to 4 after rule-removal acceptance test"
 - Adaptability model (edit → bump VERSION → re-run → review diff) → Tasks 10 and 11 exercise this end-to-end
 - Error handling (uncommitted changes warning, conflicting-section decision gate) → SKILL.md Step 0 and Step 5 (Task 5), migration guide Section 5 (Task 6)
 
-**Real-repo migration** (CareerPlatform and RKruiterApi themselves, not scratch copies) is intentionally **out of scope for this plan** — the spec calls for that to happen "after acceptance, one repo at a time, reviewed via git diff," as a follow-up once this plan's tasks are all green.
+**Real-repo migration** (fleet-platform and fleet-api themselves, not scratch copies) is intentionally **out of scope for this plan** — the spec calls for that to happen "after acceptance, one repo at a time, reviewed via git diff," as a follow-up once this plan's tasks are all green.
