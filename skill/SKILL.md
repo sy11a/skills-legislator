@@ -59,6 +59,35 @@ With no kept files that line is exactly `  "keep": [],` — never an expanded em
 
 **Ensure the v14 file model (every mode, including upgrade):** `AGENTS.md` is the canonical constitution and `CLAUDE.md` is a symlink to it. If a real (non-symlink) `CLAUDE.md` exists and `AGENTS.md` does not, rename `CLAUDE.md` → `AGENTS.md` (`git mv` if tracked, else Bash `mv`) — the renamed file becomes canonical with its existing content. Then ensure `CLAUDE.md` is a symlink → `AGENTS.md`: create it with Bash `ln -s AGENTS.md CLAUDE.md` when absent; if a real `CLAUDE.md` still lingers (only possible when `AGENTS.md` already existed and the rename was skipped), replace that real file with the symlink. In fresh-scaffold mode `AGENTS.md` is written from `AGENTS.md.tpl` (Step 4) and the symlink created alongside. The `opencode.json` copy in step 1 above completes the v14 model. (Audit mode is read-only and performs none of this — it reports staleness instead.)
 
+## File authority
+
+This table is the only statement of what an invocation mode may do to a file in the target repo. Every other mention of a right in this skill is a reference to a cell, written `(authority: <class> × <mode>)`; a right stated anywhere else in prose is a defect the static check rejects.
+
+| artifact class | installing | installing | maintaining | maintaining | inspecting |
+| | scaffold | migrate | upgrade | restructure | audit |
+|---|---|---|---|---|---|
+| entry document (`AGENTS.md`; `CLAUDE.md` is its symlink) | replace | lossless-write | propose-only | lossless-write | read-only |
+| owned law (`docs/ai/rules/**`, `opencode.json`) | replace | replace | replace | never-touch | read-only |
+| manifest (`docs/ai/manifest.json`) | replace | replace | replace | never-touch | read-only |
+| project rules (`.claude/rules/**`) | create-if-absent | lossless-write | create-if-absent | move-or-merge | read-only |
+| scaffolded artifacts (Step 4's table, the OKF bundle included) | create-if-absent | create-if-absent | create-if-absent | move-or-merge | read-only |
+| relocated owner content (glossary rows, the OKF mapping table, legacy plans/specs, `BL-NNN` directories) | read-only | lossless-write | read-only | move-or-merge | read-only |
+| foreign structures (`.cursorrules`, stray rulebooks, non-standard AI dirs) | read-only | read-only | read-only | move-or-merge | read-only |
+| kept paths (manifest `keep`) | link-only | link-only | link-only | link-only | read-only |
+
+**State rule.** `docs/ai/manifest.json` is the boundary: absent, the layer is being *installed*; present, it is being *maintained* or *inspected*. A mode's column is fixed; its state header names the repo state the mode assumes. Harvest is a report section of migrate, upgrade and audit and writes nothing; steward is a human duty performed on the skill's own repository. Neither acts on a legislated repo, so neither has a column.
+
+**Vocabulary (closed).**
+
+- `replace` — the content comes whole from the skill; whatever exists is replaced byte-for-byte (Bash `cp`), never merged, never edited.
+- `create-if-absent` — created from a template when missing; an existing file is left as it is, whatever its content.
+- `lossless-write` — the run writes owner content (into the file, or out of it into its home) such that every sentence survives; the fidelity pass is the proof. Removing machine wiring that points at nothing (a dangling `@import`, a stale map row) is inside this right — such a line is not owner content.
+- `propose-only` — not written; exact lines are printed under `## Needs your review`, and the owner applies them.
+- `move-or-merge` — relocated or folded whole under an approved plan item (`references/restructure.md` §2); content is carried, not edited.
+- `link-only` — a link *to* the path may be added elsewhere; the path itself is not moved, merged, fixed, or rewritten.
+- `read-only` — read to judge and report; zero writes.
+- `never-touch` — outside the mode's jurisdiction: not written, not proposed about; another mode owns the repair (drifted owned law is healed by running the upgrade column, not by restructure's own hands).
+
 ## Step 4 — Scaffold missing project-owned artifacts
 
 **This step runs in EVERY mode** — fresh scaffold, legacy migration, and upgrade alike: an upgrade run on a repo missing artifacts (an older legislation, a partial setup) must build everything absent from the table below. "Upgrade only refreshes owned files" is a defect: the layer is complete or it is not. For each of the following, create it **only if it does not already exist** — never overwrite. Use the templates in `assets/templates/`, filling placeholders as described below. Never invent content for a placeholder without either asking the user or deriving it from the repo (see the derivation rules below) — do not leave a placeholder token unfilled in the written file. (The `{{...}}` tokens inside `adr-template.md.tpl` itself are the one exception: that file is a reusable template for *future* ADRs the project will write, so its tokens are intentional fill-in-later guidance for humans and must be copied through unresolved — do not attempt to fill them.)

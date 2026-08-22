@@ -168,7 +168,7 @@ def class_paths(repo: Path, cls: str, fixture_meta: dict | None = None) -> list[
     raise ValueError(f"File authority: unknown class {cls!r}")
 
 
-PROTECTING_RIGHTS = frozenset({"create-if-absent", "propose-only", "read-only",
+PROTECTING_RIGHTS = frozenset({"create-if-absent", "read-only",
                                "link-only", "never-touch"})
 
 
