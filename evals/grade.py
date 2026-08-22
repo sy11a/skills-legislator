@@ -237,7 +237,10 @@ def check_mode_authority(g: "Grader", repo: Path, mode: str,
     path change. Instead: for every path of the class that was a REAL file
     at HEAD, its HEAD content must equal the post-run content of the
     class's canonical file (symlinks resolved); the porcelain status of
-    the pair is not consulted."""
+    the pair is not consulted. A content-protecting cell on a class absent
+    from CANONICAL_FILE (a malformed matrix) is reported as this same
+    assert's FAIL, not raised — a bad matrix must fail the grade, never
+    crash the grade run."""
     try:
         m = authority_matrix()
     except ValueError as e:
@@ -252,31 +255,35 @@ def check_mode_authority(g: "Grader", repo: Path, mode: str,
         else:
             status[path] = "A" if code in ("??", "A") else ("D" if code == "D" else "M")
     violations = []
-    for cls in AUTHORITY_CLASSES:
-        right = m[(cls, mode)]
-        if right in CONTENT_PROTECTING_RIGHTS:
-            canonical = CANONICAL_FILE.get(cls)
-            if canonical is None:
-                raise ValueError(f"File authority: no canonical file for class {cls!r}")
-            resolved = (repo / canonical).resolve()
-            post_content = resolved.read_bytes() if resolved.exists() else None
+    try:
+        for cls in AUTHORITY_CLASSES:
+            right = m[(cls, mode)]
+            if right in CONTENT_PROTECTING_RIGHTS:
+                canonical = CANONICAL_FILE.get(cls)
+                if canonical is None:
+                    raise ValueError(f"File authority: no canonical file for class {cls!r}")
+                resolved = (repo / canonical).resolve()
+                post_content = resolved.read_bytes() if resolved.exists() else None
+                for p in class_paths(repo, cls, fixture_meta):
+                    head_content = _head_real_file_content(repo, p)
+                    if head_content is None:
+                        continue
+                    if post_content is None or head_content != post_content:
+                        violations.append(
+                            f"{cls} × {mode} = {right}, but {canonical} content changed (was HEAD:{p})")
+                continue
             for p in class_paths(repo, cls, fixture_meta):
-                head_content = _head_real_file_content(repo, p)
-                if head_content is None:
+                change = status.get(p)
+                if change is None:
                     continue
-                if post_content is None or head_content != post_content:
-                    violations.append(
-                        f"{cls} × {mode} = {right}, but {canonical} content changed (was HEAD:{p})")
-            continue
-        for p in class_paths(repo, cls, fixture_meta):
-            change = status.get(p)
-            if change is None:
-                continue
-            if right in ("replace", "lossless-write", "move-or-merge"):
-                continue
-            if right == "create-if-absent" and change == "A":
-                continue
-            violations.append(f"{cls} × {mode} = {right}, but {p} {change}")
+                if right in ("replace", "lossless-write", "move-or-merge"):
+                    continue
+                if right == "create-if-absent" and change == "A":
+                    continue
+                violations.append(f"{cls} × {mode} = {right}, but {p} {change}")
+    except ValueError as e:
+        g.check("mode_respects_authority", False, str(e))
+        return
     g.check("mode_respects_authority", not violations,
             f"diff shape lawful for all {len(AUTHORITY_CLASSES)} classes in {mode} mode"
             if not violations else "; ".join(violations[:4]))
@@ -1059,6 +1066,40 @@ def grade_derivation_selftest() -> Grader:
                 f"real={'AGENTS.md' in real}, flipped={'AGENTS.md' in patched}")
     else:
         g.check("protected_set_derived_from_cells", False, shape_err)
+    # Symlink-at-HEAD regression coverage (Important finding #2, Task 5 fix
+    # round 2): the 100644-vs-120000 filter in _head_real_file_content has
+    # no automated coverage without this. Build a tiny repo whose HEAD is
+    # already the v14 steady state — AGENTS.md a real file, CLAUDE.md its
+    # symlink — and prove check_mode_authority behaves correctly in both
+    # directions: untouched passes; an edit to AGENTS.md is flagged by name
+    # (not by CLAUDE.md's symlink entry, which the filter must ignore).
+    with tempfile.TemporaryDirectory() as td:
+        sym_repo = Path(td) / "repo"
+        sym_repo.mkdir()
+        subprocess.run(["git", "-C", str(sym_repo), "init", "-q"], check=True)
+        (sym_repo / "AGENTS.md").write_text("# A\n")
+        (sym_repo / "CLAUDE.md").symlink_to("AGENTS.md")
+        subprocess.run(["git", "-C", str(sym_repo), "add", "-A"], check=True)
+        subprocess.run(["git", "-C", str(sym_repo),
+                        "-c", "user.email=eval@local", "-c", "user.name=eval",
+                        "commit", "-q", "-m", "seed: v14 steady state"], check=True)
+
+        g_untouched = Grader()
+        check_mode_authority(g_untouched, sym_repo, "upgrade")
+        untouched_exp = g_untouched.exps[0]
+        untouched_ok = untouched_exp["passed"]
+
+        (sym_repo / "AGENTS.md").write_text("# A\nextra\n")
+        g_edited = Grader()
+        check_mode_authority(g_edited, sym_repo, "upgrade")
+        edited_exp = g_edited.exps[0]
+        edited_flagged = (not edited_exp["passed"]
+                          and "AGENTS.md content changed" in edited_exp["evidence"])
+
+        symlink_ok = untouched_ok and edited_flagged
+        g.check("content_check_ignores_symlink_at_head", symlink_ok,
+                f"untouched: {'ok' if untouched_ok else 'FAIL ' + untouched_exp['evidence']}; "
+                f"content-changed: {'flagged' if edited_flagged else 'FAIL ' + edited_exp['evidence']}")
     wiring = migration_wiring()
     g.check("migration_wiring_derived_from_template",
             "@docs/okf/codebase-map.md" in wiring and "## Boundaries" in wiring,
