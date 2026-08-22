@@ -452,7 +452,7 @@ plants an owned-rule-restating line in a merged source should lock it.
 
 **What:** two-part cycle (spec:
 `docs/superpowers/specs/2026-07-10-stray-rulebooks-design.md`). (a) Generic
-refactoring law absorbed from CareerPlatform's orphaned
+refactoring law absorbed from fleet-platform's orphaned
 `docs/superpowers/refactoring-checklist.md` into concern-named files —
 async/cleanliness bullets in `stacks/dotnet/coding-standards.md`, DI bullets
 in `stacks/dotnet/architecture.md`, new `stacks/dotnet/data-access.md`
@@ -463,11 +463,11 @@ into `.claude/rules/<topic>.md` and removes the file. BL-015 rides along
 (all four items).
 
 **Why:** a rulebook parked in an unorthodox folder is law no agent ever
-sees — CareerPlatform's checklist was invisible to CLAUDE.md, harvest, and
+sees — fleet-platform's checklist was invisible to CLAUDE.md, harvest, and
 every audit check. After this cycle "refactor X" in a legislated repo hits
 v9 law (imported), project law (`.claude/rules/`, auto-loaded), and the
 generic dotnet-refactoring skill — nothing orphaned. User-settled
-2026-07-10 (concern-named law home + full loop incl. CareerPlatform
+2026-07-10 (concern-named law home + full loop incl. fleet-platform
 validation).
 
 **Done when:** benchmark `evals/benchmarks/v9.md` green — audit names the
@@ -475,7 +475,7 @@ planted `docs/superpowers/review-checklist.md` under the `stray-rulebooks`
 slug and proposes its generic line as a candidate (project line + check-11
 contradiction line absent from candidates); restructure merges it into
 `.claude/rules/` and removes it; fresh/upgrade carry `data-access.md`;
-idempotency zero-diff; then CareerPlatform live validation (upgrade +
+idempotency zero-diff; then fleet-platform live validation (upgrade +
 restructure) succeeds end-to-end.
 
 ## BL-017 — Stray-rulebook follow-ups from the v9 final review (skill-file items)
@@ -514,7 +514,7 @@ Original items:
    new `@...` import line. Fix: also withhold the alphabetically last
    stack rule and assert the proposed import line.
 5. **Captive-dependency law candidate (Minor, v10).** "No singleton
-   services holding scoped/DbContext references" from the CareerPlatform
+   services holding scoped/DbContext references" from the fleet-platform
    checklist is generic + diff-checkable and covered by neither new DI
    bullet — promote in the next law cycle.
 6. **Check 12 × check 9 double-report on root `AGENTS.md` (Minor)** — same
@@ -536,7 +536,7 @@ clean). Upgrade scenario delivered a withheld stack rule and proposed its
 import line (the v9 fleet-action path, now locked); check-12 keep exemption
 fired unprompted in the idempotency run; all idempotency passes zero-diff.
 BL-017 shipped with it. **Fleet action: run `/legislator` in each
-downstream repo to deliver v10.** Companion CareerPlatform
+downstream repo to deliver v10.** Companion fleet-platform
 `.claude/rules/branching.md` pending re-land (orphaned commit 0dd0ebd,
 awaiting repo-idle signal from the user).
 
@@ -548,11 +548,11 @@ freshly-pulled main; merging stays the user's act (**`assets/rules/**`
 change: VERSION 9→10**). BL-017 riders 1–4 ride along (check-12 keep/
 referrer/conventional-doc hardening, upgrade fixture withholds a stack
 rule) plus BL-017 item 5 (captive-dependency bullet in dotnet
-architecture.md). Companion project law: CareerPlatform
+architecture.md). Companion project law: fleet-platform
 `.claude/rules/branching.md` (concrete mechanics — stacking commands,
 2-day cap, chore batching).
 
-**Why:** at AI-assisted pace, tasks outrun merges: CareerPlatform hit 30+
+**Why:** at AI-assisted pace, tasks outrun merges: fleet-platform hit 30+
 local branches (mostly squash-merge ghosts plus stale real work), each new
 branch cut from a staler master. Control comes from the gates (build/test,
 review checklist, decision gate), not branch count — so the law makes
@@ -614,7 +614,7 @@ there was judgment-dependent). Fresh run seeded 5 terms, migration carved
 3 definitions into rows, restructure healed the empty glossary with 4
 derived terms, all idempotency zero-diff. BL-019 shipped with it.
 **Fleet action: run `/legislator` in each downstream repo to deliver v11**
-(phase 2 backfill covers CareerPlatform + RKruiterApi + RKruiterAgent).
+(phase 2 backfill covers fleet-platform + fleet-api + fleet-agent).
 
 **What:** three levers to stop OKF glossaries dying empty (spec:
 `docs/superpowers/specs/2026-07-12-glossary-vitality-design.md`).
@@ -626,8 +626,8 @@ the repo's own domain) instead of an intentionally empty table; (2)
 source code, healable by restructure via the Step 4 derivation rules
 (token-fill precedent). BL-019 rides along (all five items).
 
-**Why:** review of the fleet (2026-07-12) found CareerPlatform and
-RKruiterApi glossaries byte-empty since legislation while RKruiterAgent's
+**Why:** review of the fleet (2026-07-12) found fleet-platform and
+fleet-api glossaries byte-empty since legislation while fleet-agent's
 thrives — terms "emerge" only in design sessions; code-resident terms
 never do. The glossary had no law behind it: not on the completion
 checklist, not audited, seeded empty by design.
@@ -636,7 +636,7 @@ checklist, not audited, seeded empty by design.
 migration runs seed ≥1 real term; audit names the empty planted glossary
 under the `glossary-vitality` slug; restructure heals it approval-gated;
 idempotency zero-diff ×3; then live backfill lands real domain terms in
-CareerPlatform and RKruiterApi on feature branches.
+fleet-platform and fleet-api on feature branches.
 
 ## BL-021 — Glossary-vitality follow-ups from the v11 final review (skill-file items)
 
@@ -720,7 +720,7 @@ explicitly.
 showed any installed skill pack can out-instruct the constitution — a
 parallel intake, parallel glossaries, auto-commits. The missing law was
 precedence, not the pack. And verification had no law at all: the
-build/test gate lived in a skill, and CareerPlatform grew its own e2e
+build/test gate lived in a skill, and fleet-platform grew its own e2e
 project rule (harvest signal) — agents need a pinned ladder to keep
 control of what they build.
 
@@ -861,7 +861,7 @@ concrete decision. Per-gap verdicts:
   impossible by construction; converge checks both directions
   (missing-test / unrequested). The OpenSpec living-tree variant is
   conserved for Vector A / second hands. Non-testable norms live in ADRs
-  + a marked baseline section. Implemented inside BL-033 (kbo pilot).
+  + a marked baseline section. Implemented inside BL-033 (fleet-obs pilot).
 - **G2 (requirements syntax): DECIDED — EARS lines mandatory** (5
   patterns), at least one named Gherkin "hurting case" per spec,
   observability as the quality test; no RFC 2119 table. → BL-032.
@@ -904,7 +904,7 @@ concrete decision. Per-gap verdicts:
   conditional loading (D0); Vortex (unresolved — could not confirm it
   exists).
 
-**Execution order (revised 2026-08-21, evening — eval hardening joins v17):** kbo gold panel ✓ DONE (PR#19, before-snapshot 22%) → **edition v17** = BL-032 (SDD law + absorbed case home + lifecycle + riders BL-028/030 + BL-025 triage) **closing green first**, then BL-036 waves A–C on the same branch (BL-037 runs as Wave A; case-practice is the v17 release gate) → soak → **edition v18** = BL-033 (engine, OKF v2, baseline, kbo pilot; BL-031 rides if templates move) → BL-034 (self-legislation) → **edition v19+** = BL-027 (outer mode, own design cycle) → first steward cycle. Rationale for the v17 expansion: the SDD law is a program for target-repo agents — shipping it without a suite that executes it (case-practice) and with a grader that hand-duplicates the skill's contracts would repeat the orphan problem the law exists to cure. BL-035 (docs-only, no VERSION) runs anytime. Full consistency record: the deep-audit spec's addendum.
+**Execution order (revised 2026-08-21, evening — eval hardening joins v17):** fleet-obs gold panel ✓ DONE (PR#19, before-snapshot 22%) → **edition v17** = BL-032 (SDD law + absorbed case home + lifecycle + riders BL-028/030 + BL-025 triage) **closing green first**, then BL-036 waves A–C on the same branch (BL-037 runs as Wave A; case-practice is the v17 release gate) → soak → **edition v18** = BL-033 (engine, OKF v2, baseline, fleet-obs pilot; BL-031 rides if templates move) → BL-034 (self-legislation) → **edition v19+** = BL-027 (outer mode, own design cycle) → first steward cycle. Rationale for the v17 expansion: the SDD law is a program for target-repo agents — shipping it without a suite that executes it (case-practice) and with a grader that hand-duplicates the skill's contracts would repeat the orphan problem the law exists to cure. BL-035 (docs-only, no VERSION) runs anytime. Full consistency record: the deep-audit spec's addendum.
 
 **Why:** the workflow was built intuitively from practice and works (fleet
 usage evidence in the research spec), but with nothing to compare against,
@@ -914,7 +914,7 @@ adopting any foreign structure: techniques get translated into legislator
 assets, nothing external survives contact with the law.
 
 **Done when:** BL-032 and BL-033 ship green through their full cycles; the
-kbo pilot demonstrates EARS+baseline+converge end to end; the kbo panel is
+fleet-obs pilot demonstrates EARS+baseline+converge end to end; the fleet-obs panel is
 live before the first rollout; rejected decisions are recorded (this entry
 + the deep-audit spec serve as the record; ADR them at implementation time
 if they need permanence).
@@ -944,7 +944,7 @@ untracked files tolerable, commits not). Mechanics settled in the
   DB, no GitHub/ticketing automation per BL-008); in-repo artifacts
   become lifecycle working copies that die at feature merge;
 (5) progressive-rigor floor (small feature in a big organism = lowest
-  ceremony tier by law); (6) kbo registry root addition for the sidecar.
+  ceremony tier by law); (6) fleet-obs registry root addition for the sidecar.
 **Design notes added 2026-08-20 (consistency review):** (a) the outer
 **execution profile** — what changes in each law for an outer repo
 (ceremony defaults, converge/analyze semantics when the baseline and
@@ -1108,7 +1108,7 @@ this is it; each item rides or is excluded with a reason, some may have
 gone stale over v14–v16).
 
 **Why:** one rule file replaces muscle memory: the fleet already reached
-for scenario form (kbo Testing lines) and parallelism discipline
+for scenario form (fleet-obs Testing lines) and parallelism discipline
 (Wave-1) on its own — the law makes the existing instincts deliverable,
 auditable, and harvestable, and the tier law makes both
 under-ceremony (unrequested gifts, debris) and over-ceremony (monoliths)
@@ -1123,7 +1123,7 @@ law passes analyze; a converged case shows the append-only findings
 trail); BL-028/030 riding items verified; fleet re-run delivers the rule
 everywhere.
 
-## BL-033 — OKF v2 + the one engine: generated baseline, source anchors, spec linter (kbo pilot)
+## BL-033 — OKF v2 + the one engine: generated baseline, source anchors, spec linter (fleet-obs pilot)
 
 **Status: queued 2026-08-20 → edition v18, after a v17 soak (behavioral — skill/ changes, VERSION bump + full e2e)**
 
@@ -1142,18 +1142,18 @@ specs ↔ annotated tests → generated `baseline.md`, do-not-edit; converge
 consumes its both-direction gaps; the engine takes its place on the
 verification ladder as a static rung — bindings in `core/verification`
 project rules, absent-engine fallback per BL-032's clause). Includes the
-G1 architecture-D pilot in **kbo** (R-NNN + annotated tests + baseline +
+G1 architecture-D pilot in **fleet-obs** (R-NNN + annotated tests + baseline +
 converge end to end in the smallest active repo, home of the proto-EARS
 Testing lines) and the new audit check "OKF-sync debt" (commits touching
 concept files after a doc's timestamp with no linked OKF update; repair
 via restructure only). Legalizes the open "OKF content-accuracy" note
-below into a designed mechanism. **kbo accounting:** the registry gains
+below into a designed mechanism. **fleet-obs accounting:** the registry gains
 a `generated` content-type, and the gold-panel docs-vs-code metric
 excludes generated writes — machine-written baseline/map entries must
 not read as documentation discipline, or the panel lies after rollout.
 BL-031 rides this cycle if it touches the backlog template.
 
-**Why:** hand-maintained truth always rots — RKruiterApi's six docs about
+**Why:** hand-maintained truth always rots — fleet-api's six docs about
 a removed model proved it in our own fleet; our rot-free artifacts (law
 stratum, manifest) are machine-written. Generation gives norms and maps
 a mechanical bond to code; anchors make the remaining handwritten layer
@@ -1163,7 +1163,7 @@ half-maintained tools. Its own edition (v18) because a transform of what
 process law — a failure here must not roll the SDD law back with it.
 
 **Done when:** the engine exists and passes its own verification ladder;
-the kbo pilot shows a converged case with a regenerated baseline and
+the fleet-obs pilot shows a converged case with a regenerated baseline and
 both-direction converge findings; OKF v2 template + rule amendment
 shipped with VERSION bump and green e2e benchmark; fleet re-run
 migrates repos forward-only (no history rewritten).
@@ -1380,7 +1380,7 @@ README section landed.
 
 ## Note — OKF content-accuracy check is an open idea, not yet a backlog item
 
-The RKruiterApi v11 backfill (2026-07-12) found six `docs/okf/domain/*.md`
+The fleet-api v11 backfill (2026-07-12) found six `docs/okf/domain/*.md`
 files still describing a domain model an ADR had removed — no audit check
 covers OKF *content accuracy against source* (check 5 covers links, check 6
 the map's shape). **Resolved 2026-08-20: promoted into BL-033** — the

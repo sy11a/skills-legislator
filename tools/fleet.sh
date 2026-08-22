@@ -106,7 +106,7 @@ cmd_upgrade() {
     echo "== $name: v$version → v$CURRENT_VERSION =="
     # </dev/null: opencode reads stdin and would swallow the rest of the repo list.
     # --agent service-fleet marks the session as a service run so knowledge
-    # observability excludes it from practice metrics (kbo ADR-0039); the agent
+    # observability excludes it from practice metrics (fleet-obs ADR-0039); the agent
     # must exist in the machine's opencode config (~/.config/opencode/agents/).
     if opencode run --dir "$repo" --agent service-fleet ${model:+--model "$model"} "$(upgrade_prompt "$name")" </dev/null; then
       after="$(python3 -c "import json,sys;print(json.load(open(sys.argv[1])).get('legislatorVersion','?'))" "$repo/docs/ai/manifest.json" 2>/dev/null || echo '?')"
