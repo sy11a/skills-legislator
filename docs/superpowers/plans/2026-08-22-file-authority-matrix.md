@@ -619,7 +619,7 @@ Replace `Kept files are project-owned content — the keep list is manifest meta
 
 - [ ] **Step 3: Step 4 header (v17 line 64)**
 
-Replace `For each of the following, create it **only if it does not already exist** — never overwrite.` with `For each of the following the right is \`create-if-absent\` (authority: scaffolded artifacts × scaffold, and the same cell in every installing and maintaining column).`
+Replace `For each of the following, create it **only if it does not already exist** — never overwrite.` with `For each of the following the right is \`create-if-absent\` (authority: scaffolded artifacts × scaffold — the same cell under migrate and upgrade, the three modes this step runs in).` *(Corrected during execution: the earlier wording "every installing and maintaining column" was false for restructure, whose cell is `move-or-merge`.)*
 
 - [ ] **Step 4: Step 4 table rows (v17 lines 79, 81, 95)**
 
