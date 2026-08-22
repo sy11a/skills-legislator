@@ -116,13 +116,15 @@ def authority_matrix() -> dict[tuple[str, str], str]:
         if cls not in AUTHORITY_CLASSES:
             raise ValueError(f"File authority: unknown artifact class {cls!r}")
         cells = row[1:1 + len(AUTHORITY_MODES)]
+        if len(cells) != len(AUTHORITY_MODES):
+            raise ValueError(f"File authority: row {cls!r} has {len(cells)} cells, expected {len(AUTHORITY_MODES)}")
         for mode, cell in zip(AUTHORITY_MODES, cells):
             if cell not in AUTHORITY_VALUES:
                 raise ValueError(f"File authority: cell ({cls} × {mode}) = {cell!r} is not one of {sorted(AUTHORITY_VALUES)}")
             out[(cls, mode)] = cell
-    missing = [c for c in AUTHORITY_CLASSES if (c, "scaffold") not in out]
+    missing = [(c, m) for c in AUTHORITY_CLASSES for m in AUTHORITY_MODES if (c, m) not in out]
     if missing:
-        raise ValueError(f"File authority: rows missing for {missing}")
+        raise ValueError(f"File authority: cells missing for {missing[:5]}")
     return out
 
 
@@ -130,7 +132,11 @@ def authority_states() -> dict[str, str]:
     """mode -> state (installing / maintaining / inspecting), read from the
     state header row directly above each mode."""
     rows = _authority_rows()
+    if len(rows) < 2:
+        raise ValueError("File authority: no table rows under the heading")
     states = rows[0][1:1 + len(AUTHORITY_MODES)]
+    if len(states) != len(AUTHORITY_MODES):
+        raise ValueError(f"File authority: state row has {len(states)} cells, expected {len(AUTHORITY_MODES)}")
     return dict(zip(AUTHORITY_MODES, states))
 
 
