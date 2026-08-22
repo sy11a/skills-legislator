@@ -4,7 +4,8 @@ Canonical term list. Status values: **industry** — established SDD/software-fi
 term used in its field sense · **home** — legislator's own established term ·
 **coin** — home coinage minted where the field is silent · **legacy** —
 deprecated alias, kept only where it physically lives. Naming rules and the
-entry path for new terms: `docs/ontology.md` §3.
+entry path for new terms: `docs/ontology.md` §3; the narrative these terms
+serve: `docs/philosophy.md`.
 
 | Term | Definition | Status | Lives |
 |---|---|---|---|
@@ -23,8 +24,12 @@ entry path for new terms: `docs/ontology.md` §3.
 | constitution | `docs/ai/rules/**` @ VERSION — core rules plus subscribed stacks, delivered as one edition. Means exactly this and nothing else (R1-T1); the old loose usage for AGENTS.md is retired (cleanup: BL-030). | home | `skill/assets/rules/**` → `docs/ai/rules/**` |
 | converge | The mandatory closing gate of a case cycle: judges code against every promise (spec requirements, plan decisions, constitutional MUSTs) — never against git diffs — classifies gaps missing/partial/contradicts/unrequested, appends traceable remediation tasks append-only, loops to "✅ Converged". Adapted from SpecKit converge. | home (adapted) | `core/sdd.md` (BL-032) |
 | decision gate | The escalation point where the machine stops and the human decides; conflicts are never silently resolved. | home | `rules/core/decision-gate.md` |
+| drift | Any divergence of an installed copy from the central law: a hand-edited owned file, a repo left behind an edition, a local amendment. Surfaced by audit; repaired by re-run, never by editing in place. | home | ontology §1 |
+| EARS | Easy Approach to Requirements Syntax: the one-line requirement forms (ubiquitous / WHEN-THEN / WHILE / WHERE / IF-THEN) every spec requirement is written in, one behavior per line, each carrying an `R-NNN`. | industry | `core/sdd.md` (BL-032) |
+| edition | The whole rule corpus as delivered at one VERSION — the unit of change, adoption, and measurement. A repo is at an edition or behind it; there is no per-file patch and no partial adoption. | home | `skill/VERSION`; `evals/benchmarks/v<N>.md` |
 | fleet | All legislated repos, managed through re-runs of the skill; the law stratum stays identical across it. | industry | cross-repo |
 | generated | Third ownership class: artifacts a machine writes locally (baseline, generated OKF halves) — do-not-edit, regenerated from source, die with it; not in `ownedFiles`, not keepable. Neither hand-reference nor hand-lifecycle. | coin | ontology §2; `core/artifact-lifecycle.md` amendment (BL-032/033) |
+| grill | The clarify round a spec passes before approval: at most five pointed questions, one at a time, recommended option first; accepted answers are written into the spec's `## Clarifications` and replace contradicted text rather than sitting beside it. | home | `core/sdd.md` (BL-032) |
 | harvest | Collecting constitution candidates (law-shaped, uncovered, generalizable statements) from field repos' project prose. Proposals only — the user promotes centrally. Minted: the field is silent on upward law feedback. | coin | audit's constitution-candidates section |
 | inner mode | The default placement: the AI layer lives inside the git repo it governs (owned rules, manifest, OKF, cases — all committed). Every current fleet repo is inner. | coin | ontology §Placement modes |
 | journal | Append-only chronicle of what was done, session by session. Not decisions (ADR), not concept state (OKF), not releases (changelog). | industry (accepted) | `docs/journal/` |
@@ -42,6 +47,7 @@ entry path for new terms: `docs/ontology.md` §3.
 | project stratum | The human-owned layer (OKF, ADRs, backlog + register, journal, case files, AGENTS.md sections, project rules); grows per repo — where rot happens and where audit/restructure operate. | home | ontology §1 |
 | R-NNN | The stable id every EARS requirement line carries, flowing through tasks (`per R-NNN`), annotated tests, and the generated baseline — the mechanical web that makes analyze/converge checks deterministic. | coin | specs (BL-032) |
 | restructure | Propose-and-apply sanitation of the project stratum (move / merge / link / fix / heal; decisions escalated). Wider than SpecKit's `converge`: fixes a layer, not a spec↔code pair. | home | SKILL.md invocation mode |
+| rot | Decay of the project stratum: docs that no longer match the code, unreachable files, a stopped journal, unresolved placeholders, foreign AI-layer structures. The failure mode the law stratum is structurally immune to and audit exists to surface. | home | audit report; ontology §1 |
 | scaffold · migrate · upgrade | The three installation modes: build the layer fresh; convert a pre-v14 CLAUDE.md repo; re-deliver the current edition to a legislated repo. | home | SKILL.md |
 | stack | One concept: a named package of stack-specific rule additions (`stacks/<name>/`), and by extension a repo's subscription to it. "Stack profile" as a compound is retired prose. | industry | `assets/rules/stacks/` → `docs/ai/rules/stacks/` |
 | steward | Periodic review of the law itself: preference-or-compensation per rule, constitution benchmark on new models, deletion habit. The user decides; steward prepares. Minted: the field is silent. | coin | README "Steward duties" |

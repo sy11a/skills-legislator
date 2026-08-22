@@ -4,7 +4,9 @@ Canonical model of the legislator system: strata, entities, relations, and the
 naming conventions that govern every term the product uses. Decisions recorded
 here came out of the 2026-08-20 ontology review (sessions R1–R5: every term
 checked against SDD-field conventions first, internal harmony second). Companion
-file: `docs/glossary.md` (term-by-term definitions and statuses). This document
+files: `docs/glossary.md` (term-by-term definitions and statuses) and
+`docs/philosophy.md` (the narrative layer above this model — what the system is
+and why it is built this way; it argues, this document defines). This document
 is the seed of self-legislation (A4): the legislator repo's own ontology, kept
 honest by the same review discipline the skill prescribes for other repos.
 
