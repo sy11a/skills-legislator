@@ -1066,7 +1066,18 @@ records; template decision recorded; benchmark green if templates moved.
 
 ## BL-032 — `core/sdd.md`: the SDD law (spec format, clarify protocol, ceremony tiers, converge/analyze gates)
 
-**Status: IN PROGRESS 2026-08-21, evening — scenario corpus GREEN 120/120** (`evals/benchmarks/v17.md`; fresh 18/18, migration 26/26, upgrade 18/18 — stacks-key migration lossless, audit 30/30 — severity anchoring held, restructure 28/28 after the five-generation law saga, all fixes benchmark-caused and recorded there). Riders delivered with the cycle: **BL-028** (stacks key + legacy fallback, graded on the planted legacy manifest), **BL-030** (constitution sweep), **BL-025 triage** — items 1,2,4,5,6 shipped (severity-anchored markers, link-skills hardening, uninstalled-skill clause, For-the-team scoping); item 3 excluded-stale (v14 derivation rework dissolved it). Confounds recorded: glm-5-turbo model switch (glm-5.3 unstable — tokens/wall not comparable to v16), historical prompts (BL-036 Wave A minimizes them later in this same edition). **Remaining before merge: idempotency ×3; then BL-036 waves A–C on this branch (case-practice is the release gate), fleet delivery after.**
+**Status: GREEN 2026-08-22 — corpus 177/177 and idempotency ×3 zero-diff**
+(`evals/benchmarks/v17.md`, phase 2; model floor `sonnet` on Claude Code
+2.1.239). Riders delivered with the cycle: **BL-028** (stacks key + legacy
+fallback), **BL-030** (constitution sweep), **BL-025 triage** (items
+1,2,4,5,6; item 3 excluded-stale). Phase 2 forced three further law
+amendments, all benchmark-caused: entry-document authority stated once
+(Step 7 had written one mode's constraint as a property of the file, and
+Step 5 contradicted it in the same run), check-7 orphans pinned to `[link]`
+(two lawful outcomes broke idempotency *and* let an open `[decision]` be
+reclassified into an applied write), and check-11 findings routed to
+`[decision]` explicitly. VERSION stays 17 — none of it touches
+`assets/rules/**`. **Remaining: merge.**
 
 **What:** give the SDD process its constitutional home (deep-audit D1
 finding: the process is an orphan — practiced fleet-wide, governed
@@ -1245,7 +1256,12 @@ checks pass.
 
 ## BL-036 — Eval authenticity: honest triggers, agents-first migration, gap closures, contract derivation
 
-**Status: REVISED 2026-08-21 — executes INSIDE edition v17, before its release.** v17's branch is unmerged and the edition undelivered, so the rider is legal: the SDD law and the suite that proves it ship as one edition. Order of execution: first close BL-032's own benchmark green (the running v17 corpus + diagnosis of the failed migration/upgrade attempts), then the waves below on the same branch; the final full benchmark including case-practice is the v17 release gate. This postpones BL-033 (OKF v2) and shifts the edition map: v17 = SDD law + eval hardening; v18 = BL-033; v19+ = BL-027.
+**Status: DONE 2026-08-22 — all waves delivered inside edition v17.**
+Honest triggers, the agents-first migration scenario, the gap closures and
+contract derivation all ship; `selftest:derivation` keeps the derivations
+alive. Phase 2 of the benchmark closed six further grader defects the waves
+had not reached — three of which had been passing *falsely* in every prior
+version. The suite's own bar is now written down in `evals/POLICY.md`.
 
 **Execution waves (priority order):**
 
@@ -1341,7 +1357,12 @@ benchmark.
 
 ## BL-037 — Background eval runner with staged execution and notifications
 
-**Status: REVISED 2026-08-21 — Wave A of BL-036 (rides inside edition v17, before release); the benchmark-template "Coverage delta" section lands with it.**
+**Status: DONE 2026-08-22 — shipped as `tools/evals-bg.sh`, and grown
+past the original scope.** Beyond staged execution and notifications it now
+carries two runner profiles (`--runner opencode|claude`), targeted
+idempotency (`--idem`), fixture reset anchored on an `eval-base` tag, and
+workspace-scoped process matching. Run provenance (runner, model, law
+commit) travels into every grade and onto the dashboard.
 
 **What:** the orchestration that the v17 benchmark improvised in /tmp,
 productized. (1) `tools/evals-bg.sh` — detached sequential runner:
