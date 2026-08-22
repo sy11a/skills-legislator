@@ -7,6 +7,13 @@ specs/plans.
 
 ## Testing is mandatory — no change to `skill/` is done until verified
 
+**Read `evals/POLICY.md` before planning any change to `skill/`.** It is the
+authoritative bar: evals are a deliverable, not a check; the eval for a
+change is designed *before* the change; an edition ships only at 100% on the
+corpus plus idempotency ×3; every red is classified (law / grader / harness /
+model) before it is fixed; and each edition records its **model floor** — the
+cheapest model at which it reaches 100%.
+
 Any edit under `skill/` (SKILL.md, `assets/rules/**`, `assets/templates/**`,
 `references/**`, VERSION) must pass, before being reported as complete:
 

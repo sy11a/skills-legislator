@@ -6,7 +6,8 @@ Usage:
   python3 evals/dashboard.py <workspace> --once            # single render
 
 Reads (never writes) the orchestrator's artifacts:
-  <ws>/<scenario>/outputs/run.log        agent stream (size/mtime = liveness)
+  <ws>/<scenario>/outputs/run.log        agent transcript (shown in the log modal)
+  <ws>/<scenario>/outputs/run.jsonl      raw stream (claude profile) — liveness
   <ws>/<scenario>/outputs/*.md           expected deliverables
   <ws>/<scenario>/repo/                  fixture (dirty count, artifacts)
   /tmp/opencode/orchestrate-all.log      orchestrator timeline (optional)
@@ -27,6 +28,9 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
+# Where each scenario's deliverable lands — display labels for the card,
+# not existence probes (see the chip rendering below). The key order also
+# fixes the card order.
 EXPECTED = {
     "fresh-scaffold-dotnet": ["repo/docs/ai/manifest.json", "repo/docs/cases/README.md"],
     "legacy-migration": ["outputs/migration-report.md"],
@@ -35,7 +39,10 @@ EXPECTED = {
     "upgrade-drop-stack": ["outputs/upgrade-report.md"],
     "rotted-layer": ["outputs/audit-report.md"],
     "restructure": ["outputs/restructure-report.md"],
-    "case-practice": ["repo/docs/cases/README.md"],
+    # NOT docs/cases/README.md — that ships with the clean legislated
+    # fixture. The deliverable is a NEW case directory; the runner's own
+    # completion oracle looks for exactly that.
+    "case-practice": ["repo/docs/cases/BL-NNN/"],
 }
 # Display names: the mode each fixture exercises (the rotted-layer dir IS
 # the audit scenario — the dashboard speaks in modes, not raw dir names).
@@ -54,6 +61,65 @@ STALL_AFTER_S = 180
 
 EVENT_RE = re.compile(r"^\[(?P<sc>[^]]+)\] (?P<ev>.*)$")
 TIME_RE = re.compile(r"(\d{2}:\d{2}:\d{2})")
+
+
+def idem_html(evs: list[str], d: Path) -> str:
+    """The idempotency pass has no queue row — it runs outside the corpus
+    chain — so it never showed on the dashboard at all: every measurement in
+    the v17 cycle was visible only in the orchestrator log, and a card sat
+    reading "done" while a second pass was in flight underneath it (found
+    2026-08-22). Derived here from the timeline (a start with no verdict
+    after it means in flight) plus grading_idempotency.json."""
+    started = verdict = None
+    for e in evs:
+        if e.startswith("idem second pass start"):
+            started, verdict = e, None
+        elif e.startswith("idem "):
+            verdict = e
+    if started is None:
+        return ""
+    if verdict is None:
+        return ('<div class="warn">idempotency: second pass running — '
+                'the card\'s grade is the corpus run, not this pass</div>')
+    gr = None
+    f = d / "outputs" / "grading_idempotency.json"
+    if f.exists():
+        try:
+            gr = json.loads(f.read_text())
+        except (OSError, json.JSONDecodeError):
+            gr = None
+    ok = "ZERO DIFF" in verdict
+    detail = ""
+    if gr is not None and not ok:
+        fails = [e["evidence"] for e in gr["expectations"] if not e["passed"]]
+        detail = f' — {esc(fails[0][:110])}' if fails else ""
+    cls = "gok" if ok else "gbad"
+    label = "zero diff" if ok else "DIFF"
+    return f'<div class="grade {cls}">idempotency: {label}</div>{detail}'
+
+
+def resolve_expected(base: Path, rel: str) -> str:
+    """Turn a pattern expectation into the real name once it exists. The
+    case scenario's deliverable is a NEW `docs/cases/BL-NNN/` directory whose
+    number the agent picks, so the label starts as the pattern and becomes
+    the actual directory the moment one is created."""
+    if "NNN" not in rel:
+        return rel
+    parent, name = Path(rel).parent, Path(rel).name
+    stem = name.split("NNN")[0]
+    d = base / parent
+    if d.is_dir():
+        hits = sorted(c.name for c in d.iterdir()
+                      if c.is_dir() and c.name.startswith(stem))
+        if hits:
+            return f"{parent / hits[0]}/"
+    return rel
+
+
+def basename(rel: str) -> str:
+    """Last path segment, keeping a trailing slash so a directory target
+    still reads as one (a bare split() left 'docs/cases/BL-NNN/' blank)."""
+    return rel.rstrip("/").split("/")[-1] + ("/" if rel.endswith("/") else "")
 
 
 def esc(s: str) -> str:
@@ -99,10 +165,17 @@ def state_of(events: list[str]) -> tuple[str, str]:
     return "running", last
 
 
-def count_opencode() -> int:
+def count_runner(runner: str, ws: Path) -> int:
+    """Live scenario agents of THIS workspace, in the current run's profile.
+    Each profile has its own process shape (counting 'opencode' while a
+    claude run is live reports zero and reads as a dead run), and the
+    workspace scope keeps unrelated agents on the machine out of the count."""
     r = subprocess.run(["ps", "-eo", "cmd"], capture_output=True, text=True)
-    return sum(1 for l in r.stdout.splitlines()
-               if "opencode" in l and " run" in l and "dashboard" not in l)
+    lines = [l for l in r.stdout.splitlines()
+             if "dashboard" not in l and str(ws) in l]
+    if runner == "claude":
+        return sum(1 for l in lines if "claude" in l and " -p " in l)
+    return sum(1 for l in lines if "opencode" in l and " run" in l)
 
 
 def git_dirty(repo: Path) -> tuple[int, int]:
@@ -119,8 +192,19 @@ def log_errors(log: Path, tail_chars: int = 6000) -> list[str]:
     text = strip_ansi(log.read_text(errors="ignore")[-tail_chars:])
     hits = []
     for line in text.splitlines():
-        if re.search(r"(?i)(stream error|permission denied|aborted|fatal|"
-                     r"Cannot connect|API.?error|exit code [1-9])", line):
+        # A tool call exiting non-zero is routine probing, not a run in
+        # trouble: migration mode is *supposed* to test whether CLAUDE.md
+        # exists, and `ls` answers "no" by exiting 2. The bare "exit code N"
+        # heuristic was written for opencode prose; against the claude
+        # profile's transcript it painted every such probe red — and, because
+        # only the last 6000 chars are scanned, the banner flickered in and
+        # out as probes scrolled through the window (found 2026-08-22).
+        routine_tool_result = re.match(r"\s*\[(ERR|ok)\]", line)
+        serious = re.search(r"(?i)(stream error|permission denied|aborted|"
+                            r"fatal|cannot connect|API.?error|connection lost)",
+                            line)
+        if serious or (not routine_tool_result
+                       and re.search(r"(?i)exit code [1-9]", line)):
             line = line.strip()
             if line and line not in hits:
                 hits.append(line[:200])
@@ -155,14 +239,16 @@ def load_queue(ws: Path) -> dict | None:
         return None
 
 
-def load_runs(ws: Path) -> tuple[str | None, list[dict]]:
-    """Current run id + the full run history (run.json: {current, runs})."""
+def load_runs(ws: Path) -> tuple[dict, list[dict]]:
+    """The current run's full provenance record + the run history
+    (run.json: {current, runs}). The record carries run_id, runner profile,
+    model and law commit — everything needed to tell two runs apart."""
     f = ws / "run.json"
     try:
         d = json.loads(f.read_text())
-        return d.get("current", {}).get("run_id"), d.get("runs", [])
+        return d.get("current", {}), d.get("runs", [])
     except (OSError, json.JSONDecodeError):
-        return None, []
+        return {}, []
 
 
 def history(d: Path) -> list[dict]:
@@ -240,7 +326,11 @@ def flaky_panel(d: Path, law: str | None = None) -> str:
 def render(ws: Path, timeline_log: Path) -> str:
     now = datetime.now(timezone.utc)
     events = parse_timeline(timeline_log)
-    alive = count_opencode()
+    run_cur, run_history = load_runs(ws)
+    run_id = run_cur.get("run_id")
+    runner = run_cur.get("runner", "opencode")
+    model = run_cur.get("model", "?")
+    alive = count_runner(runner, ws)
     queue = load_queue(ws) or {}
     q_statuses = queue.get("statuses", {})
     q_order = queue.get("order", [])
@@ -256,14 +346,18 @@ def render(ws: Path, timeline_log: Path) -> str:
             return "running"
         if q_state in ("done", "failed", "queued", "partial"):
             state = "pending" if q_state == "queued" else q_state
-            if state == "done":
+            # queue.json records EXECUTION, grading.json records the VERDICT.
+            # Where a grade exists it decides between done and partial — in
+            # both directions. The check used to run one way only (done →
+            # partial), so a scenario re-graded clean after a grader fix kept
+            # showing "w/ errors" against a 100% bar (found 2026-08-22).
+            if state in ("done", "partial"):
                 gr = grading(ws / sc)
-                if gr is not None and gr["summary"]["failed"] > 0:
-                    return "partial"
+                if gr is not None:
+                    return "partial" if gr["summary"]["failed"] > 0 else "done"
             return state
         return state_of(events[sc])[0]
 
-    run_id, run_history = load_runs(ws)
     total_started = sum(1 for sc in SCENARIOS if events[sc] or sc in q_statuses)
     states = {sc: final_state(sc) for sc in SCENARIOS}
     done = [sc for sc in SCENARIOS if states[sc] == "done"]
@@ -279,34 +373,46 @@ def render(ws: Path, timeline_log: Path) -> str:
         repo = d / "repo"
         # effective state FIRST (queue-merged) — the grade block and every
         # hint below must classify against the final state, not the raw one
+        # ONE state oracle: final_state() above. This block used to re-derive
+        # it with slightly different rules — and its `partial` branch never
+        # consulted the grade, so a scenario re-graded clean kept its
+        # "w/ errors" badge next to a 100% bar while the header counter
+        # (which does use final_state) already said done (found 2026-08-22).
+        # Two implementations of one decision is one too many; only the
+        # human-facing detail line is derived here.
         q_state = q_statuses.get(sc)
-        if q_state == "running":
-            state, detail = "running", "orchestrator chain: active"
-        elif q_state == "partial":
-            state, detail = "partial", "completed — graded with failures"
-        elif q_state in ("done", "failed") and grading(d) is not None:
-            gr_state = grading(d)
-            if q_state == "done" and gr_state is not None and gr_state["summary"]["failed"] > 0:
-                state, detail = "partial", "completed — graded with failures"
-            else:
-                state = "done" if q_state == "done" else "failed"
-                detail = "queue: " + q_state
-        elif q_state == "queued":
+        state = final_state(sc)
+        if state == "running":
+            detail = "orchestrator chain: active"
+        elif state == "partial":
+            detail = "completed — graded with failures"
+        elif state == "pending" and q_state == "queued":
             pos = q_order.index(sc) + 1 if sc in q_order else "?"
-            state, detail = "pending", f"queued (#{pos} in chain)"
-        elif q_state in ("done", "failed"):
-            state = "done" if q_state == "done" else "failed"
+            detail = f"queued (#{pos} in chain)"
+        elif q_state in ("done", "failed", "partial"):
             detail = "queue: " + q_state
         else:
-            state, detail = state_of(events[sc])
+            detail = state_of(events[sc])[1]
         expected = EXPECTED[sc]
-        artifacts = [(Path(d) / p, p) for p in expected]
+        artifacts = [(Path(d) / p, resolve_expected(Path(d), p))
+                     for p in expected]
+        # Deliberately colour-free: these name WHERE the deliverable lands,
+        # they are not a verdict. Colouring them by mere existence read as a
+        # green light — a scaffolded README.md that ships with the fixture lit
+        # up before the agent had done anything, and a report file lit up the
+        # moment it was created, mid-run, saying nothing about its contents.
+        # The verdict lives in the state badge and the grade bar.
         art_html = "".join(
-            f'<span class="tag {"ok" if p.exists() else "miss"}">'
-            f'{esc(p2.split("/")[-1])}</span>'
+            f'<span class="tag">{esc(basename(p2))}</span>'
             for p, p2 in artifacts)
         size = log.stat().st_size if log.exists() else 0
-        age = (time.time() - log.stat().st_mtime) if log.exists() else None
+        # Liveness oracle, per runner profile: the claude profile renders
+        # run.log once per turn (bursty — a long tool call or a long think
+        # reads as frozen), while run.jsonl grows on every partial message.
+        # Measure the freshest of the two: a stall is silence in BOTH.
+        stamps = [f.stat().st_mtime
+                  for f in (log, d / "outputs" / "run.jsonl") if f.exists()]
+        age = (time.time() - max(stamps)) if stamps else None
         raw_dirty, dirty = git_dirty(repo) if repo.exists() else (0, 0)
         gr = grading(d)
         grade_html = ""
@@ -337,6 +443,7 @@ def render(ws: Path, timeline_log: Path) -> str:
                               f' ({rate}%) · {stamp}</div>{fail_rows}{more}')
         elif state == "done":
             grade_html = '<div class="dim">grading pending…</div>'
+        idem_block = idem_html(events[sc], d)
         flaky_html = flaky_panel(d, law) if state in ("done", "partial", "failed") else ""
         errs = log_errors(log)
         err_html = "".join(f'<div class="err">{esc(e)}</div>' for e in errs)
@@ -367,7 +474,7 @@ def render(ws: Path, timeline_log: Path) -> str:
   <div>attempts: {attempts} · resumes: {resumes} · log: {size//1024} KB ·
     dirty: {dirty} (+{raw_dirty-dirty} obj)</div>
   <div class="tags">{art_html}</div>
-  {stall_hint}{grade_html}{flaky_html}{err_html}
+  {stall_hint}{grade_html}{idem_block}{flaky_html}{err_html}
   <pre class="tailopen" onclick="openLog('{mid}')">{tail}</pre>
   <button class="logbtn" onclick="openLog('{mid}')">log \u29e2</button>
   <div class="mback" id="m-{mid}" onclick="closeLog(event)">
@@ -386,13 +493,9 @@ def render(ws: Path, timeline_log: Path) -> str:
         rid = r.get("run_id", "?")
         cur = " · current" if rid == run_id else ""
         hist_rows.append(
-            f'<div class="runrow"><b>{esc(rid)}</b> — model {esc(r.get("model","?"))},'
-            f' law {esc(r.get("law_commit","?"))}{cur}</div>')
+            f'<div class="runrow"><b>{esc(rid)}</b> — {esc(r.get("runner","opencode"))}'
+            f' / {esc(r.get("model","?"))}, law {esc(r.get("law_commit","?"))}{cur}</div>')
         for sc in SCENARIOS:
-            entries = []
-            for h in history(ws / sc):
-                if h.get("run_id") == rid or (h.get("run_id") is None and not hist_rows):
-                    pass  # pre-run-id entries are attributed in ts order below
             entries = [h for h in history(ws / sc) if h.get("run_id") == rid]
             if entries:
                 e = entries[-1]
@@ -459,8 +562,8 @@ setInterval(() => {{
  .state.failed{{background:#4a1515}} .state.partial{{background:#4a3a00;color:#fc6}} .state.stalled{{background:#4a2c00}}
  .state.retrying{{background:#3a2c24}} .state.pending{{background:#222}}
  .tag{{display:inline-block;margin:2px 4px 2px 0;padding:0 6px;
-      border-radius:4px;background:#222}}
- .tag.ok{{background:#1b3a1f;color:#8f8}} .tag.miss{{color:#777}}
+      border-radius:4px;background:#2b2f36;color:#9db4d0;
+      border:1px solid #3a4350}}
  .err{{color:#f66;margin-top:4px;white-space:nowrap;overflow:hidden;
       text-overflow:ellipsis}}
  .warn{{color:#fb0;margin-top:4px}} .dim{{color:#888}}
@@ -499,7 +602,8 @@ setInterval(() => {{
 <h1>legislator eval — live</h1>
 <div class="dim">run <button class="runbadge" onclick="openRuns()">{esc(run_id or "—")}</button> ·
  generated {now.strftime("%Y-%m-%d %H:%M:%S")} UTC ·
- refresh 3s <span id="pausetag" class="warn" style="display:none">— PAUSED (log open)</span> · opencode runs alive: {alive}</div>
+ refresh 3s <span id="pausetag" class="warn" style="display:none">— PAUSED (log open)</span> · {esc(runner)} agents alive: {alive}</div>
+<div class="dim" style="margin-top:2px">profile <b>{esc(runner)}</b> · model <b>{esc(model)}</b> · law {esc(run_cur.get("law_commit", "?"))}</div>
 <div class="summary" style="margin-top:8px">
  <span>scenarios: {total_started}/{len(SCENARIOS)} started</span>
  <span style="color:#6bf">running: {len(running)}</span>

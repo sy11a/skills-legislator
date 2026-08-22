@@ -111,6 +111,17 @@ def audit_check_severities() -> dict[str, str]:
     return out
 
 
+def audit_check_slugs() -> set[str]:
+    """The pinned finding slugs, parsed from SKILL.md's "In findings,
+    `[check-name]` is the check's pinned slug — use exactly these: ..."
+    line. Parity is measured in THIS namespace: the earlier version
+    compared check titles against slug markers — two disjoint namespaces,
+    so the assert was red by construction and never passed a live grade
+    (found 2026-08-22)."""
+    m = re.search(r"pinned slug — use exactly these:(.+)", _skill_md())
+    return set(re.findall(r"`([a-z][a-z0-9-]+)`", m.group(1))) if m else set()
+
+
 def restructure_actions() -> set[str]:
     """The closed action set, parsed from restructure.md §2's bold
     definitions."""
@@ -335,7 +346,7 @@ def grade_migration(ws: Path) -> Grader:
     report = report_path.read_text() if has_report else ""
     g.check("step7_report_saved", has_report,
             str(report_path) if has_report else f"missing: {report_path}")
-    m = re.search(r"### Constitution candidates\n(.*?)(?=\nClean checks:|\n#|\Z)", report, re.S)
+    m = re.search(r"## Constitution candidates\n(.*?)(?=\nClean checks:|\n#|\Z)", report, re.S)
     section = m.group(1) if m else ""
     # Coupled to the constitution's CURRENT content: if a decimal-for-money
     # rule is ever promoted into assets/rules/**, criterion 2 flips and this
@@ -386,10 +397,21 @@ def grade_migration_agents_first(ws: Path) -> Grader:
     g.check("agents_md_v2_wiring_written_directly", v2_wired,
             f"all {len(migration_wiring())} template wiring strings present (derived from AGENTS.md.tpl)" if v2_wired
             else "migration left v2 wiring as proposals instead of writing it")
-    agents_preserved = "Money values are always" in agents and "bl/NNN-short-description" in agents
+    # The three-way split, not a location pin: law-shaped constraints are
+    # carved into .claude/rules/ (grade_migration asserts exactly that for
+    # the same fixture line), and only instance data stays in the canonical
+    # entry document. The earlier form demanded the money rule stay inside
+    # AGENTS.md and so contradicted the law it was testing (found
+    # 2026-08-22 — the agent was right, the assert was wrong).
+    law_hits = subprocess.run(
+        ["grep", "-rl", "--exclude-dir=.git", "Money values are always", str(repo)],
+        capture_output=True, text=True).stdout.strip()
+    instance_kept = "bl/NNN-short-description" in agents
+    agents_preserved = bool(law_hits) and instance_kept
     g.check("agents_md_content_preserved", agents_preserved,
-            "law + instance markers survived in the canonical AGENTS.md" if agents_preserved
-            else "markers lost from AGENTS.md")
+            f"law carved to {law_hits.splitlines()}, instance data kept in AGENTS.md"
+            if agents_preserved
+            else f"law preserved={bool(law_hits)}, instance data in AGENTS.md={instance_kept}")
     report_path = ws / "legacy-migration-agents-first" / "outputs" / "migration-report.md"
     has_report = report_path.exists()
     g.check("migration_report_saved", has_report,
@@ -446,10 +468,10 @@ def grade_upgrade(ws: Path) -> Grader:
 
     # BL-036 Wave B: the keep-refusal branch — when the run's prompt (saved
     # by the runner to outputs/prompt.txt) asks to protect an OWNED path,
-    # the skill must refuse with a reason under ### Keep list.
+    # the skill must refuse with a reason under ## Keep list.
     prompt_file = ws / "upgrade" / "outputs" / "prompt.txt"
     if prompt_file.exists() and "protect docs/ai/rules/core/okf.md" in prompt_file.read_text():
-        refusal = re.search(r"### Keep list\n(.*?)(?=###|\Z)", report, re.S | re.M)
+        refusal = re.search(r"## Keep list\n(.*?)(?=\n#|\Z)", report, re.S | re.M)
         seg = refusal.group(1) if refusal else ""
         refused = "okf.md" in seg and "owned" in seg.lower()
         g.check("keep_refusal_for_owned_path", refused,
@@ -496,12 +518,15 @@ def grade_audit(ws: Path) -> Grader:
     # a planted defect exercising it, and vice versa. Derived check slugs
     # vs slug-markers in the fixture — a new check without its defect (or
     # an orphaned marker) is red at grade time, not discovered by rot.
-    law_slugs = set(audit_check_severities())
-    slug_markers = {m.split("]")[0] for m in meta["report_markers"] if "]" in m and not m.startswith("(")}
-    uncovered = law_slugs - slug_markers
-    g.check("parity_every_check_has_a_defect", not uncovered,
-            f"all {len(law_slugs)} law checks exercised by markers" if not uncovered
-            else f"checks with no planted defect: {sorted(uncovered)}")
+    law_slugs = audit_check_slugs()
+    covered = set(meta.get("check_slugs_covered", []))
+    uncovered = law_slugs - covered
+    orphaned = covered - law_slugs
+    parity_ok = bool(law_slugs) and not uncovered and not orphaned
+    g.check("parity_every_check_has_a_defect", parity_ok,
+            f"all {len(law_slugs)} law checks exercised by a planted defect" if parity_ok
+            else f"checks with no planted defect: {sorted(uncovered)}; "
+                 f"markers for no law check: {sorted(orphaned)}")
 
     # BL-025 item 2: severity-anchored presence — the marker must appear
     # inside the section under its pinned severity heading (## <Severity>
@@ -521,7 +546,7 @@ def grade_audit(ws: Path) -> Grader:
 
     # Scoped to the candidates section: findings may name these statements
     # legitimately, but proposing them as fleet candidates is a failure.
-    m = re.search(r"### Constitution candidates\n(.*?)(?=\nClean checks:|\n#|\Z)", report, re.S)
+    m = re.search(r"## Constitution candidates\n(.*?)(?=\nClean checks:|\n#|\Z)", report, re.S)
     section = m.group(1) if m else ""
     for marker in meta.get("candidate_absent_markers", []):
         g.check(f"candidates section does NOT contain {marker!r}",
@@ -549,6 +574,15 @@ def grade_restructure(ws: Path) -> Grader:
     g.check("restructure_report_saved", has_report,
             str(report_path) if has_report else f"missing: {report_path}")
 
+    # Audit check 2 is Critical and filling `{{TOKEN}}`s is inside
+    # restructure's closed `fix` scope, but only fresh/migration graded it —
+    # so a run could leave the planted {{PROJECT_OVERVIEW}} unresolved and
+    # still score 100%. The idempotency pass is what exposed it: run 1 left
+    # the token, run 2 filled it, and the second run wrote (found
+    # 2026-08-22). Third time this cycle that idempotency caught what the
+    # corpus asserts missed.
+    g.no_unresolved_tokens(repo)
+
     for s in meta["fidelity_sentences"]:
         # -i: the law's carve-outs lawfully REFORMAT lines while carrying
         # them ("definitions become glossary rows") — a sentence-initial
@@ -567,10 +601,32 @@ def grade_restructure(ws: Path) -> Grader:
             "byte-identical at original path" if kept_ok
             else "kept file moved, edited, or deleted")
 
-    claude = (repo / "AGENTS.md").read_text() if (repo / "AGENTS.md").exists() else ""
-    g.check("conflict_not_auto_resolved", meta["conflict_marker"] in claude,
-            "conflicting line still in AGENTS.md" if meta["conflict_marker"] in claude
-            else "conflict line gone — auto-resolved without the user")
+    # The entry document under whichever name it currently carries. Reading
+    # only AGENTS.md reported a *missing* file as "the conflict line was
+    # auto-resolved" — a confident wrong diagnosis for a real but entirely
+    # different defect, and it also made ghost_import_fixed pass trivially
+    # whenever AGENTS.md was absent (found 2026-08-22).
+    agents_f, claude_f = repo / "AGENTS.md", repo / "CLAUDE.md"
+    entry_f = agents_f if agents_f.exists() else claude_f
+    claude = entry_f.read_text() if entry_f.exists() else ""
+    conflict_kept = meta["conflict_marker"] in claude
+    g.check("conflict_not_auto_resolved", conflict_kept,
+            f"conflicting line still in {entry_f.name}" if conflict_kept
+            else (f"conflict line gone from {entry_f.name} — auto-resolved "
+                  "without the user" if entry_f.exists()
+                  else "no entry document on disk at all"))
+
+    # v14 file model: a real CLAUDE.md with no AGENTS.md is renamed, with
+    # CLAUDE.md left as a symlink — the law pins this inside restructure's
+    # closed `fix` scope, so it is applied, never proposed. Nothing asserted
+    # it, so a run that skipped the canonicalization stayed green here and
+    # surfaced only as the misleading failure above.
+    v14_ok = (agents_f.exists() and not agents_f.is_symlink()
+              and claude_f.is_symlink())
+    g.check("v14_model_canonicalized", v14_ok,
+            "AGENTS.md canonical, CLAUDE.md a symlink to it" if v14_ok
+            else f"AGENTS.md exists={agents_f.exists()}, "
+                 f"CLAUDE.md is symlink={claude_f.is_symlink()}")
     decision_open = "[decision]" in report and "We do not maintain CHANGELOG.md" in report
     g.check("conflict_surfaced_as_decision", decision_open,
             "[decision] item names the conflict" if decision_open
@@ -608,10 +664,10 @@ def grade_restructure(ws: Path) -> Grader:
     # BL-025 item 6 + 2026-08-21 equivalence: the protected value is
     # routing-to-the-owner — skills.md byte-unchanged AND the finding
     # surfaced as not-applied. The law's canonical form is the
-    # "### For the team:" section; a plan line explicitly marked
+    # "## For the team:" section; a plan line explicitly marked
     # "— skipped (For the team)" satisfies the same value (observed
     # stable across the final-law series) and is accepted.
-    ftt = re.search(r"^#{1,3}\s*For the team:\s*\n(.*?)(?=^Kept \(immovable\)|^#{1,2} |\Z)", report,
+    ftt = re.search(r"^## For the team:\s*\n(.*?)(?=^Kept \(immovable\)|^#{1,2} |\Z)", report,
                     re.S | re.M)
     ftt_section = ftt.group(1) if ftt else ""
     routed_in_section = "made-up-skill" in ftt_section
@@ -679,17 +735,21 @@ def grade_restructure(ws: Path) -> Grader:
          "orphan-notes.md", str(repo)],
         capture_output=True, text=True).stdout.strip().splitlines()
     linked = orphan.exists() and any(Path(r) != orphan for r in map(Path, refs))
-    # Law B (2026-08-21): a deletion proposal is lawful ONLY as an open
-    # [decision] item the owner executes — so the accepted outcomes are
-    # (a) the orphan was linked, or (b) it still exists and the report
-    # carries an open [decision] proposing its deletion. Vanishing without
-    # a decision item, or an unreferenced survivor with no decision, fail.
-    orphan_decision = orphan.exists() and re.search(
-        r"\[decision\][^\n]*orphan-notes\.md", report) is not None
-    g.check("orphan_linked_not_deleted", linked or orphan_decision,
+    # Law B (2026-08-21) also accepted a second lawful outcome: the orphan
+    # left unlinked with an open [decision] proposing its deletion. The
+    # idempotency pass showed the price of two lawful outcomes — run 1 filed
+    # the decision, run 2 linked the file, so the second run wrote and the
+    # zero-diff promise broke; worse, a decision a previous run had left OPEN
+    # was silently reclassified into an auto-applied item under a blanket
+    # approval, because reports do not live in the repo and the later run had
+    # no trace of the earlier ruling (found 2026-08-22). The law now pins
+    # `link` as unconditional, so exactly one outcome is lawful: the orphan
+    # survives AND something references it.
+    g.check("orphan_linked_not_deleted", linked,
             "orphan linked into the layer" if linked
-            else "orphan survives with an open deletion [decision]" if orphan_decision
-            else "orphan deleted without a decision item, or unreferenced with no decision")
+            else ("orphan still unreferenced — link is unconditional for a "
+                  "check-7 orphan" if orphan.exists()
+                  else "orphan deleted by the run"))
 
     # BL-036 Wave B: post-state asserts — the [link] outcome must be visible
     # in the index (not only named in the plan), and the stale map row must
@@ -745,6 +805,10 @@ def grade_derivation_selftest() -> Grader:
     g.check("audit_severities_derived",
             len(sev) >= 14 and sev.get("Owned-layer integrity") == "Critical",
             f"{len(sev)} checks with parsed severities")
+    slugs = audit_check_slugs()
+    g.check("audit_slugs_derived",
+            len(slugs) == len(sev) and "imports-resolve" in slugs,
+            f"{len(slugs)} pinned slugs parsed, one per severity-carrying check")
     actions = restructure_actions()
     g.check("restructure_actions_derived",
             actions == {"move", "merge", "link", "fix", "heal", "decision"},
@@ -825,7 +889,16 @@ def grade_case_practice(ws: Path) -> Grader:
             f"{len(set(ears))} distinct R-NNN ids" if len(set(ears)) >= 2
             else f"only {len(set(ears))} R-NNN id(s) — need >=2 EARS lines")
 
-    hurting = re.search(r"(?i)GIVEN\b.*\n.*WHEN\b.*\n.*THEN\b", all_text)
+    # Order and proximity, not line layout: the law asks for "at least one
+    # named GIVEN/WHEN/THEN scenario" and says nothing about where the line
+    # breaks fall. The three-consecutive-lines form missed a correct hurting
+    # case written as a wrapped paragraph (found 2026-08-22) — same class as
+    # the "## For the team:" heading regex and the fidelity case-sensitivity
+    # fix: measuring typography instead of the value. The bounded gaps keep
+    # the match inside one scenario, so a stray GIVEN cannot pair with an
+    # EARS line's WHEN/THEN elsewhere in the document.
+    hurting = re.search(r"(?is)\bGIVEN\b.{0,600}?\bWHEN\b.{0,400}?\bTHEN\b",
+                        all_text)
     g.check("gherkin_hurting_case_present", hurting is not None,
             "GIVEN/WHEN/THEN scenario present" if hurting
             else "no GIVEN/WHEN/THEN scenario in the case")
@@ -876,23 +949,33 @@ def main() -> None:
             target = name.split(":", 1)[1]
             g, outdir = grade_idempotency(ws, target), ws / target
         elif name == "selftest:derivation":
-            g, outdir = grade_derivation_selftest(), EVALS
+            # ws, never EVALS: writing a run artifact into the repo tree
+            # is how evals/grading.json ended up committed in the first
+            # place. Graded output belongs in the throwaway workspace.
+            g, outdir = grade_derivation_selftest(), ws
         else:
             sys.exit(f"unknown scenario: {name}")
 
         passed = sum(1 for e in g.exps if e["passed"])
         total = len(g.exps)
         any_failed |= passed < total
-        run_id = None
+        # run.json's shape is {"current": {...}, "runs": [...]} — reading
+        # .get("run_id") off the TOP level always returned None, so every
+        # grade landed unattributed and the dashboard's per-run rows could
+        # never match a run (found 2026-08-22). Provenance travels with the
+        # grade: which run, which runner profile, which model.
+        run = {}
         run_file = ws / "run.json"
         if run_file.exists():
             try:
-                run_id = json.loads(run_file.read_text()).get("run_id")
+                run = json.loads(run_file.read_text()).get("current", {})
             except json.JSONDecodeError:
                 pass
+        run_id, runner, model = (run.get("run_id"), run.get("runner"),
+                                 run.get("model"))
         out = {"expectations": g.exps,
                "ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-               "run_id": run_id,
+               "run_id": run_id, "runner": runner, "model": model,
                "summary": {"passed": passed, "failed": total - passed,
                            "total": total, "pass_rate": round(passed / total, 3)}}
         fname = "grading_idempotency.json" if name.startswith("idempotency:") else "grading.json"
@@ -910,6 +993,7 @@ def main() -> None:
             hist = outdir / "outputs" / "grade-history.jsonl"
             entry = {"ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
                      "law": law_stamp(),
+                     "run_id": run_id, "runner": runner, "model": model,
                      "passed": passed, "failed": total - passed, "total": total,
                      "fails": [e["text"] for e in g.exps if not e["passed"]]}
             with hist.open("a") as fh:

@@ -1387,6 +1387,136 @@ the map's shape). **Resolved 2026-08-20: promoted into BL-033** — the
 source-symbol grounding (anchors) + the OKF-sync-debt audit check are the
 designed mechanism; this note stays as the origin record.
 
+## BL-038 — File-authority matrix: one table resolves every mode's rights over every artifact class
+
+**Status: PROPOSED 2026-08-22 — raised by the v17 benchmark; deferred past the edition (v18 candidate).**
+
+**What:** replace the prose statements of "may this mode write this file?"
+with a single matrix — artifact class × mode → one permission from a closed
+vocabulary — and make every other mention a reference to it. The table is
+the law; nothing else states file rights.
+
+**Origin — the incident that raised it.** v17's benchmark caught the
+`legacy-migration-agents-first` scenario failing three asserts on a
+migration run that had left `AGENTS.md` untouched. Root cause was not the
+model: the same fact was stated in four places, and one of them stated a
+single mode's constraint as a property of the file — Step 7's "`AGENTS.md`
+is project-owned, so the Legislator never edits it directly", written
+unconditionally while Step 4 and Step 5 both write that very file. Step 5
+and Step 7 execute in the same migration run, so the procedure contradicted
+itself mid-run. The contradiction then propagated: the eval runner's ground
+rules quoted Step 7 near-verbatim, and the harness ended up forbidding
+exactly what it was testing. Two model families had been hiding it by
+ignoring the harness rule and following the skill; a third resolved the
+conflict the other way and exposed it. Fixed for v17 by stating the
+invariant once (SKILL.md's **Entry-document authority**), which is the
+narrow repair — this item is the general one.
+
+**Why a matrix and not more prose.** The invariant that resolved this case
+turned out to be structural, not verbal: the boundary is *whether
+`docs/ai/manifest.json` exists* — the layer is being installed (the entry
+document is the skill's to write) or it is being maintained (the document
+is the owner's, and the skill proposes). That boundary governs more than
+the entry document, and today each artifact class re-derives it in prose.
+A table makes the shared axis explicit and the exceptions visible as cells
+rather than as hedges ("even though AGENTS.md is otherwise project-owned"
+was a hedge around an overstated rule).
+
+**Sketch.** Rows: entry document, owned rules under `docs/ai/rules/**`,
+manifest, Step 4 scaffolded artifacts, project rules under
+`.claude/rules/`, OKF docs, foreign structures, kept paths. Columns: the
+modes, grouped by the state they act on rather than by verb (the naming
+question is part of the work — "installing" vs "maintaining" is the axis
+the incident exposed; per-mode names should say which repo state they
+assume). Cells: one of a closed set — `create-if-absent`, `write`,
+`rewrite-lossless`, `propose-only`, `delete-dead-wiring`, `read-only`,
+`never-touch`.
+
+**Why it pays beyond tidiness.** `grade.py` already derives its
+expectations from tables in the skill source — `SCAFFOLD_ARTIFACTS` from
+Step 4, the protected set from it, migration wiring from `AGENTS.md.tpl`,
+audit severities from the check list, restructure actions from
+`restructure.md` §2 — and `selftest:derivation` asserts those derivations
+stay alive (BL-036). A permission matrix is the natural next derivation:
+the grader's "project-owned files untouched" expectations would come from
+the table instead of hand-maintained lists, and a divergence between law
+and grader would become impossible to introduce silently. The eval prompt
+would stop restating law altogether, which is what let this defect spread.
+
+**Done when:** the matrix exists as one table; every prose statement of
+file rights is replaced by a reference to it; `grade.py` derives its
+protected/writable sets from the table; `selftest:derivation` asserts that
+derivation; the benchmark is green with no scenario regression.
+
+**Risks:** the permission vocabulary must stay small — a cell that needs a
+sentence is a sign the closed set is wrong. And the matrix must not become
+a *second* place stating file rights next to surviving prose; the migration
+is only done when the prose is gone.
+
+## BL-039 — Split the eval suite into its own repo
+
+**Status: PROPOSED 2026-08-22 — raised while hardening the artifact boundary
+in the v17 cycle.**
+
+**What:** move the suite — fixtures, `grade.py`, `setup_workspace.py`,
+`tools/evals-bg.sh`, `dashboard.py`, `streamfmt.py`, `POLICY.md` — into a
+repo of its own, which pulls in a version of the legislator skill and runs
+against it. The skill's repo keeps only what is *about the skill*.
+
+**Why — the boundary should be structural, not a discipline.** An eval run
+happens on a developer's machine and produces graded output, agent
+transcripts, raw event streams and a dashboard. Those carry absolute local
+paths, this machine's installed-skill list, and whatever prose an agent
+wrote here. Today nothing stops such a file from being committed except
+`.gitignore` and attention — and attention already failed once:
+`evals/grading.json` sat tracked in the repo long after the code stopped
+writing there, and `selftest:derivation` wrote a fresh artifact into the
+repo tree on every invocation. Both fixed 2026-08-22, but the fix is a
+patch on a category of mistake, not a wall against it. Two repos make the
+wall: nothing a run produces can even be staged in the skill's repo,
+because the run does not happen there.
+
+**Second reason — the suite has its own lifecycle.** It is now roughly as
+large as the thing it tests, and it has its own defects, its own fixes and
+its own release bar (`POLICY.md`). In the v17 cycle alone the suite
+accounted for more repaired defects than the law did — four grader defects
+and two harness defects against two law defects. Work of that weight
+deserves its own history, not entries interleaved with constitution
+changes.
+
+**Design questions to settle first — none of them obvious:**
+
+- **How the skill under test is supplied.** A git submodule pinned to a tag
+  is the honest form (the suite states which edition it measured), a path
+  argument is the convenient one (what the runner does today). Probably
+  both: a pinned default, a path override for local iteration.
+- **Where `benchmarks/v<N>.md` lives.** These record *the edition*, not the
+  suite — the pass rate, the model floor, the confounds and the defect
+  chronicle are properties of a legislator version. Argument for keeping
+  them with the skill; argument against: they are produced by the suite and
+  would then be the one artifact crossing the boundary. Decide deliberately.
+- **How the "testing is mandatory" rule reaches across two repos.** Today
+  `CLAUDE.md` can point at `evals/POLICY.md` by relative path. After a
+  split it must point somewhere real and enforceable, or the rule quietly
+  becomes advisory.
+- **Whether `check_static.py` follows.** It needs no agent, no workspace and
+  no artifacts — it is a lint of the skill source, and it plausibly belongs
+  with the skill even after everything else leaves.
+- **What the fixtures may name.** They are synthetic today (InvoiceApi,
+  LegacyBilling) and must stay that way; a separate repo is a good moment to
+  state that as a rule rather than a habit.
+
+**Interim measure (already applied 2026-08-22):** the stale tracked
+artifact removed, `selftest` redirected to write into the workspace instead
+of the repo tree, and `.gitignore` extended to cover graded output,
+transcripts, raw streams, prompts, queue/status files and the dashboard.
+
+**Done when:** the suite runs from its own repo against a pinned skill
+version; the skill's repo contains no eval machinery beyond whatever the
+`check_static` decision leaves; the benchmark-location question is answered
+in writing; and a full edition cycle has been driven end-to-end across the
+two repos at least once.
+
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
 
 A master-agent that reviews an incoming request in a project and decides whether to route it to an existing project-local mini-agent (`.claude/agents/<name>.md`) or create a new fine-grained specialized one (task-appropriate model, scoped MCPs) is being built as its **own, separate skill** — not as part of Legislator. Rationale: Legislator is build-time scaffolding (runs occasionally, evolves via VERSION/manifest); request routing is a runtime concern with its own lifecycle. Folding both into one skill would blur SRP.

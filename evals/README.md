@@ -3,12 +3,18 @@
 Regression testing for the skill itself, run after every constitution/procedure
 change (i.e. whenever `skill/VERSION` is bumped or `skill/SKILL.md` edited).
 
+> **`POLICY.md` is the companion to this file and outranks it.** This one is
+> the *how* — what an eval is, how to materialize a workspace, how to run and
+> grade. That one is the *when, against what, and at what bar*: evals-first
+> design, the 100% release bar, red classification, the model floor, and the
+> baseline-before-change rule.
+
 Two layers, mirroring unit vs. e2e tests:
 
 | Layer | Command | Cost | When |
 |---|---|---|---|
 | Static checks | `python3 evals/check_static.py` | seconds, no agent | every commit |
-| E2E scenarios | procedure below | ~5 agent runs (~40–60k tokens each) | every VERSION bump / SKILL.md change |
+| E2E scenarios | procedure below | ~8 agent runs (~40–60k tokens each) | every VERSION bump / SKILL.md change |
 
 All grading is deterministic scripting (byte-diffs against the skill source,
 git state, manifest parsing) — no AI judge. Expectations are **derived from
@@ -189,7 +195,8 @@ vote on post-fix stability.
 ## Background procedure (BL-037) — the recommended way to run a benchmark
 
 ```bash
-tools/evals-bg.sh /tmp/legislator-eval-vN [--only SCEN] [--skip-smoke]
+tools/evals-bg.sh /tmp/legislator-eval-vN [--only SCEN] [--skip-smoke] \
+                  [--runner opencode|claude] [--model NAME]
 ```
 
 Staged, in order, each stage only on the previous green:
@@ -202,6 +209,48 @@ invocation, prompts read from `evals.json` (single source), auto-grade
 after every scenario, desktop notifications (`notify-send`) on scenario
 and run boundaries, and `queue.json` + `status.md` as the machine-readable
 contract — the interactive session polls a file, never a process.
+
+## Run profiles — two engines, one contract
+
+The stages, the prompts, the fixtures and every assertion are
+engine-agnostic; only how a scenario agent is spawned differs. Pick with
+`--runner` (or `RUNNER=`); each profile carries its own default model,
+overridable with `--model` (or `MODEL=`).
+
+| | `opencode` (default) | `claude` |
+|---|---|---|
+| Spawn | `opencode run --dir <sc> -m <model>` | `claude -p --model <model> --safe-mode` |
+| Default model | `zai-coding-plan/glm-5-turbo` | `haiku` |
+| Resume ladder | `--continue` | `-c` |
+| No-prompt writes | opencode permission config | `--permission-mode bypassPermissions` |
+| `run.log` | prose, written directly | transcript rendered by `streamfmt.py` |
+| Stall oracle | `run.log` | `run.jsonl` (raw stream-json) |
+
+Two things are worth knowing before choosing.
+
+**`--safe-mode` is what makes the claude profile a fair harness.** It
+disables the operator's `CLAUDE.md`, auto-memory, hooks, plugins, MCP
+servers and installed skills, so the agent gets the prompt and the skill
+path and nothing else — including no chance for an installed `legislator`
+to fire as a skill instead of being read as a file. (`--bare` goes further
+but demands `ANTHROPIC_API_KEY` and never reads OAuth, so it cannot run on
+a subscription.) Under this profile the fixture's own entry document is
+*not* auto-injected either — the skill has to find it by its own procedure,
+which is stricter than what opencode gave it.
+
+**A profile switch is a bigger confound than a model switch.** Different
+system prompt, different tool set, different edit semantics. Pass rates
+compare *within* a profile, never across one — record the profile in the
+benchmark file next to the model, and keep a fresh reading of the previous
+version before treating any delta as a regression.
+
+Provenance travels with every result: `run.json` stamps `runner`, `model`
+and `law_commit` per run; `grading.json` and `grade-history.jsonl` carry
+`run_id`, `runner` and `model` on every graded entry; the dashboard shows
+the profile in its header badge and in each row of the run-history modal.
+Process matching (stall sweeps, the dashboard's live-agent count) is scoped
+to the workspace path in both profiles — a sweep must never reach an
+unrelated agent running elsewhere on the machine.
 
 The **live dashboard** (`evals/dashboard.py <ws> [--open]`) renders it:
 per-scenario state (done / w-errors / failed / running / queued #N),

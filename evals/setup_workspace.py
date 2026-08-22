@@ -458,7 +458,28 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
             "legacy-home-violation] docs/superpowers/specs/late-feature-spec.md",  # defect (check 16)
             "dry-run mode before a real import",  # harvest: candidate quoted
             "must be reversible",  # harvest: stray-rulebook generic line quoted
-            "### Constitution candidates",  # harvest appendix present with pinned heading
+            "## Constitution candidates",  # harvest appendix present with pinned heading
+        ],
+        # Parity (BL-036 Wave B, repaired 2026-08-22): which pinned check
+        # slug each planted defect exercises. Measured against the slugs
+        # derived from SKILL.md — a check added to the law without a defect
+        # here (or a defect for no check) is red at grade time.
+        "check_slugs_covered": [
+            "imports-resolve",          # ghost-rule.md
+            "unresolved-placeholders",  # overview-draft.md
+            "owned-integrity",          # drifted docs/ai/rules/core/okf.md
+            "staleness",                # manifest one version behind
+            "okf-index-links",          # renamed-away.md
+            "codebase-map",             # stale legacy/ row
+            "orphan-docs",              # orphan-notes.md
+            "journal-recency",          # dead since 2026-01-15
+            "foreign-structures",       # .cursorrules, .superpowers/, UBIQUITOUS_LANGUAGE.md
+            "keep-list",                # special-sauce.md unlinked + gone-runbook.md missing
+            "project-rules",            # .claude/rules/journal.md vs owned law
+            "stray-rulebooks",          # docs/superpowers/review-checklist.md
+            "glossary-vitality",        # empty glossary with src/ present
+            "skill-bindings",           # sanctioned but uninstalled made-up-skill
+            "legacy-home-violation",    # late-feature-spec.md born into a legacy home
         ],
         # BL-025 item 2: Critical findings must sit under the Critical
         # severity heading, not merely appear somewhere in the report
@@ -567,6 +588,15 @@ def main() -> None:
 
     repo = ws / "restructure" / "repo"
     materialize_rotted(repo, restructure_extras=True)
+
+    # Every fixture gets an `eval-base` tag at its materialized HEAD — the
+    # one anchor a full reset can trust. Resetting the working tree alone is
+    # not enough (the idempotency stage commits "run 1" into a fixture on
+    # purpose, and a later rerun inherited that commit), and resetting to the
+    # ROOT commit is wrong for the two-commit fixtures: rotted-layer and
+    # restructure plant a dated second commit as defect 8's evidence.
+    for repo in sorted(p for p in ws.glob("*/repo") if (p / ".git").exists()):
+        git(repo, "tag", "-f", "eval-base")
 
     print(f"workspace ready: {ws}")
     for p in sorted(ws.glob("*/repo")):
