@@ -119,8 +119,8 @@ in the fleet because a repository suggested it.
 The asymmetry is deliberate and it is the whole safety argument. Automatic
 downward delivery is safe because the source is one reviewed corpus, and the
 target is machine-owned files nobody hand-edits. Automatic upward promotion
-would be the opposite: nine repositories editing the law that governs all nine,
-each with local reasons, and no single moment where a human decided. The same
+would be the opposite: every repository editing the law that governs all of
+them, each with local reasons, and no single moment where a human decided. The same
 asymmetry governs repair — audit only reads, restructure only proposes, and
 anything that conflicts with the law becomes a decision item that stops and
 waits. Conflicts are never silently resolved; the human is the only decision
@@ -294,7 +294,11 @@ steward reviews forever.
 ## 6. Horizon — what is not built yet
 
 This section is honest about the gap between the design and the installation.
-It shrinks as editions ship; each item names the case that carries it.
+It shrinks as editions ship, and keeping it true is part of the edition that
+made it stale — the case that closes an item below removes that item in the
+same cycle. `evals/check_static.py` enforces it: a case named here that carries
+a closed status in the backlog fails the check, so the section cannot quietly
+outlive what it describes.
 
 - **Outer mode** (BL-027) is designed and named, not implemented. Every
   legislated repository today is inner.

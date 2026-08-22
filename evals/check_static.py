@@ -98,6 +98,28 @@ for rf in sorted((SKILL / "assets" / "rules" / "stacks").rglob("*.md")):
     check(rf.name in allowed, f"stacks/{rf.parent.name}/{rf.name} uses a concern-based filename",
           f"allowed: {sorted(allowed)}")
 
+print("== philosophy Horizon names only open cases ==")
+# The Horizon section states what is designed but not built. An edition that
+# closes one of those cases must remove its item in the same cycle, or the
+# manifest starts claiming a gap that no longer exists. Mechanical bond
+# instead of discipline: the section is checked against the backlog's own
+# status lines.
+CLOSED_STATUSES = ("DONE", "GREEN", "ABSORBED", "REVISED")
+philosophy = (REPO / "docs" / "philosophy.md").read_text()
+horizon = re.search(r"^## \d+\. Horizon.*?(?=^## )", philosophy, re.M | re.S)
+check(horizon is not None, "philosophy.md has a Horizon section")
+if horizon:
+    backlog = (REPO / "docs" / "backlog.md").read_text()
+    statuses = dict(re.findall(r"^## (BL-\d+).*?\n+\*\*Status:\s*([A-Za-z]+)",
+                               backlog, re.M | re.S))
+    for case in sorted(set(re.findall(r"BL-\d+", horizon.group(0)))):
+        status = statuses.get(case)
+        check(status is not None, f"Horizon's {case} exists in the backlog")
+        if status is not None:
+            check(status.upper() not in CLOSED_STATUSES,
+                  f"Horizon's {case} is still open",
+                  f"backlog says {status} — the closing edition must drop it from the Horizon")
+
 print("== tracked files carry no local paths or fleet repo names ==")
 # Redacting the working tree once is a patch; a check is a wall. Absolute
 # home paths are caught generically. Fleet repo names cannot be listed here
