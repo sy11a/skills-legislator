@@ -84,7 +84,7 @@ This table is the only statement of what an invocation mode may do to a file in 
 - `move-or-merge` — relocated or folded whole under an approved plan item (`references/restructure.md` §2); content is carried, not edited.
 - `link-only` — a link *to* the path may be added elsewhere; the path itself is not moved, merged, fixed, or rewritten.
 - `read-only` — read to judge and report; zero writes.
-- `never-touch` — outside the mode's jurisdiction: not written, not proposed about; another mode owns the repair (drifted owned law is healed by running the upgrade column, not by restructure's own hands).
+- `never-touch` — the mode has no authority of its **own** over the file: it never hand-edits it and never decision-gates it. This is **not** "report it and stop". Where the mode's action set delegates the repair to another column, the run performs that repair itself, in the same run, under the delegated column's rights — restructure's `heal` runs SKILL.md Steps 2–3 as-is over drifted owned law and a stale manifest (`references/restructure.md` §2), and that delegated run is the only way those files change while restructure is executing. A mode whose action set delegates nothing for the class simply leaves it alone.
 
 ## Step 4 — Scaffold missing project-owned artifacts
 
