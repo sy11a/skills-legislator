@@ -13,7 +13,7 @@ Reads (never writes) the orchestrator's artifacts:
   /tmp/opencode/orchestrate-all.log      orchestrator timeline (optional)
 
 Writes <ws>/dashboard.html — static file, meta-refresh, no server, nothing
-leaves the machine (the kbo dashboard pattern). A stale render must look
+leaves the machine. A stale render must look
 stale: the generated-at stamp is the first thing on the page.
 """
 from __future__ import annotations

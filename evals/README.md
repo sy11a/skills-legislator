@@ -256,8 +256,8 @@ The **live dashboard** (`evals/dashboard.py <ws> [--open]`) renders it:
 per-scenario state (done / w-errors / failed / running / queued #N),
 grade bars, full-log modals (newest first; refresh pauses while a log is
 open or text is selected), flaky-vs-persistent panels, and the
-orchestrator tail. Static HTML + meta-refresh — the kbo pattern: no
-server, nothing leaves the machine. `NO_BROWSER=1` for service runs.
+orchestrator tail. Static HTML + meta-refresh: no server,
+nothing leaves the machine. `NO_BROWSER=1` for service runs.
 
 Notes and known bounds: the suite assumes the machine's installed skills
 when deriving `.claude/rules/skills.md` (the `stages ≥ 1` assert is
