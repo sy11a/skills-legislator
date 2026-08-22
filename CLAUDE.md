@@ -12,7 +12,14 @@ authoritative bar: evals are a deliverable, not a check; the eval for a
 change is designed *before* the change; an edition ships only at 100% on the
 corpus plus idempotency ×3; every red is classified (law / grader / harness /
 model) before it is fixed; and each edition records its **model floor** — the
-cheapest model at which it reaches 100%.
+cheapest model at which it reaches 100%. The one rule not to skip: **a new
+assert must be shown RED against the unchanged law before it is shown
+green** — an assert that is green before the change is measuring nothing,
+and reading it will not tell you that.
+
+Editions are tagged at merge (`v17`, `v18`, …). The tag carries a law and
+its grader together, which is what makes POLICY's baseline run a two-line
+`git worktree` operation instead of an archaeology exercise.
 
 Any edit under `skill/` (SKILL.md, `assets/rules/**`, `assets/templates/**`,
 `references/**`, VERSION) must pass, before being reported as complete:

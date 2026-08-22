@@ -51,9 +51,46 @@ after it fails. Two reasons, both paid for in v17:
   `no_unresolved_tokens`, so a Critical unresolved `{{TOKEN}}` scored 100%.
   Both were found by accident, months late.
 
-Per-edition eval design belongs in the edition's spec under
-`docs/superpowers/specs/`, alongside the law it measures — not in a
-separate document that can drift from it.
+### A new assert must be shown RED before it is shown green
+
+This is the operational core of the rule, and the one thing not to skip.
+Write the assert, run it **against the unchanged law**, and confirm it
+fails. An assert that is green before the change is measuring nothing, and
+you cannot tell that by reading it — v17 shipped two that had been green
+and empty in every version: `ghost_import_fixed` compared against an empty
+string whenever `AGENTS.md` was absent, and `grade_restructure` never
+checked for unresolved `{{TOKEN}}`s at all. Both were found by accident,
+months late, and both would have been caught in seconds by demanding a red
+first.
+
+Where the assert needs a defect to bite on, plant it in the fixture in the
+same step, and check the parity map — a law check with no planted defect is
+unfalsifiable by construction.
+
+### What "designing the eval" concretely produces
+
+In the edition's spec under `docs/superpowers/specs/`, alongside the law it
+measures — never a separate document that can drift from it:
+
+1. **Which scenario exercises it** — an existing one, or a new fixture, and
+   why the existing ones cannot.
+2. **The assert, by name**, with the postcondition it checks and **which
+   artifact it reads** (the repo tree, the report, the manifest, git state).
+   Naming the artifact is what keeps an assert from reading the wrong file
+   and reporting a confident wrong diagnosis.
+3. **The planted defect** the assert bites on, and its slug in the parity
+   map when it is an audit check.
+4. **The negative control** — what must NOT appear. An assert that only
+   checks for presence is passed by an agent that does everything plus the
+   forbidden thing; v17's audit scenario needs both `report_markers` and
+   `absent_markers` for exactly this reason.
+5. **Derived or restated?** Prefer parsing the expectation out of the skill
+   source (`SCAFFOLD_ARTIFACTS`, the audit check list, the action set) over
+   writing it twice. If it must be restated, say which copy is
+   authoritative.
+6. **What a red would mean** — which of §1's four classes it would point at.
+   An assert whose failure could mean any of the four is not yet a
+   measurement.
 
 ## 4. Harness and model are recorded; the model floor is a published property
 
@@ -91,6 +128,25 @@ On a new edition's branch, run the suite **against the previous version's
 law, on the harness you intend to use**, before applying the change. The
 baseline costs one corpus run and buys the only thing that makes a later red
 readable: a reference measured on the same instrument.
+
+**Editions are tagged at merge** (`v17`, `v18`, …), which is what makes the
+baseline a two-line operation — the tag carries the previous law *and* its
+grader together, so the baseline measures that edition as it actually was:
+
+```bash
+git worktree add /tmp/legislator-baseline-v<N-1> v<N-1>
+cd /tmp/legislator-baseline-v<N-1>
+python3 evals/setup_workspace.py /tmp/legislator-eval-baseline
+NO_BROWSER=1 tools/evals-bg.sh /tmp/legislator-eval-baseline \
+  --runner claude --model <the model you intend to use>
+# ... record the numbers, then:
+git worktree remove /tmp/legislator-baseline-v<N-1>
+```
+
+Do not try to point the current suite at an old skill directory instead: the
+grader derives its expectations from the skill source, so mixing a new
+grader with an old law measures neither. The worktree keeps the pair
+together.
 
 v17 changed law, harness and model in the same cycle and paid for it — every
 red was ambiguous until each variable was isolated one at a time, which took
