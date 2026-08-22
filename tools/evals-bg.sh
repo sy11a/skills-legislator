@@ -45,6 +45,58 @@ done
 mkdir -p "$WS"
 TL="$WS/orchestrate.log"
 
+# --- run provenance (A1/A3): every result knows its run -------------------
+RUN_ID="$(date +%Y%m%d-%H%M)"
+NEW_RUN=1
+if [ ${#ONLY[@]} -gt 0 ]; then
+  # targeted retest: the SAME run keeps its id; other scenarios untouched
+  NEW_RUN=0
+  [ -s "$WS/run.json" ] || RUN_ID="orphan-$(date +%Y%m%d-%H%M)"
+fi
+python3 - "$WS" "$RUN_ID" "$MODEL" "$REPO" <<'PYEOF'
+import json, subprocess, sys, pathlib
+ws, run_id, model, repo = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
+f = pathlib.Path(ws) / "run.json"
+prev = {}
+try:
+    prev = json.loads(f.read_text())
+except Exception:
+    pass
+head = subprocess.run(["git", "-C", repo, "rev-parse", "--short", "HEAD"],
+                      capture_output=True, text=True).stdout.strip()
+entry = {"run_id": run_id, "started": run_id, "model": model, "law_commit": head}
+runs = prev.get("runs", [])
+if run_id not in [r["run_id"] for r in runs]:
+    runs.append(entry)
+f.write_text(json.dumps({"current": entry, "runs": runs}, indent=1) + "\n")
+PYEOF
+
+if [ $NEW_RUN -eq 1 ]; then
+  # a fresh full run: every scenario starts as not-started; grades from
+  # prior runs stay on disk as history but stop posing as current
+  echo '{"order": [], "statuses": {}}' > "$WS/queue.json"
+  rm -f "$WS"/*/outputs/grading.json "$WS"/*/outputs/grading_idempotency.json \
+        "$WS"/*/outputs/grade.txt 2>/dev/null
+  : > "$TL"
+else
+  # targeted retest: reset only the targeted scenario's queue row
+  python3 - "$WS" "${ONLY[@]}" <<'PYEOF'
+import json, sys, pathlib
+ws = pathlib.Path(sys.argv[1])
+f = ws / "queue.json"
+try: q = json.loads(f.read_text())
+except Exception: q = {"order": [], "statuses": {}}
+for sc in sys.argv[2:]:
+    q["statuses"][sc] = "running"
+    if sc not in q["order"]: q["order"].append(sc)
+f.write_text(json.dumps(q, indent=1) + "\n")
+for sc in sys.argv[2:]:
+    for junk in ("grading.json", "grade.txt"):
+        p = ws / sc / "outputs" / junk
+        p.unlink(missing_ok=True)
+PYEOF
+fi
+
 # ---- prompts: evals.json is the single source (no runner-side dups) ----
 prompt_of() { python3 -c "
 import json,sys
@@ -70,7 +122,10 @@ DIR_OF() { # evals.json scenario name -> dir-name
 }
 
 status() { # freeform line -> status.md tail + timeline
-  echo "[$(date +%H:%M:%S)] $*" | tee -a "$TL" >> "$WS/status.md"
+  echo "[$(date +%H:%M:%S)] $*" >> "$WS/status.md"
+}
+tl() { # <scenario> <event> -> dashboard-parseable timeline line
+  echo "[$1] $2 $(date +%H:%M:%S)" >> "$TL"
 }
 notify() { command -v notify-send >/dev/null 2>&1 && notify-send -a "legislator evals" "$*" || true; }
 
@@ -124,6 +179,7 @@ MSG
 
 spawn() { # <dir> <fresh|resume> — self-contained: no /tmp helper
   local sc="$1" log="$WS/$1/outputs/run.log" msg
+  mkdir -p "$WS/$sc/outputs"
   : >> "$log"
   [ "$2" = fresh ] && msg_block "$sc" > "$WS/$sc/outputs/prompt.txt"
   if [ "$2" = resume ]; then
@@ -169,28 +225,28 @@ run_scenario() { # <dir> — attempts + resume ladder; returns 0 on green run
   reset_repo "$WS/$sc/repo"; : > "$WS/$sc/outputs/run.log"
 
   for attempt in $(seq 1 $MAX_ATTEMPTS); do
-    status "$sc attempt $attempt (fresh) start"
+    tl "$sc" "attempt $attempt (fresh) start"
     [ "$attempt" -gt 1 ] && reset_repo "$WS/$sc/repo"
     local pid; pid=$(spawn "$sc" fresh)
     if wait_or_stall "$pid" "$sc"; then
-      if expected_ok "$sc" "$WS"; then status "$sc DONE (attempt $attempt)"; return 0; fi
-      status "$sc attempt $attempt exited without expected output"
+      if expected_ok "$sc" "$WS"; then tl "$sc" "DONE attempt $attempt"; return 0; fi
+      tl "$sc" "attempt $attempt exited without expected output"
       continue
     fi
-    status "$sc attempt $attempt stalled — resume ladder"
+    tl "$sc" "attempt $attempt stalled — resume ladder"
     pkill -f "$P" 2>/dev/null; sleep 2
     for r in $(seq 1 $MAX_RESUMES); do
-      status "$sc resume $r start"
+      tl "$sc" "resume $r start"
       pid=$(spawn "$sc" resume)
       if wait_or_stall "$pid" "$sc"; then
-        if expected_ok "$sc" "$WS"; then status "$sc DONE (resume $r)"; return 0; fi
-        status "$sc resume $r exited without expected output"; break
+        if expected_ok "$sc" "$WS"; then tl "$sc" "DONE resume $r"; return 0; fi
+        tl "$sc" "resume $r exited without expected output"; break
       fi
-      status "$sc resume $r stalled again"
+      tl "$sc" "resume $r stalled again"
       pkill -f "$P" 2>/dev/null; sleep 2
     done
   done
-  status "$sc FAILED after $MAX_ATTEMPTS attempts"
+  tl "$sc" "FAILED after $MAX_ATTEMPTS attempts"
   return 1
 }
 
@@ -201,7 +257,7 @@ finish_scenario() { # <dir> — grade + queue + notify (after a DONE run)
   [ -s "$g" ] && verdict=$(python3 -c "
 import json;d=json.load(open('$g'));s=d['summary']
 print(f\"{s['passed']}/{s['total']}\" + (' CLEAN' if s['failed']==0 else ' WITH FAILURES'))")
-  status "$sc graded: $verdict"
+  tl "$sc" "graded: $verdict"
   local failed=0
   [ -s "$g" ] && python3 -c "
 import json,sys;sys.exit(0 if json.load(open('$g'))['summary']['failed']==0 else 1)" || failed=1
@@ -265,7 +321,7 @@ for sc in fresh-scaffold-dotnet upgrade restructure; do
   git -C "$WS/$sc/repo" add -A >/dev/null 2>&1
   git -C "$WS/$sc/repo" commit -q -m "run 1" >/dev/null 2>&1 || true
   : > "$WS/$sc/outputs/idem-run.log"
-  status "idem:$sc second pass start"
+  tl "$sc" "idem second pass start"
   ok=""
   for attempt in 1 2 3; do
     pid=$(spawn "$sc" fresh)
@@ -277,12 +333,12 @@ for sc in fresh-scaffold-dotnet upgrade restructure; do
         > "$WS/$sc/outputs/idem-grade.txt" 2>&1 ) || true
     if python3 -c "
 import json,sys;d=json.load(open('$WS/$sc/outputs/grading_idempotency.json'));sys.exit(0 if d['summary']['failed']==0 else 1)" 2>/dev/null; then
-      status "idem:$sc ZERO DIFF"; notify "eval idem $sc: zero diff"
+      tl "$sc" "idem ZERO DIFF"; notify "eval idem $sc: zero diff"
     else
-      status "idem:$sc DIFF FOUND — see $WS/$sc/outputs/idem-grade.txt"; notify "eval idem $sc: DIFF"; exit 1
+      tl "$sc" "idem DIFF FOUND"; notify "eval idem $sc: DIFF"; exit 1
     fi
   else
-    status "idem:$sc second pass failed to complete"; notify "eval idem $sc: FAILED"; exit 1
+    tl "$sc" "idem FAILED"; notify "eval idem $sc: FAILED"; exit 1
   fi
 done
 

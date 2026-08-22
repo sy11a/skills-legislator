@@ -130,7 +130,9 @@ def log_tail(log: Path, n: int = 4) -> str:
 
 
 def grading(d: Path) -> dict | None:
-    f = d / "grading.json"
+    f = d / "outputs" / "grading.json"
+    if not f.exists():
+        f = d / "grading.json"  # pre-relocation layout
     if not f.exists():
         return None
     try:
@@ -145,6 +147,16 @@ def load_queue(ws: Path) -> dict | None:
         return json.loads(f.read_text())
     except (OSError, json.JSONDecodeError):
         return None
+
+
+def load_runs(ws: Path) -> tuple[str | None, list[dict]]:
+    """Current run id + the full run history (run.json: {current, runs})."""
+    f = ws / "run.json"
+    try:
+        d = json.loads(f.read_text())
+        return d.get("current", {}).get("run_id"), d.get("runs", [])
+    except (OSError, json.JSONDecodeError):
+        return None, []
 
 
 def history(d: Path) -> list[dict]:
@@ -236,7 +248,7 @@ def render(ws: Path, timeline_log: Path) -> str:
         q_state = q_statuses.get(sc)
         if q_state == "running":
             return "running"
-        if q_state in ("done", "failed", "queued"):
+        if q_state in ("done", "failed", "queued", "partial"):
             state = "pending" if q_state == "queued" else q_state
             if state == "done":
                 gr = grading(ws / sc)
@@ -245,6 +257,7 @@ def render(ws: Path, timeline_log: Path) -> str:
             return state
         return state_of(events[sc])[0]
 
+    run_id, run_history = load_runs(ws)
     total_started = sum(1 for sc in SCENARIOS if events[sc] or sc in q_statuses)
     states = {sc: final_state(sc) for sc in SCENARIOS}
     done = [sc for sc in SCENARIOS if states[sc] == "done"]
@@ -263,6 +276,8 @@ def render(ws: Path, timeline_log: Path) -> str:
         q_state = q_statuses.get(sc)
         if q_state == "running":
             state, detail = "running", "orchestrator chain: active"
+        elif q_state == "partial":
+            state, detail = "partial", "completed — graded with failures"
         elif q_state in ("done", "failed") and grading(d) is not None:
             gr_state = grading(d)
             if q_state == "done" and gr_state is not None and gr_state["summary"]["failed"] > 0:
@@ -289,9 +304,14 @@ def render(ws: Path, timeline_log: Path) -> str:
         raw_dirty, dirty = git_dirty(repo) if repo.exists() else (0, 0)
         gr = grading(d)
         grade_html = ""
-        if gr:
+        if gr and run_id and gr.get("run_id") not in (None, run_id) and state in ("pending",):
+            sm = gr["summary"]
+            grade_html = (f'<div class="dim prevgrade">run {esc(str(gr.get("run_id"))[:11])}:'
+                          f' {sm["passed"]}/{sm["total"]} — from an earlier run</div>')
+        elif gr:
             sm = gr["summary"]
             rate = int(sm["pass_rate"] * 100)
+            stamp = (gr.get("ts") or "")[11:16]
             if state in ("running", "pending", "stalled", "retrying"):
                 # a grade from a previous run must not pose as current
                 grade_html = (f'<div class="dim prevgrade">prev run: {sm["passed"]}/{sm["total"]}'
@@ -308,7 +328,7 @@ def render(ws: Path, timeline_log: Path) -> str:
                     for e in fails[:5])
                 more = f'<div class="dim">… +{len(fails) - 5} more</div>' if len(fails) > 5 else ""
                 grade_html = (f'<div class="grade {cls}">graded: {sm["passed"]}/{sm["total"]}'
-                              f' ({rate}%)</div>{fail_rows}{more}')
+                              f' ({rate}%) · {stamp}</div>{fail_rows}{more}')
         elif state == "done":
             grade_html = '<div class="dim">grading pending…</div>'
         flaky_html = flaky_panel(d, law) if state in ("done", "partial", "failed") else ""
@@ -353,6 +373,31 @@ def render(ws: Path, timeline_log: Path) -> str:
   </div>
 </div>""")
 
+    # run history: every run (run.json) x every scenario's graded runs
+    # (grade-history.jsonl carries run ids since the relocation)
+    hist_rows = []
+    for r in reversed(run_history):
+        rid = r.get("run_id", "?")
+        cur = " · current" if rid == run_id else ""
+        hist_rows.append(
+            f'<div class="runrow"><b>{esc(rid)}</b> — model {esc(r.get("model","?"))},'
+            f' law {esc(r.get("law_commit","?"))}{cur}</div>')
+        for sc in SCENARIOS:
+            entries = []
+            for h in history(ws / sc):
+                if h.get("run_id") == rid or (h.get("run_id") is None and not hist_rows):
+                    pass  # pre-run-id entries are attributed in ts order below
+            entries = [h for h in history(ws / sc) if h.get("run_id") == rid]
+            if entries:
+                e = entries[-1]
+                ok = e["failed"] == 0
+                hist_rows.append(
+                    f'<div class="runsc{" rokken" if ok else " rbad"}">{esc(DISPLAY.get(sc, sc))}:'
+                    f' {e["passed"]}/{e["total"]}'
+                    + ("" if ok else f' — {esc("; ".join(f[:40] for f in e["fails"][:3]))}')
+                    + '</div>')
+    runs_html = "\n".join(hist_rows) or "(no runs recorded yet)"
+
     tl_tail = esc("\n".join(timeline_log.read_text(errors="ignore")
                             .splitlines()[-8:])) if timeline_log.exists() else "(no orchestrator log)"
     tl_full_lines = (strip_ansi(timeline_log.read_text(errors="ignore"))[-131072:].splitlines()
@@ -371,6 +416,9 @@ function closeLogX() {{
   document.querySelectorAll(".mback").forEach(m => m.style.display = "none");
   paused = false;
   document.getElementById("pausetag").style.display = "none"; }}
+function openRuns() {{ paused = true;
+  document.getElementById("pausetag").style.display = "inline";
+  document.getElementById("m-runs").style.display = "flex"; }}
 document.addEventListener("keydown", e => {{ if (e.key === "Escape") closeLogX(); }});
 // copy protection: an active text selection (or a copy event just fired)
 // pauses the refresh so a 3s reload cannot wipe the selection mid-copy.
@@ -430,6 +478,10 @@ setInterval(() => {{
  .grade.gok{{background:#1b3a1f;color:#8f8}} .grade.gsome{{background:#3a3000;color:#fc6}}
  .grade.gbad{{background:#4a1515;color:#f88}}
  .prevgrade{{margin-top:6px;font-size:12px}}
+ .runbadge{{background:#1c3a5e;color:#6bf;border:0;border-radius:4px;
+           padding:0 8px;cursor:pointer;font:inherit}}
+ .runrow{{margin:6px 0 2px}} .runsc{{padding-left:14px;color:#aaa}}
+ .runsc.rokken{{color:#8f8}} .runsc.rbad{{color:#f88}}
  .flaky{{color:#e9a23b;font-size:12px;margin-top:2px}}
  .flaky.persist{{color:#f66}}
  .gfail{{color:#f88;margin-top:3px;font-size:12px;white-space:nowrap;overflow:hidden;
@@ -439,7 +491,8 @@ setInterval(() => {{
  .summary span{{margin-right:14px}}
 </style></head><body>
 <h1>legislator eval — live</h1>
-<div class="dim">generated {now.strftime("%Y-%m-%d %H:%M:%S")} UTC ·
+<div class="dim">run <button class="runbadge" onclick="openRuns()">{esc(run_id or "—")}</button> ·
+ generated {now.strftime("%Y-%m-%d %H:%M:%S")} UTC ·
  refresh 3s <span id="pausetag" class="warn" style="display:none">— PAUSED (log open)</span> · opencode runs alive: {alive}</div>
 <div class="summary" style="margin-top:8px">
  <span>scenarios: {total_started}/{len(SCENARIOS)} started</span>
@@ -453,6 +506,13 @@ setInterval(() => {{
   <button class="logbtn" onclick="openLog('orchestrator')">log \u29e2</button></h2>
 <div class="orchbox">
   <pre class="tailopen" onclick="openLog('orchestrator')">{tl_tail}</pre>
+</div>
+<div class="mback" id="m-runs" onclick="closeLog(event)">
+  <div class="mwin" onclick="event.stopPropagation()">
+    <div class="mhead"><span>run history</span>
+      <button onclick="closeLogX()">close \u00d7</button></div>
+    <pre class="mlog">{runs_html}</pre>
+  </div>
 </div>
 <div class="mback" id="m-orchestrator" onclick="closeLog(event)">
   <div class="mwin" onclick="event.stopPropagation()">

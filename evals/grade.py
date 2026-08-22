@@ -883,11 +883,21 @@ def main() -> None:
         passed = sum(1 for e in g.exps if e["passed"])
         total = len(g.exps)
         any_failed |= passed < total
+        run_id = None
+        run_file = ws / "run.json"
+        if run_file.exists():
+            try:
+                run_id = json.loads(run_file.read_text()).get("run_id")
+            except json.JSONDecodeError:
+                pass
         out = {"expectations": g.exps,
+               "ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+               "run_id": run_id,
                "summary": {"passed": passed, "failed": total - passed,
                            "total": total, "pass_rate": round(passed / total, 3)}}
         fname = "grading_idempotency.json" if name.startswith("idempotency:") else "grading.json"
-        (outdir / fname).write_text(json.dumps(out, indent=2) + "\n")
+        (outdir / "outputs").mkdir(exist_ok=True)
+        (outdir / "outputs" / fname).write_text(json.dumps(out, indent=2) + "\n")
 
         # Append-only grade history: the flaky-vs-persistent oracle. Every
         # grading of this scenario lands here; the dashboard (and humans)
