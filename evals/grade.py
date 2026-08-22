@@ -222,7 +222,8 @@ def _head_real_file_content(repo: Path, path: str) -> bytes | None:
 
 
 def check_mode_authority(g: "Grader", repo: Path, mode: str,
-                         fixture_meta: dict | None = None) -> None:
+                         fixture_meta: dict | None = None,
+                         delegated: dict[str, str] | None = None) -> None:
     """One assert per scenario: the run's tracked-file diff, restricted to
     each artifact class, satisfies that class's cell for this mode.
     Content-level proof for lossless-write / move-or-merge stays with the
@@ -240,7 +241,16 @@ def check_mode_authority(g: "Grader", repo: Path, mode: str,
     the pair is not consulted. A content-protecting cell on a class absent
     from CANONICAL_FILE (a malformed matrix) is reported as this same
     assert's FAIL, not raised — a bad matrix must fail the grade, never
-    crash the grade run."""
+    crash the grade run.
+
+    `delegated` maps a class to the mode whose column governs it for THIS
+    run, for the one case the law defines: restructure's `heal` action
+    "runs SKILL.md Steps 2-3 as-is", so the owned law and manifest it
+    rewrites are written under the upgrade column, not under
+    restructure's own `never-touch`. The caller derives the map from the
+    law (`restructure_heal_delegates`) and passes it only when the run
+    actually healed — a restructure that did not heal is still held to
+    its own column."""
     try:
         m = authority_matrix()
     except ValueError as e:
@@ -256,8 +266,10 @@ def check_mode_authority(g: "Grader", repo: Path, mode: str,
             status[path] = "A" if code in ("??", "A") else ("D" if code == "D" else "M")
     violations = []
     try:
+        deleg = delegated or {}
         for cls in AUTHORITY_CLASSES:
-            right = m[(cls, mode)]
+            eff_mode = deleg.get(cls, mode)
+            right = m[(cls, eff_mode)]
             if right in CONTENT_PROTECTING_RIGHTS:
                 canonical = CANONICAL_FILE.get(cls)
                 if canonical is None:
@@ -270,7 +282,7 @@ def check_mode_authority(g: "Grader", repo: Path, mode: str,
                         continue
                     if post_content is None or head_content != post_content:
                         violations.append(
-                            f"{cls} × {mode} = {right}, but {canonical} content changed (was HEAD:{p})")
+                            f"{cls} × {eff_mode} = {right}, but {canonical} content changed (was HEAD:{p})")
                 continue
             for p in class_paths(repo, cls, fixture_meta):
                 change = status.get(p)
@@ -280,12 +292,15 @@ def check_mode_authority(g: "Grader", repo: Path, mode: str,
                     continue
                 if right == "create-if-absent" and change == "A":
                     continue
-                violations.append(f"{cls} × {mode} = {right}, but {p} {change}")
+                violations.append(f"{cls} × {eff_mode} = {right}, but {p} {change}")
     except ValueError as e:
         g.check("mode_respects_authority", False, str(e))
         return
+    deleg_note = ("" if not delegated else
+                  " (" + ", ".join(f"{c} delegated to {mo}"
+                                   for c, mo in sorted(delegated.items())) + ")")
     g.check("mode_respects_authority", not violations,
-            f"diff shape lawful for all {len(AUTHORITY_CLASSES)} classes in {mode} mode"
+            f"diff shape lawful for all {len(AUTHORITY_CLASSES)} classes in {mode} mode{deleg_note}"
             if not violations else "; ".join(violations[:4]))
 
 
@@ -336,6 +351,25 @@ def restructure_actions() -> set[str]:
     text = (SKILL / "references/restructure.md").read_text()
     section2 = text.split("## 2.", 1)[1].split("## 3.", 1)[0]
     return set(re.findall(r"^- \*\*(\w+)\*\*", section2, re.M))
+
+
+def restructure_heal_delegates() -> dict[str, str]:
+    """class -> the mode whose column governs that class during a
+    restructure run that heals, parsed from restructure.md §2's `heal`
+    bullet.
+
+    `heal` is the one restructure action that does not write under
+    restructure's own authority: it "runs SKILL.md Steps 2-3 as-is", i.e.
+    it invokes another column. The bullet says which one, per class, in
+    its `(authority: <class> x <mode>)` references — so the delegation is
+    derived from the law rather than restated here (POLICY §8).
+    """
+    text = (SKILL / "references/restructure.md").read_text()
+    section2 = text.split("## 2.", 1)[1].split("## 3.", 1)[0]
+    bullet = next((l for l in section2.splitlines()
+                   if l.startswith("- **heal**")), "")
+    return {cls.strip(): mode
+            for cls, mode in re.findall(r"\(authority: ([a-z ]+?) × ([a-z]+)", bullet)}
 
 
 # Migration fixture content that must never be silently dropped.
@@ -784,10 +818,17 @@ def grade_restructure(ws: Path) -> Grader:
     meta = json.loads((ws / "restructure" / "fixture_meta.json").read_text())
     report_path = ws / "restructure" / "outputs" / "restructure-report.md"
     g = Grader()
-    check_mode_authority(g, repo, "restructure", meta)
-
     has_report = report_path.exists()
     report = report_path.read_text() if has_report else ""
+
+    # A `[heal]` item is the law's own delegation of the owned layer to the
+    # upgrade column (`references/restructure.md` §2) — those writes are
+    # not restructure's, so they are judged by the column heal invokes.
+    # No heal in the plan, no delegation: never-touch keeps its teeth.
+    check_mode_authority(g, repo, "restructure", meta,
+                         delegated=restructure_heal_delegates()
+                         if "[heal]" in report else None)
+
     g.check("restructure_report_saved", has_report,
             str(report_path) if has_report else f"missing: {report_path}")
 
@@ -1116,6 +1157,16 @@ def grade_derivation_selftest() -> Grader:
     g.check("restructure_actions_derived",
             actions == {"move", "merge", "link", "fix", "heal", "decision"},
             f"closed action set parsed: {sorted(actions)}")
+    # §2's heal bullet is the only place the law delegates a class to
+    # another mode's column; the grader reads the delegation there instead
+    # of restating it. Every class Steps 2-3 write must carry its cell
+    # reference in that bullet, or mode_respects_authority will judge a
+    # lawful delegated write against restructure's own column.
+    heal = restructure_heal_delegates()
+    heal_ok = heal == {"owned law": "upgrade", "manifest": "upgrade"}
+    g.check("heal_delegation_derived", heal_ok,
+            f"heal delegates {heal} to the upgrade column" if heal_ok
+            else f"heal bullet delegates {heal} — expected owned law and manifest to the upgrade column")
     # §1 lock (BL-036 Wave B): the standard-layout table must carry the
     # cases row and the legacy qualifiers — the grader's relocation
     # expectations are only lawful while the table says so.
