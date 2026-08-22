@@ -91,8 +91,11 @@ than a paragraph.
   `@import`, a stale map row) is inside this right — such a line is not owner
   content, and the fidelity pass already exempts a `fix` item's named dead
   lines.
-- `propose-only` — never written; exact lines are printed in the report under
-  `## Needs your review`, and the owner applies them.
+- `propose-only` — the content is never written; exact lines are printed in
+  the report under `## Needs your review`, and the owner applies them. The
+  file-model canonicalization of Step 3 (rename `CLAUDE.md` → `AGENTS.md`,
+  symlink back; bytes identical) is wiring, not a write, and is inside this
+  right — the document's content before and after the run is byte-equal.
 - `move-or-merge` — relocated or folded whole under an approved plan item
   (`references/restructure.md` §2); content is carried, never edited.
 - `link-only` — a link *to* the path may be added elsewhere; the path itself
@@ -127,6 +130,15 @@ verify against the vocabulary, listed here for the spec reader only:
   delegated upgrade, not a restructure write)".
 - kept paths × restructure = `link-only`: today's sentence "the only action
   allowed to touch a kept file is linking to it" becomes this cell.
+- entry document × upgrade = `propose-only` **protects content, not a path**
+  (ruling during execution, 2026-08-22): upgrade on a pre-v14 legislated repo
+  renames `CLAUDE.md` → `AGENTS.md` (SKILL.md Step 3, "every mode, including
+  upgrade") and the upgrade fixture is exactly that case, so a path-based
+  "no change" reading of the cell fails lawful behaviour. The grader
+  therefore enforces `propose-only` by byte-identity of the canonical
+  document's content (HEAD's real entry file vs the post-run `AGENTS.md`),
+  and the path-based protected set excludes content-protected classes. This
+  is stronger than v17, which did not check `AGENTS.md` content at all.
 
 ## 4. The grader derives from the matrix
 
@@ -146,10 +158,13 @@ New in `evals/grade.py` (contract-derivation block, after `scaffold_artifacts`):
   structures → the fixture's own declared lists (fixture meta, as
   `expected_stacks` already does).
 - `protected_project_files(repo)` — **rewritten**: every path of every class
-  whose `upgrade` cell is in {`create-if-absent`, `propose-only`, `read-only`,
-  `link-only`, `never-touch`} and which existed at HEAD. The
-  `("AGENTS.md", "CLAUDE.md")` exclusion is deleted; the entry document drops
-  out because its cell says `propose-only`.
+  whose `upgrade` cell is a *path-protecting* right — `PATH_PROTECTING_RIGHTS
+  = {create-if-absent, read-only, link-only, never-touch}` — and which existed
+  at HEAD. `propose-only` is *content-protecting* (`CONTENT_PROTECTING_RIGHTS
+  = {propose-only}`) and is enforced by `check_mode_authority` through
+  content identity, not by path. The `("AGENTS.md", "CLAUDE.md")` exclusion is
+  deleted; the entry document is absent from the path set because its cell is
+  content-protected — and its content is checked, which v17 never did.
 - `check_mode_authority(g, repo, mode)` — one generic assert,
   `mode_respects_authority`, run in `grade_fresh`, `grade_migration`,
   `grade_migration_agents_first`, `grade_upgrade`, `grade_upgrade_drop_stack`,
@@ -158,7 +173,11 @@ New in `evals/grade.py` (contract-derivation block, after `scaffold_artifacts`):
   `create-if-absent`: only additions (`A` status); `lossless-write` and
   `move-or-merge`: any change, the existing fidelity assertions are the
   content proof; `propose-only`, `read-only`, `never-touch`: no change;
-  `link-only`: no change to the path itself. The assertion message names the violating cell: `entry document ×
+  `link-only`: no change to the path itself; `propose-only`: the canonical
+  document's content is byte-identical before and after the run (for the
+  entry document: HEAD's real `AGENTS.md`-or-`CLAUDE.md` vs the post-run
+  `AGENTS.md`, symlink resolved) — the porcelain status of the pair is not
+  consulted, so the v14 rename is lawful. The assertion message names the violating cell: `entry document ×
   upgrade = propose-only, but AGENTS.md modified`.
 
 `selftest:derivation` gains:

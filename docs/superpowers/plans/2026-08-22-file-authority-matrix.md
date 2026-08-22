@@ -12,6 +12,8 @@
 
 ## Global Constraints
 
+> **Amendment (ruling during execution, 2026-08-22, after Task 5):** `propose-only` protects *content*, not a path — upgrade lawfully renames a pre-v14 `CLAUDE.md` to `AGENTS.md`. `PROTECTING_RIGHTS` is split into `PATH_PROTECTING_RIGHTS = {create-if-absent, read-only, link-only, never-touch}` (used by `protected_project_files`) and `CONTENT_PROTECTING_RIGHTS = {propose-only}` (enforced in `check_mode_authority` by byte-identity of the canonical document before/after the run). Task 2's and Task 3's code blocks read as amended; Task 5's vocabulary bullet for `propose-only` carries the canonicalization carve-out. See spec §3 cell notes and §4.
+
 - **Evals first (spec §6, `evals/POLICY.md`):** no file under `skill/` changes until Tasks 1–4 are committed with their RED output recorded. A new assert that is green before the law change is measuring nothing.
 - **Branch:** all work on `feature/v18-file-authority` (already holds the spec). Never commit to master; never merge yourself.
 - **No AI attribution in commits** — no `Co-Authored-By` trailers, no generated-with footers.
