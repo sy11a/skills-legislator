@@ -1,14 +1,14 @@
 # Glossary vitality — design (BL-020, constitution v11)
 
 **Status:** approved 2026-07-12 (plan-mode approval: all three levers +
-live backfill of CareerPlatform and RKruiterApi). Historical record — do
+live backfill of fleet-platform and fleet-api). Historical record — do
 not rewrite.
 
 ## Problem
 
-The OKF glossary is dead in code-heavy repos. CareerPlatform and
-RKruiterApi carry byte-empty glossary tables untouched since legislation;
-RKruiterAgent's is populated only because design sessions were actively
+The OKF glossary is dead in code-heavy repos. fleet-platform and
+fleet-api carry byte-empty glossary tables untouched since legislation;
+fleet-agent's is populated only because design sessions were actively
 coining terms ("Judge", "Action tier") — the advisory "add terms as they
 emerge" fires only when terms are being invented, never for terms that
 already live in code. Three structural gaps: the template seeds an
@@ -67,8 +67,8 @@ benchmark → `evals/benchmarks/v11.md` vs v10's 98.
 
 ## Downstream (phase 2)
 
-CareerPlatform + RKruiterApi: v11 upgrade, then restructure applying only
+fleet-platform + fleet-api: v11 upgrade, then restructure applying only
 the glossary heal (real domain terms, user-approved), each on a feature
-branch per the branch-discipline law; the CareerPlatform branch also
-re-lands the orphaned `branching.md` commit (0dd0ebd). RKruiterAgent:
+branch per the branch-discipline law; the fleet-platform branch also
+re-lands the orphaned `branching.md` commit (0dd0ebd). fleet-agent:
 upgrade only.

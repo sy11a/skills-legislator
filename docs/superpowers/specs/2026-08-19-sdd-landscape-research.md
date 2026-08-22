@@ -22,12 +22,12 @@ The current loop **is** SDD already: brainstorm → `docs/superpowers/specs/
 alternative" section, execution phases → BL numbers) → `docs/superpowers/
 plans/*` (phased checkboxes, per-phase `Acceptance:`, "phase = BL = branch =
 PR") → backlog BL-NNN → journal/ADR/OKF. Usage is heavy, not ceremonial:
-CareerPlatform 12 specs / 48 plans (May–Jul 2026), RKruiterApi 3/2 with
+fleet-platform 12 specs / 48 plans (May–Jul 2026), fleet-api 3/2 with
 dense bidirectional traceability (spec § ↔ BL ↔ ADR ↔ journal, including
 cross-repo), 105 ADRs fleet-wide, backlogs actively cleared on completion.
 Zero foreign SDD tooling in any repo. The only SDD-ish working-dir pattern
 in active use: `.superpowers/sdd/task-N-{brief,report}.md` + superpowers
-skills (brainstorming ×30, writing-plans ×20, executing-plans ×8 in kbo's
+skills (brainstorming ×30, writing-plans ×20, executing-plans ×8 in fleet-obs's
 event log).
 
 ## Sources (what was actually read)
@@ -88,12 +88,12 @@ event log).
 
 | # | Gap | Harvest source | Cost if adopted |
 |---|---|---|---|
-| **G1** | No living behavioral baseline — OKF documents concepts *as-built*; specs are frozen point-in-time design records. Nothing answers "what is the system *required* to do today?" | OpenSpec delta+archive model | High: new artifact class, artifact-lifecycle amendment, kbo registry touch. Pilot in exactly one repo. |
+| **G1** | No living behavioral baseline — OKF documents concepts *as-built*; specs are frozen point-in-time design records. Nothing answers "what is the system *required* to do today?" | OpenSpec delta+archive model | High: new artifact class, artifact-lifecycle amendment, fleet-obs registry touch. Pilot in exactly one repo. |
 | **G2** | No acceptance-criteria syntax — `Acceptance:` lines in plans are freeform prose | EARS-lite (WHEN…SHALL) on *acceptance lines only* | Low: template + rule line |
 | **G3** | Clarification is ad hoc — grill exists but no taxonomy, no cap, no write-answers-into-spec discipline | SpecKit clarify | Low: codify into spec-writing guidance |
 | **G4** | No convergence step — nothing checks code vs spec after implementation | SpecKit converge (gap taxonomy + append-only) | Med: new procedure/rule |
 | **G5** | No cross-artifact coverage check — BL ↔ plan phase ↔ spec § ↔ OKF doc consistency never verified | SpecKit analyze coverage matrix | Med |
-| **G6** | Monolithic plans (94 KB CareerPlatform example) — agent context economy suffers | SpecKit artifact split (research/data-model/contracts), BMAD compression | Med |
+| **G6** | Monolithic plans (94 KB fleet-platform example) — agent context economy suffers | SpecKit artifact split (research/data-model/contracts), BMAD compression | Med |
 | **G7** | No machine validation of specs/plans (format, dangling refs) | OpenSpec validate, SpecKit checklists ("unit tests for English") | Med: a check_static-style linter |
 | **G8** | No parallelism markers in plans | SpecKit [P] markers, Kiro waves | Low |
 | **G9** | Process sizing is intuitive, not law | OpenSpec Progressive Rigor / Kiro Quick Spec | Low: one rule |
@@ -102,12 +102,12 @@ event log).
 high-value; slot into existing artifacts with zero new structures), **G1 in
 exactly one repo** (the only structural gap; OpenSpec's genuine
 differentiator; collides hardest with the artifact-lifecycle law — new
-artifact class, role declaration, kbo registry). G5/G7 batch later as "spec
+artifact class, role declaration, fleet-obs registry). G5/G7 batch later as "spec
 tooling"; G6 partially solves itself if G2/G4 land; G8/G9 minor.
 
 **Where the legislator already leads the field:** constitution-as-code with
 fleet delivery (VERSION + manifest + fleet.sh — no surveyed tool has this),
-OKF as a knowledge layer, kbo practice observability, ADR/journal discipline,
+OKF as a knowledge layer, fleet-obs practice observability, ADR/journal discipline,
 the harvest upward loop, steward duties with model-release benchmarking.
 
 ## Application vectors (strategy, settled 2026-08-19)
@@ -169,9 +169,9 @@ assumption — and earns its own cycle: **BL-027**.
 *ceremony scales with control and artifact lifetime* — the constitutional
 sentence that makes B-maximal and A-minimal the same law, not two laws.
 
-## kbo measurement recipe (build BEFORE any enrichment rollout)
+## fleet-obs measurement recipe (build BEFORE any enrichment rollout)
 
-Verified 2026-08-19: kbo is well-positioned to measure an SDD process
+Verified 2026-08-19: fleet-obs is well-positioned to measure an SDD process
 change. Spec/plan reads/writes and SDD-skill invocations already flow into
 bronze with session/repo/path/timestamp fidelity (the registry glob
 `~/Repository/*/docs` tags them; `.superpowers/sdd/` events captured with
@@ -189,7 +189,7 @@ noise out. All gaps are gold-side and additive (ADR-0002 schema law):
 3. **SDD-skill rate** — `skill.invoked` share for spec/plan-writing skills
    per session/repo/week (harvest-sourced; note harvest-lag).
 
-Honest limitation: kbo has no session-outcome metric — process *adoption*
+Honest limitation: fleet-obs has no session-outcome metric — process *adoption*
 is measurable, "specs made code better" is not. Proxies: failed-search
 rate, KB-touch, write→read loop, tokens. No commit-level tracking exists
 (observable equivalent: `knowledge.written` events on spec paths — sees

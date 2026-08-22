@@ -19,18 +19,18 @@ Collected read-only across all 9 legislated repos on 2026-08-20:
 
 - **Acceptance instrument absent**: zero Acceptance sections in any spec
   fleet-wide; the only four `**Acceptance:**` lines live in one
-  RKruiterApi plan, freeform. kbo's spec `## Testing` sections are a
+  fleet-api plan, freeform. fleet-obs's spec `## Testing` sections are a
   spontaneous prototype of scenario form (named test class + behavior +
   idempotency) — the fleet reached for the shape without having the syntax.
-- **Monolithic plans**: CareerPlatform 48 plans / 1.8 MB total, top file
+- **Monolithic plans**: fleet-platform 48 plans / 1.8 MB total, top file
   92 KB — an order of magnitude beyond every other repo.
-- **SDD adoption is uneven**: 12 specs / 48 plans (CareerPlatform) vs 0/0
+- **SDD adoption is uneven**: 12 specs / 48 plans (fleet-platform) vs 0/0
   (RKruiterSecurity works straight off its backlog) — tiering exists in
   practice, but is intuitive, not law.
 - **Hygiene**: `.superpowers/sdd/` debris in 3 repos (4.4 MB in
-  CareerPlatform); an archived repo still carries its manifest and keeps
+  fleet-platform); an archived repo still carries its manifest and keeps
   being picked up by fleet scans; stale OKF/journal on ~4 repos;
-  RKruiterApi's six domain docs described a model an ADR had removed.
+  fleet-api's six domain docs described a model an ADR had removed.
 - **The SDD process is an orphan**: specs/plans follow the
   `docs/superpowers/` convention, but no constitution rule governs spec
   format; the spec-workflow skill is dead (404 in the first-pass research);
@@ -84,7 +84,7 @@ data model, non-functional, integration, terminology). The user's grill
 practice already runs this protocol — D1's discovery is that it is written
 down nowhere.
 
-**Requirements syntax — adapt (merged EARS + Gherkin + the kbo
+**Requirements syntax — adapt (merged EARS + Gherkin + the fleet-obs
 prototype):** every requirement is one EARS line (WHEN/WHILE/WHERE/
 IF-THEN/ubiquitous — the five patterns cover the fleet's whole zoo:
 always-true, reactivity, states, errors, flags/profiles). Each spec
@@ -105,7 +105,7 @@ fleet-wide, auditable, harvestable. → BL-032.
 from the full primary source): intent inventory (spec requirements, plan
 decisions, constitutional MUSTs) → code judged against every promise, not
 against git diffs → gap taxonomy missing / partial / contradicts /
-**unrequested** (agents gift; 4.4 MB of CareerPlatform debris shows
+**unrequested** (agents gift; 4.4 MB of fleet-platform debris shows
 nobody inventories gifts today) → findings appended as traceable tasks to
 the case's plan (`per <source-ref> (<gap-type>)`), append-only, never
 rewriting → loop implement→converge until "✅ Converged". Constitutional
@@ -114,7 +114,7 @@ consumer in field repos, not just delivery.
 
 **Baseline (G1) — architecture D, not A.** The axis that matters: where
 "what the system must do today" lives. Hand-maintained documents (OpenSpec
-tree A, OKF sections B) always rot — RKruiterApi proved it; our own
+tree A, OKF sections B) always rot — fleet-api proved it; our own
 rot-free artifacts (law stratum, manifest) are machine-written. Therefore:
 EARS lines carry stable ids (**R-NNN**) in specs → tests are annotated
 with the same ids → a generator writes `baseline.md` (do-not-edit, like
@@ -141,7 +141,7 @@ src/ — source-symbol grounding) / human (glossary, log — deliberately).
 Four of six OKF functions become hard-linked; the bootstrap layer for
 incoming sessions stays (the alternative — doc-comments in code — was
 considered and rejected: it would kill context economy and concept
-synthesis). **Pilot for the whole package: kbo** (smallest active repo,
+synthesis). **Pilot for the whole package: fleet-obs** (smallest active repo,
 already home of the proto-EARS Testing lines). → BL-033.
 
 ## D3 — design · task breakdown
@@ -190,7 +190,7 @@ bigger than the tier):
 | 2 — full | research → contracts → analyze gate → implement → converge | new domain, cross-repo, security, irreversible |
 
 The fleet already lives in tiers without the law (RKruiterSecurity is a
-permanent tier-0; CareerPlatform over-ceremonies). Tier-0-by-law is what
+permanent tier-0; fleet-platform over-ceremonies). Tier-0-by-law is what
 makes the debris problem and the 92-KB problem both solvable.
 
 ## D5 — the strong rows, checked against evidence
@@ -201,9 +201,9 @@ makes the debris problem and the 92-KB problem both solvable.
   lives in the initiating repo; sibling repos get reference rows in their
   backlogs and the same `bl/NNN` branches; converge judges the whole case
   tree. Today's practice ("Task split across repos" heading in a
-  CareerPlatform spec) becomes a convention, not an accident.
+  fleet-platform spec) becomes a convention, not an accident.
 - **Learning loop** — architecture confirmed (journal + harvest +
-  steward; harvest has actually run; kbo telemetry accrues), but "leading"
+  steward; harvest has actually run; fleet-obs telemetry accrues), but "leading"
   is conditional: **no steward cycle has ever been executed**. The first
   one is scheduled after the D-harvest lands — its natural subject is the
   fresh laws themselves.
@@ -223,8 +223,8 @@ Fleet: read-only inventory of 9 repos (structure, sizes, dates, quotes).
 - BL-026 revised: every gap G1–G9 now carries its concrete decision and
   a pointer here.
 - BL-032 (core/sdd.md — the SDD law) and BL-033 (OKF v2 + the G7 engine,
-  kbo pilot) added as behavioral cases.
-- Order: kbo gold panel → BL-032 (+ BL-028/030 riding) → BL-033 (kbo
+  fleet-obs pilot) added as behavioral cases.
+- Order: fleet-obs gold panel → BL-032 (+ BL-028/030 riding) → BL-033 (fleet-obs
   pilot) → BL-029/031 → the first steward cycle.
 
 ## Addendum — consistency review against prior decisions (2026-08-20, same day)
@@ -242,14 +242,14 @@ decisions are primary (everything older adapts or is excluded):
 
 Interactions caught (not contradictions): BL-025's seven v13 follow-ups
 get a ride-or-exclude triage when BL-032 opens (they were promised to
-"the next benchmarked skill/** cycle"); the kbo gold panel must exclude
+"the next benchmarked skill/** cycle"); the fleet-obs gold panel must exclude
 generated writes from the docs-vs-code metric and the registry gains a
 `generated` content-type; BL-027 gains the outer-mode rename (sidecar =
 mechanism) with regeneration-aware stub-restore semantics.
 
 **Edition split decided:** v17 = the SDD law (BL-032 + absorbed case home
 + lifecycle home amendment + riders BL-028/030); v18 = truth-bonding
-(BL-033: engine, OKF v2, baseline, generated lifecycle class, kbo pilot)
+(BL-033: engine, OKF v2, baseline, generated lifecycle class, fleet-obs pilot)
 after a v17 soak; v19+ = outer placement (BL-027). The dependency of
 sdd.md on the v18 engine is severed by a fallback clause (mechanical
 analyze passes run by the agent when the engine is absent — the v12/v13

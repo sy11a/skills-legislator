@@ -1517,6 +1517,49 @@ version; the skill's repo contains no eval machinery beyond whatever the
 in writing; and a full edition cycle has been driven end-to-end across the
 two repos at least once.
 
+## BL-040 — Redact git history, not just the working tree
+
+**Status: PROPOSED 2026-08-22 — the other half of the redaction done that
+day; deliberately deferred because it rewrites every commit hash.**
+
+**What:** rewrite the repository's history so that fleet repository names
+and absolute local paths are gone from past commits too, not only from the
+current tree — `git filter-repo` with the same mapping the working-tree
+redaction used (`~/.claude/legislator-fleet-aliases.md`).
+
+**Why it is not already done.** On 2026-08-22 the working tree was redacted
+in three commits: 34 mentions in live docs, 71 names and 46 absolute paths
+in historical specs and plans, plus a `check_static.py` guard so the names
+cannot grow back. None of that touches history. All ~110 original mentions
+and 46 paths remain reachable in earlier commits with a single command, so
+**the current state gives privacy against a reader of the tree and none
+against a reader of the repository.** Anyone treating the redaction as
+sufficient before publishing would be wrong.
+
+**Why deferred rather than done.** History rewriting changes every commit
+hash from the first affected commit onward. That invalidates any clone,
+requires a force-push, breaks every existing reference to a commit (this
+backlog and several specs cite short hashes; benchmark records carry law
+generation stamps of the form `v17-<commit>-g<hash>`), and cannot be
+undone selectively. It is a one-shot operation that wants a deliberate
+moment, not a Friday.
+
+**Do it before, and only before, one of these:** the repository becomes
+public or is pushed to a host outside the owner's control; it is shared
+with anyone outside the fleet; or BL-039 splits the eval suite out (a good
+moment, since the new repo starts clean and this one is already being
+restructured).
+
+**Done when:** history carries no fleet name and no absolute local path;
+the law-generation stamps in `evals/benchmarks/*.md` and the commit
+citations in `docs/` are reconciled with the new hashes, or explicitly
+declared stale with a note saying why; and the decoding key still resolves
+every alias used anywhere in the rewritten history.
+
+**Check first:** whether any commit message (not just file content) carries
+a name or path — `filter-repo` handles both, but the two need separate
+expressions, and a message is easy to forget.
+
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
 
 A master-agent that reviews an incoming request in a project and decides whether to route it to an existing project-local mini-agent (`.claude/agents/<name>.md`) or create a new fine-grained specialized one (task-appropriate model, scoped MCPs) is being built as its **own, separate skill** — not as part of Legislator. Rationale: Legislator is build-time scaffolding (runs occasionally, evolves via VERSION/manifest); request routing is a runtime concern with its own lifecycle. Folding both into one skill would blur SRP.

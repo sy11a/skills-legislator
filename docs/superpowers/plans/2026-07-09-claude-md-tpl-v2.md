@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- Repo root: `/home/admin/Repository/custom_skills/legislator`. All paths below are relative to it.
+- Repo root: `<repo>`. All paths below are relative to it.
 - `python3 evals/check_static.py` must pass before every commit (repo CLAUDE.md).
 - Editing `skill/assets/rules/**` requires bumping `skill/VERSION` in the same commit (repo README). Task 2 does this: VERSION `6` → `7`.
 - Never rewrite files under `docs/superpowers/` from earlier dates.

@@ -30,7 +30,7 @@ A statement in project-owned prose that satisfies all three:
    states it (the run has those files on hand; judge by meaning, not
    wording).
 3. **Generalizable:** it would make sense verbatim in another repo of the
-   same stack. Project-instance data stays put — "CareerPlatform.Domain has
+   same stack. Project-instance data stays put — "fleet-platform.Domain has
    zero NuGet dependencies" is an instance of an existing architecture rule,
    not a candidate; "Domain projects must have zero NuGet dependencies"
    phrased as a general law would be.

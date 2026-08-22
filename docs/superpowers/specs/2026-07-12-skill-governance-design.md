@@ -16,7 +16,7 @@ parallel-agent assumptions that break WIP-1. Root cause is not the pack:
 **the constitution had no skill↔law precedence rule** — any installed
 skill could out-instruct the law. Second gap surfaced by the same review:
 **no verification/testing law** — the build/test gate lived only in the
-dotnet-refactoring skill, and CareerPlatform had already grown its own
+dotnet-refactoring skill, and fleet-platform had already grown its own
 "e2e coverage" project rule (harvest signal).
 
 ## Sweep verdicts (2026-07-12, all 37 SKILL.md files read)
@@ -106,7 +106,7 @@ Counts 13→14 defects (checks stay 13). Full benchmark →
 
 ## Downstream (phase 2)
 
-CareerPlatform, RKruiterApi, RKruiterAgent: v12 upgrade (two new import
+fleet-platform, fleet-api, fleet-agent: v12 upgrade (two new import
 lines applied as the user's hand) + drafted `.claude/rules/verification.md`
 (bindings derived from each repo's docker-compose/config; DSNs by env-var
 name, never literal secrets) + `.claude/rules/skills.md` (sanctioned/

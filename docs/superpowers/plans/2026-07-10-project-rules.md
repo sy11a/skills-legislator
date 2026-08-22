@@ -216,14 +216,14 @@ with:
 Replace the first classification bullet:
 
 ```
-- **Project-specific — keep verbatim in the new CLAUDE.md:** project overview, tech stack description, project-specific architecture instances (e.g. "CareerPlatform.Domain has zero NuGet dependencies" — this is an *instance* of the generic `stacks/dotnet/architecture.md` rule and stays as a concrete callout), build/test commands, CI notes.
+- **Project-specific — keep verbatim in the new CLAUDE.md:** project overview, tech stack description, project-specific architecture instances (e.g. "fleet-platform.Domain has zero NuGet dependencies" — this is an *instance* of the generic `stacks/dotnet/architecture.md` rule and stays as a concrete callout), build/test commands, CI notes.
 ```
 
 with:
 
 ```
 - **Project-specific and law-shaped — carve into `.claude/rules/<topic>.md`, verbatim:** imperative, diff-checkable project rules (e.g. "Money values are always `decimal`, never `double` or `float`.") move to one topic file each (or a shared topic file when they clearly group, e.g. `architecture.md`) under `.claude/rules/` — Claude Code auto-loads them, so no import line is added. This keeps CLAUDE.md lean per `core/project-rules.md`.
-- **Project-specific instance data — keep verbatim in the new CLAUDE.md:** project overview, tech stack description, architecture *instances* (e.g. "CareerPlatform.Domain has zero NuGet dependencies" — an instance of the generic `stacks/dotnet/architecture.md` rule), branch conventions, build/test commands, CI notes, environment/contact facts. Instance data is not law; it stays in CLAUDE.md's sections.
+- **Project-specific instance data — keep verbatim in the new CLAUDE.md:** project overview, tech stack description, architecture *instances* (e.g. "fleet-platform.Domain has zero NuGet dependencies" — an instance of the generic `stacks/dotnet/architecture.md` rule), branch conventions, build/test commands, CI notes, environment/contact facts. Instance data is not law; it stays in CLAUDE.md's sections.
 ```
 
 - [ ] **Step 7: Verify and commit**

@@ -7,7 +7,7 @@ both layers, triage). Historical record — do not rewrite.
 
 `core/pair-development.md` mandates branch-per-task and user-only merges
 but sets no integration deadline. At AI-assisted pace, tasks are produced
-faster than PRs merge: CareerPlatform accumulated 30+ local branches (most
+faster than PRs merge: fleet-platform accumulated 30+ local branches (most
 of them ghosts of squash-merged PRs — GitHub squash-merge never marks the
 local branch merged) plus genuinely stale work, and every new branch cut
 from an old checkout made the next merge worse. The fix is the trunk-based
@@ -25,7 +25,7 @@ micro-changes batch.
    micro-changes into the open branch; cut new branches from freshly-pulled
    main. Branch-per-task and never-merge-yourself stay unchanged — control
    is preserved by gates, not branch count.
-2. **Project layer** (outside this repo): CareerPlatform gets
+2. **Project layer** (outside this repo): fleet-platform gets
    `.claude/rules/branching.md` with the concrete mechanics (WIP limit,
    `git rebase --update-refs` stacking, 2-working-day cap, `chore/`
    batching, delete-after-merge). Written 2026-07-11; re-landing pending —

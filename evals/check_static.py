@@ -10,6 +10,8 @@ Exit code 0 = all checks pass; 1 = at least one failure (printed).
 """
 import json
 import re
+import subprocess
+
 import sys
 from pathlib import Path
 
@@ -95,6 +97,38 @@ allowed = {"architecture.md", "coding-standards.md", "data-access.md"}
 for rf in sorted((SKILL / "assets" / "rules" / "stacks").rglob("*.md")):
     check(rf.name in allowed, f"stacks/{rf.parent.name}/{rf.name} uses a concern-based filename",
           f"allowed: {sorted(allowed)}")
+
+print("== tracked files carry no local paths or fleet repo names ==")
+# Redacting the working tree once is a patch; a check is a wall. Absolute
+# home paths are caught generically. Fleet repo names cannot be listed here
+# without reintroducing them, so the list is read from the decoding key kept
+# OUTSIDE any repository — the check is strongest on the machine that has
+# the key and degrades to the path check elsewhere, which is honest.
+tracked = subprocess.run(["git", "ls-files"], cwd=REPO,
+                         capture_output=True, text=True).stdout.split()
+path_re = re.compile(r"/home/[a-z]|/Users/[A-Za-z]")
+key = Path.home() / ".claude" / "legislator-fleet-aliases.md"
+names = []
+if key.exists():
+    names = re.findall(r"^\| `[^`]+` \| ([^|]+?)\s*\|", key.read_text(), re.M)
+    names = [n.split(" (")[0].strip() for n in names]
+name_re = re.compile("|".join(rf"\b{re.escape(n)}\b" for n in names)) if names else None
+offenders = []
+for rel in tracked:
+    f = REPO / rel
+    try:
+        text = f.read_text(errors="ignore")
+    except OSError:
+        continue
+    for i, line in enumerate(text.splitlines(), 1):
+        if "KBO_" in line:
+            continue          # an env var name is an integration contract
+        if path_re.search(line) or (name_re and name_re.search(line)):
+            offenders.append(f"{rel}:{i}")
+check(not offenders, "no absolute local paths or fleet repo names in tracked files",
+      f"offenders: {offenders[:5]}")
+if not names:
+    print("  note  fleet-name check skipped — decoding key not on this machine")
 
 if failures:
     print(f"\n{len(failures)} check(s) FAILED")

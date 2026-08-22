@@ -12,7 +12,7 @@ baseline) is v18 and explicitly not a dependency (fallback clause below).
 The SDD process is an orphan: practiced fleet-wide, governed by no rule
 (deep-audit fleet evidence — 0 acceptance lines in ~20 specs, 92 KB plan
 monoliths, ceremony varying 0/0 to 12/48 per repo). Practice without law
-drifts; the law makes existing fleet instincts (kbo's proto-EARS Testing
+drifts; the law makes existing fleet instincts (fleet-obs's proto-EARS Testing
 lines, Wave-1 parallel discipline) deliverable, auditable, harvestable.
 
 ## What — decisions shipped in this edition
