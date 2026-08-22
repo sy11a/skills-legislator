@@ -168,24 +168,57 @@ def class_paths(repo: Path, cls: str, fixture_meta: dict | None = None) -> list[
     raise ValueError(f"File authority: unknown class {cls!r}")
 
 
-PROTECTING_RIGHTS = frozenset({"create-if-absent", "read-only",
-                               "link-only", "never-touch"})
+# File authority (ruling 2026-08-22, spec §3): `propose-only` protects the
+# document's CONTENT, not its path — upgrade on a pre-v14 legislated repo
+# lawfully renames CLAUDE.md -> AGENTS.md (SKILL.md Step 3), so a path-based
+# "no change" reading of the cell fails lawful behaviour. Path-protecting
+# rights still forbid any change to the path; content-protecting rights are
+# instead enforced by check_mode_authority's canonical-document identity
+# check (below), never by protected_project_files.
+PATH_PROTECTING_RIGHTS = frozenset({"create-if-absent", "read-only",
+                                    "link-only", "never-touch"})
+CONTENT_PROTECTING_RIGHTS = frozenset({"propose-only"})
+
+# The canonical file whose content stands in for a content-protected class.
+# A content-protecting cell on a class absent from this map is a malformed
+# matrix (check_mode_authority raises).
+CANONICAL_FILE = {"entry document": "AGENTS.md"}
 
 
 def protected_project_files(repo: Path, fixture_meta: dict | None = None,
                             matrix: dict | None = None) -> list[str]:
-    """Tracked files an upgrade run must leave byte-unchanged, derived from
-    the matrix: every path of every class whose `upgrade` cell is a
-    protecting right, restricted to what existed at HEAD. No hand-written
-    exclusions — AGENTS.md drops out because its cell says propose-only,
-    not because someone listed it."""
+    """Tracked, PATH-protected files an upgrade run must leave byte-unchanged
+    at their path, derived from the matrix: every path of every class whose
+    `upgrade` cell is in PATH_PROTECTING_RIGHTS, restricted to what existed
+    at HEAD. No hand-written exclusions — AGENTS.md drops out because its
+    cell says propose-only, not because someone listed it. Content-protected
+    classes (propose-only) are NOT in this set — their file may lawfully
+    change path (the v14 rename); they are instead checked for content
+    identity by check_mode_authority."""
     m = matrix if matrix is not None else authority_matrix()
     tracked = set(git(repo, "ls-files").split())
     out: set[str] = set()
     for cls in AUTHORITY_CLASSES:
-        if m[(cls, "upgrade")] in PROTECTING_RIGHTS:
+        if m[(cls, "upgrade")] in PATH_PROTECTING_RIGHTS:
             out |= {p for p in class_paths(repo, cls, fixture_meta) if p in tracked}
     return sorted(out)
+
+
+def _head_real_file_content(repo: Path, path: str) -> bytes | None:
+    """HEAD's content for `path` if it was a REAL (non-symlink) file at
+    HEAD, else None (absent at HEAD, or a symlink — a symlinked entry
+    document has no content of its own to protect)."""
+    exists = subprocess.run(
+        ["git", "-C", str(repo), "cat-file", "-e", f"HEAD:{path}"],
+        capture_output=True).returncode == 0
+    if not exists:
+        return None
+    ls = subprocess.run(["git", "-C", str(repo), "ls-tree", "HEAD", path],
+                        capture_output=True, text=True).stdout
+    if not ls.strip() or ls.split()[0] != "100644":
+        return None
+    return subprocess.run(["git", "-C", str(repo), "show", f"HEAD:{path}"],
+                          capture_output=True).stdout
 
 
 def check_mode_authority(g: "Grader", repo: Path, mode: str,
@@ -196,8 +229,15 @@ def check_mode_authority(g: "Grader", repo: Path, mode: str,
     scenario's fidelity asserts; this checks the SHAPE of the diff.
       replace, lossless-write, move-or-merge -> any change
       create-if-absent                       -> additions only
-      propose-only, read-only, never-touch   -> no change
-      link-only                              -> no change to the path itself"""
+      read-only, never-touch                 -> no change
+      link-only                              -> no change to the path itself
+    A content-protecting right (propose-only) is not a "no porcelain
+    change" rule — the v14 file-model rename (CLAUDE.md -> AGENTS.md,
+    symlink back) is lawful wiring under this right even though it is a
+    path change. Instead: for every path of the class that was a REAL file
+    at HEAD, its HEAD content must equal the post-run content of the
+    class's canonical file (symlinks resolved); the porcelain status of
+    the pair is not consulted."""
     try:
         m = authority_matrix()
     except ValueError as e:
@@ -214,6 +254,20 @@ def check_mode_authority(g: "Grader", repo: Path, mode: str,
     violations = []
     for cls in AUTHORITY_CLASSES:
         right = m[(cls, mode)]
+        if right in CONTENT_PROTECTING_RIGHTS:
+            canonical = CANONICAL_FILE.get(cls)
+            if canonical is None:
+                raise ValueError(f"File authority: no canonical file for class {cls!r}")
+            resolved = (repo / canonical).resolve()
+            post_content = resolved.read_bytes() if resolved.exists() else None
+            for p in class_paths(repo, cls, fixture_meta):
+                head_content = _head_real_file_content(repo, p)
+                if head_content is None:
+                    continue
+                if post_content is None or head_content != post_content:
+                    violations.append(
+                        f"{cls} × {mode} = {right}, but {canonical} content changed (was HEAD:{p})")
+            continue
         for p in class_paths(repo, cls, fixture_meta):
             change = status.get(p)
             if change is None:
@@ -629,10 +683,11 @@ def grade_upgrade(ws: Path) -> Grader:
                 "owned-path keep request refused with a reason" if refused
                 else "no refusal recorded for the owned-path keep request")
 
-    # Project-owned files must be untouched — the set is derived from the
-    # file-authority matrix (BL-038): every class whose upgrade cell is a
-    # protecting right. AGENTS.md is absent because its cell is
-    # propose-only, not because it is listed here.
+    # Project-owned files must be untouched AT THEIR PATH — the set is
+    # derived from the file-authority matrix (BL-038): every class whose
+    # upgrade cell is a path-protecting right. AGENTS.md is absent because
+    # its cell is content-protected (propose-only); its content, not its
+    # path, is checked by mode_respects_authority above.
     try:
         protected = protected_project_files(repo, fixture_meta=meta)
         touched = [p for p in git(repo, "diff", "HEAD", "--name-only").splitlines() if p in protected]
@@ -964,10 +1019,28 @@ def grade_derivation_selftest() -> Grader:
                        "upgrade": "maintaining", "restructure": "maintaining",
                        "audit": "inspecting"},
             f"states: {states}" if states else shape_err)
-    # Two directions: AGENTS.md is out of the protected set BECAUSE its
-    # cell is propose-only — flip the cell to read-only on a patched copy
-    # of the matrix and AGENTS.md must come back in. If either direction
-    # fails, the set is not being derived from the table.
+    # Every content-protecting cell must name a class with a canonical
+    # file, or check_mode_authority has nothing to compare content
+    # against and would raise at grade time instead of at this selftest.
+    if matrix:
+        uncovered_content_cells = [
+            (cls, mo) for (cls, mo), right in matrix.items()
+            if right in CONTENT_PROTECTING_RIGHTS and cls not in CANONICAL_FILE
+        ]
+        g.check("content_protected_rights_have_canonical_file",
+                not uncovered_content_cells,
+                "every content-protecting cell's class has a canonical file"
+                if not uncovered_content_cells
+                else f"no canonical file for: {uncovered_content_cells}")
+    else:
+        g.check("content_protected_rights_have_canonical_file", False, shape_err)
+    # Two directions: AGENTS.md is absent from the PATH-protected set
+    # because its cell is content-protected (propose-only is in
+    # CONTENT_PROTECTING_RIGHTS, not PATH_PROTECTING_RIGHTS) — its content,
+    # not its path, is what check_mode_authority guards. Flip the cell to
+    # read-only (a path-protecting right) on a patched copy of the matrix
+    # and AGENTS.md must come back into the path-protected set. If either
+    # direction fails, the set is not being derived from the table.
     if matrix:
         flipped = dict(matrix)
         flipped[("entry document", "upgrade")] = "read-only"
