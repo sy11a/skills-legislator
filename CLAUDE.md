@@ -36,6 +36,12 @@ Any edit under `skill/` (SKILL.md, `assets/rules/**`, `assets/templates/**`,
 
 Documentation-only edits (README, `docs/**`, `evals/**` itself) need neither.
 
+**One exception rides every edition:** `docs/philosophy.md` §Horizon lists what
+is designed but not built. The edition that closes one of those cases removes
+its item in the same cycle — `check_static.py` fails while a Horizon entry
+names a case the backlog reports as closed. The manifest must never claim a
+gap the system no longer has.
+
 ## Other repo rules
 
 - **Never add AI co-author trailers to commits in this repo** — no

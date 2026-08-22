@@ -60,6 +60,29 @@ file-disjoint from all of it. Background agents can't pause to ask questions,
 so anything dispatched to Track B must have its design fully settled at
 Gate 0/1 — that ordering is what makes the parallelism safe.
 
+## Edition plan (agreed 2026-08-22, after v17 closed at 177/177)
+
+- **v18 — rights and names.** One theme: every fact about who may write
+  what, and every concept's single name, stated in exactly one place.
+  - **BL-038** (anchor) — the file-authority matrix; `grade.py` derives its
+    protected/writable sets from it, `selftest:derivation` asserts the
+    derivation.
+  - **BL-030** — the constitution disambiguation sweep; same prose surface
+    as BL-038 (SKILL.md, `references/**`), so the two ride one cycle rather
+    than colliding in two.
+  - **BL-028** — manifest key `profiles` → `stacks`, with the legacy-key
+    upgrade path and a legacy-manifest fixture.
+  - **BL-031** — rides the cycle; whether it is behavioral is decided
+    in-cycle (it is docs-only unless a scaffolded template moves).
+- **v19 — OKF v2 and the one engine.** **BL-033** alone, for the reason its
+  own entry gives: a transform of what "docs" means across the fleet must
+  not share a landing with anything else.
+- **After v19:** BL-034 (self-legislation, depends on OKF v2, not on an
+  edition number), then BL-027 (outer placement mode, needs its own design
+  cycle first).
+- **Off the edition track:** BL-035 (docs-only, runs any time), BL-039 and
+  BL-040 (repository-level operations, each wanting a deliberate moment).
+
 Personal machine to-do (not a Legislator task): adopt the official C# LSP
 plugin (`csharp-ls`) locally — symbol-level navigation for the dotnet fleet;
 independent of this repo entirely.
@@ -975,7 +998,7 @@ new sidecar-placement eval scenario.
 
 ## BL-028 — Manifest key `profiles` → `stacks` (single-concept naming)
 
-**Status: queued (behavioral — skill/ changes, VERSION bump + full e2e)**
+**Status: queued → edition v18 (scope decided 2026-08-22; behavioral — skill/ changes, VERSION bump + full e2e)**
 
 **What:** rename the manifest's stack-subscription key from `profiles` to
 `stacks` so the key carries the concept's only name (ontology R5-T1,
@@ -1024,7 +1047,7 @@ resolve to their historical paths; benchmark green.
 
 ## BL-030 — Constitution disambiguation sweep in skill prose (A5)
 
-**Status: queued (behavioral — skill/ changes, VERSION bump + full e2e)**
+**Status: queued → edition v18 (scope decided 2026-08-22; behavioral — skill/ changes, VERSION bump + full e2e)**
 
 **What:** sweep `skill/` prose so "constitution" means exactly one thing
 (`docs/ai/rules/**` @ VERSION — ontology R1-T1): SKILL.md's "constitution
@@ -1043,7 +1066,7 @@ diffs beyond the expected prose changes.
 
 ## BL-031 — Split backlog.md into queue + case register sections
 
-**Status: queued (behavioral if templates change — decide in-cycle)**
+**Status: queued → rides the v18 cycle (scope decided 2026-08-22; behavioral if templates change — decide in-cycle)**
 
 **What:** restructure `docs/backlog.md` into two named sections per the
 ontology (R2-T2): **queue** — pending/active cases only, in intended work
@@ -1136,7 +1159,7 @@ everywhere.
 
 ## BL-033 — OKF v2 + the one engine: generated baseline, source anchors, spec linter (fleet-obs pilot)
 
-**Status: queued 2026-08-20 → edition v18, after a v17 soak (behavioral — skill/ changes, VERSION bump + full e2e)**
+**Status: queued 2026-08-20 → edition v19 (moved from v18 on 2026-08-22 when the v18 scope was decided: v18 carries the rights-and-names group, and this case keeps the isolated landing its own entry argues for — behavioral: skill/ changes, VERSION bump + full e2e)**
 
 **What:** two interlocking pieces from deep-audit D2/D4. (1) **OKF v2
 decomposition by link hardness**: generated (baseline.md from annotated
@@ -1181,7 +1204,7 @@ migrates repos forward-only (no history rewritten).
 
 ## BL-034 — Self-legislation: the legislator repo joins its own fleet
 
-**Status: queued 2026-08-20 (process + one behavioral cycle) — after v18 lands. Not an edition of its own.**
+**Status: queued 2026-08-20 (process + one behavioral cycle) — after v19 lands (was "after v18" before the 2026-08-22 scope decision; the dependency is on BL-033's OKF v2, not on an edition number). Not an edition of its own.**
 
 **What:** apply the legislator to itself (A4, already seeded by
 `docs/ontology.md`): scaffold the repo that hosts the skill — its own
@@ -1215,7 +1238,7 @@ clean or explains its findings.
 
 ## BL-035 — Docs overhaul: the philosophy manifest (`docs/philosophy.md`) + inner/outer modes
 
-**Status: queued 2026-08-20 (docs-only — no VERSION, no benchmark; can run anytime, independently of the editions)**
+**Status: DONE 2026-08-22** — `docs/philosophy.md` written (seven sections: what this is, philosophy, practices, application, placement modes, horizon, where to read next). README, `docs/ontology.md` and `docs/glossary.md` cross-reference it; five terms the manifest leans on gained glossary rows (drift, EARS, edition, grill, rot) so it introduces no orphan vocabulary. Docs-only as planned: no VERSION bump, no benchmark, static checks green. The **Horizon** section states what is designed but not built (BL-027, BL-033, BL-034, BL-038) and is expected to shrink as editions ship — a stale Horizon section is a finding for the edition that made it stale.
 
 **What:** a standalone manifest document, `docs/philosophy.md` (English),
 stating what the legislator is and how it is applied — the document a
@@ -1410,7 +1433,7 @@ designed mechanism; this note stays as the origin record.
 
 ## BL-038 — File-authority matrix: one table resolves every mode's rights over every artifact class
 
-**Status: PROPOSED 2026-08-22 — raised by the v17 benchmark; deferred past the edition (v18 candidate).**
+**Status: queued 2026-08-22 → edition v18, its anchor case (raised by the v17 benchmark, deferred past that edition; behavioral — skill/ changes, VERSION bump + full e2e)**
 
 **What:** replace the prose statements of "may this mode write this file?"
 with a single matrix — artifact class × mode → one permission from a closed
