@@ -71,6 +71,68 @@ def scaffold_artifacts() -> list[str]:
 
 SCAFFOLD_ARTIFACTS = scaffold_artifacts()
 
+# File authority (BL-038, edition v18): the ONE table in SKILL.md that
+# states what each invocation mode may do to each artifact class. The
+# grader derives its protected/writable expectations from it and never
+# restates a right by hand. A malformed table raises — grading leniently
+# against a broken matrix would be the v17 incident in reverse.
+AUTHORITY_VALUES = frozenset({
+    "replace", "create-if-absent", "lossless-write", "propose-only",
+    "move-or-merge", "link-only", "read-only", "never-touch",
+})
+AUTHORITY_MODES = ("scaffold", "migrate", "upgrade", "restructure", "audit")
+AUTHORITY_CLASSES = (
+    "entry document", "owned law", "manifest", "project rules",
+    "scaffolded artifacts", "relocated owner content",
+    "foreign structures", "kept paths",
+)
+
+
+def _authority_rows() -> list[list[str]]:
+    """The pipe-table rows of SKILL.md's `## File authority` section, each
+    as a list of stripped cells (outer pipes removed)."""
+    text = _skill_md()
+    if "\n## File authority\n" not in text:
+        raise ValueError("File authority: no `## File authority` section in SKILL.md")
+    section = text.split("\n## File authority\n", 1)[1].split("\n## ", 1)[0]
+    rows = []
+    for line in section.splitlines():
+        if line.startswith("|") and not re.match(r"^\|[\s:|-]+\|$", line):
+            rows.append([c.strip() for c in line.strip().strip("|").split("|")])
+    return rows
+
+
+def authority_matrix() -> dict[tuple[str, str], str]:
+    """(class, mode) -> right, parsed from the pinned two-header table."""
+    rows = _authority_rows()
+    if len(rows) < 2 + len(AUTHORITY_CLASSES):
+        raise ValueError(f"File authority: expected 2 header rows + {len(AUTHORITY_CLASSES)} body rows, got {len(rows)}")
+    modes = tuple(c for c in rows[1][1:])
+    if modes != AUTHORITY_MODES:
+        raise ValueError(f"File authority: mode row must be {AUTHORITY_MODES}, got {modes}")
+    out: dict[tuple[str, str], str] = {}
+    for row in rows[2:2 + len(AUTHORITY_CLASSES)]:
+        cls = row[0].split(" (", 1)[0].strip().lower()
+        if cls not in AUTHORITY_CLASSES:
+            raise ValueError(f"File authority: unknown artifact class {cls!r}")
+        cells = row[1:1 + len(AUTHORITY_MODES)]
+        for mode, cell in zip(AUTHORITY_MODES, cells):
+            if cell not in AUTHORITY_VALUES:
+                raise ValueError(f"File authority: cell ({cls} × {mode}) = {cell!r} is not one of {sorted(AUTHORITY_VALUES)}")
+            out[(cls, mode)] = cell
+    missing = [c for c in AUTHORITY_CLASSES if (c, "scaffold") not in out]
+    if missing:
+        raise ValueError(f"File authority: rows missing for {missing}")
+    return out
+
+
+def authority_states() -> dict[str, str]:
+    """mode -> state (installing / maintaining / inspecting), read from the
+    state header row directly above each mode."""
+    rows = _authority_rows()
+    states = rows[0][1:1 + len(AUTHORITY_MODES)]
+    return dict(zip(AUTHORITY_MODES, states))
+
 
 def protected_project_files() -> list[str]:
     """Tracked project-owned files upgrade must not touch: the scaffold's
@@ -793,6 +855,22 @@ def grade_derivation_selftest() -> Grader:
     g.check("scaffold_artifacts_include_cases_home",
             "docs/cases/README.md" in SCAFFOLD_ARTIFACTS,
             "the v17 case home is in the derived list")
+    # File authority (BL-038): the table parses to the pinned shape, and
+    # the state header says which repo state each mode assumes.
+    try:
+        matrix = authority_matrix()
+        states = authority_states()
+        shape_err = ""
+    except ValueError as e:
+        matrix, states, shape_err = {}, {}, str(e)
+    g.check("authority_matrix_shape",
+            not shape_err and len(matrix) == len(AUTHORITY_CLASSES) * len(AUTHORITY_MODES),
+            f"{len(matrix)} cells, all in the closed vocabulary" if not shape_err else shape_err)
+    g.check("authority_states_pinned",
+            states == {"scaffold": "installing", "migrate": "installing",
+                       "upgrade": "maintaining", "restructure": "maintaining",
+                       "audit": "inspecting"},
+            f"states: {states}" if states else shape_err)
     g.check("protected_excludes_entry_document_pair",
             "AGENTS.md" not in protected_project_files()
             and "CLAUDE.md" not in protected_project_files(),
