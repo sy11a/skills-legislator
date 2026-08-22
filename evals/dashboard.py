@@ -30,18 +30,24 @@ from pathlib import Path
 EXPECTED = {
     "fresh-scaffold-dotnet": ["repo/docs/ai/manifest.json", "repo/docs/cases/README.md"],
     "legacy-migration": ["outputs/migration-report.md"],
+    "legacy-migration-agents-first": ["outputs/migration-report.md"],
     "upgrade": ["outputs/upgrade-report.md"],
+    "upgrade-drop-stack": ["outputs/upgrade-report.md"],
     "rotted-layer": ["outputs/audit-report.md"],
     "restructure": ["outputs/restructure-report.md"],
+    "case-practice": ["repo/docs/cases/README.md"],
 }
 # Display names: the mode each fixture exercises (the rotted-layer dir IS
 # the audit scenario — the dashboard speaks in modes, not raw dir names).
 DISPLAY = {
     "fresh-scaffold-dotnet": "scaffold",
     "legacy-migration": "migration",
+    "legacy-migration-agents-first": "migration (agents-first)",
     "upgrade": "upgrade",
+    "upgrade-drop-stack": "upgrade (drop-stack)",
     "rotted-layer": "audit",
     "restructure": "restructure",
+    "case-practice": "case-practice",
 }
 SCENARIOS = list(EXPECTED)
 STALL_AFTER_S = 180
