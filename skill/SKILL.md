@@ -82,7 +82,7 @@ This table is the only statement of what an invocation mode may do to a file in 
 - `replace` — the content comes whole from the skill; whatever exists is replaced byte-for-byte (Bash `cp`), never merged, never edited.
 - `create-if-absent` — created from a template when missing; an existing file is left as it is, whatever its content.
 - `lossless-write` — the run writes owner content (into the file, or out of it into its home) such that every sentence survives; the fidelity pass is the proof. Removing machine wiring that points at nothing (a dangling `@import`, a stale map row) is inside this right — such a line is not owner content.
-- `propose-only` — not written; exact lines are printed under `## Needs your review`, and the owner applies them.
+- `propose-only` — the content is never written; exact lines are printed under `## Needs your review`, and the owner applies them. The file-model canonicalization of Step 3 (rename `CLAUDE.md` → `AGENTS.md`, symlink back; bytes identical) is wiring, not a write, and is inside this right — the document's content before and after the run is byte-equal.
 - `move-or-merge` — relocated or folded whole under an approved plan item (`references/restructure.md` §2); content is carried, not edited.
 - `link-only` — a link *to* the path may be added elsewhere; the path itself is not moved, merged, fixed, or rewritten.
 - `read-only` — read to judge and report; zero writes.
