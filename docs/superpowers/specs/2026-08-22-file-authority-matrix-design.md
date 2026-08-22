@@ -38,7 +38,7 @@ exclusion that encodes one cell of the matrix by name
 |---|---|---|
 | D1 | **Form:** artifact class × mode, modes grouped under a state header (installing / maintaining / inspecting). | Three state columns with footnotes (footnotes are prose — the thing being removed); long table of (class, mode) rows (~40 rows, unreadable as law). |
 | D2 | **Scope:** skill invocation modes only. `core/pair-development.md`'s "never hand-edit `docs/ai/rules/**`" and the hooks plugin's write-guard address a different actor (a human or agent outside a run) and are read where SKILL.md is not present; they stay as they are, each marked as the mirror of a named cell. | An eighth "project agent" column (SKILL.md is not in the target repo, so the delivered rule could not point at it); moving the matrix into a delivered rule file (every project session would read law about the skill's internal modes — context noise). |
-| D3 | **Vocabulary:** nine closed values, each cell self-sufficient, no footnotes, definitions beside the table and themselves law. | Five values + footnotes; right + open qualifier in parentheses (the parenthesis is an open set). |
+| D3 | **Vocabulary:** eight closed values, each cell self-sufficient, no footnotes, definitions beside the table and themselves law. | Five values + footnotes; right + open qualifier in parentheses (the parenthesis is an open set). |
 | D4 | **Columns:** five — scaffold, migrate, upgrade, restructure, audit. **Harvest** is a report section inside migrate/upgrade/audit and writes nothing by construction; **steward** is a human duty performed on the skill's own repository (README § Steward duties) and never acts on a legislated repo. Neither gets a column; one line under the table says so, so the absence reads as a decision. | Seven columns with two all-`read-only` columns (an empty column in law is an invitation to fill it — and a human role would quietly become a machine mode). |
 | D5 | **Strategy:** A + C — the matrix is the sole source (prose becomes references), the grader derives its sets from it, and `check_static.py` fails on authority-shaped prose outside the matrix. | A alone (nothing stops the next edition from writing a right back into a step); B (table beside surviving prose — the original disease half-cured). |
 | D6 | **Evals first:** every new assert is written and shown RED against the unchanged v17 law before any law edit; the baseline counts are recorded in this spec (§6). | — (policy, not a choice). |
@@ -58,7 +58,7 @@ column it spans — the grader reads a mode's state from the cell above it.
 | artifact class | installing | installing | maintaining | maintaining | inspecting |
 | | scaffold | migrate | upgrade | restructure | audit |
 |---|---|---|---|---|---|
-| entry document (`AGENTS.md`; `CLAUDE.md` is its symlink) | replace | lossless-write | propose-only | delete-dead-wiring | read-only |
+| entry document (`AGENTS.md`; `CLAUDE.md` is its symlink) | replace | lossless-write | propose-only | lossless-write | read-only |
 | owned law (`docs/ai/rules/**`, `opencode.json`) | replace | replace | replace | never-touch | read-only |
 | manifest (`docs/ai/manifest.json`) | replace | replace | replace | never-touch | read-only |
 | project rules (`.claude/rules/**`) | create-if-absent | lossless-write | create-if-absent | move-or-merge | read-only |
@@ -79,7 +79,7 @@ maintained or inspected. A mode's column is fixed; its state header names the
 repo state the mode assumes.* This is the v17 invariant, now a header rather
 than a paragraph.
 
-**Vocabulary (closed, nine values; these definitions are law):**
+**Vocabulary (closed, eight values; these definitions are law):**
 
 - `replace` — the content comes whole from the skill; whatever exists is
   replaced byte-for-byte (Bash `cp`), never merged, never edited.
@@ -87,12 +87,12 @@ than a paragraph.
   is never touched, whatever its content.
 - `lossless-write` — the run writes owner content (into the file, or out of it
   into its home) such that every sentence survives; the fidelity pass is the
-  proof.
+  proof. Removing machine wiring that points at nothing (a dangling
+  `@import`, a stale map row) is inside this right — such a line is not owner
+  content, and the fidelity pass already exempts a `fix` item's named dead
+  lines.
 - `propose-only` — never written; exact lines are printed in the report under
   `## Needs your review`, and the owner applies them.
-- `delete-dead-wiring` — the only permitted write is removing machine wiring
-  that points at nothing (a dangling `@import`, a stale map row); owner
-  content is never removed or reworded.
 - `move-or-merge` — relocated or folded whole under an approved plan item
   (`references/restructure.md` §2); content is carried, never edited.
 - `link-only` — a link *to* the path may be added elsewhere; the path itself
@@ -111,6 +111,15 @@ verify against the vocabulary, listed here for the spec reader only:
 - entry document × migrate = `lossless-write`: the `git mv CLAUDE.md →
   AGENTS.md` rename and the symlink are part of the pair, so the pair is one
   class and the rename is not a violation.
+- entry document × restructure = `lossless-write`, **not** a narrower
+  delete-only right (corrected while planning, 2026-08-22): restructure's
+  `fix` performs the v14 canonicalization on a pre-v14 repo — rename plus
+  wiring *appended* to the verbatim content — and the restructure fixture
+  exercises exactly that (`grade.py` `v14_model_canonicalized`). A
+  delete-only cell would have failed lawful behaviour. The dangling-import
+  removal that the v17 paragraph singled out is a sub-case of
+  `lossless-write`; a ninth value existed only to name it, and a value no
+  cell needs is the same defect as an empty column.
 - owned law × restructure = `never-touch` while restructure's `heal` action
   "runs SKILL.md Steps 2–3 as-is": heal *invokes* the upgrade column, it does
   not write under restructure's own authority. `restructure.md` §2's heal
@@ -127,7 +136,7 @@ New in `evals/grade.py` (contract-derivation block, after `scaffold_artifacts`):
   `## File authority` section: the mode row gives the columns, the state row
   gives each mode's state, each body row gives a class (the text before the
   first parenthesis, lowercased) and five cells. Raises if the shape is not
-  8 rows × 5 modes or a cell is outside the nine values (a malformed matrix
+  8 rows × 5 modes or a cell is outside the eight values (a malformed matrix
   must fail loudly, not grade leniently).
 - `class_paths(repo, cls) -> list[str]` — resolves a class to concrete
   repo-relative paths: entry document → `AGENTS.md`, `CLAUDE.md`; owned law →
@@ -149,15 +158,13 @@ New in `evals/grade.py` (contract-derivation block, after `scaffold_artifacts`):
   `create-if-absent`: only additions (`A` status); `lossless-write` and
   `move-or-merge`: any change, the existing fidelity assertions are the
   content proof; `propose-only`, `read-only`, `never-touch`: no change;
-  `link-only`: no change to the path itself; `delete-dead-wiring`: only line
-  deletions in the diff, and every deleted line matches `^@` or a map-row
-  shape. The assertion message names the violating cell: `entry document ×
+  `link-only`: no change to the path itself. The assertion message names the violating cell: `entry document ×
   upgrade = propose-only, but AGENTS.md modified`.
 
 `selftest:derivation` gains:
 
 - `authority_matrix_shape` — 8 classes × 5 modes parsed, every cell in the
-  nine-value set.
+  eight-value set.
 - `authority_states_pinned` — scaffold, migrate → installing; upgrade,
   restructure → maintaining; audit → inspecting.
 - `protected_set_derived_from_cells` — replaces
@@ -172,7 +179,7 @@ New in `evals/grade.py` (contract-derivation block, after `scaffold_artifacts`):
 New section `== file authority: one table, no prose rights ==`:
 
 1. `SKILL.md` has exactly one `## File authority` section; the table parses to
-   8 × 5; every cell is one of the nine values; the mode row is exactly
+   8 × 5; every cell is one of the eight values; the mode row is exactly
    `scaffold | migrate | upgrade | restructure | audit`.
 2. **No authority-shaped prose outside the table.** `SKILL.md` and
    `references/*.md`, minus the `## File authority` section and minus the
@@ -231,7 +238,7 @@ step 4.
 | `SKILL.md:64` Step 4 header "create it only if it does not already exist — never overwrite" | the right in full | "Right: `create-if-absent` (authority: scaffolded artifacts × every installing/maintaining mode)." |
 | `SKILL.md:79, 81, 95` "create-once, project-owned after creation" in Step 4 rows | the right repeated per row | Removed from the rows; the table's row carries it once. |
 | `SKILL.md:120` Step 7 "a run against an existing manifest never edits AGENTS.md" | the fourth copy from the v17 incident | "(authority: entry document × upgrade = propose-only)" |
-| `SKILL.md:186` restructure: "Entry-document authority names stale wiring as the one thing…" | points at the deleted paragraph | "(authority: entry document × restructure = delete-dead-wiring)" |
+| `SKILL.md:186` restructure: "Entry-document authority names stale wiring as the one thing…" | points at the deleted paragraph | "(authority: entry document × restructure = lossless-write — a dangling import is not owner content)" |
 | `references/migration.md:27` "(Upgrade mode, which never edits AGENTS.md, proposes instead)" | an aside about another mode | Deleted — migration.md does not speak for upgrade. |
 | `references/restructure.md` §2 heal, §2 link, §5 | state restructure's rights in prose | Cell references; the kept-path sentence becomes "(authority: kept paths × restructure = link-only)". |
 
@@ -262,8 +269,8 @@ the operator's guide, not law — the wall does not scan it).
   job.
 - **The wall's regex catches non-authority prose.** Handled in step 3 by
   explicit classification; the regex list is visible in the diff.
-- **The vocabulary grows.** A cell that needs a sentence is a sign the nine
-  values are wrong — the static check rejects a tenth value, so growth is a
+- **The vocabulary grows.** A cell that needs a sentence is a sign the eight
+  values are wrong — the static check rejects a ninth value, so growth is a
   deliberate edit to the check and the spec, never a drift.
 - **Scenario coverage of cells.** Some cells are never exercised (foreign
   structures × scaffold). That is acceptable: the matrix is the law; the
