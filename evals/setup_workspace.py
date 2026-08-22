@@ -520,6 +520,9 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
             ["git", "rev-parse", "HEAD"], cwd=dest, check=True,
             capture_output=True, text=True).stdout.strip(),
         "expected_manifest_version": version - 1,
+        # File authority (BL-038): the two classes only a fixture can name.
+        "authority_foreign_structures": [".cursorrules", "UBIQUITOUS_LANGUAGE.md"],
+        "authority_relocated_owner_content": [],
     }
     if restructure_extras:
         meta["fidelity_sentences"] = [
@@ -553,6 +556,11 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
         meta["project_rule_conflict_path"] = ".claude/rules/journal.md"
         meta["project_rule_conflict_content"] = (
             dest / ".claude/rules/journal.md").read_text()
+        meta["authority_relocated_owner_content"] = [
+            ".claude/plans/2026-01-importer-plan.md",
+            "docs/superpowers/BL-0007/plan.md",
+            "docs/superpowers/review-checklist.md",
+        ]
 
     (dest.parent / "fixture_meta.json").write_text(
         json.dumps(meta, indent=2) + "\n")

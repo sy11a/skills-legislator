@@ -32,8 +32,10 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -140,13 +142,50 @@ def authority_states() -> dict[str, str]:
     return dict(zip(AUTHORITY_MODES, states))
 
 
-def protected_project_files() -> list[str]:
-    """Tracked project-owned files upgrade must not touch: the scaffold's
-    create-once artifacts minus the entry-document pair (AGENTS.md is
-    never edited — only proposed to — and CLAUDE.md is a managed
-    symlink; both legitimately change across a file-model upgrade)."""
-    return [a for a in SCAFFOLD_ARTIFACTS
-            if a not in ("AGENTS.md", "CLAUDE.md")]
+def class_paths(repo: Path, cls: str, fixture_meta: dict | None = None) -> list[str]:
+    """Concrete repo-relative paths of one artifact class. Skill-derived
+    where the skill defines the class; fixture-declared for the two
+    classes only a fixture can know (what is foreign, what was relocated)."""
+    meta = fixture_meta or {}
+    if cls == "entry document":
+        return ["AGENTS.md", "CLAUDE.md"]
+    if cls == "owned law":
+        return sorted(expected_owned())
+    if cls == "manifest":
+        return ["docs/ai/manifest.json"]
+    if cls == "project rules":
+        tracked = git(repo, "ls-files", ".claude/rules").split()
+        return sorted(set(tracked) | {p for p in SCAFFOLD_ARTIFACTS if p.startswith(".claude/rules/")})
+    if cls == "scaffolded artifacts":
+        return [p for p in SCAFFOLD_ARTIFACTS if not p.startswith(".claude/rules/")
+                and p not in ("AGENTS.md", "CLAUDE.md")]
+    if cls == "relocated owner content":
+        return sorted(meta.get("authority_relocated_owner_content", []))
+    if cls == "foreign structures":
+        return sorted(meta.get("authority_foreign_structures", []))
+    if cls == "kept paths":
+        return sorted(k["path"] for k in meta.get("expected_keep", []))
+    raise ValueError(f"File authority: unknown class {cls!r}")
+
+
+PROTECTING_RIGHTS = frozenset({"create-if-absent", "propose-only", "read-only",
+                               "link-only", "never-touch"})
+
+
+def protected_project_files(repo: Path, fixture_meta: dict | None = None,
+                            matrix: dict | None = None) -> list[str]:
+    """Tracked files an upgrade run must leave byte-unchanged, derived from
+    the matrix: every path of every class whose `upgrade` cell is a
+    protecting right, restricted to what existed at HEAD. No hand-written
+    exclusions — AGENTS.md drops out because its cell says propose-only,
+    not because someone listed it."""
+    m = matrix if matrix is not None else authority_matrix()
+    tracked = set(git(repo, "ls-files").split())
+    out: set[str] = set()
+    for cls in AUTHORITY_CLASSES:
+        if m[(cls, "upgrade")] in PROTECTING_RIGHTS:
+            out |= {p for p in class_paths(repo, cls, fixture_meta) if p in tracked}
+    return sorted(out)
 
 
 def expected_stacks(fixture_meta: dict | None = None) -> list[str]:
@@ -546,15 +585,17 @@ def grade_upgrade(ws: Path) -> Grader:
                 "owned-path keep request refused with a reason" if refused
                 else "no refusal recorded for the owned-path keep request")
 
-    # Project-owned files must be untouched: tracked-file diff limited to them
-    # must be empty. Derived from the scaffold table (BL-036 Wave A): the
-    # entry-document pair is excluded — AGENTS.md only ever receives
-    # proposals and CLAUDE.md is a managed symlink, both legitimately
-    # change across a file-model upgrade.
-    protected = protected_project_files()
-    touched = [p for p in git(repo, "diff", "HEAD", "--name-only").splitlines() if p in protected]
-    g.check("project_owned_files_untouched", not touched,
-            "no tracked project-owned file modified" if not touched else f"modified: {touched}")
+    # Project-owned files must be untouched — the set is derived from the
+    # file-authority matrix (BL-038): every class whose upgrade cell is a
+    # protecting right. AGENTS.md is absent because its cell is
+    # propose-only, not because it is listed here.
+    try:
+        protected = protected_project_files(repo, fixture_meta=meta)
+        touched = [p for p in git(repo, "diff", "HEAD", "--name-only").splitlines() if p in protected]
+        g.check("project_owned_files_untouched", not touched,
+                "no tracked project-owned file modified" if not touched else f"modified: {touched}")
+    except ValueError as e:
+        g.check("project_owned_files_untouched", False, str(e))
     return g
 
 
@@ -877,10 +918,28 @@ def grade_derivation_selftest() -> Grader:
                        "upgrade": "maintaining", "restructure": "maintaining",
                        "audit": "inspecting"},
             f"states: {states}" if states else shape_err)
-    g.check("protected_excludes_entry_document_pair",
-            "AGENTS.md" not in protected_project_files()
-            and "CLAUDE.md" not in protected_project_files(),
-            "entry-document pair excluded from the protected set")
+    # Two directions: AGENTS.md is out of the protected set BECAUSE its
+    # cell is propose-only — flip the cell to read-only on a patched copy
+    # of the matrix and AGENTS.md must come back in. If either direction
+    # fails, the set is not being derived from the table.
+    if matrix:
+        flipped = dict(matrix)
+        flipped[("entry document", "upgrade")] = "read-only"
+        with tempfile.TemporaryDirectory() as td:
+            scratch = Path(td) / "repo"
+            shutil.copytree(EVALS / "fixtures" / "upgrade-base", scratch)
+            (scratch / "AGENTS.md").write_text("# stub\n")
+            subprocess.run(["git", "-C", str(scratch), "init", "-q"], check=True)
+            subprocess.run(["git", "-C", str(scratch), "add", "-A"], check=True)
+            real = protected_project_files(scratch, None, matrix)
+            patched = protected_project_files(scratch, None, flipped)
+        derived = ("AGENTS.md" not in real
+                   and matrix[("entry document", "upgrade")] == "propose-only"
+                   and "AGENTS.md" in patched)
+        g.check("protected_set_derived_from_cells", derived,
+                f"real={'AGENTS.md' in real}, flipped={'AGENTS.md' in patched}")
+    else:
+        g.check("protected_set_derived_from_cells", False, shape_err)
     wiring = migration_wiring()
     g.check("migration_wiring_derived_from_template",
             "@docs/okf/codebase-map.md" in wiring and "## Boundaries" in wiring,
