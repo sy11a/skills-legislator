@@ -120,6 +120,60 @@ if horizon:
                   f"Horizon's {case} is still open",
                   f"backlog says {status} — the closing edition must drop it from the Horizon")
 
+print("== file authority: one table, no prose rights ==")
+# BL-038: the `## File authority` table is the only place in the skill
+# that states what a mode may do to a file. The grader derives from it;
+# this check keeps it the only place. The regex list is deliberately here
+# and not in law — a false positive is fixed by narrowing it or rewording
+# the prose, both visible in the diff.
+AUTH_VALUES = {"replace", "create-if-absent", "lossless-write", "propose-only",
+               "move-or-merge", "link-only", "read-only", "never-touch"}
+AUTH_MODES = ["scaffold", "migrate", "upgrade", "restructure", "audit"]
+AUTH_CLASSES = ["entry document", "owned law", "manifest", "project rules",
+                "scaffolded artifacts", "relocated owner content",
+                "foreign structures", "kept paths"]
+AUTH_PROSE = re.compile(
+    r"never (edit|edits|edited|touch|touches|touched|overwrite|overwrites|overwritten)\b"
+    r"|is project-owned|project-owned, so|project-owned after creation"
+    r"|overwritten on every run|\bcreated?-once\b|create it only if"
+    r"|only if it does not already exist", re.I)
+AUTH_REF = re.compile(r"\(authority: ([a-z ]+?) × ([a-z]+)(?: = [a-z-]+)?[^)]*\)")
+
+sections = skill_md.split("\n## File authority\n")
+check(len(sections) == 2, "SKILL.md has exactly one `## File authority` section",
+      f"found {len(sections) - 1}")
+auth_body = sections[1].split("\n## ", 1)[0] if len(sections) == 2 else ""
+auth_rows = [[c.strip() for c in l.strip().strip("|").split("|")]
+             for l in auth_body.splitlines()
+             if l.startswith("|") and not re.match(r"^\|[\s:|-]+\|$", l)]
+shape_ok = (len(auth_rows) >= 2 + len(AUTH_CLASSES)
+            and auth_rows[1][1:] == AUTH_MODES
+            and all(r[0].split(" (", 1)[0].strip().lower() in AUTH_CLASSES for r in auth_rows[2:2 + len(AUTH_CLASSES)])
+            and all(c in AUTH_VALUES for r in auth_rows[2:2 + len(AUTH_CLASSES)] for c in r[1:1 + len(AUTH_MODES)]))
+check(shape_ok, "File authority table has the pinned shape (2 header rows, 8 classes × 5 modes, closed vocabulary)",
+      "no table" if not auth_rows else f"rows={len(auth_rows)}, modes={auth_rows[1][1:] if len(auth_rows) > 1 else None}")
+
+# Prose scan: SKILL.md minus the File authority section, plus references/.
+scan_targets = [("SKILL.md", sections[0] + ("\n## " + sections[1].split("\n## ", 1)[1] if len(sections) == 2 and "\n## " in sections[1] else ""))]
+for ref in sorted((SKILL / "references").glob("*.md")):
+    scan_targets.append((f"references/{ref.name}", ref.read_text()))
+prose_hits = []
+for name, text in scan_targets:
+    for i, line in enumerate(text.splitlines(), 1):
+        if AUTH_PROSE.search(line):
+            prose_hits.append(f"{name}:{i}")
+check(not prose_hits, "no authority-shaped prose outside the File authority table",
+      f"{len(prose_hits)} hit(s): {prose_hits}")
+
+bad_refs = []
+for name, text in scan_targets:
+    for m in AUTH_REF.finditer(text):
+        cls, mode = m.group(1).strip(), m.group(2)
+        if cls not in AUTH_CLASSES or mode not in AUTH_MODES:
+            bad_refs.append(f"{name}: ({cls} × {mode})")
+check(not bad_refs, "every (authority: class × mode) reference resolves to a row and a column",
+      f"unresolved: {bad_refs}")
+
 print("== tracked files carry no local paths or fleet repo names ==")
 # Redacting the working tree once is a patch; a check is a wall. Absolute
 # home paths are caught generically. Fleet repo names cannot be listed here
