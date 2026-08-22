@@ -188,6 +188,46 @@ def protected_project_files(repo: Path, fixture_meta: dict | None = None,
     return sorted(out)
 
 
+def check_mode_authority(g: "Grader", repo: Path, mode: str,
+                         fixture_meta: dict | None = None) -> None:
+    """One assert per scenario: the run's tracked-file diff, restricted to
+    each artifact class, satisfies that class's cell for this mode.
+    Content-level proof for lossless-write / move-or-merge stays with the
+    scenario's fidelity asserts; this checks the SHAPE of the diff.
+      replace, lossless-write, move-or-merge -> any change
+      create-if-absent                       -> additions only
+      propose-only, read-only, never-touch   -> no change
+      link-only                              -> no change to the path itself"""
+    try:
+        m = authority_matrix()
+    except ValueError as e:
+        g.check("mode_respects_authority", False, str(e))
+        return
+    status = {}
+    for line in git(repo, "status", "--porcelain", "--untracked-files=all").splitlines():
+        code, path = line[:2].strip(), line[3:]
+        if " -> " in path:                      # rename: both sides count
+            old, new = path.split(" -> ", 1)
+            status[old] = "D"; status[new] = "A"
+        else:
+            status[path] = "A" if code in ("??", "A") else ("D" if code == "D" else "M")
+    violations = []
+    for cls in AUTHORITY_CLASSES:
+        right = m[(cls, mode)]
+        for p in class_paths(repo, cls, fixture_meta):
+            change = status.get(p)
+            if change is None:
+                continue
+            if right in ("replace", "lossless-write", "move-or-merge"):
+                continue
+            if right == "create-if-absent" and change == "A":
+                continue
+            violations.append(f"{cls} × {mode} = {right}, but {p} {change}")
+    g.check("mode_respects_authority", not violations,
+            f"diff shape lawful for all {len(AUTHORITY_CLASSES)} classes in {mode} mode"
+            if not violations else "; ".join(violations[:4]))
+
+
 def expected_stacks(fixture_meta: dict | None = None) -> list[str]:
     """The manifest's stack subscription comes from the fixture's own
     meta (per-fixture, not a global hardcode): upgrade/drop-stack
@@ -432,6 +472,7 @@ def grade_fresh(ws: Path) -> Grader:
     repo = ws / "fresh-scaffold-dotnet" / "repo"
     g = Grader()
     g.common_checks(repo)
+    check_mode_authority(g, repo, "scaffold")
     g.scaffold_checks(repo)
     g.no_unresolved_tokens(repo)
     return g
@@ -441,6 +482,7 @@ def grade_migration(ws: Path) -> Grader:
     repo = ws / "legacy-migration" / "repo"
     g = Grader()
     g.common_checks(repo)
+    check_mode_authority(g, repo, "migrate")
     g.scaffold_checks(repo)
     g.no_unresolved_tokens(repo)
     agents = (repo / "AGENTS.md").read_text() if (repo / "AGENTS.md").exists() else ""
@@ -497,6 +539,7 @@ def grade_migration_agents_first(ws: Path) -> Grader:
     repo = ws / "legacy-migration-agents-first" / "repo"
     g = Grader()
     g.common_checks(repo)
+    check_mode_authority(g, repo, "migrate")
     g.scaffold_checks(repo)
     g.no_unresolved_tokens(repo)
     agents = (repo / "AGENTS.md").read_text() if (repo / "AGENTS.md").exists() else ""
@@ -531,6 +574,7 @@ def grade_upgrade(ws: Path) -> Grader:
     meta = json.loads((ws / "upgrade" / "fixture_meta.json").read_text())
     g = Grader()
     g.common_checks(repo, expected_keep=meta.get("expected_keep", []), fixture_meta=meta)
+    check_mode_authority(g, repo, "upgrade", meta)
 
     withheld = repo / "docs/ai/rules/core" / meta["withheld_core_rule"]
     g.check("newly_added_rule_present", withheld.exists(),
@@ -604,6 +648,7 @@ def grade_audit(ws: Path) -> Grader:
     meta = json.loads((ws / "rotted-layer" / "fixture_meta.json").read_text())
     report_path = ws / "rotted-layer" / "outputs" / "audit-report.md"
     g = Grader()
+    check_mode_authority(g, repo, "audit", meta)
 
     has_report = report_path.exists()
     report = report_path.read_text() if has_report else ""
@@ -677,6 +722,7 @@ def grade_restructure(ws: Path) -> Grader:
     meta = json.loads((ws / "restructure" / "fixture_meta.json").read_text())
     report_path = ws / "restructure" / "outputs" / "restructure-report.md"
     g = Grader()
+    check_mode_authority(g, repo, "restructure", meta)
 
     has_report = report_path.exists()
     report = report_path.read_text() if has_report else ""
@@ -976,6 +1022,7 @@ def grade_upgrade_drop_stack(ws: Path) -> Grader:
     meta = json.loads((ws / "upgrade-drop-stack" / "fixture_meta.json").read_text())
     g = Grader()
     g.common_checks(repo, expected_keep=meta.get("expected_keep", []), fixture_meta=meta)
+    check_mode_authority(g, repo, "upgrade", meta)
 
     dropped_left = [p for p in meta["dropped_stack_files"] if (repo / p).exists()]
     g.check("dropped_stack_files_deleted", not dropped_left,
