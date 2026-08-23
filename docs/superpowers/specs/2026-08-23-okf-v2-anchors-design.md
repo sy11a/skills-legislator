@@ -50,7 +50,7 @@ code it claims to be about, checkable by a machine, on demand, in any clone.
 3. **`codebase-map.md` and `index.md` are anchored, not generated** —
    correcting an assumption of deep-audit D2. The live evidence: `fleet-obs`'s
    map carries rows like "Agent-side hook assets (Claude Code: capture script
-   + settings snippet; the C# mapping code lives in `src/Kbo/Adapters/`)" and
+   + settings snippet; the C# mapping code lives in `src/<App>/Adapters/`)" and
    its index carries a twelve-row change-to-document mapping. The row *set* of
    both is already machine-checked (audit checks 6 and 5); the row *content*
    is judgment a generator would destroy. Generation was never the right verb
@@ -77,7 +77,7 @@ alongside `opencode.json`, added to `ownedFiles`.
   finding is about a whole document and carries none:
 
   ```
-  docs/okf/silver.md:42: path-anchor: src/Kbo/Gone/Old.cs → no such file
+  docs/okf/silver.md:42: path-anchor: src/Billing/Gone/Old.cs → no such file
   docs/okf/audit.md:17: symbol-anchor: LegacyProcessor → not found in adapters/, src/, tests/
   docs/okf/registry.md: okf-sync-debt: registry/registry.yaml changed 47 days after this document
   ```
@@ -142,7 +142,7 @@ is never reported.
 non-resolving cases are accounted for by the definition above rather than by
 an ignore list: four are angle-bracket templates
 (`schemas/<type>/<version>.json`), one is a member suffix
-(`src/Kbo/Bronze/BronzeStore.SeenTranscripts()`), and the last —
+(a path with a trailing `.Member()` suffix), and the last —
 `VaultGitJob` — sits in `log.md`, which is `human` class precisely because a
 chronicle legitimately names what has since been removed. The healthy-repo
 false-positive rate after the definition is zero, which is what
