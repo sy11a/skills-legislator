@@ -43,13 +43,15 @@ document that carries no space, none of `<`, `>`, `*`, `?`, and does not start
 with `~` or `/`. It is a **path-anchor** when it contains `/` and its first
 segment is a top-level directory of this repository — it resolves when that
 path exists (a trailing `.Member()` is stripped first). It is a
-**symbol-anchor** when it is PascalCase of at least four characters — it
-resolves when it occurs literally under this repository's source roots (every
-non-hidden top-level directory except `docs/`, `bin/`, `obj/`,
-`node_modules/`, `dist/`). Everything else a document backticks — commands,
-field names, lowercase identifiers, templates — is not an anchor. A
-symbol-anchor asks whether the identifier still exists, not whether its
-declaration kept its shape.
+**symbol-anchor** when it is PascalCase of at least four characters,
+optionally dotted (`Type.Member`) — it resolves when its leading segment
+occurs literally under this repository's source roots (every non-hidden
+top-level directory except `docs/`, `bin/`, `obj/`, `node_modules/`,
+`dist/`). Everything else a document backticks — commands, field names,
+lowercase identifiers, templates — is not an anchor. A symbol-anchor asks
+whether the identifier still exists, not whether its declaration kept its
+shape, and a dotted anchor asks only about the type it names — the member
+half is prose.
 
 - **`python3 docs/ai/engine.py anchors` is the executing arm of this rule** —
   it writes nothing and reports every anchor that no longer resolves.

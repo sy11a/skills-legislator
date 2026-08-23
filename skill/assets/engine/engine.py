@@ -31,7 +31,7 @@ HUMAN_CLASS = {"glossary.md", "log.md"}   # core/okf.md's human class
 IGNORED_DIRS = {"docs", "bin", "obj", "node_modules", "dist"}
 SOURCE_EXTS = (".cs", ".ts", ".tsx", ".js", ".jsx", ".py", ".go", ".rs",
                ".java", ".kt", ".rb", ".php", ".sql", ".html", ".css")
-DEBT_DAYS = 30            # audit check 8's threshold, reused, never restated
+DEBT_DAYS = 30            # the threshold core/okf.md declares; this mirrors it
 MAX_BYTES = 2_000_000     # a file bigger than this is not prose or source
 
 TOKEN = re.compile(r"`([^`\n]+)`")
