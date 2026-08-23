@@ -6,7 +6,7 @@ Matcher (see ../hooks.json): Edit|Write|MultiEdit|NotebookEdit.
 Reads the tool call's file path, walks up the directory tree looking for
 docs/ai/manifest.json (the "is this a legislated repo?" test), and — if
 found — blocks (exit 2) when the file lies under that repo's
-docs/ai/rules/** OR is the repo-root owned wiring file `opencode.json`.
+docs/ai/rules/** OR is `docs/ai/engine.py` OR is the repo-root owned wiring file `opencode.json`.
 docs/ai/manifest.json itself is deliberately NOT guarded: SKILL.md Step 3.7
 rewrites it with the Write tool on every run, and that rewrite already heals
 hand-edits; guarding it would block legislator's own runs. See
@@ -25,8 +25,9 @@ import sys
 from pathlib import Path
 
 BLOCK_MESSAGE = (
-    "docs/ai/rules/** is machine-managed law — edit the legislator skill "
-    "source and re-run /legislator instead."
+    "docs/ai/rules/**, docs/ai/engine.py and opencode.json are "
+    "machine-managed law — edit the legislator skill source and re-run "
+    "/legislator instead."
 )
 
 
@@ -80,7 +81,8 @@ def main() -> int:
         except ValueError:
             in_rules = False
         is_owned_root_config = file_path == repo_root / "opencode.json"
-        if not (in_rules or is_owned_root_config):
+        is_owned_engine = file_path == repo_root / "docs" / "ai" / "engine.py"
+        if not (in_rules or is_owned_root_config or is_owned_engine):
             return 0
 
         sys.stderr.write(BLOCK_MESSAGE)
