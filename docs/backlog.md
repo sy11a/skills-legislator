@@ -1634,6 +1634,14 @@ hardenings from the task reviews.
    reported line numbers are real (today they are short by the section's
    length for everything after it).
 
+4. **Delegation stated twice:** SKILL.md's `never-touch` bullet names the
+   two heal-delegated classes (owned law, manifest) in prose, while the
+   machine-readable cell references live only in `restructure.md` §2's heal
+   bullet. A third delegated class added to §2 would leave SKILL.md's prose
+   silently stale — `heal_delegation_derived` would catch it through the
+   grader, not the wall. Fix: SKILL.md points at §2's bullet instead of
+   restating the classes.
+
 **Habit for v19, from the same review:** commit a new assert in its red
 state *before* the fix that greens it, so red-before-green is reproducible
 from history, not only from the benchmark record.
