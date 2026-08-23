@@ -436,6 +436,10 @@ def expected_owned() -> dict[str, Path]:
     oc_src = SKILL / "assets" / "templates" / "opencode.json.tpl"
     if oc_src.exists():
         owned["opencode.json"] = oc_src
+    # v20: the constitution's engine, an owned executable delivered like law.
+    eng_src = SKILL / "assets" / "engine" / "engine.py"
+    if eng_src.exists():
+        owned["docs/ai/engine.py"] = eng_src
     return owned
 
 
