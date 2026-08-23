@@ -90,10 +90,11 @@ AUTHORITY_CLASSES = (
 )
 
 
-def _authority_rows() -> list[list[str]]:
+def _authority_rows(text: str | None = None) -> list[list[str]]:
     """The pipe-table rows of SKILL.md's `## File authority` section, each
-    as a list of stripped cells (outer pipes removed)."""
-    text = _skill_md()
+    as a list of stripped cells (outer pipes removed). `text` overrides the
+    skill source so the selftest can feed a malformed table."""
+    text = _skill_md() if text is None else text
     if "\n## File authority\n" not in text:
         raise ValueError("File authority: no `## File authority` section in SKILL.md")
     section = text.split("\n## File authority\n", 1)[1].split("\n## ", 1)[0]
@@ -104,9 +105,9 @@ def _authority_rows() -> list[list[str]]:
     return rows
 
 
-def authority_matrix() -> dict[tuple[str, str], str]:
+def authority_matrix(text: str | None = None) -> dict[tuple[str, str], str]:
     """(class, mode) -> right, parsed from the pinned two-header table."""
-    rows = _authority_rows()
+    rows = _authority_rows(text)
     if len(rows) < 2 + len(AUTHORITY_CLASSES):
         raise ValueError(f"File authority: expected 2 header rows + {len(AUTHORITY_CLASSES)} body rows, got {len(rows)}")
     modes = tuple(c for c in rows[1][1:])
@@ -813,6 +814,12 @@ def grade_audit(ws: Path) -> Grader:
     return g
 
 
+def report_has_heal_item(report: str) -> bool:
+    """True when the restructure report carries a `[heal]` plan item — the
+    law's delegation of the owned layer to the upgrade column."""
+    return "[heal]" in report
+
+
 def grade_restructure(ws: Path) -> Grader:
     repo = ws / "restructure" / "repo"
     meta = json.loads((ws / "restructure" / "fixture_meta.json").read_text())
@@ -827,7 +834,7 @@ def grade_restructure(ws: Path) -> Grader:
     # No heal in the plan, no delegation: never-touch keeps its teeth.
     check_mode_authority(g, repo, "restructure", meta,
                          delegated=restructure_heal_delegates()
-                         if "[heal]" in report else None)
+                         if report_has_heal_item(report) else None)
 
     g.check("restructure_report_saved", has_report,
             str(report_path) if has_report else f"missing: {report_path}")
@@ -1162,6 +1169,29 @@ def grade_derivation_selftest() -> Grader:
     # of restating it. Every class Steps 2-3 write must carry its cell
     # reference in that bullet, or mode_respects_authority will judge a
     # lawful delegated write against restructure's own column.
+    # BL-041 hardenings. A ninth body row must be rejected, not parsed past:
+    # the table is exact-shape, and an extra class with no derived rights
+    # is the silent failure the matrix exists to prevent.
+    nine = _skill_md().replace(
+        "| kept paths (manifest `keep`) | link-only | link-only | link-only | link-only | read-only |\n",
+        "| kept paths (manifest `keep`) | link-only | link-only | link-only | link-only | read-only |\n"
+        "| ninth row (unreviewed) | replace | replace | replace | replace | read-only |\n")
+    try:
+        authority_matrix(nine)
+        ninth_rejected = False
+    except ValueError:
+        ninth_rejected = True
+    g.check("authority_matrix_rejects_ninth_row", ninth_rejected,
+            "a ninth body row raises" if ninth_rejected else "a ninth body row parsed silently")
+    # The heal delegation gate reads a plan item, not a bare substring: a
+    # report that merely *mentions* `[heal]` in prose ("no [heal] needed")
+    # must not unlock the upgrade column for restructure's writes.
+    prose_only = "## Plan\n\n1. [fix] fill token\n\nNote: no [heal] item was needed.\n"
+    item = "## Plan\n\n1. [fix] fill token\n2. [heal] refresh owned law\n"
+    gate_ok = not report_has_heal_item(prose_only) and report_has_heal_item(item)
+    g.check("heal_gate_anchored_to_item_line", gate_ok,
+            "prose mention ignored, plan item honoured" if gate_ok
+            else f"prose-only={report_has_heal_item(prose_only)}, item={report_has_heal_item(item)}")
     heal = restructure_heal_delegates()
     heal_ok = heal == {"owned law": "upgrade", "manifest": "upgrade"}
     g.check("heal_delegation_derived", heal_ok,

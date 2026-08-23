@@ -136,7 +136,7 @@ AUTH_PROSE = re.compile(
     r"never (edit|edits|edited|touch|touches|touched|overwrite|overwrites|overwritten)\b"
     r"|is project-owned|project-owned, so|project-owned after creation"
     r"|overwritten on every run|\bcreated?-once\b|create it only if"
-    r"|only if it does not already exist", re.I)
+    r"|only if it does not already exist|\bcreate-only-if-absent\b", re.I)
 AUTH_REF = re.compile(r"\(authority: ([a-z ]+?) × ([a-z]+)(?: = [a-z-]+)?[^)]*\)")
 
 sections = skill_md.split("\n## File authority\n")
@@ -146,27 +146,45 @@ auth_body = sections[1].split("\n## ", 1)[0] if len(sections) == 2 else ""
 auth_rows = [[c.strip() for c in l.strip().strip("|").split("|")]
              for l in auth_body.splitlines()
              if l.startswith("|") and not re.match(r"^\|[\s:|-]+\|$", l)]
-shape_ok = (len(auth_rows) >= 2 + len(AUTH_CLASSES)
+# Exact row count, not a floor: a ninth body row would otherwise be parsed
+# past and silently ignored — an unreviewed class with no derived rights.
+shape_ok = (len(auth_rows) == 2 + len(AUTH_CLASSES)
             and auth_rows[1][1:] == AUTH_MODES
-            and all(r[0].split(" (", 1)[0].strip().lower() in AUTH_CLASSES for r in auth_rows[2:2 + len(AUTH_CLASSES)])
-            and all(c in AUTH_VALUES for r in auth_rows[2:2 + len(AUTH_CLASSES)] for c in r[1:1 + len(AUTH_MODES)]))
+            and all(r[0].split(" (", 1)[0].strip().lower() in AUTH_CLASSES for r in auth_rows[2:])
+            and all(len(r) == 1 + len(AUTH_MODES) and all(c in AUTH_VALUES for c in r[1:]) for r in auth_rows[2:]))
 check(shape_ok, "File authority table has the pinned shape (2 header rows, 8 classes × 5 modes, closed vocabulary)",
       "no table" if not auth_rows else f"rows={len(auth_rows)}, modes={auth_rows[1][1:] if len(auth_rows) > 1 else None}")
 
-# Prose scan: SKILL.md minus the File authority section, plus references/.
-scan_targets = [("SKILL.md", sections[0] + ("\n## " + sections[1].split("\n## ", 1)[1] if len(sections) == 2 and "\n## " in sections[1] else ""))]
+# The vocabulary delegates by pointer, never by restating a fact that lives
+# elsewhere: `never-touch` names no artifact class (the delegated classes
+# are read from restructure.md §2's heal bullet, the one place they live),
+# and `replace` carries the manifest carve-out — the one `replace` artifact
+# the skill generates (keep carried forward) rather than copies.
+vocab = {m.group(1): m.group(2) for m in re.finditer(r"^- `([a-z-]+)` — (.*)$", auth_body, re.M)}
+nt = vocab.get("never-touch", "")
+nt_classes = [c for c in AUTH_CLASSES if c in nt.lower()]
+check(bool(nt) and not nt_classes, "never-touch bullet delegates by pointer, naming no artifact class",
+      "bullet missing" if not nt else f"names {nt_classes}")
+check("`keep`" in vocab.get("replace", ""), "replace bullet carries the manifest carve-out (`keep` carried forward)",
+      "no `keep` in the replace bullet")
+
+# Prose scan: SKILL.md line-by-line with the File authority section's line
+# range excluded (so reported line numbers are the file's own), plus references/.
+auth_start = skill_md[:skill_md.index("\n## File authority\n")].count("\n") + 2
+auth_end = auth_start + auth_body.count("\n")
+scan_targets = [("SKILL.md", skill_md, range(auth_start, auth_end + 1))]
 for ref in sorted((SKILL / "references").glob("*.md")):
-    scan_targets.append((f"references/{ref.name}", ref.read_text()))
+    scan_targets.append((f"references/{ref.name}", ref.read_text(), range(0)))
 prose_hits = []
-for name, text in scan_targets:
+for name, text, excluded in scan_targets:
     for i, line in enumerate(text.splitlines(), 1):
-        if AUTH_PROSE.search(line):
+        if i not in excluded and AUTH_PROSE.search(line):
             prose_hits.append(f"{name}:{i}")
 check(not prose_hits, "no authority-shaped prose outside the File authority table",
       f"{len(prose_hits)} hit(s): {prose_hits}")
 
 bad_refs = []
-for name, text in scan_targets:
+for name, text, _ in scan_targets:
     for m in AUTH_REF.finditer(text):
         cls, mode = m.group(1).strip(), m.group(2)
         if cls not in AUTH_CLASSES or mode not in AUTH_MODES:
