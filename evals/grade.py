@@ -108,7 +108,7 @@ def _authority_rows(text: str | None = None) -> list[list[str]]:
 def authority_matrix(text: str | None = None) -> dict[tuple[str, str], str]:
     """(class, mode) -> right, parsed from the pinned two-header table."""
     rows = _authority_rows(text)
-    if len(rows) < 2 + len(AUTHORITY_CLASSES):
+    if len(rows) != 2 + len(AUTHORITY_CLASSES):
         raise ValueError(f"File authority: expected 2 header rows + {len(AUTHORITY_CLASSES)} body rows, got {len(rows)}")
     modes = tuple(c for c in rows[1][1:])
     if modes != AUTHORITY_MODES:
@@ -816,8 +816,10 @@ def grade_audit(ws: Path) -> Grader:
 
 def report_has_heal_item(report: str) -> bool:
     """True when the restructure report carries a `[heal]` plan item — the
-    law's delegation of the owned layer to the upgrade column."""
-    return "[heal]" in report
+    law's delegation of the owned layer to the upgrade column. Anchored
+    to a numbered item line: a prose mention ("no [heal] needed") does not
+    unlock the upgrade column."""
+    return re.search(r"^\s*\d+\. \[heal\]", report, re.M) is not None
 
 
 def grade_restructure(ws: Path) -> Grader:
