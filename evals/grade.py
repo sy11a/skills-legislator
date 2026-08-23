@@ -90,10 +90,11 @@ AUTHORITY_CLASSES = (
 )
 
 
-def _authority_rows() -> list[list[str]]:
+def _authority_rows(text: str | None = None) -> list[list[str]]:
     """The pipe-table rows of SKILL.md's `## File authority` section, each
-    as a list of stripped cells (outer pipes removed)."""
-    text = _skill_md()
+    as a list of stripped cells (outer pipes removed). `text` overrides the
+    skill source so the selftest can feed a malformed table."""
+    text = _skill_md() if text is None else text
     if "\n## File authority\n" not in text:
         raise ValueError("File authority: no `## File authority` section in SKILL.md")
     section = text.split("\n## File authority\n", 1)[1].split("\n## ", 1)[0]
@@ -104,10 +105,10 @@ def _authority_rows() -> list[list[str]]:
     return rows
 
 
-def authority_matrix() -> dict[tuple[str, str], str]:
+def authority_matrix(text: str | None = None) -> dict[tuple[str, str], str]:
     """(class, mode) -> right, parsed from the pinned two-header table."""
-    rows = _authority_rows()
-    if len(rows) < 2 + len(AUTHORITY_CLASSES):
+    rows = _authority_rows(text)
+    if len(rows) != 2 + len(AUTHORITY_CLASSES):
         raise ValueError(f"File authority: expected 2 header rows + {len(AUTHORITY_CLASSES)} body rows, got {len(rows)}")
     modes = tuple(c for c in rows[1][1:])
     if modes != AUTHORITY_MODES:
@@ -813,6 +814,14 @@ def grade_audit(ws: Path) -> Grader:
     return g
 
 
+def report_has_heal_item(report: str) -> bool:
+    """True when the restructure report carries a `[heal]` plan item — the
+    law's delegation of the owned layer to the upgrade column. Anchored
+    to a numbered item line: a prose mention ("no [heal] needed") does not
+    unlock the upgrade column."""
+    return re.search(r"^\s*\d+\. \[heal\]", report, re.M) is not None
+
+
 def grade_restructure(ws: Path) -> Grader:
     repo = ws / "restructure" / "repo"
     meta = json.loads((ws / "restructure" / "fixture_meta.json").read_text())
@@ -827,7 +836,7 @@ def grade_restructure(ws: Path) -> Grader:
     # No heal in the plan, no delegation: never-touch keeps its teeth.
     check_mode_authority(g, repo, "restructure", meta,
                          delegated=restructure_heal_delegates()
-                         if "[heal]" in report else None)
+                         if report_has_heal_item(report) else None)
 
     g.check("restructure_report_saved", has_report,
             str(report_path) if has_report else f"missing: {report_path}")
@@ -1157,6 +1166,29 @@ def grade_derivation_selftest() -> Grader:
     g.check("restructure_actions_derived",
             actions == {"move", "merge", "link", "fix", "heal", "decision"},
             f"closed action set parsed: {sorted(actions)}")
+    # BL-041 hardenings. A ninth body row must be rejected, not parsed past:
+    # the table is exact-shape, and an extra class with no derived rights
+    # is the silent failure the matrix exists to prevent.
+    nine = _skill_md().replace(
+        "| kept paths (manifest `keep`) | link-only | link-only | link-only | link-only | read-only |\n",
+        "| kept paths (manifest `keep`) | link-only | link-only | link-only | link-only | read-only |\n"
+        "| ninth row (unreviewed) | replace | replace | replace | replace | read-only |\n")
+    try:
+        authority_matrix(nine)
+        ninth_rejected = False
+    except ValueError:
+        ninth_rejected = True
+    g.check("authority_matrix_rejects_ninth_row", ninth_rejected,
+            "a ninth body row raises" if ninth_rejected else "a ninth body row parsed silently")
+    # The heal delegation gate reads a plan item, not a bare substring: a
+    # report that merely *mentions* `[heal]` in prose ("no [heal] needed")
+    # must not unlock the upgrade column for restructure's writes.
+    prose_only = "## Plan\n\n1. [fix] fill token\n\nNote: no [heal] item was needed.\n"
+    item = "## Plan\n\n1. [fix] fill token\n2. [heal] refresh owned law\n"
+    gate_ok = not report_has_heal_item(prose_only) and report_has_heal_item(item)
+    g.check("heal_gate_anchored_to_item_line", gate_ok,
+            "prose mention ignored, plan item honoured" if gate_ok
+            else f"prose-only={report_has_heal_item(prose_only)}, item={report_has_heal_item(item)}")
     # §2's heal bullet is the only place the law delegates a class to
     # another mode's column; the grader reads the delegation there instead
     # of restating it. Every class Steps 2-3 write must carry its cell
@@ -1276,6 +1308,45 @@ def grade_case_practice(ws: Path) -> Grader:
     return g
 
 
+# BL-042. The idempotency stage commits "run 1" into the fixture on purpose
+# (`tools/evals-bg.sh:idem_scenario`), so a fixture that has moved off its
+# `eval-base` tag is no longer the repo the corpus measured. Grading it again
+# writes a verdict for a DIFFERENT state over the corpus verdict — how three
+# v19 scenarios came to read 20/21 and 18/19 on the dashboard while
+# `grade-history.jsonl` held the true 21/21 and 19/19 (2026-08-23).
+# `eval-base` already exists for exactly this hazard (`setup_workspace.py`);
+# this is the check that consults it.
+SCENARIO_DIRS = {
+    "fresh-scaffold-dotnet": "fresh-scaffold-dotnet",
+    "legacy-migration": "legacy-migration",
+    "legacy-migration-agents-first": "legacy-migration-agents-first",
+    "upgrade-drop-stack": "upgrade-drop-stack",
+    "case-practice": "case-practice",
+    "upgrade": "upgrade",
+    "audit": "rotted-layer",
+    "restructure": "restructure",
+}
+
+
+def fixture_off_base(repo: Path) -> str | None:
+    """None when the fixture sits at its `eval-base` tag (or the tag/repo is
+    absent — an older workspace degrades to no check, visibly). Otherwise a
+    one-line description of how far it has moved."""
+    if not (repo / ".git").exists():
+        return None
+    try:
+        base = git(repo, "rev-parse", "eval-base").strip()
+    except Exception:
+        return None
+    if not base:
+        return None
+    head = git(repo, "rev-parse", "HEAD").strip()
+    if head == base:
+        return None
+    ahead = git(repo, "rev-list", "--count", f"{base}..HEAD").strip() or "?"
+    return f"HEAD {head[:7]} is {ahead} commit(s) past eval-base {base[:7]}"
+
+
 def main() -> None:
     if len(sys.argv) < 2:
         sys.exit(__doc__)
@@ -1284,22 +1355,40 @@ def main() -> None:
 
     any_failed = False
     for name in names:
+        # The guard runs BEFORE the grader reads the tree: a corpus verdict
+        # for a moved fixture must not be computed, let alone written.
+        # `idempotency:` is exempt — grading the committed run-1 state is
+        # precisely its job.
+        if name in SCENARIO_DIRS:
+            moved = fixture_off_base(ws / SCENARIO_DIRS[name] / "repo")
+            if moved:
+                print(f"\n== {name}: REFUSED ==")
+                print(f"  fixture has moved past its eval-base — {moved}")
+                print("  The idempotency stage commits run 1 into the fixture by design,")
+                print("  so a corpus grade taken now measures a different repo state and")
+                print("  would overwrite the corpus verdict in grading.json.")
+                print("  Read the authoritative verdict in")
+                print(f"    {ws / SCENARIO_DIRS[name] / 'outputs' / 'grade-history.jsonl'}")
+                print("  or restore the fixture with"
+                      f" `git -C {ws / SCENARIO_DIRS[name] / 'repo'} reset --mixed eval-base`.")
+                any_failed = True
+                continue
         if name == "fresh-scaffold-dotnet":
-            g, outdir = grade_fresh(ws), ws / name
+            g, outdir = grade_fresh(ws), ws / SCENARIO_DIRS[name]
         elif name == "legacy-migration":
-            g, outdir = grade_migration(ws), ws / name
+            g, outdir = grade_migration(ws), ws / SCENARIO_DIRS[name]
         elif name == "legacy-migration-agents-first":
-            g, outdir = grade_migration_agents_first(ws), ws / name
+            g, outdir = grade_migration_agents_first(ws), ws / SCENARIO_DIRS[name]
         elif name == "upgrade-drop-stack":
-            g, outdir = grade_upgrade_drop_stack(ws), ws / name
+            g, outdir = grade_upgrade_drop_stack(ws), ws / SCENARIO_DIRS[name]
         elif name == "case-practice":
-            g, outdir = grade_case_practice(ws), ws / name
+            g, outdir = grade_case_practice(ws), ws / SCENARIO_DIRS[name]
         elif name == "upgrade":
-            g, outdir = grade_upgrade(ws), ws / name
+            g, outdir = grade_upgrade(ws), ws / SCENARIO_DIRS[name]
         elif name == "audit":
-            g, outdir = grade_audit(ws), ws / "rotted-layer"
+            g, outdir = grade_audit(ws), ws / SCENARIO_DIRS[name]
         elif name == "restructure":
-            g, outdir = grade_restructure(ws), ws / "restructure"
+            g, outdir = grade_restructure(ws), ws / SCENARIO_DIRS[name]
         elif name.startswith("idempotency:"):
             target = name.split(":", 1)[1]
             g, outdir = grade_idempotency(ws, target), ws / target
@@ -1328,8 +1417,13 @@ def main() -> None:
                 pass
         run_id, runner, model = (run.get("run_id"), run.get("runner"),
                                  run.get("model"))
+        # BL-042 item 2: the verdict carries the generation that produced it
+        # — skill VERSION + repo HEAD + grader hash, the same stamp
+        # grade-history.jsonl records. Without it a grading.json from another
+        # law or grader generation is indistinguishable from this run's.
         out = {"expectations": g.exps,
                "ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+               "law": law_stamp(),
                "run_id": run_id, "runner": runner, "model": model,
                "summary": {"passed": passed, "failed": total - passed,
                            "total": total, "pass_rate": round(passed / total, 3)}}

@@ -434,13 +434,27 @@ def render(ws: Path, timeline_log: Path) -> str:
                 # terminal states: the orchestrator grades BEFORE flipping the
                 # queue to done, so a grade here is this run's grade
                 cls = "gok" if sm["failed"] == 0 else ("gsome" if rate >= 80 else "gbad")
+                # BL-042 item 2: a verdict from another generation must say
+                # so. grading.json is overwritten in place, so without the
+                # stamp a re-grade under a different law or grader is
+                # indistinguishable from this run's own verdict.
+                gl = gr.get("law")
+                if gl and law and gl != law:
+                    stamp_html = (f'<div class="err">verdict stamped {esc(gl)} —'
+                                  f' not this generation ({esc(law)}); read'
+                                  f' grade-history.jsonl</div>')
+                elif not gl:
+                    stamp_html = ('<div class="dim">verdict unstamped —'
+                                  ' graded before BL-042</div>')
+                else:
+                    stamp_html = ""
                 fails = [e for e in gr["expectations"] if not e["passed"]]
                 fail_rows = "".join(
                     f'<div class="gfail">✗ {esc(e["text"])} — {esc(e["evidence"][:120])}</div>'
                     for e in fails[:5])
                 more = f'<div class="dim">… +{len(fails) - 5} more</div>' if len(fails) > 5 else ""
                 grade_html = (f'<div class="grade {cls}">graded: {sm["passed"]}/{sm["total"]}'
-                              f' ({rate}%) · {stamp}</div>{fail_rows}{more}')
+                              f' ({rate}%) · {stamp}</div>{stamp_html}{fail_rows}{more}')
         elif state == "done":
             grade_html = '<div class="dim">grading pending…</div>'
         idem_block = idem_html(events[sc], d)

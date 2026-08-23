@@ -73,10 +73,16 @@ Gate 0/1 — that ordering is what makes the parallelism safe.
   - **BL-028** — manifest key `profiles` → `stacks`, with the legacy-key
     upgrade path and a legacy-manifest fixture — shipped in v17, residue only.
   - **BL-031** — leaves the cycle (docs-only).
-- **v19 — OKF v2 and the one engine.** **BL-033** alone, for the reason its
+- **v19 — file-authority residue.** **BL-041** alone (decided 2026-08-23,
+  departing from the residue-rides-the-next-cycle precedent of BL-011…025):
+  the wall's blind spot and the grader hardenings are worth landing *before*
+  the edition that writes the most new prose, and BL-033's own entry asks
+  for an empty landing. No fleet sweep for v19 on its own — upgrade is
+  cumulative, the fleet moves 18 → 20 in one pass when BL-033 lands.
+- **v20 — OKF v2 and the one engine.** **BL-033** alone, for the reason its
   own entry gives: a transform of what "docs" means across the fleet must
   not share a landing with anything else.
-- **After v19:** BL-034 (self-legislation, depends on OKF v2, not on an
+- **After v20:** BL-034 (self-legislation, depends on OKF v2, not on an
   edition number), then BL-027 (outer placement mode, needs its own design
   cycle first).
 - **Off the edition track:** BL-035 (docs-only, runs any time), BL-039 and
@@ -943,7 +949,7 @@ if they need permanence).
 
 ## BL-027 — Outer placement mode (Vector A: legislation outside the codebase)
 
-**Status: queued (behavioral — skill/ changes, VERSION bump + full e2e) → edition v19+, after its own design cycle. Renamed 2026-08-20 from "Enterprise sidecar placement mode": outer names the mode (the AI layer sits outside the codebase — ontology §Placement modes), the sidecar is only the mechanism that hosts it.**
+**Status: queued (behavioral — skill/ changes, VERSION bump + full e2e) → edition v21+, after its own design cycle. Renamed 2026-08-20 from "Enterprise sidecar placement mode": outer names the mode (the AI layer sits outside the codebase — ontology §Placement modes), the sidecar is only the mechanism that hosts it.**
 
 **What:** a placement mode for legislating a repo the operator **cannot
 commit to** (real enterprise case, anonymized — large fast-mutating
@@ -1158,7 +1164,7 @@ everywhere.
 
 ## BL-033 — OKF v2 + the one engine: generated baseline, source anchors, spec linter (fleet-obs pilot)
 
-**Status: queued 2026-08-20 → edition v19 (moved from v18 on 2026-08-22 when the v18 scope was decided: v18 carries the rights-and-names group, and this case keeps the isolated landing its own entry argues for — behavioral: skill/ changes, VERSION bump + full e2e)**
+**Status: queued 2026-08-20 → edition v20 (moved from v18 to v19 on 2026-08-22 when the v18 scope was decided, and to v20 on 2026-08-23 when BL-041 took v19 on its own: v18 carries the rights-and-names group, and this case keeps the isolated landing its own entry argues for — behavioral: skill/ changes, VERSION bump + full e2e)**
 
 **What:** two interlocking pieces from deep-audit D2/D4. (1) **OKF v2
 decomposition by link hardness**: generated (baseline.md from annotated
@@ -1203,7 +1209,7 @@ migrates repos forward-only (no history rewritten).
 
 ## BL-034 — Self-legislation: the legislator repo joins its own fleet
 
-**Status: queued 2026-08-20 (process + one behavioral cycle) — after v19 lands (was "after v18" before the 2026-08-22 scope decision; the dependency is on BL-033's OKF v2, not on an edition number). Not an edition of its own.**
+**Status: queued 2026-08-20 (process + one behavioral cycle) — after v20 lands (was "after v18", then "after v19", before the 2026-08-22/23 scope decisions; the dependency is on BL-033's OKF v2, not on an edition number). Not an edition of its own.**
 
 **What:** apply the legislator to itself (A4, already seeded by
 `docs/ontology.md`): scaffold the repo that hosts the skill — its own
@@ -1605,7 +1611,7 @@ expressions, and a message is easy to forget.
 
 ## BL-041 — File-authority residue: one prose right the wall cannot see, and the `replace` carve-out for the manifest
 
-**Status: PROPOSED 2026-08-23 — raised by the v18 final review; rides edition v19 as a behavioral rider (skill/ edits, VERSION bump + full e2e).**
+**Status: GREEN 2026-08-23 — corpus 185/185 and idempotency ×3 zero-diff on one law generation (`a8584aa`); model floor `sonnet` (Claude Code 2.1.241), unchanged from v18. Benchmark `evals/benchmarks/v19.md`. Edition v19 on its own (see the edition plan; was "rides v19 as a rider" until the 2026-08-23 decision), departing from the residue-rides-the-next-cycle precedent of BL-011…023. Item 2 settled as a carve-out in the `replace` bullet, not a ninth value. All five new asserts were committed in their red state (`d732b57`) before the fix that greened them (`a8584aa`) — the habit this case asked for, now reproducible from history. The only reds this cycle were one model flake (`report_proposes_stack_import_line`, cleared by a re-run) and a session-quota kill that cost three scenario runs, all clean on retest; no law or grader defect was found by the benchmark. Edition v19 closes at merge; tag `v19`.**
 
 **What:** the two Important findings the v18 final review deferred rather
 than pay a re-benchmark for wording, plus three grader/static-check
@@ -1649,6 +1655,60 @@ from history, not only from the benchmark record.
 **Done when:** the wall goes red on the `CLAUDE.md` row note before the
 edit and green after; `replace`'s manifest reading is settled in the
 vocabulary; the three hardenings carry asserts; benchmark green.
+
+## BL-042 — The corpus verdict must not be overwritable by a grade of a mutated fixture
+
+**Status: DONE 2026-08-23 — shipped in edition v19 (`evals/**` only: no VERSION bump, no benchmark per README's testing rules). Verified mechanically rather than by a corpus run, at the user's direction; the first agent-run confirmation comes free with v20.**
+
+**What:** two changes to the eval harness's record-keeping.
+
+1. **A guard in `grade.py`.** Every fixture carries an `eval-base` tag
+   (`setup_workspace.py`), placed there for precisely this hazard — its own
+   comment says so. Before grading any corpus scenario the grader now
+   compares the fixture's `HEAD` against that tag and, when they differ,
+   **refuses**: it prints how far the fixture has moved, why the grade would
+   be wrong, where the authoritative verdict lives, and the one command that
+   restores the fixture. Nothing is computed and nothing is written.
+   `idempotency:` is exempt — grading the committed run-1 state is its job.
+2. **The verdict carries its generation.** `grading.json` gains the `law`
+   stamp (skill VERSION + repo HEAD + grader hash) that
+   `grade-history.jsonl` already recorded, and the dashboard renders a
+   mismatch as an error line instead of showing the number bare.
+
+**Why:** found by the v19 cycle, from the inside. The idempotency stage
+commits `run 1` into the fixture *on purpose* (`tools/evals-bg.sh`
+`idem_scenario`). A later re-grade of the same scenario therefore measures a
+different repo state — `nothing_committed` requires an uncommitted tree and
+one seed commit — and `grading.json` is overwritten **in place**. Three v19
+scenarios were re-graded after the idempotency stage during a confound
+check and their dashboard verdicts became 20/21, 18/19 and a
+provenance-shifted 34/34, while the true corpus verdicts (21/21, 19/19,
+34/34) survived only in the append-only `grade-history.jsonl`. Nobody was
+misled for long, but the failure mode is the one POLICY §8 names: **one
+fact in two places, and the mutable copy is the one on screen.** The
+underlying shape is worse than the incident — any future re-grade, by any
+hand, silently republishes a verdict for a state the corpus never measured.
+
+**Why a guard and not a POLICY line:** POLICY §8 argues the countermeasure
+for a mechanical hazard is a mechanism. A rule saying "do not re-grade after
+the idempotency stage" would be a fourth thing to remember, and the
+anchor to enforce it already existed unused.
+
+**Verification (no agent run, by the user's decision):** at `eval-base`,
+`upgrade` grades 21/21 and the verdict now carries
+`law=v19-6a48231-g334ad2c`. With the idem commit replayed by hand, the same
+command prints `== upgrade: REFUSED ==`, exits 1, and leaves `grading.json`
+holding the 21/21 it already had — the exact damage, now impossible.
+`idempotency:upgrade` still grades. All eight scenarios re-grade to
+185/185 with the guard in place, and the runner's only corpus-grade call
+site (`tools/evals-bg.sh:313`) fires immediately after a run, when the
+fixture is at its base.
+
+**Residue for whoever next touches this:** `grading.json` remains a second
+copy of a fact `grade-history.jsonl` owns. The guard and the stamp make
+divergence loud, not impossible. Collapsing the two — the dashboard reading
+the append-only record and `grading.json` becoming a derived cache or
+disappearing — is the real fix, and it is a bigger change than this one.
 
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
 
