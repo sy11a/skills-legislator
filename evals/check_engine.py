@@ -197,6 +197,22 @@ code, out = run(root, "okf-debt")
 check(code == 0 and out == "", "an untracked tree yields no debt findings",
       f"exit={code} out={out!r}")
 
+print("== okf-debt: a directory anchor is never a debt source ==")
+root = make_repo(
+    {"dirdebt.md": "# Dir debt\n\nCode lives under `src/`.\n"},
+    {"src/App/Widget.cs": "public class Widget { }\n"})
+git(root, "init", "-q")
+git(root, "add", "-A", date="2026-01-01T12:00:00")
+git(root, "commit", "-q", "-m", "doc and code", date="2026-01-01T12:00:00")
+(root / "src/App/Widget.cs").write_text("public class Widget { void Flush() {} }\n")
+git(root, "add", "-A", date="2026-03-01T12:00:00")
+git(root, "commit", "-q", "-m", "a file under the anchored directory moves on",
+    date="2026-03-01T12:00:00")
+code, out = run(root, "okf-debt")
+check(code == 0 and out == "",
+      "a directory anchor's history (the union of everything beneath it) never produces debt",
+      f"exit={code} out={out!r}")
+
 if failures:
     print(f"\n{len(failures)} check(s) FAILED")
     sys.exit(1)
