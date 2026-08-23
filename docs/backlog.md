@@ -93,6 +93,10 @@ Gate 0/1 — that ordering is what makes the parallelism safe.
   flight):** BL-044 (research, runs any time and feeds the other two) →
   BL-045 (the owned import index) → BL-046 (the context-scope law, its own
   edition). BL-046 is recommended **before** BL-043 — see its entry.
+- **Spikes (raised 2026-08-23, toward the framework goal):** BL-047 (the
+  decision inventory — what is still model-decided), BL-048 (per-job model
+  floor), BL-049 (report derivability). Each is time-boxed, produces an
+  answer rather than code, and sizes the cases that follow it.
 - **Off the edition track:** BL-035 (docs-only, runs any time), BL-039 and
   BL-040 (repository-level operations, each wanting a deliberate moment).
 
@@ -1172,7 +1176,7 @@ everywhere.
 
 ## BL-033 — OKF v2 and the anchor engine: link hardness, source anchors, the static rung
 
-**Status: GREEN 2026-08-23 — corpus <N>/<N> and idempotency ×3 zero-diff on one law generation (`<sha>`); model floor `<model>`. Benchmark `evals/benchmarks/v20.md`. Edition v20 closes at merge; tag `v20`. (Numbers are placeholders — filled by Task 9's e2e benchmark.)**
+**Status: GREEN 2026-08-23 — corpus 194/194 and idempotency ×3 zero-diff on one law generation (`9dbb306`); model floor `sonnet` (Claude Code 2.1.241), unchanged from v17, v18 and v19. Benchmark `evals/benchmarks/v20.md`. Edition v20 closes at merge; tag `v20`.**
 
 **What:** OKF v2 decomposition by link hardness — generated, anchored,
 human — codified as an amendment to `core/okf.md`. The **anchored** class
@@ -1768,6 +1772,44 @@ The law states the classes; the evals prove the loading. Static checks prove the
 **Why:** an always-on layer competes with itself for attention — a constitution is obeyed less the longer it grows, which is why ours holds at roughly 217 lines across nine repositories. Lazy loading here is not a saving on tokens but a defence of the law against dilution. And a scope that is declared but never measured drifts: "documented as lazy, in fact always loaded" is invisible precisely because everything appears to work.
 
 **Done when:** the class law ships in `core/` with the enforced/advisory split stated; the subtraction mechanisms are wired wherever the legislator owns them; the canary scenario is in the corpus and goes red when a class is mis-declared; and `docs/philosophy.md` records that skills are the only lawful lazy channel.
+
+## BL-047 — Spike: the decision inventory — what is still decided by a model
+
+**Status: SPIKE PROPOSED 2026-08-23** — exploration (the spec type `core/sdd.md` names), time-boxed, no `skill/` change, no VERSION, no benchmark. Its deliverable is an answer, not code.
+
+**The question:** which decisions in this system are taken by a model, and which of them could be taken by code instead?
+
+**The probe:** classify every line of the delivered law (`assets/rules/**` — 217 lines of core plus the stack rules) and every decision point in `SKILL.md`'s procedure into three buckets: **(a)** already enforced by a check, a hook or the engine; **(b)** enforceable by a check that does not exist yet — name the check and estimate its cost; **(c)** genuinely needs interpretation. Count the buckets and rank bucket (b) by how often the decision is taken.
+
+**What the answer decides:** the achievable size of the constitution, and the order in which the engine should grow. Every line moved from (b) to (a) removes a place where a run can deviate, which is the entire content of "predictable output". It also tests a claim this repo has never checked: that its law is *enforceable* law. A rule sitting in (c) that nobody can adjudicate is not law, it is advice — and advice in an always-on file is dilution.
+
+**Why a spike and not a case:** the ranked list is what tells us whether the constitution can shrink by ten lines or by a hundred. Those two answers imply completely different roadmaps, and neither is guessable from here.
+
+**Stop condition:** the inventory is the deliverable. No check is written inside this spike; each bucket-(b) entry becomes its own case, sized from the measurement.
+
+## BL-048 — Spike: per-job model floor — can a small local model take the classification work?
+
+**Status: SPIKE PROPOSED 2026-08-23** — exploration, time-boxed, no `skill/` change, no VERSION, no benchmark.
+
+**The question:** is there any job in this pipeline where a small local model matches the current floor's quality — or is `sonnet` the floor because every job needs judgement?
+
+**The probe:** the pipeline mixes two kinds of work that today share one model. **Judgement** — deciding a restructure plan, splitting a legacy entry document three ways, executing a case under the SDD law. **Classification** — "is this line law-shaped?" (the constitution-candidates test and audit check 12 use the same test), and glossary term extraction. Only the second kind is a candidate. Build a labelled set from fixtures that already exist: the rotted fixture plants law-shaped lines, project-instance lines that must *not* be proposed, and one line suppressed by the not-law marker — the graders' expectations are the labels. Run candidate local models against it and measure agreement with the current floor.
+
+**What the answer decides:** whether "model floor" becomes a per-job property instead of a per-edition one. If it does, the cheap jobs move off the paid model and the corpus gets cheaper to run, which is what makes a larger corpus affordable. If it does not, the answer is worth having in writing so nobody re-opens it.
+
+**Stop condition:** the measured table is the deliverable. No routing is wired, no rule changes; a positive result becomes its own case.
+
+## BL-049 — Spike: how much of the Step 7 report is machine-derivable?
+
+**Status: SPIKE PROPOSED 2026-08-23** — exploration, time-boxed, no `skill/` change, no VERSION, no benchmark.
+
+**The question:** what fraction of a Step 7 report could the engine print from the run's own facts, and where exactly is the seam with the parts that need a model?
+
+**The probe:** take the reports the corpus already produces (fresh scaffold, both migrations, upgrade, stack drop) and classify every line as derivable from facts the run already holds — files created, overwritten, deleted, the keep-list delta, the health checks — or as requiring prose judgement, which is essentially the constitution-candidates section. Then count how many existing grader asserts exist *only* because a model composes the report: the pinned heading levels, the byte-for-byte section names, the order-independence workarounds.
+
+**What the answer decides:** whether the report emitter is a large win or a small one. The suspicion worth testing is that a large share of this repository's historical benchmark defects were report-*shape* defects — a drifted heading level, a missing section, an order-sensitive marker — and that a printed skeleton would delete that entire class along with the asserts guarding it.
+
+**Stop condition:** the classification and the assert count are the deliverable. No emitter is written.
 
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
 
