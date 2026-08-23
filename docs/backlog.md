@@ -79,12 +79,16 @@ Gate 0/1 — that ordering is what makes the parallelism safe.
   the edition that writes the most new prose, and BL-033's own entry asks
   for an empty landing. No fleet sweep for v19 on its own — upgrade is
   cumulative, the fleet moves 18 → 20 in one pass when BL-033 lands.
-- **v20 — OKF v2 and the one engine.** **BL-033** alone, for the reason its
-  own entry gives: a transform of what "docs" means across the fleet must
-  not share a landing with anything else.
-- **After v20:** BL-034 (self-legislation, depends on OKF v2, not on an
-  edition number), then BL-027 (outer placement mode, needs its own design
-  cycle first).
+- **v20 — OKF v2 and the one engine.** **BL-033** (docs half): the OKF v2
+  decomposition and the anchored class, for the reason its own entry gives:
+  a transform of what "docs" means across the fleet must not share a
+  landing with anything else.
+- **v21 — generated baseline and the spec/plan linter.** **BL-043** alone:
+  the baseline generator, the linter, and the `generated` role class's
+  first member.
+- **After v21:** BL-034 (self-legislation, depends on OKF v2 *and* the
+  generated class, not on an edition number), then BL-027 (outer placement
+  mode, needs its own design cycle first).
 - **Cross-harness context control (raised 2026-08-23, while v20 was in
   flight):** BL-044 (research, runs any time and feeds the other two) →
   BL-045 (the owned import index) → BL-046 (the context-scope law, its own
@@ -1168,32 +1172,23 @@ everywhere.
 
 ## BL-033 — OKF v2 + the one engine: generated baseline, source anchors, spec linter (fleet-obs pilot)
 
-**Status: queued 2026-08-20 → edition v20 (moved from v18 to v19 on 2026-08-22 when the v18 scope was decided, and to v20 on 2026-08-23 when BL-041 took v19 on its own: v18 carries the rights-and-names group, and this case keeps the isolated landing its own entry argues for — behavioral: skill/ changes, VERSION bump + full e2e)**
+**Status: GREEN 2026-08-23 — corpus <N>/<N> and idempotency ×3 zero-diff on one law generation (`<sha>`); model floor `<model>`. Benchmark `evals/benchmarks/v20.md`. Edition v20 closes at merge; tag `v20`. (Numbers are placeholders — filled by Task 9's e2e benchmark.)**
 
-**What:** two interlocking pieces from deep-audit D2/D4. (1) **OKF v2
-decomposition by link hardness**: generated (baseline.md from annotated
-tests; codebase-map from code; index from docs), anchored (concept docs
-stay handwritten but every backticked symbol/path is verified against
-src/ — source-symbol grounding), human (glossary, log) — codified as an
-amendment to `core/okf.md`, migrating the fleet forward-only. The
-**generated** role class enters `core/artifact-lifecycle.md` here in
-full (BL-032 seeds the class; this edition populates it with real
-artifacts and regeneration rules). (2) **The G7 engine — one tool, three
-jobs**: spec/plan linter (dangling R-NNN, coverage R↔task, unresolved
-placeholders), OKF anchor checker, and baseline generator (EARS ids from
-specs ↔ annotated tests → generated `baseline.md`, do-not-edit; converge
-consumes its both-direction gaps; the engine takes its place on the
-verification ladder as a static rung — bindings in `core/verification`
-project rules, absent-engine fallback per BL-032's clause). Includes the
-G1 architecture-D pilot in **fleet-obs** (R-NNN + annotated tests + baseline +
-converge end to end in the smallest active repo, home of the proto-EARS
-Testing lines) and the new audit check "OKF-sync debt" (commits touching
-concept files after a doc's timestamp with no linked OKF update; repair
-via restructure only). Legalizes the open "OKF content-accuracy" note
-below into a designed mechanism. **fleet-obs accounting:** the registry gains
-a `generated` content-type, and the gold-panel docs-vs-code metric
-excludes generated writes — machine-written baseline/map entries must
-not read as documentation discipline, or the panel lies after rollout.
+**What:** OKF v2 decomposition by link hardness — generated, anchored,
+human — codified as an amendment to `core/okf.md`. The **anchored** class
+ships in full this edition: every backticked path and PascalCase symbol a
+knowledge document names is verified against the repository by the new
+engine, `docs/ai/engine.py` (the first non-markdown asset the skill ships,
+delivered by Step 3, listed in `ownedFiles`, byte-verified by audit check
+3). Two new audit checks, 15 (`okf-anchors`) and 17 (`okf-sync-debt`);
+anchor and debt findings route through restructure to the team.
+`codebase-map.md` and `index.md` are **anchored, not generated** —
+correcting deep-audit D2's assumption: the fleet showed their rows carry
+judgment a generator would destroy, while their row set is already
+machine-checked (audit checks 6 and 5). The **generated** role class is
+declared in `core/artifact-lifecycle.md` but stays unpopulated: the
+baseline generator, the spec/plan linter, and the fleet-obs registry
+accounting this entry used to describe move to **BL-043** (edition v21).
 BL-031 rides this cycle if it touches the backlog template.
 
 **Why:** hand-maintained truth always rots — fleet-api's six docs about
@@ -1713,6 +1708,16 @@ copy of a fact `grade-history.jsonl` owns. The guard and the stamp make
 divergence loud, not impossible. Collapsing the two — the dashboard reading
 the append-only record and `grading.json` becoming a derived cache or
 disappearing — is the real fix, and it is a bigger change than this one.
+
+## BL-043 — Generated baseline and the spec/plan linter (edition v21)
+
+**Status: queued 2026-08-23 → edition v21**
+
+**What:** the baseline generator (`R-NNN` ↔ annotated tests →
+`docs/ai/baseline.md`), the linter and its binding in `core/sdd.md`'s
+analyze gate, the population of the `generated` role class in
+`core/artifact-lifecycle.md`, and the fleet-obs registry `generated`
+content-type with its gold-panel exclusion.
 
 ## BL-044 — Cross-harness parity: the asymmetry study and channel subtraction
 
