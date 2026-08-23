@@ -1308,6 +1308,45 @@ def grade_case_practice(ws: Path) -> Grader:
     return g
 
 
+# BL-042. The idempotency stage commits "run 1" into the fixture on purpose
+# (`tools/evals-bg.sh:idem_scenario`), so a fixture that has moved off its
+# `eval-base` tag is no longer the repo the corpus measured. Grading it again
+# writes a verdict for a DIFFERENT state over the corpus verdict — how three
+# v19 scenarios came to read 20/21 and 18/19 on the dashboard while
+# `grade-history.jsonl` held the true 21/21 and 19/19 (2026-08-23).
+# `eval-base` already exists for exactly this hazard (`setup_workspace.py`);
+# this is the check that consults it.
+SCENARIO_DIRS = {
+    "fresh-scaffold-dotnet": "fresh-scaffold-dotnet",
+    "legacy-migration": "legacy-migration",
+    "legacy-migration-agents-first": "legacy-migration-agents-first",
+    "upgrade-drop-stack": "upgrade-drop-stack",
+    "case-practice": "case-practice",
+    "upgrade": "upgrade",
+    "audit": "rotted-layer",
+    "restructure": "restructure",
+}
+
+
+def fixture_off_base(repo: Path) -> str | None:
+    """None when the fixture sits at its `eval-base` tag (or the tag/repo is
+    absent — an older workspace degrades to no check, visibly). Otherwise a
+    one-line description of how far it has moved."""
+    if not (repo / ".git").exists():
+        return None
+    try:
+        base = git(repo, "rev-parse", "eval-base").strip()
+    except Exception:
+        return None
+    if not base:
+        return None
+    head = git(repo, "rev-parse", "HEAD").strip()
+    if head == base:
+        return None
+    ahead = git(repo, "rev-list", "--count", f"{base}..HEAD").strip() or "?"
+    return f"HEAD {head[:7]} is {ahead} commit(s) past eval-base {base[:7]}"
+
+
 def main() -> None:
     if len(sys.argv) < 2:
         sys.exit(__doc__)
@@ -1316,22 +1355,40 @@ def main() -> None:
 
     any_failed = False
     for name in names:
+        # The guard runs BEFORE the grader reads the tree: a corpus verdict
+        # for a moved fixture must not be computed, let alone written.
+        # `idempotency:` is exempt — grading the committed run-1 state is
+        # precisely its job.
+        if name in SCENARIO_DIRS:
+            moved = fixture_off_base(ws / SCENARIO_DIRS[name] / "repo")
+            if moved:
+                print(f"\n== {name}: REFUSED ==")
+                print(f"  fixture has moved past its eval-base — {moved}")
+                print("  The idempotency stage commits run 1 into the fixture by design,")
+                print("  so a corpus grade taken now measures a different repo state and")
+                print("  would overwrite the corpus verdict in grading.json.")
+                print("  Read the authoritative verdict in")
+                print(f"    {ws / SCENARIO_DIRS[name] / 'outputs' / 'grade-history.jsonl'}")
+                print("  or restore the fixture with"
+                      f" `git -C {ws / SCENARIO_DIRS[name] / 'repo'} reset --mixed eval-base`.")
+                any_failed = True
+                continue
         if name == "fresh-scaffold-dotnet":
-            g, outdir = grade_fresh(ws), ws / name
+            g, outdir = grade_fresh(ws), ws / SCENARIO_DIRS[name]
         elif name == "legacy-migration":
-            g, outdir = grade_migration(ws), ws / name
+            g, outdir = grade_migration(ws), ws / SCENARIO_DIRS[name]
         elif name == "legacy-migration-agents-first":
-            g, outdir = grade_migration_agents_first(ws), ws / name
+            g, outdir = grade_migration_agents_first(ws), ws / SCENARIO_DIRS[name]
         elif name == "upgrade-drop-stack":
-            g, outdir = grade_upgrade_drop_stack(ws), ws / name
+            g, outdir = grade_upgrade_drop_stack(ws), ws / SCENARIO_DIRS[name]
         elif name == "case-practice":
-            g, outdir = grade_case_practice(ws), ws / name
+            g, outdir = grade_case_practice(ws), ws / SCENARIO_DIRS[name]
         elif name == "upgrade":
-            g, outdir = grade_upgrade(ws), ws / name
+            g, outdir = grade_upgrade(ws), ws / SCENARIO_DIRS[name]
         elif name == "audit":
-            g, outdir = grade_audit(ws), ws / "rotted-layer"
+            g, outdir = grade_audit(ws), ws / SCENARIO_DIRS[name]
         elif name == "restructure":
-            g, outdir = grade_restructure(ws), ws / "restructure"
+            g, outdir = grade_restructure(ws), ws / SCENARIO_DIRS[name]
         elif name.startswith("idempotency:"):
             target = name.split(":", 1)[1]
             g, outdir = grade_idempotency(ws, target), ws / target
@@ -1360,8 +1417,13 @@ def main() -> None:
                 pass
         run_id, runner, model = (run.get("run_id"), run.get("runner"),
                                  run.get("model"))
+        # BL-042 item 2: the verdict carries the generation that produced it
+        # — skill VERSION + repo HEAD + grader hash, the same stamp
+        # grade-history.jsonl records. Without it a grading.json from another
+        # law or grader generation is indistinguishable from this run's.
         out = {"expectations": g.exps,
                "ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+               "law": law_stamp(),
                "run_id": run_id, "runner": runner, "model": model,
                "summary": {"passed": passed, "failed": total - passed,
                            "total": total, "pass_rate": round(passed / total, 3)}}

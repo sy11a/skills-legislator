@@ -1656,6 +1656,60 @@ from history, not only from the benchmark record.
 edit and green after; `replace`'s manifest reading is settled in the
 vocabulary; the three hardenings carry asserts; benchmark green.
 
+## BL-042 — The corpus verdict must not be overwritable by a grade of a mutated fixture
+
+**Status: DONE 2026-08-23 — shipped in edition v19 (`evals/**` only: no VERSION bump, no benchmark per README's testing rules). Verified mechanically rather than by a corpus run, at the user's direction; the first agent-run confirmation comes free with v20.**
+
+**What:** two changes to the eval harness's record-keeping.
+
+1. **A guard in `grade.py`.** Every fixture carries an `eval-base` tag
+   (`setup_workspace.py`), placed there for precisely this hazard — its own
+   comment says so. Before grading any corpus scenario the grader now
+   compares the fixture's `HEAD` against that tag and, when they differ,
+   **refuses**: it prints how far the fixture has moved, why the grade would
+   be wrong, where the authoritative verdict lives, and the one command that
+   restores the fixture. Nothing is computed and nothing is written.
+   `idempotency:` is exempt — grading the committed run-1 state is its job.
+2. **The verdict carries its generation.** `grading.json` gains the `law`
+   stamp (skill VERSION + repo HEAD + grader hash) that
+   `grade-history.jsonl` already recorded, and the dashboard renders a
+   mismatch as an error line instead of showing the number bare.
+
+**Why:** found by the v19 cycle, from the inside. The idempotency stage
+commits `run 1` into the fixture *on purpose* (`tools/evals-bg.sh`
+`idem_scenario`). A later re-grade of the same scenario therefore measures a
+different repo state — `nothing_committed` requires an uncommitted tree and
+one seed commit — and `grading.json` is overwritten **in place**. Three v19
+scenarios were re-graded after the idempotency stage during a confound
+check and their dashboard verdicts became 20/21, 18/19 and a
+provenance-shifted 34/34, while the true corpus verdicts (21/21, 19/19,
+34/34) survived only in the append-only `grade-history.jsonl`. Nobody was
+misled for long, but the failure mode is the one POLICY §8 names: **one
+fact in two places, and the mutable copy is the one on screen.** The
+underlying shape is worse than the incident — any future re-grade, by any
+hand, silently republishes a verdict for a state the corpus never measured.
+
+**Why a guard and not a POLICY line:** POLICY §8 argues the countermeasure
+for a mechanical hazard is a mechanism. A rule saying "do not re-grade after
+the idempotency stage" would be a fourth thing to remember, and the
+anchor to enforce it already existed unused.
+
+**Verification (no agent run, by the user's decision):** at `eval-base`,
+`upgrade` grades 21/21 and the verdict now carries
+`law=v19-6a48231-g334ad2c`. With the idem commit replayed by hand, the same
+command prints `== upgrade: REFUSED ==`, exits 1, and leaves `grading.json`
+holding the 21/21 it already had — the exact damage, now impossible.
+`idempotency:upgrade` still grades. All eight scenarios re-grade to
+185/185 with the guard in place, and the runner's only corpus-grade call
+site (`tools/evals-bg.sh:313`) fires immediately after a run, when the
+fixture is at its base.
+
+**Residue for whoever next touches this:** `grading.json` remains a second
+copy of a fact `grade-history.jsonl` owns. The guard and the stamp make
+divergence loud, not impossible. Collapsing the two — the dashboard reading
+the append-only record and `grading.json` becoming a derived cache or
+disappearing — is the real fix, and it is a bigger change than this one.
+
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
 
 A master-agent that reviews an incoming request in a project and decides whether to route it to an existing project-local mini-agent (`.claude/agents/<name>.md`) or create a new fine-grained specialized one (task-appropriate model, scoped MCPs) is being built as its **own, separate skill** — not as part of Legislator. Rationale: Legislator is build-time scaffolding (runs occasionally, evolves via VERSION/manifest); request routing is a runtime concern with its own lifecycle. Folding both into one skill would blur SRP.
