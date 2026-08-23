@@ -176,6 +176,11 @@ def job_okf_debt() -> list[str]:
                 target = path_target(token)
                 if not target.exists():
                     continue              # a broken anchor is the anchors job's finding
+                # A directory's git history is the union of everything beneath
+                # it, so it can never say whether one document went stale —
+                # not a debt source (the anchors job still checks it exists).
+                if target.is_dir():
+                    continue
                 src_rel = target.relative_to(ROOT).as_posix()
                 src_iso = git_iso(src_rel)
                 if not src_iso:

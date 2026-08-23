@@ -58,8 +58,11 @@ half is prose.
   `core/verification.md` carries the rung that requires it before "done".
 - **`python3 docs/ai/engine.py okf-debt`** names anchored documents whose
   sources moved on without them: an anchored source file with a commit more
-  than 30 days newer than the document's own newest commit. Repair is an
-  ordinary OKF update by the document's owner — never an automatic rewrite.
+  than 30 days newer than the document's own newest commit. A path-anchor
+  naming a directory is not a source for this purpose — a directory's history
+  is the union of everything beneath it and can never say whether one document
+  went stale. Repair is an ordinary OKF update by the document's owner —
+  never an automatic rewrite.
 
 ## OKF is non-negotiable
 
