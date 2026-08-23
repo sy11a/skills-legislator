@@ -1432,7 +1432,7 @@ designed mechanism; this note stays as the origin record.
 
 ## BL-038 — File-authority matrix: one table resolves every mode's rights over every artifact class
 
-**Status: IN PROGRESS 2026-08-22 — edition v18 branch `feature/v18-file-authority`; spec `docs/superpowers/specs/2026-08-22-file-authority-matrix-design.md`, plan `docs/superpowers/plans/2026-08-22-file-authority-matrix.md`. Benchmark pending (Task 8).**
+**Status: GREEN 2026-08-23 — corpus 185/185 and idempotency ×3 zero-diff on one law generation (`67e14c0`); model floor `sonnet` (Claude Code 2.1.239), unchanged from v17. Benchmark `evals/benchmarks/v18.md`; spec `docs/superpowers/specs/2026-08-22-file-authority-matrix-design.md`, plan `docs/superpowers/plans/2026-08-22-file-authority-matrix.md`. The benchmark forced five fixes — three law (`heal`'s missing manifest cell reference; `never-touch` read as "report and stop", contradicting `heal`; harvest scanning only `AGENTS.md` and missing the pre-v14 entry document audit finds) and two grader (an order-sensitive check-14 marker; a delegated `heal` write judged by restructure's own column). Edition v18 closes at merge; tag `v18`.**
 
 **What:** replace the prose statements of "may this mode write this file?"
 with a single matrix — artifact class × mode → one permission from a closed
