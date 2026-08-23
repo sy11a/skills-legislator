@@ -145,6 +145,58 @@ code, out = run(root, "anchors")
 check(code == 0 and out == "", "a repo with no docs/okf/ is clean, not an error",
       f"exit={code} out={out!r}")
 
+print("== okf-debt: a source that moved on is debt ==")
+root = make_repo(
+    {"widgets.md": "# Widgets\n\nImplemented in `src/App/WidgetStore.cs`.\n"},
+    {"src/App/WidgetStore.cs": "public class WidgetStore { }\n"})
+git(root, "init", "-q")
+git(root, "add", "-A", date="2026-01-01T12:00:00")
+git(root, "commit", "-q", "-m", "docs and code", date="2026-01-01T12:00:00")
+(root / "src/App/WidgetStore.cs").write_text("public class WidgetStore { void Flush() {} }\n")
+git(root, "add", "-A", date="2026-03-01T12:00:00")
+git(root, "commit", "-q", "-m", "code moves on", date="2026-03-01T12:00:00")
+code, out = run(root, "okf-debt")
+check(code == 1 and "widgets.md: okf-sync-debt: src/App/WidgetStore.cs changed 59 days after this document" in out,
+      "a source 59 days newer than its document is debt", f"exit={code} out={out!r}")
+
+print("== okf-debt: inside the threshold is not debt ==")
+root = make_repo(
+    {"widgets.md": "# Widgets\n\nImplemented in `src/App/WidgetStore.cs`.\n"},
+    {"src/App/WidgetStore.cs": "public class WidgetStore { }\n"})
+git(root, "init", "-q")
+git(root, "add", "-A", date="2026-01-01T12:00:00")
+git(root, "commit", "-q", "-m", "docs and code", date="2026-01-01T12:00:00")
+(root / "src/App/WidgetStore.cs").write_text("public class WidgetStore { void Flush() {} }\n")
+git(root, "add", "-A", date="2026-01-20T12:00:00")
+git(root, "commit", "-q", "-m", "small change", date="2026-01-20T12:00:00")
+code, out = run(root, "okf-debt")
+check(code == 0 and out == "", "19 days is inside the 30-day threshold",
+      f"exit={code} out={out!r}")
+
+print("== okf-debt: a document updated with its source is clean ==")
+root = make_repo(
+    {"widgets.md": "# Widgets\n\nImplemented in `src/App/WidgetStore.cs`.\n"},
+    {"src/App/WidgetStore.cs": "public class WidgetStore { }\n"})
+git(root, "init", "-q")
+git(root, "add", "-A", date="2026-01-01T12:00:00")
+git(root, "commit", "-q", "-m", "docs and code", date="2026-01-01T12:00:00")
+(root / "src/App/WidgetStore.cs").write_text("public class WidgetStore { void Flush() {} }\n")
+(root / "docs/okf/widgets.md").write_text(
+    "# Widgets\n\nImplemented in `src/App/WidgetStore.cs`, now with Flush.\n")
+git(root, "add", "-A", date="2026-03-01T12:00:00")
+git(root, "commit", "-q", "-m", "both move", date="2026-03-01T12:00:00")
+code, out = run(root, "okf-debt")
+check(code == 0 and out == "", "a document that moved with its source is clean",
+      f"exit={code} out={out!r}")
+
+print("== okf-debt: no git history, no findings ==")
+root = make_repo(
+    {"widgets.md": "# Widgets\n\nImplemented in `src/App/WidgetStore.cs`.\n"},
+    {"src/App/WidgetStore.cs": "public class WidgetStore { }\n"})
+code, out = run(root, "okf-debt")
+check(code == 0 and out == "", "an untracked tree yields no debt findings",
+      f"exit={code} out={out!r}")
+
 if failures:
     print(f"\n{len(failures)} check(s) FAILED")
     sys.exit(1)
