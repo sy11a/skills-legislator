@@ -1611,7 +1611,7 @@ expressions, and a message is easy to forget.
 
 ## BL-041 — File-authority residue: one prose right the wall cannot see, and the `replace` carve-out for the manifest
 
-**Status: IN PROGRESS 2026-08-23 — edition v19 on its own (see the edition plan; was "rides v19 as a rider" until the 2026-08-23 decision). Item 2 settled as a carve-out in the `replace` bullet, not a ninth value. Branch `feature/bl-041-authority-residue-v19`: asserts committed red (`d732b57`), law + grader green (`a8584aa`); benchmark pending.**
+**Status: GREEN 2026-08-23 — corpus 185/185 and idempotency ×3 zero-diff on one law generation (`a8584aa`); model floor `sonnet` (Claude Code 2.1.241), unchanged from v18. Benchmark `evals/benchmarks/v19.md`. Edition v19 on its own (see the edition plan; was "rides v19 as a rider" until the 2026-08-23 decision), departing from the residue-rides-the-next-cycle precedent of BL-011…023. Item 2 settled as a carve-out in the `replace` bullet, not a ninth value. All five new asserts were committed in their red state (`d732b57`) before the fix that greened them (`a8584aa`) — the habit this case asked for, now reproducible from history. The only reds this cycle were one model flake (`report_proposes_stack_import_line`, cleared by a re-run) and a session-quota kill that cost three scenario runs, all clean on retest; no law or grader defect was found by the benchmark. Edition v19 closes at merge; tag `v19`.**
 
 **What:** the two Important findings the v18 final review deferred rather
 than pay a re-benchmark for wording, plus three grader/static-check
