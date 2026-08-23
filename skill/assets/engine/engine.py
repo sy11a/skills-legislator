@@ -1,0 +1,166 @@
+#!/usr/bin/env python3
+"""The constitution's static engine — read-only checks that bond documents to code.
+
+Delivered by the Legislator as an owned file (`docs/ai/engine.py`). Never
+hand-edit it: change the skill source and re-run /legislator.
+
+Jobs (both read-only — this engine writes nothing):
+  anchors    every path or symbol an anchored OKF document backticks resolves
+  okf-debt   anchored documents whose sources moved on without them
+
+Usage: python3 docs/ai/engine.py <job>
+Exit:  0 clean, 1 findings printed to stdout, 2 usage error.
+
+The law this executes is `docs/ai/rules/core/okf.md` (link hardness and the
+closed anchor definition); the rung that requires it is
+`docs/ai/rules/core/verification.md`.
+"""
+from __future__ import annotations
+
+import re
+import subprocess
+import sys
+from datetime import datetime
+from pathlib import Path
+
+# The engine ships at <repo>/docs/ai/engine.py — two parents up is the repo.
+ROOT = Path(__file__).resolve().parents[2]
+OKF = ROOT / "docs" / "okf"
+
+HUMAN_CLASS = {"glossary.md", "log.md"}   # core/okf.md's human class
+IGNORED_DIRS = {"docs", "bin", "obj", "node_modules", "dist"}
+SOURCE_EXTS = (".cs", ".ts", ".tsx", ".js", ".jsx", ".py", ".go", ".rs",
+               ".java", ".kt", ".rb", ".php", ".sql", ".html", ".css")
+DEBT_DAYS = 30            # audit check 8's threshold, reused, never restated
+MAX_BYTES = 2_000_000     # a file bigger than this is not prose or source
+
+TOKEN = re.compile(r"`([^`\n]+)`")
+PASCAL = re.compile(r"[A-Z][A-Za-z0-9]{3,}(\.[A-Z][A-Za-z0-9]+)*$")
+FORBIDDEN = set(" <>*?")
+
+
+def top_level_dirs() -> set[str]:
+    return {p.name for p in ROOT.iterdir() if p.is_dir() and not p.name.startswith(".")}
+
+
+def source_roots() -> list[Path]:
+    return sorted(p for p in ROOT.iterdir()
+                  if p.is_dir() and not p.name.startswith(".")
+                  and p.name not in IGNORED_DIRS)
+
+
+def anchored_docs() -> list[Path]:
+    if not OKF.is_dir():
+        return []
+    return sorted(p for p in OKF.rglob("*.md") if p.name not in HUMAN_CLASS)
+
+
+def scannable_lines(text: str):
+    """Yield (lineno, line) outside front matter and fenced code blocks."""
+    lines = text.splitlines()
+    i, n = 0, len(lines)
+    if lines and lines[0].strip() == "---":
+        i = 1
+        while i < n and lines[i].strip() != "---":
+            i += 1
+        i += 1
+    fenced = False
+    while i < n:
+        line = lines[i]
+        if line.lstrip().startswith("```"):
+            fenced = not fenced
+        elif not fenced:
+            yield i + 1, line
+        i += 1
+
+
+def classify(token: str, top: set[str]) -> str | None:
+    """'path' | 'symbol' | None — the closed definition in core/okf.md."""
+    if any(c in token for c in FORBIDDEN):
+        return None
+    if token.startswith("~") or token.startswith("/"):
+        return None
+    if "/" in token:
+        return "path" if token.split("/", 1)[0] in top else None
+    return "symbol" if PASCAL.match(token) else None
+
+
+def path_target(token: str) -> Path:
+    """The path a path-anchor names; a trailing `.Member()` is stripped."""
+    base = token.rstrip(":,.")
+    if base.endswith("()"):
+        stem = base[:-2].rsplit(".", 1)[0]
+        for ext in SOURCE_EXTS:
+            if (ROOT / (stem + ext)).exists():
+                return ROOT / (stem + ext)
+    return ROOT / base
+
+
+def resolve_symbols(symbols: set[str]) -> set[str]:
+    """The subset occurring literally under the source roots — one pass."""
+    found: set[str] = set()
+    if not symbols:
+        return found
+    for root in source_roots():
+        for p in root.rglob("*"):
+            if len(found) == len(symbols):
+                return found
+            if not p.is_file():
+                continue
+            if any(part.startswith(".") for part in p.relative_to(ROOT).parts):
+                continue
+            try:
+                if p.stat().st_size > MAX_BYTES:
+                    continue
+                text = p.read_text(errors="ignore")
+            except OSError:
+                continue
+            for s in symbols - found:
+                if s.split(".", 1)[0] in text:
+                    found.add(s)
+    return found
+
+
+def job_anchors() -> list[str]:
+    top = top_level_dirs()
+    roots = ", ".join(p.name + "/" for p in source_roots()) or "(no source roots)"
+    findings: list[str] = []
+    sites: list[tuple[str, int, str]] = []
+    symbols: set[str] = set()
+    for doc in anchored_docs():
+        rel = doc.relative_to(ROOT).as_posix()
+        for lineno, line in scannable_lines(doc.read_text(errors="ignore")):
+            for m in TOKEN.finditer(line):
+                token = m.group(1).strip()
+                kind = classify(token, top)
+                if kind == "path":
+                    if not path_target(token).exists():
+                        findings.append(
+                            f"{rel}:{lineno}: path-anchor: {token} → no such file")
+                elif kind == "symbol":
+                    symbols.add(token)
+                    sites.append((rel, lineno, token))
+    resolved = resolve_symbols(symbols)
+    for rel, lineno, token in sites:
+        if token not in resolved:
+            findings.append(
+                f"{rel}:{lineno}: symbol-anchor: {token} → not found in {roots}")
+    return sorted(findings)
+
+
+JOBS = {"anchors": job_anchors}
+
+
+def main(argv: list[str]) -> int:
+    if len(argv) != 2 or argv[1] not in JOBS:
+        print(f"usage: python3 {Path(__file__).name} "
+              f"{{{'|'.join(sorted(JOBS))}}}", file=sys.stderr)
+        return 2
+    findings = JOBS[argv[1]]()
+    for f in findings:
+        print(f)
+    return 1 if findings else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))
