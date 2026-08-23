@@ -99,7 +99,9 @@ Gate 0/1 — that ordering is what makes the parallelism safe.
   at all outside Claude Code and opencode). Each is time-boxed, produces
   an answer rather than code, and sizes the cases that follow it.
 - **Off the edition track:** BL-035 (docs-only, runs any time), BL-039 and
-  BL-040 (repository-level operations, each wanting a deliberate moment).
+  BL-040 (repository-level operations, each wanting a deliberate moment),
+  BL-050 and BL-053 (the two instruments — the eval runner and the fleet
+  tool — each able to report success while having done nothing).
 
 Personal machine to-do (not a Legislator task): adopt the official C# LSP
 plugin (`csharp-ls`) locally — symbol-level navigation for the dotnet fleet;
@@ -1916,6 +1918,20 @@ recorded per `evals/README.md`, compared against v20.
 **What the answer decides:** whether "the legislator governs a repository" is a claim about repositories or a claim about two harnesses. If thin adapters cover most of the field, the fix is small and BL-045's projection model absorbs it. If several agents need thick adapters, then either the fleet's tool choice narrows deliberately, or the generated-projection machinery becomes load-bearing for the whole system rather than a convenience — and that is a much larger commitment, worth knowing before it is made by accident.
 
 **Stop condition:** the measured table — agent × loads-the-law × adapter shape × truncation headroom — is the deliverable. No adapter is written inside this spike; each becomes its own case, sized from the measurement.
+
+## BL-053 — `fleet.sh` has one engine and no failure signal
+
+**Status: PROPOSED 2026-08-23** — tooling only (`tools/fleet.sh`), no `skill/` change, no VERSION, no benchmark. Both defects were met on the same run: the v20 sweep of 2026-08-23.
+
+**What:** two independent faults in the fleet delivery tool, plus one caller trap worth recording beside them.
+
+1. **One hardcoded engine.** Delivery is `opencode run --dir "$repo" --agent service-fleet`, with no alternative. On 2026-08-23 that agent's credential failed (`API key is invalid`) and the entire sweep became impossible — not one repository could be upgraded — although the delivery itself is engine-agnostic: the skill's owned-file work is `cp` plus a regenerated manifest, and any harness that can follow `SKILL.md` performs it identically. The repo already solved this problem once: `tools/evals-bg.sh` carries runner profiles (`opencode` / `claude`) precisely so the stages, contracts and grading survive a change of engine. Remedy: the same profile mechanism here, defaulting to `opencode`.
+2. **Failures do not reach the exit code.** The `FAIL` branch prints a line and nothing more: no counter, no non-zero exit. On the same run the tool reported three consecutive failures and exited `0`. This is the family BL-050 belongs to — an operation that failed everywhere reporting success at the process level — and it is worse here than in the eval runner, because a sweep is the step that puts law into nine repositories and its result is usually read from a scrollback, not from a grading file. The version re-check after each run (`WARN … still at v<N>`) is the right idea and should feed the same signal. Remedy: count failures and skips, exit non-zero when any repository did not reach the current version.
+3. **Implementation note for whoever adds the `claude` profile.** `--add-dir` is variadic: `claude -p … --add-dir "$DIR" "$prompt"` silently swallows the prompt as a second directory and the agent starts with no task. Pass the prompt on stdin, or place a flag between `--add-dir` and the positional argument. This cost one wasted pass on 2026-08-23; `evals-bg.sh` avoids it by accident, because other flags follow its `--add-dir`.
+
+**Why:** the sweep is the moment the constitution stops being a local artifact and becomes law in other people's repositories. A tool that cannot run when one vendor's credential expires, and that cannot tell success from total failure in its own exit status, is the weakest link in that chain — and neither fault is visible until the day it matters.
+
+**Done when:** `fleet.sh` takes a runner profile with the same shape `evals-bg.sh` uses and the sweep completes under either engine; a run in which any repository fails or stays behind exits non-zero; and the `--add-dir` trap is either avoided by construction in the new profile or noted where the invocation is built.
 
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
 
