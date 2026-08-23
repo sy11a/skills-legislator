@@ -69,11 +69,10 @@ Gate 0/1 — that ordering is what makes the parallelism safe.
     derivation.
   - **BL-030** — the constitution disambiguation sweep; same prose surface
     as BL-038 (SKILL.md, `references/**`), so the two ride one cycle rather
-    than colliding in two.
+    than colliding in two — shipped in v17, residue only.
   - **BL-028** — manifest key `profiles` → `stacks`, with the legacy-key
-    upgrade path and a legacy-manifest fixture.
-  - **BL-031** — rides the cycle; whether it is behavioral is decided
-    in-cycle (it is docs-only unless a scaffolded template moves).
+    upgrade path and a legacy-manifest fixture — shipped in v17, residue only.
+  - **BL-031** — leaves the cycle (docs-only).
 - **v19 — OKF v2 and the one engine.** **BL-033** alone, for the reason its
   own entry gives: a transform of what "docs" means across the fleet must
   not share a landing with anything else.
@@ -998,7 +997,7 @@ new sidecar-placement eval scenario.
 
 ## BL-028 — Manifest key `profiles` → `stacks` (single-concept naming)
 
-**Status: queued → edition v18 (scope decided 2026-08-22; behavioral — skill/ changes, VERSION bump + full e2e)**
+**Status: DONE in v17 (92d1e3d — stacks key + legacy fallback, upgrade fixture carries a `profiles` manifest); prose residue ("stack profile") closed in v18.**
 
 **What:** rename the manifest's stack-subscription key from `profiles` to
 `stacks` so the key carries the concept's only name (ontology R5-T1,
@@ -1047,7 +1046,7 @@ resolve to their historical paths; benchmark green.
 
 ## BL-030 — Constitution disambiguation sweep in skill prose (A5)
 
-**Status: queued → edition v18 (scope decided 2026-08-22; behavioral — skill/ changes, VERSION bump + full e2e)**
+**Status: DONE in v17 (92d1e3d — sweep); residue ("AGENTS.md is the canonical constitution" ×3) closed in v18.**
 
 **What:** sweep `skill/` prose so "constitution" means exactly one thing
 (`docs/ai/rules/**` @ VERSION — ontology R1-T1): SKILL.md's "constitution
@@ -1066,7 +1065,7 @@ diffs beyond the expected prose changes.
 
 ## BL-031 — Split backlog.md into queue + case register sections
 
-**Status: queued → rides the v18 cycle (scope decided 2026-08-22; behavioral if templates change — decide in-cycle)**
+**Status: queued (docs-only — `backlog.md.tpl` carries no queue/register structure, so the split concerns this repo's `docs/backlog.md` only; no VERSION, no benchmark; any time). Left the v18 cycle 2026-08-22.**
 
 **What:** restructure `docs/backlog.md` into two named sections per the
 ontology (R2-T2): **queue** — pending/active cases only, in intended work
@@ -1433,7 +1432,7 @@ designed mechanism; this note stays as the origin record.
 
 ## BL-038 — File-authority matrix: one table resolves every mode's rights over every artifact class
 
-**Status: queued 2026-08-22 → edition v18, its anchor case (raised by the v17 benchmark, deferred past that edition; behavioral — skill/ changes, VERSION bump + full e2e)**
+**Status: GREEN 2026-08-23 — corpus 185/185 and idempotency ×3 zero-diff on one law generation (`67e14c0`); model floor `sonnet` (Claude Code 2.1.239), unchanged from v17. Benchmark `evals/benchmarks/v18.md`; spec `docs/superpowers/specs/2026-08-22-file-authority-matrix-design.md`, plan `docs/superpowers/plans/2026-08-22-file-authority-matrix.md`. The benchmark forced five fixes — three law (`heal`'s missing manifest cell reference; `never-touch` read as "report and stop", contradicting `heal`; harvest scanning only `AGENTS.md` and missing the pre-v14 entry document audit finds) and two grader (an order-sensitive check-14 marker; a delegated `heal` write judged by restructure's own column). Edition v18 closes at merge; tag `v18`. Final review residue (one prose right the wall cannot see; the `replace`/manifest tension) filed as BL-041 for v19.**
 
 **What:** replace the prose statements of "may this mode write this file?"
 with a single matrix — artifact class × mode → one permission from a closed
@@ -1603,6 +1602,53 @@ every alias used anywhere in the rewritten history.
 **Check first:** whether any commit message (not just file content) carries
 a name or path — `filter-repo` handles both, but the two need separate
 expressions, and a message is easy to forget.
+
+## BL-041 — File-authority residue: one prose right the wall cannot see, and the `replace` carve-out for the manifest
+
+**Status: PROPOSED 2026-08-23 — raised by the v18 final review; rides edition v19 as a behavioral rider (skill/ edits, VERSION bump + full e2e).**
+
+**What:** the two Important findings the v18 final review deferred rather
+than pay a re-benchmark for wording, plus three grader/static-check
+hardenings from the task reviews.
+
+1. **A prose right survived** — SKILL.md's Step 4 row for `CLAUDE.md` still
+   ends "Create-only-if-absent", and the Step 4 header says "the right is
+   `create-if-absent`" over rows whose classes are *entry document* and
+   *project rules*. The wall's regex knows `create-once` and `create it
+   only if` but not the hyphenated form. Fix: row note → `(authority: entry
+   document × scaffold)`; narrow the header to the rows it governs; add
+   `create-only-if-absent` to `AUTH_PROSE` — shown red against v18 first.
+2. **`manifest × upgrade = replace` read literally licenses discarding
+   `keep`** — `replace` is defined as "comes whole from the skill, byte-for-
+   byte, never merged", but the manifest is generated with `keep` carried
+   forward and `ownedFiles` recomputed (Step 3.6). Practice is right and
+   `manifest_healed_keep_carried` guards it; the definition is the same
+   hazard shape v18's defect L2 paid to discover. Fix: a manifest carve-out
+   in the `replace` bullet (or a ninth value — decide in-cycle; a ninth
+   value is a deliberate spec edit, not drift).
+3. **Grader/wall hardenings:** anchor the `[heal]` delegation gate in
+   `grade_restructure` to an item line (`^\d+\. \[heal\]`), not a bare
+   substring; exact-length row check in both `authority_matrix()` and the
+   wall (a ninth body row is currently ignored, not rejected); scan
+   SKILL.md line-by-line with a section-exclusion range so the wall's
+   reported line numbers are real (today they are short by the section's
+   length for everything after it).
+
+4. **Delegation stated twice:** SKILL.md's `never-touch` bullet names the
+   two heal-delegated classes (owned law, manifest) in prose, while the
+   machine-readable cell references live only in `restructure.md` §2's heal
+   bullet. A third delegated class added to §2 would leave SKILL.md's prose
+   silently stale — `heal_delegation_derived` would catch it through the
+   grader, not the wall. Fix: SKILL.md points at §2's bullet instead of
+   restating the classes.
+
+**Habit for v19, from the same review:** commit a new assert in its red
+state *before* the fix that greens it, so red-before-green is reproducible
+from history, not only from the benchmark record.
+
+**Done when:** the wall goes red on the `CLAUDE.md` row note before the
+edit and green after; `replace`'s manifest reading is settled in the
+vocabulary; the three hardenings carry asserts; benchmark green.
 
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
 

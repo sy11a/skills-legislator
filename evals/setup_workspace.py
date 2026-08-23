@@ -452,7 +452,16 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
             "stray-rulebooks] docs/superpowers/review-checklist.md",  # defect 12
             "foreign-structures] UBIQUITOUS_LANGUAGE.md",  # defect 14: foreign glossary store
             "glossary-vitality] docs/okf/glossary.md",  # defect 13: empty glossary, src/ exists
-            "skill-bindings] made-up-skill",  # defect 15: sanctioned but uninstalled
+            # Defect 15 (sanctioned but uninstalled). Two order-independent
+            # markers, not one `<slug>] <name>` string: the law pins the slug
+            # and requires the finding to "name the offending path, date, or
+            # entry verbatim" — it never pins their ORDER on the line. The
+            # single adjacency marker passed only when a model happened to
+            # write the name right after the slug; a lawful
+            # "[skill-bindings] .claude/rules/skills.md: `made-up-skill`"
+            # failed it (found 2026-08-23, v18 benchmark).
+            "skill-bindings]",        # defect 15a: reported under its pinned slug
+            "made-up-skill",          # defect 15b: the offending entry named verbatim
             ".superpowers/",          # defect (check 9): working-dir debris
             "gone-runbook.md",        # defect (check 10a): dangling keep entry
             "legacy-home-violation] docs/superpowers/specs/late-feature-spec.md",  # defect (check 16)
@@ -520,6 +529,9 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
             ["git", "rev-parse", "HEAD"], cwd=dest, check=True,
             capture_output=True, text=True).stdout.strip(),
         "expected_manifest_version": version - 1,
+        # File authority (BL-038): the two classes only a fixture can name.
+        "authority_foreign_structures": [".cursorrules", "UBIQUITOUS_LANGUAGE.md"],
+        "authority_relocated_owner_content": [],
     }
     if restructure_extras:
         meta["fidelity_sentences"] = [
@@ -553,6 +565,11 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
         meta["project_rule_conflict_path"] = ".claude/rules/journal.md"
         meta["project_rule_conflict_content"] = (
             dest / ".claude/rules/journal.md").read_text()
+        meta["authority_relocated_owner_content"] = [
+            ".claude/plans/2026-01-importer-plan.md",
+            "docs/superpowers/BL-0007/plan.md",
+            "docs/superpowers/review-checklist.md",
+        ]
 
     (dest.parent / "fixture_meta.json").write_text(
         json.dumps(meta, indent=2) + "\n")

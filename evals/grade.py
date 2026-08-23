@@ -32,8 +32,10 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -71,14 +73,235 @@ def scaffold_artifacts() -> list[str]:
 
 SCAFFOLD_ARTIFACTS = scaffold_artifacts()
 
+# File authority (BL-038, edition v18): the ONE table in SKILL.md that
+# states what each invocation mode may do to each artifact class. The
+# grader derives its protected/writable expectations from it and never
+# restates a right by hand. A malformed table raises — grading leniently
+# against a broken matrix would be the v17 incident in reverse.
+AUTHORITY_VALUES = frozenset({
+    "replace", "create-if-absent", "lossless-write", "propose-only",
+    "move-or-merge", "link-only", "read-only", "never-touch",
+})
+AUTHORITY_MODES = ("scaffold", "migrate", "upgrade", "restructure", "audit")
+AUTHORITY_CLASSES = (
+    "entry document", "owned law", "manifest", "project rules",
+    "scaffolded artifacts", "relocated owner content",
+    "foreign structures", "kept paths",
+)
 
-def protected_project_files() -> list[str]:
-    """Tracked project-owned files upgrade must not touch: the scaffold's
-    create-once artifacts minus the entry-document pair (AGENTS.md is
-    never edited — only proposed to — and CLAUDE.md is a managed
-    symlink; both legitimately change across a file-model upgrade)."""
-    return [a for a in SCAFFOLD_ARTIFACTS
-            if a not in ("AGENTS.md", "CLAUDE.md")]
+
+def _authority_rows() -> list[list[str]]:
+    """The pipe-table rows of SKILL.md's `## File authority` section, each
+    as a list of stripped cells (outer pipes removed)."""
+    text = _skill_md()
+    if "\n## File authority\n" not in text:
+        raise ValueError("File authority: no `## File authority` section in SKILL.md")
+    section = text.split("\n## File authority\n", 1)[1].split("\n## ", 1)[0]
+    rows = []
+    for line in section.splitlines():
+        if line.startswith("|") and not re.match(r"^\|[\s:|-]+\|$", line):
+            rows.append([c.strip() for c in line.strip().strip("|").split("|")])
+    return rows
+
+
+def authority_matrix() -> dict[tuple[str, str], str]:
+    """(class, mode) -> right, parsed from the pinned two-header table."""
+    rows = _authority_rows()
+    if len(rows) < 2 + len(AUTHORITY_CLASSES):
+        raise ValueError(f"File authority: expected 2 header rows + {len(AUTHORITY_CLASSES)} body rows, got {len(rows)}")
+    modes = tuple(c for c in rows[1][1:])
+    if modes != AUTHORITY_MODES:
+        raise ValueError(f"File authority: mode row must be {AUTHORITY_MODES}, got {modes}")
+    out: dict[tuple[str, str], str] = {}
+    for row in rows[2:2 + len(AUTHORITY_CLASSES)]:
+        cls = row[0].split(" (", 1)[0].strip().lower()
+        if cls not in AUTHORITY_CLASSES:
+            raise ValueError(f"File authority: unknown artifact class {cls!r}")
+        cells = row[1:1 + len(AUTHORITY_MODES)]
+        if len(cells) != len(AUTHORITY_MODES):
+            raise ValueError(f"File authority: row {cls!r} has {len(cells)} cells, expected {len(AUTHORITY_MODES)}")
+        for mode, cell in zip(AUTHORITY_MODES, cells):
+            if cell not in AUTHORITY_VALUES:
+                raise ValueError(f"File authority: cell ({cls} × {mode}) = {cell!r} is not one of {sorted(AUTHORITY_VALUES)}")
+            out[(cls, mode)] = cell
+    missing = [(c, m) for c in AUTHORITY_CLASSES for m in AUTHORITY_MODES if (c, m) not in out]
+    if missing:
+        raise ValueError(f"File authority: cells missing for {missing[:5]}")
+    return out
+
+
+def authority_states() -> dict[str, str]:
+    """mode -> state (installing / maintaining / inspecting), read from the
+    state header row directly above each mode."""
+    rows = _authority_rows()
+    if len(rows) < 2:
+        raise ValueError("File authority: no table rows under the heading")
+    states = rows[0][1:1 + len(AUTHORITY_MODES)]
+    if len(states) != len(AUTHORITY_MODES):
+        raise ValueError(f"File authority: state row has {len(states)} cells, expected {len(AUTHORITY_MODES)}")
+    return dict(zip(AUTHORITY_MODES, states))
+
+
+def class_paths(repo: Path, cls: str, fixture_meta: dict | None = None) -> list[str]:
+    """Concrete repo-relative paths of one artifact class. Skill-derived
+    where the skill defines the class; fixture-declared for the two
+    classes only a fixture can know (what is foreign, what was relocated)."""
+    meta = fixture_meta or {}
+    if cls == "entry document":
+        return ["AGENTS.md", "CLAUDE.md"]
+    if cls == "owned law":
+        return sorted(expected_owned())
+    if cls == "manifest":
+        return ["docs/ai/manifest.json"]
+    if cls == "project rules":
+        tracked = git(repo, "ls-files", ".claude/rules").split()
+        return sorted(set(tracked) | {p for p in SCAFFOLD_ARTIFACTS if p.startswith(".claude/rules/")})
+    if cls == "scaffolded artifacts":
+        return [p for p in SCAFFOLD_ARTIFACTS if not p.startswith(".claude/rules/")
+                and p not in ("AGENTS.md", "CLAUDE.md")]
+    if cls == "relocated owner content":
+        return sorted(meta.get("authority_relocated_owner_content", []))
+    if cls == "foreign structures":
+        return sorted(meta.get("authority_foreign_structures", []))
+    if cls == "kept paths":
+        return sorted(k["path"] for k in meta.get("expected_keep", []))
+    raise ValueError(f"File authority: unknown class {cls!r}")
+
+
+# File authority (ruling 2026-08-22, spec §3): `propose-only` protects the
+# document's CONTENT, not its path — upgrade on a pre-v14 legislated repo
+# lawfully renames CLAUDE.md -> AGENTS.md (SKILL.md Step 3), so a path-based
+# "no change" reading of the cell fails lawful behaviour. Path-protecting
+# rights still forbid any change to the path; content-protecting rights are
+# instead enforced by check_mode_authority's canonical-document identity
+# check (below), never by protected_project_files.
+PATH_PROTECTING_RIGHTS = frozenset({"create-if-absent", "read-only",
+                                    "link-only", "never-touch"})
+CONTENT_PROTECTING_RIGHTS = frozenset({"propose-only"})
+
+# The canonical file whose content stands in for a content-protected class.
+# A content-protecting cell on a class absent from this map is a malformed
+# matrix (check_mode_authority raises).
+CANONICAL_FILE = {"entry document": "AGENTS.md"}
+
+
+def protected_project_files(repo: Path, fixture_meta: dict | None = None,
+                            matrix: dict | None = None) -> list[str]:
+    """Tracked, PATH-protected files an upgrade run must leave byte-unchanged
+    at their path, derived from the matrix: every path of every class whose
+    `upgrade` cell is in PATH_PROTECTING_RIGHTS, restricted to what existed
+    at HEAD. No hand-written exclusions — AGENTS.md drops out because its
+    cell says propose-only, not because someone listed it. Content-protected
+    classes (propose-only) are NOT in this set — their file may lawfully
+    change path (the v14 rename); they are instead checked for content
+    identity by check_mode_authority."""
+    m = matrix if matrix is not None else authority_matrix()
+    tracked = set(git(repo, "ls-files").split())
+    out: set[str] = set()
+    for cls in AUTHORITY_CLASSES:
+        if m[(cls, "upgrade")] in PATH_PROTECTING_RIGHTS:
+            out |= {p for p in class_paths(repo, cls, fixture_meta) if p in tracked}
+    return sorted(out)
+
+
+def _head_real_file_content(repo: Path, path: str) -> bytes | None:
+    """HEAD's content for `path` if it was a REAL (non-symlink) file at
+    HEAD, else None (absent at HEAD, or a symlink — a symlinked entry
+    document has no content of its own to protect)."""
+    exists = subprocess.run(
+        ["git", "-C", str(repo), "cat-file", "-e", f"HEAD:{path}"],
+        capture_output=True).returncode == 0
+    if not exists:
+        return None
+    ls = subprocess.run(["git", "-C", str(repo), "ls-tree", "HEAD", path],
+                        capture_output=True, text=True).stdout
+    if not ls.strip() or ls.split()[0] != "100644":
+        return None
+    return subprocess.run(["git", "-C", str(repo), "show", f"HEAD:{path}"],
+                          capture_output=True).stdout
+
+
+def check_mode_authority(g: "Grader", repo: Path, mode: str,
+                         fixture_meta: dict | None = None,
+                         delegated: dict[str, str] | None = None) -> None:
+    """One assert per scenario: the run's tracked-file diff, restricted to
+    each artifact class, satisfies that class's cell for this mode.
+    Content-level proof for lossless-write / move-or-merge stays with the
+    scenario's fidelity asserts; this checks the SHAPE of the diff.
+      replace, lossless-write, move-or-merge -> any change
+      create-if-absent                       -> additions only
+      read-only, never-touch                 -> no change
+      link-only                              -> no change to the path itself
+    A content-protecting right (propose-only) is not a "no porcelain
+    change" rule — the v14 file-model rename (CLAUDE.md -> AGENTS.md,
+    symlink back) is lawful wiring under this right even though it is a
+    path change. Instead: for every path of the class that was a REAL file
+    at HEAD, its HEAD content must equal the post-run content of the
+    class's canonical file (symlinks resolved); the porcelain status of
+    the pair is not consulted. A content-protecting cell on a class absent
+    from CANONICAL_FILE (a malformed matrix) is reported as this same
+    assert's FAIL, not raised — a bad matrix must fail the grade, never
+    crash the grade run.
+
+    `delegated` maps a class to the mode whose column governs it for THIS
+    run, for the one case the law defines: restructure's `heal` action
+    "runs SKILL.md Steps 2-3 as-is", so the owned law and manifest it
+    rewrites are written under the upgrade column, not under
+    restructure's own `never-touch`. The caller derives the map from the
+    law (`restructure_heal_delegates`) and passes it only when the run
+    actually healed — a restructure that did not heal is still held to
+    its own column."""
+    try:
+        m = authority_matrix()
+    except ValueError as e:
+        g.check("mode_respects_authority", False, str(e))
+        return
+    status = {}
+    for line in git(repo, "status", "--porcelain", "--untracked-files=all").splitlines():
+        code, path = line[:2].strip(), line[3:]
+        if " -> " in path:                      # rename: both sides count
+            old, new = path.split(" -> ", 1)
+            status[old] = "D"; status[new] = "A"
+        else:
+            status[path] = "A" if code in ("??", "A") else ("D" if code == "D" else "M")
+    violations = []
+    try:
+        deleg = delegated or {}
+        for cls in AUTHORITY_CLASSES:
+            eff_mode = deleg.get(cls, mode)
+            right = m[(cls, eff_mode)]
+            if right in CONTENT_PROTECTING_RIGHTS:
+                canonical = CANONICAL_FILE.get(cls)
+                if canonical is None:
+                    raise ValueError(f"File authority: no canonical file for class {cls!r}")
+                resolved = (repo / canonical).resolve()
+                post_content = resolved.read_bytes() if resolved.exists() else None
+                for p in class_paths(repo, cls, fixture_meta):
+                    head_content = _head_real_file_content(repo, p)
+                    if head_content is None:
+                        continue
+                    if post_content is None or head_content != post_content:
+                        violations.append(
+                            f"{cls} × {eff_mode} = {right}, but {canonical} content changed (was HEAD:{p})")
+                continue
+            for p in class_paths(repo, cls, fixture_meta):
+                change = status.get(p)
+                if change is None:
+                    continue
+                if right in ("replace", "lossless-write", "move-or-merge"):
+                    continue
+                if right == "create-if-absent" and change == "A":
+                    continue
+                violations.append(f"{cls} × {eff_mode} = {right}, but {p} {change}")
+    except ValueError as e:
+        g.check("mode_respects_authority", False, str(e))
+        return
+    deleg_note = ("" if not delegated else
+                  " (" + ", ".join(f"{c} delegated to {mo}"
+                                   for c, mo in sorted(delegated.items())) + ")")
+    g.check("mode_respects_authority", not violations,
+            f"diff shape lawful for all {len(AUTHORITY_CLASSES)} classes in {mode} mode{deleg_note}"
+            if not violations else "; ".join(violations[:4]))
 
 
 def expected_stacks(fixture_meta: dict | None = None) -> list[str]:
@@ -128,6 +351,25 @@ def restructure_actions() -> set[str]:
     text = (SKILL / "references/restructure.md").read_text()
     section2 = text.split("## 2.", 1)[1].split("## 3.", 1)[0]
     return set(re.findall(r"^- \*\*(\w+)\*\*", section2, re.M))
+
+
+def restructure_heal_delegates() -> dict[str, str]:
+    """class -> the mode whose column governs that class during a
+    restructure run that heals, parsed from restructure.md §2's `heal`
+    bullet.
+
+    `heal` is the one restructure action that does not write under
+    restructure's own authority: it "runs SKILL.md Steps 2-3 as-is", i.e.
+    it invokes another column. The bullet says which one, per class, in
+    its `(authority: <class> x <mode>)` references — so the delegation is
+    derived from the law rather than restated here (POLICY §8).
+    """
+    text = (SKILL / "references/restructure.md").read_text()
+    section2 = text.split("## 2.", 1)[1].split("## 3.", 1)[0]
+    bullet = next((l for l in section2.splitlines()
+                   if l.startswith("- **heal**")), "")
+    return {cls.strip(): mode
+            for cls, mode in re.findall(r"\(authority: ([a-z ]+?) × ([a-z]+)", bullet)}
 
 
 # Migration fixture content that must never be silently dropped.
@@ -325,6 +567,7 @@ def grade_fresh(ws: Path) -> Grader:
     repo = ws / "fresh-scaffold-dotnet" / "repo"
     g = Grader()
     g.common_checks(repo)
+    check_mode_authority(g, repo, "scaffold")
     g.scaffold_checks(repo)
     g.no_unresolved_tokens(repo)
     return g
@@ -334,6 +577,7 @@ def grade_migration(ws: Path) -> Grader:
     repo = ws / "legacy-migration" / "repo"
     g = Grader()
     g.common_checks(repo)
+    check_mode_authority(g, repo, "migrate")
     g.scaffold_checks(repo)
     g.no_unresolved_tokens(repo)
     agents = (repo / "AGENTS.md").read_text() if (repo / "AGENTS.md").exists() else ""
@@ -390,6 +634,7 @@ def grade_migration_agents_first(ws: Path) -> Grader:
     repo = ws / "legacy-migration-agents-first" / "repo"
     g = Grader()
     g.common_checks(repo)
+    check_mode_authority(g, repo, "migrate")
     g.scaffold_checks(repo)
     g.no_unresolved_tokens(repo)
     agents = (repo / "AGENTS.md").read_text() if (repo / "AGENTS.md").exists() else ""
@@ -424,6 +669,7 @@ def grade_upgrade(ws: Path) -> Grader:
     meta = json.loads((ws / "upgrade" / "fixture_meta.json").read_text())
     g = Grader()
     g.common_checks(repo, expected_keep=meta.get("expected_keep", []), fixture_meta=meta)
+    check_mode_authority(g, repo, "upgrade", meta)
 
     withheld = repo / "docs/ai/rules/core" / meta["withheld_core_rule"]
     g.check("newly_added_rule_present", withheld.exists(),
@@ -478,15 +724,18 @@ def grade_upgrade(ws: Path) -> Grader:
                 "owned-path keep request refused with a reason" if refused
                 else "no refusal recorded for the owned-path keep request")
 
-    # Project-owned files must be untouched: tracked-file diff limited to them
-    # must be empty. Derived from the scaffold table (BL-036 Wave A): the
-    # entry-document pair is excluded — AGENTS.md only ever receives
-    # proposals and CLAUDE.md is a managed symlink, both legitimately
-    # change across a file-model upgrade.
-    protected = protected_project_files()
-    touched = [p for p in git(repo, "diff", "HEAD", "--name-only").splitlines() if p in protected]
-    g.check("project_owned_files_untouched", not touched,
-            "no tracked project-owned file modified" if not touched else f"modified: {touched}")
+    # Project-owned files must be untouched AT THEIR PATH — the set is
+    # derived from the file-authority matrix (BL-038): every class whose
+    # upgrade cell is a path-protecting right. AGENTS.md is absent because
+    # its cell is content-protected (propose-only); its content, not its
+    # path, is checked by mode_respects_authority above.
+    try:
+        protected = protected_project_files(repo, fixture_meta=meta)
+        touched = [p for p in git(repo, "diff", "HEAD", "--name-only").splitlines() if p in protected]
+        g.check("project_owned_files_untouched", not touched,
+                "no tracked project-owned file modified" if not touched else f"modified: {touched}")
+    except ValueError as e:
+        g.check("project_owned_files_untouched", False, str(e))
     return g
 
 
@@ -495,6 +744,7 @@ def grade_audit(ws: Path) -> Grader:
     meta = json.loads((ws / "rotted-layer" / "fixture_meta.json").read_text())
     report_path = ws / "rotted-layer" / "outputs" / "audit-report.md"
     g = Grader()
+    check_mode_authority(g, repo, "audit", meta)
 
     has_report = report_path.exists()
     report = report_path.read_text() if has_report else ""
@@ -568,9 +818,17 @@ def grade_restructure(ws: Path) -> Grader:
     meta = json.loads((ws / "restructure" / "fixture_meta.json").read_text())
     report_path = ws / "restructure" / "outputs" / "restructure-report.md"
     g = Grader()
-
     has_report = report_path.exists()
     report = report_path.read_text() if has_report else ""
+
+    # A `[heal]` item is the law's own delegation of the owned layer to the
+    # upgrade column (`references/restructure.md` §2) — those writes are
+    # not restructure's, so they are judged by the column heal invokes.
+    # No heal in the plan, no delegation: never-touch keeps its teeth.
+    check_mode_authority(g, repo, "restructure", meta,
+                         delegated=restructure_heal_delegates()
+                         if "[heal]" in report else None)
+
     g.check("restructure_report_saved", has_report,
             str(report_path) if has_report else f"missing: {report_path}")
 
@@ -793,10 +1051,96 @@ def grade_derivation_selftest() -> Grader:
     g.check("scaffold_artifacts_include_cases_home",
             "docs/cases/README.md" in SCAFFOLD_ARTIFACTS,
             "the v17 case home is in the derived list")
-    g.check("protected_excludes_entry_document_pair",
-            "AGENTS.md" not in protected_project_files()
-            and "CLAUDE.md" not in protected_project_files(),
-            "entry-document pair excluded from the protected set")
+    # File authority (BL-038): the table parses to the pinned shape, and
+    # the state header says which repo state each mode assumes.
+    try:
+        matrix = authority_matrix()
+        states = authority_states()
+        shape_err = ""
+    except ValueError as e:
+        matrix, states, shape_err = {}, {}, str(e)
+    g.check("authority_matrix_shape",
+            not shape_err and len(matrix) == len(AUTHORITY_CLASSES) * len(AUTHORITY_MODES),
+            f"{len(matrix)} cells, all in the closed vocabulary" if not shape_err else shape_err)
+    g.check("authority_states_pinned",
+            states == {"scaffold": "installing", "migrate": "installing",
+                       "upgrade": "maintaining", "restructure": "maintaining",
+                       "audit": "inspecting"},
+            f"states: {states}" if states else shape_err)
+    # Every content-protecting cell must name a class with a canonical
+    # file, or check_mode_authority has nothing to compare content
+    # against and would raise at grade time instead of at this selftest.
+    if matrix:
+        uncovered_content_cells = [
+            (cls, mo) for (cls, mo), right in matrix.items()
+            if right in CONTENT_PROTECTING_RIGHTS and cls not in CANONICAL_FILE
+        ]
+        g.check("content_protected_rights_have_canonical_file",
+                not uncovered_content_cells,
+                "every content-protecting cell's class has a canonical file"
+                if not uncovered_content_cells
+                else f"no canonical file for: {uncovered_content_cells}")
+    else:
+        g.check("content_protected_rights_have_canonical_file", False, shape_err)
+    # Two directions: AGENTS.md is absent from the PATH-protected set
+    # because its cell is content-protected (propose-only is in
+    # CONTENT_PROTECTING_RIGHTS, not PATH_PROTECTING_RIGHTS) — its content,
+    # not its path, is what check_mode_authority guards. Flip the cell to
+    # read-only (a path-protecting right) on a patched copy of the matrix
+    # and AGENTS.md must come back into the path-protected set. If either
+    # direction fails, the set is not being derived from the table.
+    if matrix:
+        flipped = dict(matrix)
+        flipped[("entry document", "upgrade")] = "read-only"
+        with tempfile.TemporaryDirectory() as td:
+            scratch = Path(td) / "repo"
+            shutil.copytree(EVALS / "fixtures" / "upgrade-base", scratch)
+            (scratch / "AGENTS.md").write_text("# stub\n")
+            subprocess.run(["git", "-C", str(scratch), "init", "-q"], check=True)
+            subprocess.run(["git", "-C", str(scratch), "add", "-A"], check=True)
+            real = protected_project_files(scratch, None, matrix)
+            patched = protected_project_files(scratch, None, flipped)
+        derived = ("AGENTS.md" not in real
+                   and matrix[("entry document", "upgrade")] == "propose-only"
+                   and "AGENTS.md" in patched)
+        g.check("protected_set_derived_from_cells", derived,
+                f"real={'AGENTS.md' in real}, flipped={'AGENTS.md' in patched}")
+    else:
+        g.check("protected_set_derived_from_cells", False, shape_err)
+    # Symlink-at-HEAD regression coverage (Important finding #2, Task 5 fix
+    # round 2): the 100644-vs-120000 filter in _head_real_file_content has
+    # no automated coverage without this. Build a tiny repo whose HEAD is
+    # already the v14 steady state — AGENTS.md a real file, CLAUDE.md its
+    # symlink — and prove check_mode_authority behaves correctly in both
+    # directions: untouched passes; an edit to AGENTS.md is flagged by name
+    # (not by CLAUDE.md's symlink entry, which the filter must ignore).
+    with tempfile.TemporaryDirectory() as td:
+        sym_repo = Path(td) / "repo"
+        sym_repo.mkdir()
+        subprocess.run(["git", "-C", str(sym_repo), "init", "-q"], check=True)
+        (sym_repo / "AGENTS.md").write_text("# A\n")
+        (sym_repo / "CLAUDE.md").symlink_to("AGENTS.md")
+        subprocess.run(["git", "-C", str(sym_repo), "add", "-A"], check=True)
+        subprocess.run(["git", "-C", str(sym_repo),
+                        "-c", "user.email=eval@local", "-c", "user.name=eval",
+                        "commit", "-q", "-m", "seed: v14 steady state"], check=True)
+
+        g_untouched = Grader()
+        check_mode_authority(g_untouched, sym_repo, "upgrade")
+        untouched_exp = g_untouched.exps[0]
+        untouched_ok = untouched_exp["passed"]
+
+        (sym_repo / "AGENTS.md").write_text("# A\nextra\n")
+        g_edited = Grader()
+        check_mode_authority(g_edited, sym_repo, "upgrade")
+        edited_exp = g_edited.exps[0]
+        edited_flagged = (not edited_exp["passed"]
+                          and "AGENTS.md content changed" in edited_exp["evidence"])
+
+        symlink_ok = untouched_ok and edited_flagged
+        g.check("content_check_ignores_symlink_at_head", symlink_ok,
+                f"untouched: {'ok' if untouched_ok else 'FAIL ' + untouched_exp['evidence']}; "
+                f"content-changed: {'flagged' if edited_flagged else 'FAIL ' + edited_exp['evidence']}")
     wiring = migration_wiring()
     g.check("migration_wiring_derived_from_template",
             "@docs/okf/codebase-map.md" in wiring and "## Boundaries" in wiring,
@@ -813,6 +1157,16 @@ def grade_derivation_selftest() -> Grader:
     g.check("restructure_actions_derived",
             actions == {"move", "merge", "link", "fix", "heal", "decision"},
             f"closed action set parsed: {sorted(actions)}")
+    # §2's heal bullet is the only place the law delegates a class to
+    # another mode's column; the grader reads the delegation there instead
+    # of restating it. Every class Steps 2-3 write must carry its cell
+    # reference in that bullet, or mode_respects_authority will judge a
+    # lawful delegated write against restructure's own column.
+    heal = restructure_heal_delegates()
+    heal_ok = heal == {"owned law": "upgrade", "manifest": "upgrade"}
+    g.check("heal_delegation_derived", heal_ok,
+            f"heal delegates {heal} to the upgrade column" if heal_ok
+            else f"heal bullet delegates {heal} — expected owned law and manifest to the upgrade column")
     # §1 lock (BL-036 Wave B): the standard-layout table must carry the
     # cases row and the legacy qualifiers — the grader's relocation
     # expectations are only lawful while the table says so.
@@ -833,6 +1187,7 @@ def grade_upgrade_drop_stack(ws: Path) -> Grader:
     meta = json.loads((ws / "upgrade-drop-stack" / "fixture_meta.json").read_text())
     g = Grader()
     g.common_checks(repo, expected_keep=meta.get("expected_keep", []), fixture_meta=meta)
+    check_mode_authority(g, repo, "upgrade", meta)
 
     dropped_left = [p for p in meta["dropped_stack_files"] if (repo / p).exists()]
     g.check("dropped_stack_files_deleted", not dropped_left,
