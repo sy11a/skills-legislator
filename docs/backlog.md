@@ -85,6 +85,10 @@ Gate 0/1 — that ordering is what makes the parallelism safe.
 - **After v20:** BL-034 (self-legislation, depends on OKF v2, not on an
   edition number), then BL-027 (outer placement mode, needs its own design
   cycle first).
+- **Cross-harness context control (raised 2026-08-23, while v20 was in
+  flight):** BL-044 (research, runs any time and feeds the other two) →
+  BL-045 (the owned import index) → BL-046 (the context-scope law, its own
+  edition). BL-046 is recommended **before** BL-043 — see its entry.
 - **Off the edition track:** BL-035 (docs-only, runs any time), BL-039 and
   BL-040 (repository-level operations, each wanting a deliberate moment).
 
@@ -1709,6 +1713,53 @@ copy of a fact `grade-history.jsonl` owns. The guard and the stamp make
 divergence loud, not impossible. Collapsing the two — the dashboard reading
 the append-only record and `grading.json` becoming a derived cache or
 disappearing — is the real fix, and it is a bigger change than this one.
+
+## BL-044 — Cross-harness parity: the asymmetry study and channel subtraction
+
+**Status: PROPOSED 2026-08-23** — research case (no `skill/` change, no VERSION, no benchmark; its deliverable is a spec the two cases below consume). Raised while v20 was in flight, from a review of how Claude Code and opencode each assemble a session's context.
+
+**What:** establish by experiment — not by reading either tool's documentation — what each harness actually loads and what can be prevented from loading, then record the findings as a spec.
+
+Three questions, each answered by a reproducible probe:
+
+1. **What is actually eager, per harness, in a legislated repo.** Claude Code concatenates from the filesystem root down (managed policy → user scope → project → `CLAUDE.local.md`) and expands `@`-imports recursively; opencode walks up from the working directory and takes the **first** entry document it finds, then adds `instructions` from `opencode.json`. Measure both with a canary token planted per file, so the answer is observed rather than inferred.
+2. **What can be subtracted.** `claudeMdExcludes` (glob over absolute paths) and `OPENCODE_DISABLE_CLAUDE_CODE`. For each: what it removes, whether it can be set from inside the repository or only per machine, whether the legislator may own that setting, and what remains unremovable — a user's own `~/.claude/CLAUDE.md` is expected to be unremovable; confirm it rather than assume it.
+3. **Where the two diverge in our own delivery today.** Three are known and to be confirmed and completed: the glossary is listed in `opencode.json`'s `instructions` but is not `@`-imported by `AGENTS.md.tpl`; a newly subscribed stack is picked up automatically by opencode's `stacks/*/*.md` glob but needs an `@import` line in the entry document that an upgrade may only *propose* (authority: entry document × upgrade); a nested entry document in a monorepo is additive under Claude Code and substitutive under opencode.
+
+**Why:** the two harnesses must be interchangeable — the same repository must govern a session identically whichever tool opens it. That is asserted today and never measured, and the glossary divergence is proof the assertion does not enforce itself. It is also the only honest input for a law: a rule written from documentation is a rule about documentation.
+
+**Done when:** a spec under `docs/superpowers/specs/` records, per harness, the observed eager set, each removable channel with its mechanism, and the unremovable remainder; every claim in it is backed by a probe another person can re-run; the three known divergences are confirmed or corrected; and each finding is marked enforceable-by-the-legislator or advisory-for-the-owner.
+
+## BL-045 — One declaration, two projections: the owned import index
+
+**Status: PROPOSED 2026-08-23** — behavioral (`skill/` changes, VERSION bump + full e2e). The mechanism was settled in discussion 2026-08-23; the cycle it rides is not.
+
+**What:** the eager set stops being two hand-maintained lists and becomes one machine-written declaration with a projection per harness.
+
+- A new owned file, `docs/ai/rules/index.md`, lists every delivered rule as an `@`-import. Step 3 writes it like any other owned file and rewrites it on every run.
+- `AGENTS.md` carries exactly one wiring line — `@docs/ai/rules/index.md` — written once at scaffold and never edited again (`@`-imports resolve recursively).
+- `opencode.json`'s `instructions` remains the second projection, and a static check derives both from the same source and fails on divergence — the pattern BL-038 established for the file-authority table.
+
+**Why:** three problems collapse into one fix. Parity stops being something to check and becomes structural. The **propose-only bottleneck disappears**: today a newly subscribed stack loads immediately under opencode and only after the owner applies a proposed `@import` line under Claude Code, so the repository is governed differently by the two tools for as long as that proposal sits unapplied. And the entry document stops carrying machine wiring at all, becoming what it is meant to be — project-instance data.
+
+**Done when:** `docs/ai/rules/index.md` ships as an owned file and appears in `ownedFiles`; `AGENTS.md.tpl` carries one import line in place of the block; adding or dropping a stack changes the eager set in both harnesses with no owner action; the static check derives both projections from one source; and the corpus carries an assert that a stack added during an upgrade is loaded by both wirings without any applied proposal.
+
+## BL-046 — Context-scope law: four classes, enforced and advisory, proven by canary
+
+**Status: PROPOSED 2026-08-23** — behavioral, its own edition. Depends on BL-044's findings and is cleanest after BL-045's single declaration. Recommended **before** BL-043: that case introduces a new artifact class into every repository, and without this law the question "is the baseline eager?" gets answered in passing — which is exactly how the glossary divergence happened.
+
+**What:** context becomes a governed resource, with a declared scope per artifact class, stated in `core/`:
+
+- **eager** — the law and the entry document: loaded every session, in both harnesses, identically.
+- **lazy** — reached only when needed. Our lazy channel is **skills, and only skills**: path-scoped rules exist in Claude Code and have no opencode equivalent, so any economy taken through them yields a repository governed strictly under one tool and loosely under the other, silently.
+- **deliberately excluded** — named, with the subtraction mechanism per harness (BL-044 supplies them), and an honest split between what the legislator can enforce and what only the repo owner can.
+- **dynamically added on scope growth** — a newly subscribed stack, and any future class, enters the eager set in both harnesses at once (BL-045 is what makes this true).
+
+The law states the classes; the evals prove the loading. Static checks prove the declared set matches the wirings. A **canary scenario** proves the loaded set matches the declaration: a unique token per class, and the agent is asked which tokens it can see without opening a file — eager tokens must be named, lazy must not be, excluded must not surface even under a follow-up question.
+
+**Why:** an always-on layer competes with itself for attention — a constitution is obeyed less the longer it grows, which is why ours holds at roughly 217 lines across nine repositories. Lazy loading here is not a saving on tokens but a defence of the law against dilution. And a scope that is declared but never measured drifts: "documented as lazy, in fact always loaded" is invisible precisely because everything appears to work.
+
+**Done when:** the class law ships in `core/` with the enforced/advisory split stated; the subtraction mechanisms are wired wherever the legislator owns them; the canary scenario is in the corpus and goes red when a class is mis-declared; and `docs/philosophy.md` records that skills are the only lawful lazy channel.
 
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
 
