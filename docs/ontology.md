@@ -36,7 +36,7 @@ Flow directions:
 - **constitution** — `docs/ai/rules/**` @ VERSION: core rules plus the
   subscribed stacks' rules, delivered as one edition. The word means exactly
   this and nothing else (R1-T1). The former loose usage for `AGENTS.md`
-  ("constitution file") is retired; prose cleanup is queued (BL-030).
+  ("constitution file") is retired — swept in v17–v18.
 - **AGENTS.md** — the repo's entry document. The filename is the term
   (industry convention); it carries no second name. Its role — the single
   entry point a session reads first, importing the constitution and carrying
@@ -46,8 +46,8 @@ Flow directions:
 - **project rules** — `.claude/rules/**`: project-authored law, local to one
   repo, subordinate to the constitution.
 - **manifest** — `docs/ai/manifest.json`, the install record:
-  `legislatorVersion`, the stack subscription (key currently `profiles` —
-  legacy key name, concept is stacks; rename queued, BL-028), `keep`,
+  `legislatorVersion`, the stack subscription (`stacks`; a legacy manifest
+  may carry it as `profiles`, read as the same field), `keep`,
   `ownedFiles`.
 
 ### Manifest key conventions
@@ -59,17 +59,25 @@ Flow directions:
   asymmetry with `ownedFiles` is deliberate and follows the semantic one:
   inventory vs order.
 - **owned vs project-owned** — the standing distinction for who commands a
-  file. Owned (machine): `docs/ai/rules/**`, `opencode.json` — never
-  hand-edited, refreshed by re-run. Project-owned: everything else; the keep
-  list protects named project-owned files from restructure.
+  file. Owned (machine): `docs/ai/rules/**`, `docs/ai/engine.py`,
+  `opencode.json` — never hand-edited, refreshed by re-run. Project-owned:
+  everything else; the keep list protects named project-owned files from
+  restructure.
 - **generated** — the third ownership class (decided 2026-08-20, deep-audit
-  D2): artifacts written by a machine **locally in the repo**, not delivered
-  from the center and not hand-maintained — `baseline.md` (from annotated
-  tests), the generated halves of OKF v2 (codebase-map, index). Properties:
-  do-not-edit, regenerated from their source on demand, die together with
-  their source; not listed in `ownedFiles` (nothing is byte-copied onto
-  them), not keepable. The artifact-lifecycle law names them a role class
-  of their own — neither reference nor lifecycle in the hand-written sense.
+  D2; scoped 2026-08-23, BL-033): artifacts written by a machine **locally
+  in the repo**, not delivered from the center and not hand-maintained.
+  Properties: do-not-edit, regenerated from their source on demand, die
+  together with their source; not listed in `ownedFiles` (nothing is
+  byte-copied onto them), not keepable. The class is **declared and
+  unpopulated**: `baseline.md` (from annotated tests) is its first member and
+  arrives with BL-043. `codebase-map.md` and `index.md` are *not* members —
+  D2 assumed they were, and the fleet showed otherwise: their rows carry
+  judgment a generator would destroy, while their structure is already
+  machine-checked (audit checks 6 and 5). They are anchored instead.
+- **anchored** — a reference document bonded to code by its own text: every
+  path and PascalCase symbol it backticks resolves in its repository,
+  verified by `docs/ai/engine.py anchors`. The OKF bundle's default class;
+  `glossary.md` and `log.md` are the human-class exceptions.
 
 ### Work
 

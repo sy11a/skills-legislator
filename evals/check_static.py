@@ -120,6 +120,23 @@ if horizon:
                   f"Horizon's {case} is still open",
                   f"backlog says {status} — the closing edition must drop it from the Horizon")
 
+print("== engine is an owned, delivered artifact ==")
+engine_src = SKILL / "assets" / "engine" / "engine.py"
+check(engine_src.exists(), "assets/engine/engine.py exists")
+if engine_src.exists():
+    eng = engine_src.read_text()
+    check(eng.startswith("#!/usr/bin/env python3"), "engine has a python3 shebang")
+    STDLIB_OK = {"re", "sys", "subprocess", "pathlib", "datetime", "__future__"}
+    imported = set(re.findall(r"^\s*(?:from|import)\s+([a-zA-Z_][\w.]*)", eng, re.M))
+    check(imported <= STDLIB_OK, "engine imports only stdlib modules",
+          f"unexpected: {sorted(imported - STDLIB_OK)}")
+    for job in ("anchors", "okf-debt"):
+        check(f'"{job}"' in eng, f"engine declares the {job} job")
+check("assets/engine/engine.py" in skill_md,
+      "SKILL.md Step 3 names the engine source", "Step 3 does not deliver it")
+check("docs/ai/engine.py" in skill_md,
+      "SKILL.md names the delivered engine path")
+
 print("== file authority: one table, no prose rights ==")
 # BL-038: the `## File authority` table is the only place in the skill
 # that states what a mode may do to a file. The grader derives from it;

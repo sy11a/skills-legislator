@@ -79,12 +79,24 @@ Gate 0/1 — that ordering is what makes the parallelism safe.
   the edition that writes the most new prose, and BL-033's own entry asks
   for an empty landing. No fleet sweep for v19 on its own — upgrade is
   cumulative, the fleet moves 18 → 20 in one pass when BL-033 lands.
-- **v20 — OKF v2 and the one engine.** **BL-033** alone, for the reason its
-  own entry gives: a transform of what "docs" means across the fleet must
-  not share a landing with anything else.
-- **After v20:** BL-034 (self-legislation, depends on OKF v2, not on an
-  edition number), then BL-027 (outer placement mode, needs its own design
-  cycle first).
+- **v20 — OKF v2 and the one engine.** **BL-033** (docs half): the OKF v2
+  decomposition and the anchored class, for the reason its own entry gives:
+  a transform of what "docs" means across the fleet must not share a
+  landing with anything else.
+- **v21 — generated baseline and the spec/plan linter.** **BL-043** alone:
+  the baseline generator, the linter, and the `generated` role class's
+  first member.
+- **After v21:** BL-034 (self-legislation, depends on OKF v2 *and* the
+  generated class, not on an edition number), then BL-027 (outer placement
+  mode, needs its own design cycle first).
+- **Cross-harness context control (raised 2026-08-23, while v20 was in
+  flight):** BL-044 (research, runs any time and feeds the other two) →
+  BL-045 (the owned import index) → BL-046 (the context-scope law, its own
+  edition). BL-046 is recommended **before** BL-043 — see its entry.
+- **Spikes (raised 2026-08-23, toward the framework goal):** BL-047 (the
+  decision inventory — what is still model-decided), BL-048 (per-job model
+  floor), BL-049 (report derivability). Each is time-boxed, produces an
+  answer rather than code, and sizes the cases that follow it.
 - **Off the edition track:** BL-035 (docs-only, runs any time), BL-039 and
   BL-040 (repository-level operations, each wanting a deliberate moment).
 
@@ -1162,50 +1174,44 @@ law passes analyze; a converged case shows the append-only findings
 trail); BL-028/030 riding items verified; fleet re-run delivers the rule
 everywhere.
 
-## BL-033 — OKF v2 + the one engine: generated baseline, source anchors, spec linter (fleet-obs pilot)
+## BL-033 — OKF v2 and the anchor engine: link hardness, source anchors, the static rung
 
-**Status: queued 2026-08-20 → edition v20 (moved from v18 to v19 on 2026-08-22 when the v18 scope was decided, and to v20 on 2026-08-23 when BL-041 took v19 on its own: v18 carries the rights-and-names group, and this case keeps the isolated landing its own entry argues for — behavioral: skill/ changes, VERSION bump + full e2e)**
+**Status: GREEN 2026-08-23 — corpus 194/194 and idempotency ×3 zero-diff on one law generation (`9dbb306`); model floor `sonnet` (Claude Code 2.1.241), unchanged from v17, v18 and v19. Benchmark `evals/benchmarks/v20.md`. Edition v20 closes at merge; tag `v20`.**
 
-**What:** two interlocking pieces from deep-audit D2/D4. (1) **OKF v2
-decomposition by link hardness**: generated (baseline.md from annotated
-tests; codebase-map from code; index from docs), anchored (concept docs
-stay handwritten but every backticked symbol/path is verified against
-src/ — source-symbol grounding), human (glossary, log) — codified as an
-amendment to `core/okf.md`, migrating the fleet forward-only. The
-**generated** role class enters `core/artifact-lifecycle.md` here in
-full (BL-032 seeds the class; this edition populates it with real
-artifacts and regeneration rules). (2) **The G7 engine — one tool, three
-jobs**: spec/plan linter (dangling R-NNN, coverage R↔task, unresolved
-placeholders), OKF anchor checker, and baseline generator (EARS ids from
-specs ↔ annotated tests → generated `baseline.md`, do-not-edit; converge
-consumes its both-direction gaps; the engine takes its place on the
-verification ladder as a static rung — bindings in `core/verification`
-project rules, absent-engine fallback per BL-032's clause). Includes the
-G1 architecture-D pilot in **fleet-obs** (R-NNN + annotated tests + baseline +
-converge end to end in the smallest active repo, home of the proto-EARS
-Testing lines) and the new audit check "OKF-sync debt" (commits touching
-concept files after a doc's timestamp with no linked OKF update; repair
-via restructure only). Legalizes the open "OKF content-accuracy" note
-below into a designed mechanism. **fleet-obs accounting:** the registry gains
-a `generated` content-type, and the gold-panel docs-vs-code metric
-excludes generated writes — machine-written baseline/map entries must
-not read as documentation discipline, or the panel lies after rollout.
+**What:** OKF v2 decomposition by link hardness — generated, anchored,
+human — codified as an amendment to `core/okf.md`. The **anchored** class
+ships in full this edition: every backticked path and PascalCase symbol a
+knowledge document names is verified against the repository by the new
+engine, `docs/ai/engine.py` (the first non-markdown asset the skill ships,
+delivered by Step 3, listed in `ownedFiles`, byte-verified by audit check
+3). Two new audit checks, 15 (`okf-anchors`) and 17 (`okf-sync-debt`);
+anchor and debt findings route through restructure to the team.
+`codebase-map.md` and `index.md` are **anchored, not generated** —
+correcting deep-audit D2's assumption: the fleet showed their rows carry
+judgment a generator would destroy, while their row set is already
+machine-checked (audit checks 6 and 5). The **generated** role class is
+declared in `core/artifact-lifecycle.md` but stays unpopulated: the
+baseline generator, the spec/plan linter, and the fleet-obs registry
+accounting this entry used to describe move to **BL-043** (edition v21).
 BL-031 rides this cycle if it touches the backlog template.
 
-**Why:** hand-maintained truth always rots — fleet-api's six docs about
-a removed model proved it in our own fleet; our rot-free artifacts (law
-stratum, manifest) are machine-written. Generation gives norms and maps
-a mechanical bond to code; anchors make the remaining handwritten layer
-detectably stale instead of silently wrong; one engine avoids three
-half-maintained tools. Its own edition (v18) because a transform of what
-"docs" means across nine repos must not share a landing with the new
-process law — a failure here must not roll the SDD law back with it.
+**Why:** hand-maintained truth always rots — six documents in `fleet-api`
+describing a removed model proved it in our own fleet, while our rot-free
+artifacts (the law stratum, the manifest) are the machine-written ones.
+Anchors give the handwritten knowledge layer a mechanical bond to the code
+it describes: a document naming a symbol the source no longer contains
+becomes detectably stale instead of silently wrong. Its own edition because
+a transform of what "docs" means across nine repositories must not share a
+landing with anything else — a failure here must not roll another law back
+with it.
 
-**Done when:** the engine exists and passes its own verification ladder;
-the fleet-obs pilot shows a converged case with a regenerated baseline and
-both-direction converge findings; OKF v2 template + rule amendment
-shipped with VERSION bump and green e2e benchmark; fleet re-run
-migrates repos forward-only (no history rewritten).
+**Done when:** the engine ships as an owned file and both its jobs run
+read-only in a legislated repository; the OKF v2 amendment and the static
+rung ship with a VERSION bump and a green e2e benchmark; the two audit
+checks are each exercised by a planted defect and route through restructure
+to the team. The fleet-obs pilot and the fleet sweep run after the merge and
+are not gates on the edition; the baseline half of the original entry is
+BL-043's.
 
 ## BL-034 — Self-legislation: the legislator repo joins its own fleet
 
@@ -1709,6 +1715,188 @@ copy of a fact `grade-history.jsonl` owns. The guard and the stamp make
 divergence loud, not impossible. Collapsing the two — the dashboard reading
 the append-only record and `grading.json` becoming a derived cache or
 disappearing — is the real fix, and it is a bigger change than this one.
+
+## BL-043 — Generated baseline and the spec/plan linter (edition v21)
+
+**Status: queued 2026-08-23 → edition v21**
+
+**What:** the baseline generator (`R-NNN` ↔ annotated tests →
+`docs/ai/baseline.md`), the linter and its binding in `core/sdd.md`'s
+analyze gate, the population of the `generated` role class in
+`core/artifact-lifecycle.md`, and the fleet-obs registry `generated`
+content-type with its gold-panel exclusion.
+
+## BL-044 — Cross-harness parity: the asymmetry study and channel subtraction
+
+**Status: PROPOSED 2026-08-23** — research case (no `skill/` change, no VERSION, no benchmark; its deliverable is a spec the two cases below consume). Raised while v20 was in flight, from a review of how Claude Code and opencode each assemble a session's context.
+
+**What:** establish by experiment — not by reading either tool's documentation — what each harness actually loads and what can be prevented from loading, then record the findings as a spec.
+
+Three questions, each answered by a reproducible probe:
+
+1. **What is actually eager, per harness, in a legislated repo.** Claude Code concatenates from the filesystem root down (managed policy → user scope → project → `CLAUDE.local.md`) and expands `@`-imports recursively; opencode walks up from the working directory and takes the **first** entry document it finds, then adds `instructions` from `opencode.json`. Measure both with a canary token planted per file, so the answer is observed rather than inferred.
+2. **What can be subtracted.** `claudeMdExcludes` (glob over absolute paths) and `OPENCODE_DISABLE_CLAUDE_CODE`. For each: what it removes, whether it can be set from inside the repository or only per machine, whether the legislator may own that setting, and what remains unremovable — a user's own `~/.claude/CLAUDE.md` is expected to be unremovable; confirm it rather than assume it.
+3. **Where the two diverge in our own delivery today.** Three are known and to be confirmed and completed: the glossary is listed in `opencode.json`'s `instructions` but is not `@`-imported by `AGENTS.md.tpl`; a newly subscribed stack is picked up automatically by opencode's `stacks/*/*.md` glob but needs an `@import` line in the entry document that an upgrade may only *propose* (authority: entry document × upgrade); a nested entry document in a monorepo is additive under Claude Code and substitutive under opencode.
+
+**Why:** the two harnesses must be interchangeable — the same repository must govern a session identically whichever tool opens it. That is asserted today and never measured, and the glossary divergence is proof the assertion does not enforce itself. It is also the only honest input for a law: a rule written from documentation is a rule about documentation.
+
+**Done when:** a spec under `docs/superpowers/specs/` records, per harness, the observed eager set, each removable channel with its mechanism, and the unremovable remainder; every claim in it is backed by a probe another person can re-run; the three known divergences are confirmed or corrected; and each finding is marked enforceable-by-the-legislator or advisory-for-the-owner.
+
+## BL-045 — One declaration, two projections: the owned import index
+
+**Status: PROPOSED 2026-08-23** — behavioral (`skill/` changes, VERSION bump + full e2e). The mechanism was settled in discussion 2026-08-23; the cycle it rides is not.
+
+**What:** the eager set stops being two hand-maintained lists and becomes one machine-written declaration with a projection per harness.
+
+- A new owned file, `docs/ai/rules/index.md`, lists every delivered rule as an `@`-import. Step 3 writes it like any other owned file and rewrites it on every run.
+- `AGENTS.md` carries exactly one wiring line — `@docs/ai/rules/index.md` — written once at scaffold and never edited again (`@`-imports resolve recursively).
+- `opencode.json`'s `instructions` remains the second projection, and a static check derives both from the same source and fails on divergence — the pattern BL-038 established for the file-authority table.
+
+**Why:** three problems collapse into one fix. Parity stops being something to check and becomes structural. The **propose-only bottleneck disappears**: today a newly subscribed stack loads immediately under opencode and only after the owner applies a proposed `@import` line under Claude Code, so the repository is governed differently by the two tools for as long as that proposal sits unapplied. And the entry document stops carrying machine wiring at all, becoming what it is meant to be — project-instance data.
+
+**Done when:** `docs/ai/rules/index.md` ships as an owned file and appears in `ownedFiles`; `AGENTS.md.tpl` carries one import line in place of the block; adding or dropping a stack changes the eager set in both harnesses with no owner action; the static check derives both projections from one source; and the corpus carries an assert that a stack added during an upgrade is loaded by both wirings without any applied proposal.
+
+## BL-046 — Context-scope law: four classes, enforced and advisory, proven by canary
+
+**Status: PROPOSED 2026-08-23** — behavioral, its own edition. Depends on BL-044's findings and is cleanest after BL-045's single declaration. Recommended **before** BL-043: that case introduces a new artifact class into every repository, and without this law the question "is the baseline eager?" gets answered in passing — which is exactly how the glossary divergence happened.
+
+**What:** context becomes a governed resource, with a declared scope per artifact class, stated in `core/`:
+
+- **eager** — the law and the entry document: loaded every session, in both harnesses, identically.
+- **lazy** — reached only when needed. Our lazy channel is **skills, and only skills**: path-scoped rules exist in Claude Code and have no opencode equivalent, so any economy taken through them yields a repository governed strictly under one tool and loosely under the other, silently.
+- **deliberately excluded** — named, with the subtraction mechanism per harness (BL-044 supplies them), and an honest split between what the legislator can enforce and what only the repo owner can.
+- **dynamically added on scope growth** — a newly subscribed stack, and any future class, enters the eager set in both harnesses at once (BL-045 is what makes this true).
+
+The law states the classes; the evals prove the loading. Static checks prove the declared set matches the wirings. A **canary scenario** proves the loaded set matches the declaration: a unique token per class, and the agent is asked which tokens it can see without opening a file — eager tokens must be named, lazy must not be, excluded must not surface even under a follow-up question.
+
+**Why:** an always-on layer competes with itself for attention — a constitution is obeyed less the longer it grows, which is why ours holds at roughly 217 lines across nine repositories. Lazy loading here is not a saving on tokens but a defence of the law against dilution. And a scope that is declared but never measured drifts: "documented as lazy, in fact always loaded" is invisible precisely because everything appears to work.
+
+**Done when:** the class law ships in `core/` with the enforced/advisory split stated; the subtraction mechanisms are wired wherever the legislator owns them; the canary scenario is in the corpus and goes red when a class is mis-declared; and `docs/philosophy.md` records that skills are the only lawful lazy channel.
+
+## BL-047 — Spike: the decision inventory — what is still decided by a model
+
+**Status: SPIKE PROPOSED 2026-08-23** — exploration (the spec type `core/sdd.md` names), time-boxed, no `skill/` change, no VERSION, no benchmark. Its deliverable is an answer, not code.
+
+**The question:** which decisions in this system are taken by a model, and which of them could be taken by code instead?
+
+**The probe:** classify every line of the delivered law (`assets/rules/**` — 217 lines of core plus the stack rules) and every decision point in `SKILL.md`'s procedure into three buckets: **(a)** already enforced by a check, a hook or the engine; **(b)** enforceable by a check that does not exist yet — name the check and estimate its cost; **(c)** genuinely needs interpretation. Count the buckets and rank bucket (b) by how often the decision is taken.
+
+**What the answer decides:** the achievable size of the constitution, and the order in which the engine should grow. Every line moved from (b) to (a) removes a place where a run can deviate, which is the entire content of "predictable output". It also tests a claim this repo has never checked: that its law is *enforceable* law. A rule sitting in (c) that nobody can adjudicate is not law, it is advice — and advice in an always-on file is dilution.
+
+**Why a spike and not a case:** the ranked list is what tells us whether the constitution can shrink by ten lines or by a hundred. Those two answers imply completely different roadmaps, and neither is guessable from here.
+
+**Stop condition:** the inventory is the deliverable. No check is written inside this spike; each bucket-(b) entry becomes its own case, sized from the measurement.
+
+## BL-048 — Spike: per-job model floor — can a small local model take the classification work?
+
+**Status: SPIKE PROPOSED 2026-08-23** — exploration, time-boxed, no `skill/` change, no VERSION, no benchmark.
+
+**The question:** is there any job in this pipeline where a small local model matches the current floor's quality — or is `sonnet` the floor because every job needs judgement?
+
+**The probe:** the pipeline mixes two kinds of work that today share one model. **Judgement** — deciding a restructure plan, splitting a legacy entry document three ways, executing a case under the SDD law. **Classification** — "is this line law-shaped?" (the constitution-candidates test and audit check 12 use the same test), and glossary term extraction. Only the second kind is a candidate. Build a labelled set from fixtures that already exist: the rotted fixture plants law-shaped lines, project-instance lines that must *not* be proposed, and one line suppressed by the not-law marker — the graders' expectations are the labels. Run candidate local models against it and measure agreement with the current floor.
+
+**What the answer decides:** whether "model floor" becomes a per-job property instead of a per-edition one. If it does, the cheap jobs move off the paid model and the corpus gets cheaper to run, which is what makes a larger corpus affordable. If it does not, the answer is worth having in writing so nobody re-opens it.
+
+**Stop condition:** the measured table is the deliverable. No routing is wired, no rule changes; a positive result becomes its own case.
+
+## BL-049 — Spike: how much of the Step 7 report is machine-derivable?
+
+**Status: SPIKE PROPOSED 2026-08-23** — exploration, time-boxed, no `skill/` change, no VERSION, no benchmark.
+
+**The question:** what fraction of a Step 7 report could the engine print from the run's own facts, and where exactly is the seam with the parts that need a model?
+
+**The probe:** take the reports the corpus already produces (fresh scaffold, both migrations, upgrade, stack drop) and classify every line as derivable from facts the run already holds — files created, overwritten, deleted, the keep-list delta, the health checks — or as requiring prose judgement, which is essentially the constitution-candidates section. Then count how many existing grader asserts exist *only* because a model composes the report: the pinned heading levels, the byte-for-byte section names, the order-independence workarounds.
+
+**What the answer decides:** whether the report emitter is a large win or a small one. The suspicion worth testing is that a large share of this repository's historical benchmark defects were report-*shape* defects — a drifted heading level, a missing section, an order-sensitive marker — and that a printed skeleton would delete that entire class along with the asserts guarding it.
+
+**Stop condition:** the classification and the assert count are the deliverable. No emitter is written.
+
+## BL-050 — Stage 1 must verify the workspace was materialized before an hour of agent runs starts
+
+**Status: PROPOSED 2026-08-23** — evals/tooling only, no VERSION, no benchmark.
+
+**What:** `tools/evals-bg.sh` spends an hour of agent runs without ever
+checking that the workspace was materialized. On 2026-08-23 it graded
+`upgrade` 21/21 CLEAN and `legacy-migration-agents-first` 22/22 CLEAN
+against fixtures of unknown provenance, and nothing objected. The remedy is
+a precondition at stage 1 — every scenario directory holds a `repo/`
+carrying an `eval-base` tag, else exit non-zero — which converts an hour of
+waste into an instant error and closes a path on which a benchmark can read
+green while measuring nothing.
+
+**Why:** found by the v20 cycle (`evals/benchmarks/v20.md`, "Harness
+finding"). The first corpus attempt (`20260823-1716`) was launched against
+a workspace that had never been materialized — `evals/README.md` step 1 is
+`python3 evals/setup_workspace.py <ws>` and the runner does not do it
+itself. Agents improvised in absent repositories and two scenarios had no
+`repo/` directory at all, yet two other scenarios graded CLEAN anyway. An
+hour of agent runs ran to completion with no check standing between a
+missing workspace and a green verdict.
+
+**Done when:** stage 1 of `tools/evals-bg.sh` refuses to proceed — before
+any scenario agent runs — unless every scenario directory it is about to
+use holds a `repo/` carrying the `eval-base` tag, printing which
+directories failed the check and exiting non-zero.
+
+## BL-051 — v20 final-review residue (edition v21)
+
+**Status: PROPOSED 2026-08-23** — behavioral (`skill/` changes, VERSION
+bump + full e2e — which is exactly why it is not being done now).
+
+**What:** five findings from the v20 final review, none acted on in v20 so
+the edition's benchmark record (measured against law generation
+`v20-9dbb306-g22c1e5f`) would stay valid:
+
+1. **`status: removed` documents can never be clean, and the rung is
+   global.** `core/okf.md` tells an owner to keep a document for a removed
+   concept and mark it `status: removed`; the anchored class then covers
+   it, and `core/verification.md`'s rung makes a broken anchor block "done"
+   for *any* task in that repository. A document behaving exactly as the
+   checklist demands wedges unrelated work, and restructure cannot help —
+   it routes such findings to `## For the team:` by design. This is the
+   same "a class that systematically yields no action is excluded
+   mechanically" argument that excluded directory anchors from the debt
+   job, carried one step further. Remedy: exempt `status: removed`
+   documents from anchoring, in the law and in the engine.
+2. **Nested build output is not excluded, only top-level.** The engine's
+   ignore list applies to top-level directories; a stale
+   `src/App/obj/Debug/App.dll` containing a removed symbol makes that
+   symbol resolve, so the check silently misses the rot it was built for,
+   and a clean CI clone and a developer clone disagree about a gate on
+   "done".
+3. **A crashing engine audits clean.** An unhandled exception exits 1 with
+   empty stdout, and audit checks 15/17 read stdout lines only, so a crash
+   reads as "no findings". The verification rung fails closed; the audit
+   fails open. Remedy: a top-level handler returning a distinct exit code,
+   and law in checks 15/17 saying an exit beyond the findings code is a
+   check failure, not a clean check.
+4. **Checks 15/17 have no `python3`-absent branch**, though
+   `core/verification.md` gained one — the audit's behaviour on such a
+   machine is undefined.
+5. **Two smaller slips:** the `keep` refusal in Step 3.6 names only owned
+   files "under `docs/ai/rules/`", so `docs/ai/engine.py` can now be
+   keep-listed, putting the kept-paths row and the owned-law row in
+   conflict; and check 15's "bundle present, engine absent → Info" branch
+   has no fixture exercising it.
+
+**Why:** found by the whole-branch final review that closed BL-033 (v20),
+after the edition's benchmark was already recorded. None of the five is a
+regression against v19 — each is a gap the anchor engine's own design
+surfaces once it exists — but each is real: two are correctness gaps in
+what the engine covers (1, 2), one is a fail-open failure mode in what the
+audit trusts (3), one is an unhandled-environment gap the static rung
+already closed for a sibling check (4), and two are small conflicts between
+what the law says and what the mechanism allows (5).
+
+**Done when:** all five items are resolved — `status: removed` documents
+excluded from anchoring in law and engine; nested build-output directories
+excluded from anchor resolution at any depth; the engine exits a distinct
+non-zero code on an unhandled exception and checks 15/17 treat that exit as
+a check failure; checks 15/17 carry a `python3`-absent branch matching
+`core/verification.md`'s; the Step 3.6 `keep` refusal's owned-files
+description matches what is actually owned; and a fixture exercises check
+15's "bundle present, engine absent → Info" branch. Full e2e benchmark
+recorded per `evals/README.md`, compared against v20.
 
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
 

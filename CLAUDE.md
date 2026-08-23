@@ -24,7 +24,7 @@ its grader together, which is what makes POLICY's baseline run a two-line
 Any edit under `skill/` (SKILL.md, `assets/rules/**`, `assets/templates/**`,
 `references/**`, VERSION) must pass, before being reported as complete:
 
-1. **Every commit:** `python3 evals/check_static.py` — seconds, no agent.
+1. **Every commit:** `python3 evals/check_static.py` and `python3 evals/check_engine.py` — seconds, no agent.
 2. **Every behavioral change** (VERSION bump, SKILL.md procedure edit, rule
    content change, template change): the full e2e benchmark per
    `evals/README.md` — materialize a workspace, run the scenario agents,

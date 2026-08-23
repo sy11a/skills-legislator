@@ -97,6 +97,22 @@ with tempfile.TemporaryDirectory() as tmp:
     check(proc.returncode == 0, "non-owned root package.json allowed (exit 0)",
           f"got exit {proc.returncode}, stderr={proc.stderr!r}")
 
+    # Case 5: editing the owned engine file docs/ai/engine.py → blocked.
+    engine_file = repo / "docs" / "ai" / "engine.py"
+    engine_file.write_text("# engine\n")
+    proc = run_hook(GUARD, edit_payload(str(engine_file)))
+    check(proc.returncode == 2, "owned engine.py blocked (exit 2)",
+          f"got exit {proc.returncode}, stderr={proc.stderr!r}")
+    check("machine-managed law" in proc.stderr,
+          "block message mentions machine-managed law", f"stderr={proc.stderr!r}")
+
+    # Case 6: editing an unowned file under docs/ai/ → allowed.
+    notes_file = repo / "docs" / "ai" / "notes.md"
+    notes_file.write_text("# notes\n")
+    proc = run_hook(GUARD, edit_payload(str(notes_file)))
+    check(proc.returncode == 0, "unowned docs/ai/notes.md allowed (exit 0)",
+          f"got exit {proc.returncode}, stderr={proc.stderr!r}")
+
 with tempfile.TemporaryDirectory() as tmp:
     # Case 3: same rules-shaped path, but no manifest.json anywhere upward
     # → not a legislated repo → allowed.

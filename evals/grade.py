@@ -436,6 +436,10 @@ def expected_owned() -> dict[str, Path]:
     oc_src = SKILL / "assets" / "templates" / "opencode.json.tpl"
     if oc_src.exists():
         owned["opencode.json"] = oc_src
+    # v20: the constitution's engine, an owned executable delivered like law.
+    eng_src = SKILL / "assets" / "engine" / "engine.py"
+    if eng_src.exists():
+        owned["docs/ai/engine.py"] = eng_src
     return owned
 
 
@@ -978,6 +982,23 @@ def grade_restructure(ws: Path) -> Grader:
             else ".cursorrules still present")
     g.check("ghost_import_fixed", "ghost-rule.md" not in claude,            "dangling import gone" if "ghost-rule.md" not in claude
             else "ghost-rule import still in AGENTS.md")
+
+    # v20: anchor and debt findings are owner prose, not wiring. The closed
+    # `fix` scope forbids touching them, so they route to "For the team"
+    # and both documents stay byte-identical. Reuses ftt_section (computed
+    # above for the skill-bindings check) rather than recomputing an
+    # unbounded slice of `report` — an unbounded split would also match a
+    # slug appearing after a later heading or the `Kept (immovable):` block.
+    for marker in ("okf-anchors", "okf-sync-debt"):
+        g.check(f"{marker.replace('-', '_')}_routed_to_team", marker in ftt_section,
+                f"{marker} listed under For the team" if marker in ftt_section
+                else f"{marker} missing from the For the team section")
+    for path, expected in meta.get("okf_untouched", {}).items():
+        doc = repo / path
+        intact = doc.exists() and doc.read_text() == expected
+        g.check(f"okf_{Path(path).stem}_unedited", intact,
+                f"{path} byte-identical to its planted content" if intact
+                else f"{path} was rewritten or removed")
 
     src = SKILL / "assets/rules/core/okf.md"
     okf = repo / "docs/ai/rules/core/okf.md"

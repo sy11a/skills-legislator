@@ -147,6 +147,14 @@ def materialize_case_practice(dest: Path) -> None:
         shutil.copy2(f, rules_dst / "stacks/dotnet" / f.name)
         owned.append(f"docs/ai/rules/stacks/dotnet/{f.name}")
 
+    # v20: the engine is an owned file. The delivered law now tells an
+    # agent to run `python3 docs/ai/engine.py anchors` before reporting
+    # done (core/verification.md's rung) — this scenario's feature-work
+    # task must be able to obey that, so the engine ships here too.
+    (dest / "docs/ai").mkdir(parents=True, exist_ok=True)
+    shutil.copy2(SKILL / "assets/engine/engine.py", dest / "docs/ai/engine.py")
+    owned.append("docs/ai/engine.py")
+
     version = int((SKILL / "VERSION").read_text().strip())
     owned_sorted = sorted(owned)
     (dest / "docs/ai/manifest.json").write_text(
@@ -161,7 +169,11 @@ def materialize_case_practice(dest: Path) -> None:
     shutil.copy2(SKILL / "assets/templates/cases-README.md.tpl",
                  dest / "docs/cases/README.md")
 
-    imports = "\n".join(f"@{p}" for p in owned_sorted)
+    # The engine is owned but never @-imported (SKILL.md's import block is
+    # rules only), so it is excluded here even though it is in the
+    # manifest's ownedFiles.
+    imports = "\n".join(
+        f"@{p}" for p in owned_sorted if p != "docs/ai/engine.py")
     (dest / "AGENTS.md").write_text(
         "# BillingApi\n\n" + imports +
         "\n\n## Project notes\n\nBillingApi handles invoice generation and "
@@ -242,6 +254,8 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
         '<Project Sdk="Microsoft.NET.Sdk.Web">\n  <PropertyGroup>\n'
         '    <TargetFramework>net8.0</TargetFramework>\n'
         '  </PropertyGroup>\n</Project>\n')
+    (dest / "src/LegacyBilling/Endpoints.cs").write_text(
+        "// initial endpoint surface\n")
 
     rules_dst = dest / "docs/ai/rules"
     (rules_dst / "core").mkdir(parents=True)
@@ -253,6 +267,13 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
     for f in sorted((SKILL / "assets/rules/stacks/dotnet").glob("*.md")):
         shutil.copy2(f, rules_dst / "stacks/dotnet" / f.name)
         owned.append(f"docs/ai/rules/stacks/dotnet/{f.name}")
+
+    # v20: the engine is an owned file. The fixture carries it (checks 15
+    # and 17 need a runnable engine); defect 4 is about the manifest's
+    # version field, not about which files were delivered.
+    (dest / "docs/ai").mkdir(parents=True, exist_ok=True)
+    shutil.copy2(SKILL / "assets/engine/engine.py", dest / "docs/ai/engine.py")
+    owned.append("docs/ai/engine.py")
 
     # Defect 3 — owned-file drift: one appended line differs from source.
     with open(rules_dst / "core" / "okf.md", "a") as fh:
@@ -273,8 +294,11 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
         + ",\n".join(f'    "{p}"' for p in sorted(owned))
         + "\n  ]\n}\n")
 
-    # Defect 1 — broken import (ghost-rule.md does not exist).
-    imports = "\n".join(f"@{p}" for p in sorted(owned))
+    # Defect 1 — broken import (ghost-rule.md does not exist). The engine is
+    # owned but never @-imported (SKILL.md's import block is rules only), so
+    # it is excluded here even though it is in the manifest's ownedFiles.
+    imports = "\n".join(
+        f"@{p}" for p in sorted(owned) if p != "docs/ai/engine.py")
     (dest / "CLAUDE.md").write_text(
         "# LegacyBilling\n\n" + imports +
         "\n@docs/ai/rules/core/ghost-rule.md\n@docs/okf/codebase-map.md\n\n"
@@ -304,7 +328,8 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
     # Defect 5 — stale index link (renamed-away.md does not exist).
     (okf / "index.md").write_text(
         "# OKF Index\n\n- [Log](log.md)\n- [Overview draft](overview-draft.md)\n"
-        "- [Old notes](renamed-away.md)\n- [Glossary](glossary.md)\n")
+        "- [Old notes](renamed-away.md)\n- [Glossary](glossary.md)\n"
+        "- [Importer](importer.md)\n- [Endpoints](endpoints.md)\n")
     (okf / "log.md").write_text(
         "# OKF Log\n\n## 2026-01-10 — Initial legislation\n\nSet up.\n")
     # Defect 2 — unresolved placeholder (linked from the index, so it is
@@ -332,6 +357,22 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
     # Defect 7 — orphan: linked from nowhere.
     (okf / "orphan-notes.md").write_text(
         "# Scratch notes\n\nNobody links to this file.\n")
+
+    # Defect 16 (check 15, okf-anchors) — a concept doc naming code that is
+    # gone: one path-anchor to a file that does not exist and one symbol
+    # nowhere in the source. Linked from the index, so it is not an orphan.
+    importer_md_text = (
+        "# Importer\n\n"
+        "The archive importer lives in `src/LegacyBilling/Removed/OldImporter.cs` "
+        "and its sweep step is `ArchivedInvoiceSweeper`.\n")
+    (okf / "importer.md").write_text(importer_md_text)
+    # Defect 17 (check 17, okf-sync-debt) — a doc whose anchored source is
+    # touched by the second commit (2026-07-01), 167 days after the doc's
+    # own commit (2026-01-15). Isolated from defect 16: its anchor resolves.
+    endpoints_md_text = (
+        "# Endpoints\n\n"
+        "The public surface is `src/LegacyBilling/Endpoints.cs`.\n")
+    (okf / "endpoints.md").write_text(endpoints_md_text)
 
     # Defect 10 — keep-listed file that nothing references (protected but
     # orphaned). Lives under docs/notes/ so orphan check 7 (which scans only
@@ -465,6 +506,11 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
             ".superpowers/",          # defect (check 9): working-dir debris
             "gone-runbook.md",        # defect (check 10a): dangling keep entry
             "legacy-home-violation] docs/superpowers/specs/late-feature-spec.md",  # defect (check 16)
+            "okf-anchors]",                  # defect 16a: pinned slug
+            "OldImporter.cs",                # defect 16b: the dead path named
+            "ArchivedInvoiceSweeper",        # defect 16c: the dead symbol named
+            "okf-sync-debt]",                # defect 17a: pinned slug
+            "docs/okf/endpoints.md",         # defect 17b: the document named
             "dry-run mode before a real import",  # harvest: candidate quoted
             "must be reversible",  # harvest: stray-rulebook generic line quoted
             "## Constitution candidates",  # harvest appendix present with pinned heading
@@ -489,6 +535,8 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
             "glossary-vitality",        # empty glossary with src/ present
             "skill-bindings",           # sanctioned but uninstalled made-up-skill
             "legacy-home-violation",    # late-feature-spec.md born into a legacy home
+            "okf-anchors",              # importer.md names a dead path and symbol
+            "okf-sync-debt",            # endpoints.md's source moved on 167 days later
         ],
         # BL-025 item 2: Critical findings must sit under the Critical
         # severity heading, not merely appear somewhere in the report
@@ -532,6 +580,15 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
         # File authority (BL-038): the two classes only a fixture can name.
         "authority_foreign_structures": [".cursorrules", "UBIQUITOUS_LANGUAGE.md"],
         "authority_relocated_owner_content": [],
+        # v20 fix round 1: the two okf-anchors/okf-sync-debt documents are
+        # owner prose — the closed `fix` scope forbids restructure from
+        # touching them. Recorded here (the exact text written above, not
+        # retyped and not read back) so the grader can assert byte-identity
+        # rather than a substring match.
+        "okf_untouched": {
+            "docs/okf/importer.md": importer_md_text,
+            "docs/okf/endpoints.md": endpoints_md_text,
+        },
     }
     if restructure_extras:
         meta["fidelity_sentences"] = [
