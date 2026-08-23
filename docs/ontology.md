@@ -36,8 +36,7 @@ Flow directions:
 - **constitution** — `docs/ai/rules/**` @ VERSION: core rules plus the
   subscribed stacks' rules, delivered as one edition. The word means exactly
   this and nothing else (R1-T1). The former loose usage for `AGENTS.md`
-  ("constitution file") is retired; the former loose usage for `AGENTS.md`
-  is retired (swept in v17–v18).
+  ("constitution file") is retired — swept in v17–v18.
 - **AGENTS.md** — the repo's entry document. The filename is the term
   (industry convention); it carries no second name. Its role — the single
   entry point a session reads first, importing the constitution and carrying

@@ -1170,7 +1170,7 @@ law passes analyze; a converged case shows the append-only findings
 trail); BL-028/030 riding items verified; fleet re-run delivers the rule
 everywhere.
 
-## BL-033 — OKF v2 + the one engine: generated baseline, source anchors, spec linter (fleet-obs pilot)
+## BL-033 — OKF v2 and the anchor engine: link hardness, source anchors, the static rung
 
 **Status: GREEN 2026-08-23 — corpus <N>/<N> and idempotency ×3 zero-diff on one law generation (`<sha>`); model floor `<model>`. Benchmark `evals/benchmarks/v20.md`. Edition v20 closes at merge; tag `v20`. (Numbers are placeholders — filled by Task 9's e2e benchmark.)**
 
@@ -1191,20 +1191,23 @@ baseline generator, the spec/plan linter, and the fleet-obs registry
 accounting this entry used to describe move to **BL-043** (edition v21).
 BL-031 rides this cycle if it touches the backlog template.
 
-**Why:** hand-maintained truth always rots — fleet-api's six docs about
-a removed model proved it in our own fleet; our rot-free artifacts (law
-stratum, manifest) are machine-written. Generation gives norms and maps
-a mechanical bond to code; anchors make the remaining handwritten layer
-detectably stale instead of silently wrong; one engine avoids three
-half-maintained tools. Its own edition (v18) because a transform of what
-"docs" means across nine repos must not share a landing with the new
-process law — a failure here must not roll the SDD law back with it.
+**Why:** hand-maintained truth always rots — six documents in `fleet-api`
+describing a removed model proved it in our own fleet, while our rot-free
+artifacts (the law stratum, the manifest) are the machine-written ones.
+Anchors give the handwritten knowledge layer a mechanical bond to the code
+it describes: a document naming a symbol the source no longer contains
+becomes detectably stale instead of silently wrong. Its own edition because
+a transform of what "docs" means across nine repositories must not share a
+landing with anything else — a failure here must not roll another law back
+with it.
 
-**Done when:** the engine exists and passes its own verification ladder;
-the fleet-obs pilot shows a converged case with a regenerated baseline and
-both-direction converge findings; OKF v2 template + rule amendment
-shipped with VERSION bump and green e2e benchmark; fleet re-run
-migrates repos forward-only (no history rewritten).
+**Done when:** the engine ships as an owned file and both its jobs run
+read-only in a legislated repository; the OKF v2 amendment and the static
+rung ship with a VERSION bump and a green e2e benchmark; the two audit
+checks are each exercised by a planted defect and route through restructure
+to the team. The fleet-obs pilot and the fleet sweep run after the merge and
+are not gates on the edition; the baseline half of the original entry is
+BL-043's.
 
 ## BL-034 — Self-legislation: the legislator repo joins its own fleet
 
