@@ -983,6 +983,22 @@ def grade_restructure(ws: Path) -> Grader:
     g.check("ghost_import_fixed", "ghost-rule.md" not in claude,            "dangling import gone" if "ghost-rule.md" not in claude
             else "ghost-rule import still in AGENTS.md")
 
+    # v20: anchor and debt findings are owner prose, not wiring. The closed
+    # `fix` scope forbids touching them, so they route to "For the team"
+    # and both documents stay byte-identical.
+    team = report.split("## For the team:", 1)[1] if "## For the team:" in report else ""
+    for marker in ("okf-anchors", "okf-sync-debt"):
+        g.check(f"{marker.replace('-', '_')}_routed_to_team", marker in team,
+                f"{marker} listed under For the team" if marker in team
+                else f"{marker} missing from the For the team section")
+    for name, expected in (("importer.md", "OldImporter.cs"),
+                           ("endpoints.md", "Endpoints.cs")):
+        doc = repo / "docs/okf" / name
+        intact = doc.exists() and expected in doc.read_text()
+        g.check(f"okf_{name.split('.')[0]}_unedited", intact,
+                f"{name} byte-carrying its planted content" if intact
+                else f"{name} was rewritten or removed")
+
     src = SKILL / "assets/rules/core/okf.md"
     okf = repo / "docs/ai/rules/core/okf.md"
     healed = okf.exists() and okf.read_bytes() == src.read_bytes()
