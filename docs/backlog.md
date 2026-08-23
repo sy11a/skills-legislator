@@ -1432,7 +1432,7 @@ designed mechanism; this note stays as the origin record.
 
 ## BL-038 — File-authority matrix: one table resolves every mode's rights over every artifact class
 
-**Status: GREEN 2026-08-23 — corpus 185/185 and idempotency ×3 zero-diff on one law generation (`67e14c0`); model floor `sonnet` (Claude Code 2.1.239), unchanged from v17. Benchmark `evals/benchmarks/v18.md`; spec `docs/superpowers/specs/2026-08-22-file-authority-matrix-design.md`, plan `docs/superpowers/plans/2026-08-22-file-authority-matrix.md`. The benchmark forced five fixes — three law (`heal`'s missing manifest cell reference; `never-touch` read as "report and stop", contradicting `heal`; harvest scanning only `AGENTS.md` and missing the pre-v14 entry document audit finds) and two grader (an order-sensitive check-14 marker; a delegated `heal` write judged by restructure's own column). Edition v18 closes at merge; tag `v18`.**
+**Status: GREEN 2026-08-23 — corpus 185/185 and idempotency ×3 zero-diff on one law generation (`67e14c0`); model floor `sonnet` (Claude Code 2.1.239), unchanged from v17. Benchmark `evals/benchmarks/v18.md`; spec `docs/superpowers/specs/2026-08-22-file-authority-matrix-design.md`, plan `docs/superpowers/plans/2026-08-22-file-authority-matrix.md`. The benchmark forced five fixes — three law (`heal`'s missing manifest cell reference; `never-touch` read as "report and stop", contradicting `heal`; harvest scanning only `AGENTS.md` and missing the pre-v14 entry document audit finds) and two grader (an order-sensitive check-14 marker; a delegated `heal` write judged by restructure's own column). Edition v18 closes at merge; tag `v18`. Final review residue (one prose right the wall cannot see; the `replace`/manifest tension) filed as BL-041 for v19.**
 
 **What:** replace the prose statements of "may this mode write this file?"
 with a single matrix — artifact class × mode → one permission from a closed
@@ -1602,6 +1602,45 @@ every alias used anywhere in the rewritten history.
 **Check first:** whether any commit message (not just file content) carries
 a name or path — `filter-repo` handles both, but the two need separate
 expressions, and a message is easy to forget.
+
+## BL-041 — File-authority residue: one prose right the wall cannot see, and the `replace` carve-out for the manifest
+
+**Status: PROPOSED 2026-08-23 — raised by the v18 final review; rides edition v19 as a behavioral rider (skill/ edits, VERSION bump + full e2e).**
+
+**What:** the two Important findings the v18 final review deferred rather
+than pay a re-benchmark for wording, plus three grader/static-check
+hardenings from the task reviews.
+
+1. **A prose right survived** — SKILL.md's Step 4 row for `CLAUDE.md` still
+   ends "Create-only-if-absent", and the Step 4 header says "the right is
+   `create-if-absent`" over rows whose classes are *entry document* and
+   *project rules*. The wall's regex knows `create-once` and `create it
+   only if` but not the hyphenated form. Fix: row note → `(authority: entry
+   document × scaffold)`; narrow the header to the rows it governs; add
+   `create-only-if-absent` to `AUTH_PROSE` — shown red against v18 first.
+2. **`manifest × upgrade = replace` read literally licenses discarding
+   `keep`** — `replace` is defined as "comes whole from the skill, byte-for-
+   byte, never merged", but the manifest is generated with `keep` carried
+   forward and `ownedFiles` recomputed (Step 3.6). Practice is right and
+   `manifest_healed_keep_carried` guards it; the definition is the same
+   hazard shape v18's defect L2 paid to discover. Fix: a manifest carve-out
+   in the `replace` bullet (or a ninth value — decide in-cycle; a ninth
+   value is a deliberate spec edit, not drift).
+3. **Grader/wall hardenings:** anchor the `[heal]` delegation gate in
+   `grade_restructure` to an item line (`^\d+\. \[heal\]`), not a bare
+   substring; exact-length row check in both `authority_matrix()` and the
+   wall (a ninth body row is currently ignored, not rejected); scan
+   SKILL.md line-by-line with a section-exclusion range so the wall's
+   reported line numbers are real (today they are short by the section's
+   length for everything after it).
+
+**Habit for v19, from the same review:** commit a new assert in its red
+state *before* the fix that greens it, so red-before-green is reproducible
+from history, not only from the benchmark record.
+
+**Done when:** the wall goes red on the `CLAUDE.md` row note before the
+edit and green after; `replace`'s manifest reading is settled in the
+vocabulary; the three hardenings carry asserts; benchmark green.
 
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
 

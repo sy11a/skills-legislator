@@ -105,6 +105,16 @@ than a paragraph.
   about; another mode owns the repair (owned law drifts → upgrade/heal, not
   restructure's own hands).
 
+  *Amended in execution (commit `ad20066`, benchmark defect L2): the shipped
+  bullet in SKILL.md reads — "the mode has no authority of its **own** over
+  the file: it never hand-edits it and never decision-gates it. This is
+  **not** "report it and stop". Where the mode's action set delegates the
+  repair to another column, the run performs that repair itself, in the
+  same run, under that column's right." Two sonnet runs on one law
+  generation had read the original wording as "report and stop" and as
+  "heal"; the amended text admits one reading. SKILL.md's text is the law;
+  this note records why it diverged from the pinned form above.*
+
 **Under the table (pinned prose, two lines):** the harvest/steward line of
 D4, and the state rule above.
 
