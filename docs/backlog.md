@@ -95,10 +95,13 @@ Gate 0/1 — that ordering is what makes the parallelism safe.
   edition). BL-046 is recommended **before** BL-043 — see its entry.
 - **Spikes (raised 2026-08-23, toward the framework goal):** BL-047 (the
   decision inventory — what is still model-decided), BL-048 (per-job model
-  floor), BL-049 (report derivability). Each is time-boxed, produces an
-  answer rather than code, and sizes the cases that follow it.
+  floor), BL-049 (report derivability), BL-052 (does the constitution load
+  at all outside Claude Code and opencode). Each is time-boxed, produces
+  an answer rather than code, and sizes the cases that follow it.
 - **Off the edition track:** BL-035 (docs-only, runs any time), BL-039 and
-  BL-040 (repository-level operations, each wanting a deliberate moment).
+  BL-040 (repository-level operations, each wanting a deliberate moment),
+  BL-050 and BL-053 (the two instruments — the eval runner and the fleet
+  tool — each able to report success while having done nothing).
 
 Personal machine to-do (not a Legislator task): adopt the official C# LSP
 plugin (`csharp-ls`) locally — symbol-level navigation for the dotnet fleet;
@@ -1897,6 +1900,38 @@ a check failure; checks 15/17 carry a `python3`-absent branch matching
 description matches what is actually owned; and a fixture exercises check
 15's "bundle present, engine absent → Info" branch. Full e2e benchmark
 recorded per `evals/README.md`, compared against v20.
+
+## BL-052 — Spike: does the constitution load at all outside the two harnesses we test?
+
+**Status: SPIKE PROPOSED 2026-08-23** — exploration, time-boxed, no `skill/` change, no VERSION, no benchmark. Widens BL-044 (Claude Code ↔ opencode) to the whole provider field; BL-044 stays the deeper study of the two harnesses this repo actually measures.
+
+**The question that makes this urgent, and it is arithmetic rather than opinion.** A legislated repo's `AGENTS.md` is **1,122 bytes**, of which twelve `@`-import lines stand in for **25,778 bytes** of delivered law. `@path` expansion is a Claude Code feature; opencode never parses it and gets the law through a second channel, the `instructions` array in `opencode.json`. Every other agent that reads `AGENTS.md` — Codex, Cursor, Copilot, Windsurf, Amp, Gemini CLI, Antigravity — would therefore load a kilobyte of pointers and **none of the law they point at**. If that holds, the constitution today is enforced in exactly two harnesses and is decorative in the rest, which is not what "AGENTS.md is the canonical entry document" implies to anyone reading it.
+
+**The probe, in the order that answers the most per hour:**
+
+1. **Load or not.** For each agent, open a legislated repository and ask a question answerable only from a rule body (not from the pointer line). A canary token planted in one rule file makes this binary. Do not read the vendor's documentation for the answer — that is what produced this backlog entry, and it is exactly the class of claim this repo requires a probe for.
+2. **Adapter shape per agent.** For each one that fails (1), determine the cheapest wiring that fixes it, and classify it: **thin** — a pointer, a symlink, or a config array naming files (`CLAUDE.md` → `AGENTS.md`, opencode's `instructions`) — or **thick** — a mechanism that requires the rule *text* to be duplicated into a tool-specific file (Cursor `.mdc` for glob scoping, Copilot `.instructions.md` with `applyTo`). This is the decisive question for this project: **a thick adapter is a second copy of the law, and a second copy rots.** A thick adapter is only acceptable if it is *generated* from the same single declaration — which is what BL-045 builds — never hand-maintained.
+3. **Truncation headroom.** Codex concatenates from the repository root down with a byte ceiling (`project_doc_max_bytes`, 32 KiB by default) and truncates **silently**. Measure what a legislated repo actually feeds it once the law loads at all: 25,778 bytes of rules is already ~79% of that ceiling before the entry document, the codebase map, or any project rule is counted, and v20 grew the law. Silent truncation of law is indistinguishable from law that was never written.
+4. **Activation modes.** Cursor and Antigravity both offer four (always / glob / model-decision / manual); our law has exactly one, always. Confirm that targeting "always" is portable everywhere, since that is the only mode every agent shares — the same conclusion BL-046 reaches for two harnesses, generalized to the field.
+5. **Collisions and inheritance.** Two worth checking because they bite silently: Codex's `AGENTS.override.md`, the only inheritance-breaking mechanism in the field and a possible model for our monorepo gap; and the report that Gemini CLI and Antigravity disagree over the same `~/.gemini/` home.
+
+**What the answer decides:** whether "the legislator governs a repository" is a claim about repositories or a claim about two harnesses. If thin adapters cover most of the field, the fix is small and BL-045's projection model absorbs it. If several agents need thick adapters, then either the fleet's tool choice narrows deliberately, or the generated-projection machinery becomes load-bearing for the whole system rather than a convenience — and that is a much larger commitment, worth knowing before it is made by accident.
+
+**Stop condition:** the measured table — agent × loads-the-law × adapter shape × truncation headroom — is the deliverable. No adapter is written inside this spike; each becomes its own case, sized from the measurement.
+
+## BL-053 — `fleet.sh` has one engine and no failure signal
+
+**Status: PROPOSED 2026-08-23** — tooling only (`tools/fleet.sh`), no `skill/` change, no VERSION, no benchmark. Both defects were met on the same run: the v20 sweep of 2026-08-23.
+
+**What:** two independent faults in the fleet delivery tool, plus one caller trap worth recording beside them.
+
+1. **One hardcoded engine.** Delivery is `opencode run --dir "$repo" --agent service-fleet`, with no alternative. On 2026-08-23 that agent's credential failed (`API key is invalid`) and the entire sweep became impossible — not one repository could be upgraded — although the delivery itself is engine-agnostic: the skill's owned-file work is `cp` plus a regenerated manifest, and any harness that can follow `SKILL.md` performs it identically. The repo already solved this problem once: `tools/evals-bg.sh` carries runner profiles (`opencode` / `claude`) precisely so the stages, contracts and grading survive a change of engine. Remedy: the same profile mechanism here, defaulting to `opencode`.
+2. **Failures do not reach the exit code.** The `FAIL` branch prints a line and nothing more: no counter, no non-zero exit. On the same run the tool reported three consecutive failures and exited `0`. This is the family BL-050 belongs to — an operation that failed everywhere reporting success at the process level — and it is worse here than in the eval runner, because a sweep is the step that puts law into nine repositories and its result is usually read from a scrollback, not from a grading file. The version re-check after each run (`WARN … still at v<N>`) is the right idea and should feed the same signal. Remedy: count failures and skips, exit non-zero when any repository did not reach the current version.
+3. **Implementation note for whoever adds the `claude` profile.** `--add-dir` is variadic: `claude -p … --add-dir "$DIR" "$prompt"` silently swallows the prompt as a second directory and the agent starts with no task. Pass the prompt on stdin, or place a flag between `--add-dir` and the positional argument. This cost one wasted pass on 2026-08-23; `evals-bg.sh` avoids it by accident, because other flags follow its `--add-dir`.
+
+**Why:** the sweep is the moment the constitution stops being a local artifact and becomes law in other people's repositories. A tool that cannot run when one vendor's credential expires, and that cannot tell success from total failure in its own exit status, is the weakest link in that chain — and neither fault is visible until the day it matters.
+
+**Done when:** `fleet.sh` takes a runner profile with the same shape `evals-bg.sh` uses and the sweep completes under either engine; a run in which any repository fails or stays behind exits non-zero; and the `--add-dir` trap is either avoided by construction in the new profile or noted where the invocation is built.
 
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
 
