@@ -410,6 +410,13 @@ if ! ( cd "$REPO" && python3 evals/check_static.py > "$WS/static.log" 2>&1 ); th
 fi
 status "static green"
 
+status "=== stage 1: engine checks ==="
+if ! ( cd "$REPO" && python3 evals/check_engine.py > "$WS/engine.log" 2>&1 ); then
+  status "ENGINE FAILED — see $WS/engine.log"; notify "evals: engine checks FAILED"
+  exit 1
+fi
+status "engine green"
+
 if [ ${#IDEM[@]} -gt 0 ]; then
   # Targeted idempotency: re-measure the zero-diff promise for one scenario
   # after a law fix, without paying for the whole corpus again.

@@ -1811,6 +1811,93 @@ The law states the classes; the evals prove the loading. Static checks prove the
 
 **Stop condition:** the classification and the assert count are the deliverable. No emitter is written.
 
+## BL-050 — Stage 1 must verify the workspace was materialized before an hour of agent runs starts
+
+**Status: PROPOSED 2026-08-23** — evals/tooling only, no VERSION, no benchmark.
+
+**What:** `tools/evals-bg.sh` spends an hour of agent runs without ever
+checking that the workspace was materialized. On 2026-08-23 it graded
+`upgrade` 21/21 CLEAN and `legacy-migration-agents-first` 22/22 CLEAN
+against fixtures of unknown provenance, and nothing objected. The remedy is
+a precondition at stage 1 — every scenario directory holds a `repo/`
+carrying an `eval-base` tag, else exit non-zero — which converts an hour of
+waste into an instant error and closes a path on which a benchmark can read
+green while measuring nothing.
+
+**Why:** found by the v20 cycle (`evals/benchmarks/v20.md`, "Harness
+finding"). The first corpus attempt (`20260823-1716`) was launched against
+a workspace that had never been materialized — `evals/README.md` step 1 is
+`python3 evals/setup_workspace.py <ws>` and the runner does not do it
+itself. Agents improvised in absent repositories and two scenarios had no
+`repo/` directory at all, yet two other scenarios graded CLEAN anyway. An
+hour of agent runs ran to completion with no check standing between a
+missing workspace and a green verdict.
+
+**Done when:** stage 1 of `tools/evals-bg.sh` refuses to proceed — before
+any scenario agent runs — unless every scenario directory it is about to
+use holds a `repo/` carrying the `eval-base` tag, printing which
+directories failed the check and exiting non-zero.
+
+## BL-051 — v20 final-review residue (edition v21)
+
+**Status: PROPOSED 2026-08-23** — behavioral (`skill/` changes, VERSION
+bump + full e2e — which is exactly why it is not being done now).
+
+**What:** five findings from the v20 final review, none acted on in v20 so
+the edition's benchmark record (measured against law generation
+`v20-9dbb306-g22c1e5f`) would stay valid:
+
+1. **`status: removed` documents can never be clean, and the rung is
+   global.** `core/okf.md` tells an owner to keep a document for a removed
+   concept and mark it `status: removed`; the anchored class then covers
+   it, and `core/verification.md`'s rung makes a broken anchor block "done"
+   for *any* task in that repository. A document behaving exactly as the
+   checklist demands wedges unrelated work, and restructure cannot help —
+   it routes such findings to `## For the team:` by design. This is the
+   same "a class that systematically yields no action is excluded
+   mechanically" argument that excluded directory anchors from the debt
+   job, carried one step further. Remedy: exempt `status: removed`
+   documents from anchoring, in the law and in the engine.
+2. **Nested build output is not excluded, only top-level.** The engine's
+   ignore list applies to top-level directories; a stale
+   `src/App/obj/Debug/App.dll` containing a removed symbol makes that
+   symbol resolve, so the check silently misses the rot it was built for,
+   and a clean CI clone and a developer clone disagree about a gate on
+   "done".
+3. **A crashing engine audits clean.** An unhandled exception exits 1 with
+   empty stdout, and audit checks 15/17 read stdout lines only, so a crash
+   reads as "no findings". The verification rung fails closed; the audit
+   fails open. Remedy: a top-level handler returning a distinct exit code,
+   and law in checks 15/17 saying an exit beyond the findings code is a
+   check failure, not a clean check.
+4. **Checks 15/17 have no `python3`-absent branch**, though
+   `core/verification.md` gained one — the audit's behaviour on such a
+   machine is undefined.
+5. **Two smaller slips:** the `keep` refusal in Step 3.6 names only owned
+   files "under `docs/ai/rules/`", so `docs/ai/engine.py` can now be
+   keep-listed, putting the kept-paths row and the owned-law row in
+   conflict; and check 15's "bundle present, engine absent → Info" branch
+   has no fixture exercising it.
+
+**Why:** found by the whole-branch final review that closed BL-033 (v20),
+after the edition's benchmark was already recorded. None of the five is a
+regression against v19 — each is a gap the anchor engine's own design
+surfaces once it exists — but each is real: two are correctness gaps in
+what the engine covers (1, 2), one is a fail-open failure mode in what the
+audit trusts (3), one is an unhandled-environment gap the static rung
+already closed for a sibling check (4), and two are small conflicts between
+what the law says and what the mechanism allows (5).
+
+**Done when:** all five items are resolved — `status: removed` documents
+excluded from anchoring in law and engine; nested build-output directories
+excluded from anchor resolution at any depth; the engine exits a distinct
+non-zero code on an unhandled exception and checks 15/17 treat that exit as
+a check failure; checks 15/17 carry a `python3`-absent branch matching
+`core/verification.md`'s; the Step 3.6 `keep` refusal's owned-files
+description matches what is actually owned; and a fixture exercises check
+15's "bundle present, engine absent → Info" branch. Full e2e benchmark
+recorded per `evals/README.md`, compared against v20.
+
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
 
 A master-agent that reviews an incoming request in a project and decides whether to route it to an existing project-local mini-agent (`.claude/agents/<name>.md`) or create a new fine-grained specialized one (task-appropriate model, scoped MCPs) is being built as its **own, separate skill** — not as part of Legislator. Rationale: Legislator is build-time scaffolding (runs occasionally, evolves via VERSION/manifest); request routing is a runtime concern with its own lifecycle. Folding both into one skill would blur SRP.
