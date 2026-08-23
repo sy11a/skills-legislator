@@ -95,8 +95,9 @@ Gate 0/1 — that ordering is what makes the parallelism safe.
   edition). BL-046 is recommended **before** BL-043 — see its entry.
 - **Spikes (raised 2026-08-23, toward the framework goal):** BL-047 (the
   decision inventory — what is still model-decided), BL-048 (per-job model
-  floor), BL-049 (report derivability). Each is time-boxed, produces an
-  answer rather than code, and sizes the cases that follow it.
+  floor), BL-049 (report derivability), BL-052 (does the constitution load
+  at all outside Claude Code and opencode). Each is time-boxed, produces
+  an answer rather than code, and sizes the cases that follow it.
 - **Off the edition track:** BL-035 (docs-only, runs any time), BL-039 and
   BL-040 (repository-level operations, each wanting a deliberate moment).
 
@@ -1897,6 +1898,24 @@ a check failure; checks 15/17 carry a `python3`-absent branch matching
 description matches what is actually owned; and a fixture exercises check
 15's "bundle present, engine absent → Info" branch. Full e2e benchmark
 recorded per `evals/README.md`, compared against v20.
+
+## BL-052 — Spike: does the constitution load at all outside the two harnesses we test?
+
+**Status: SPIKE PROPOSED 2026-08-23** — exploration, time-boxed, no `skill/` change, no VERSION, no benchmark. Widens BL-044 (Claude Code ↔ opencode) to the whole provider field; BL-044 stays the deeper study of the two harnesses this repo actually measures.
+
+**The question that makes this urgent, and it is arithmetic rather than opinion.** A legislated repo's `AGENTS.md` is **1,122 bytes**, of which twelve `@`-import lines stand in for **25,778 bytes** of delivered law. `@path` expansion is a Claude Code feature; opencode never parses it and gets the law through a second channel, the `instructions` array in `opencode.json`. Every other agent that reads `AGENTS.md` — Codex, Cursor, Copilot, Windsurf, Amp, Gemini CLI, Antigravity — would therefore load a kilobyte of pointers and **none of the law they point at**. If that holds, the constitution today is enforced in exactly two harnesses and is decorative in the rest, which is not what "AGENTS.md is the canonical entry document" implies to anyone reading it.
+
+**The probe, in the order that answers the most per hour:**
+
+1. **Load or not.** For each agent, open a legislated repository and ask a question answerable only from a rule body (not from the pointer line). A canary token planted in one rule file makes this binary. Do not read the vendor's documentation for the answer — that is what produced this backlog entry, and it is exactly the class of claim this repo requires a probe for.
+2. **Adapter shape per agent.** For each one that fails (1), determine the cheapest wiring that fixes it, and classify it: **thin** — a pointer, a symlink, or a config array naming files (`CLAUDE.md` → `AGENTS.md`, opencode's `instructions`) — or **thick** — a mechanism that requires the rule *text* to be duplicated into a tool-specific file (Cursor `.mdc` for glob scoping, Copilot `.instructions.md` with `applyTo`). This is the decisive question for this project: **a thick adapter is a second copy of the law, and a second copy rots.** A thick adapter is only acceptable if it is *generated* from the same single declaration — which is what BL-045 builds — never hand-maintained.
+3. **Truncation headroom.** Codex concatenates from the repository root down with a byte ceiling (`project_doc_max_bytes`, 32 KiB by default) and truncates **silently**. Measure what a legislated repo actually feeds it once the law loads at all: 25,778 bytes of rules is already ~79% of that ceiling before the entry document, the codebase map, or any project rule is counted, and v20 grew the law. Silent truncation of law is indistinguishable from law that was never written.
+4. **Activation modes.** Cursor and Antigravity both offer four (always / glob / model-decision / manual); our law has exactly one, always. Confirm that targeting "always" is portable everywhere, since that is the only mode every agent shares — the same conclusion BL-046 reaches for two harnesses, generalized to the field.
+5. **Collisions and inheritance.** Two worth checking because they bite silently: Codex's `AGENTS.override.md`, the only inheritance-breaking mechanism in the field and a possible model for our monorepo gap; and the report that Gemini CLI and Antigravity disagree over the same `~/.gemini/` home.
+
+**What the answer decides:** whether "the legislator governs a repository" is a claim about repositories or a claim about two harnesses. If thin adapters cover most of the field, the fix is small and BL-045's projection model absorbs it. If several agents need thick adapters, then either the fleet's tool choice narrows deliberately, or the generated-projection machinery becomes load-bearing for the whole system rather than a convenience — and that is a much larger commitment, worth knowing before it is made by accident.
+
+**Stop condition:** the measured table — agent × loads-the-law × adapter shape × truncation headroom — is the deliverable. No adapter is written inside this spike; each becomes its own case, sized from the measurement.
 
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
 
