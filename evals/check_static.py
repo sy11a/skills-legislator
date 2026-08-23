@@ -127,7 +127,7 @@ if engine_src.exists():
     eng = engine_src.read_text()
     check(eng.startswith("#!/usr/bin/env python3"), "engine has a python3 shebang")
     STDLIB_OK = {"re", "sys", "subprocess", "pathlib", "datetime", "__future__"}
-    imported = set(re.findall(r"^(?:from|import)\s+([a-zA-Z_][\w.]*)", eng, re.M))
+    imported = set(re.findall(r"^\s*(?:from|import)\s+([a-zA-Z_][\w.]*)", eng, re.M))
     check(imported <= STDLIB_OK, "engine imports only stdlib modules",
           f"unexpected: {sorted(imported - STDLIB_OK)}")
     for job in ("anchors", "okf-debt"):
