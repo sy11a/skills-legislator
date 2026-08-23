@@ -1166,11 +1166,6 @@ def grade_derivation_selftest() -> Grader:
     g.check("restructure_actions_derived",
             actions == {"move", "merge", "link", "fix", "heal", "decision"},
             f"closed action set parsed: {sorted(actions)}")
-    # §2's heal bullet is the only place the law delegates a class to
-    # another mode's column; the grader reads the delegation there instead
-    # of restating it. Every class Steps 2-3 write must carry its cell
-    # reference in that bullet, or mode_respects_authority will judge a
-    # lawful delegated write against restructure's own column.
     # BL-041 hardenings. A ninth body row must be rejected, not parsed past:
     # the table is exact-shape, and an extra class with no derived rights
     # is the silent failure the matrix exists to prevent.
@@ -1194,6 +1189,11 @@ def grade_derivation_selftest() -> Grader:
     g.check("heal_gate_anchored_to_item_line", gate_ok,
             "prose mention ignored, plan item honoured" if gate_ok
             else f"prose-only={report_has_heal_item(prose_only)}, item={report_has_heal_item(item)}")
+    # §2's heal bullet is the only place the law delegates a class to
+    # another mode's column; the grader reads the delegation there instead
+    # of restating it. Every class Steps 2-3 write must carry its cell
+    # reference in that bullet, or mode_respects_authority will judge a
+    # lawful delegated write against restructure's own column.
     heal = restructure_heal_delegates()
     heal_ok = heal == {"owned law": "upgrade", "manifest": "upgrade"}
     g.check("heal_delegation_derived", heal_ok,
