@@ -361,16 +361,18 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
     # Defect 16 (check 15, okf-anchors) — a concept doc naming code that is
     # gone: one path-anchor to a file that does not exist and one symbol
     # nowhere in the source. Linked from the index, so it is not an orphan.
-    (okf / "importer.md").write_text(
+    importer_md_text = (
         "# Importer\n\n"
         "The archive importer lives in `src/LegacyBilling/Removed/OldImporter.cs` "
         "and its sweep step is `ArchivedInvoiceSweeper`.\n")
+    (okf / "importer.md").write_text(importer_md_text)
     # Defect 17 (check 17, okf-sync-debt) — a doc whose anchored source is
     # touched by the second commit (2026-07-01), 167 days after the doc's
     # own commit (2026-01-15). Isolated from defect 16: its anchor resolves.
-    (okf / "endpoints.md").write_text(
+    endpoints_md_text = (
         "# Endpoints\n\n"
         "The public surface is `src/LegacyBilling/Endpoints.cs`.\n")
+    (okf / "endpoints.md").write_text(endpoints_md_text)
 
     # Defect 10 — keep-listed file that nothing references (protected but
     # orphaned). Lives under docs/notes/ so orphan check 7 (which scans only
@@ -578,6 +580,15 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
         # File authority (BL-038): the two classes only a fixture can name.
         "authority_foreign_structures": [".cursorrules", "UBIQUITOUS_LANGUAGE.md"],
         "authority_relocated_owner_content": [],
+        # v20 fix round 1: the two okf-anchors/okf-sync-debt documents are
+        # owner prose — the closed `fix` scope forbids restructure from
+        # touching them. Recorded here (the exact text written above, not
+        # retyped and not read back) so the grader can assert byte-identity
+        # rather than a substring match.
+        "okf_untouched": {
+            "docs/okf/importer.md": importer_md_text,
+            "docs/okf/endpoints.md": endpoints_md_text,
+        },
     }
     if restructure_extras:
         meta["fidelity_sentences"] = [

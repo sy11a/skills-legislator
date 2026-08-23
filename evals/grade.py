@@ -985,19 +985,20 @@ def grade_restructure(ws: Path) -> Grader:
 
     # v20: anchor and debt findings are owner prose, not wiring. The closed
     # `fix` scope forbids touching them, so they route to "For the team"
-    # and both documents stay byte-identical.
-    team = report.split("## For the team:", 1)[1] if "## For the team:" in report else ""
+    # and both documents stay byte-identical. Reuses ftt_section (computed
+    # above for the skill-bindings check) rather than recomputing an
+    # unbounded slice of `report` — an unbounded split would also match a
+    # slug appearing after a later heading or the `Kept (immovable):` block.
     for marker in ("okf-anchors", "okf-sync-debt"):
-        g.check(f"{marker.replace('-', '_')}_routed_to_team", marker in team,
-                f"{marker} listed under For the team" if marker in team
+        g.check(f"{marker.replace('-', '_')}_routed_to_team", marker in ftt_section,
+                f"{marker} listed under For the team" if marker in ftt_section
                 else f"{marker} missing from the For the team section")
-    for name, expected in (("importer.md", "OldImporter.cs"),
-                           ("endpoints.md", "Endpoints.cs")):
-        doc = repo / "docs/okf" / name
-        intact = doc.exists() and expected in doc.read_text()
-        g.check(f"okf_{name.split('.')[0]}_unedited", intact,
-                f"{name} byte-carrying its planted content" if intact
-                else f"{name} was rewritten or removed")
+    for path, expected in meta.get("okf_untouched", {}).items():
+        doc = repo / path
+        intact = doc.exists() and doc.read_text() == expected
+        g.check(f"okf_{Path(path).stem}_unedited", intact,
+                f"{path} byte-identical to its planted content" if intact
+                else f"{path} was rewritten or removed")
 
     src = SKILL / "assets/rules/core/okf.md"
     okf = repo / "docs/ai/rules/core/okf.md"
