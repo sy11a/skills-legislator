@@ -148,7 +148,48 @@ def job_anchors() -> list[str]:
     return sorted(findings)
 
 
-JOBS = {"anchors": job_anchors}
+def git_iso(rel: str) -> str | None:
+    """Newest commit date for a path, or None (untracked, or no git)."""
+    try:
+        r = subprocess.run(["git", "log", "-1", "--format=%cI", "--", rel],
+                           cwd=ROOT, capture_output=True, text=True, timeout=10)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return r.stdout.strip() or None
+
+
+def job_okf_debt() -> list[str]:
+    top = top_level_dirs()
+    findings: list[str] = []
+    for doc in anchored_docs():
+        rel = doc.relative_to(ROOT).as_posix()
+        doc_iso = git_iso(rel)
+        if not doc_iso:
+            continue                      # untracked, or no git — nothing to compare
+        doc_dt = datetime.fromisoformat(doc_iso)
+        worst: tuple[str, int] | None = None
+        for _lineno, line in scannable_lines(doc.read_text(errors="ignore")):
+            for m in TOKEN.finditer(line):
+                token = m.group(1).strip()
+                if classify(token, top) != "path":
+                    continue
+                target = path_target(token)
+                if not target.exists():
+                    continue              # a broken anchor is the anchors job's finding
+                src_rel = target.relative_to(ROOT).as_posix()
+                src_iso = git_iso(src_rel)
+                if not src_iso:
+                    continue
+                days = (datetime.fromisoformat(src_iso) - doc_dt).days
+                if days > DEBT_DAYS and (worst is None or days > worst[1]):
+                    worst = (src_rel, days)
+        if worst:
+            findings.append(f"{rel}: okf-sync-debt: {worst[0]} changed "
+                            f"{worst[1]} days after this document")
+    return sorted(findings)
+
+
+JOBS = {"anchors": job_anchors, "okf-debt": job_okf_debt}
 
 
 def main(argv: list[str]) -> int:
