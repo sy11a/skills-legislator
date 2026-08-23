@@ -73,10 +73,16 @@ Gate 0/1 — that ordering is what makes the parallelism safe.
   - **BL-028** — manifest key `profiles` → `stacks`, with the legacy-key
     upgrade path and a legacy-manifest fixture — shipped in v17, residue only.
   - **BL-031** — leaves the cycle (docs-only).
-- **v19 — OKF v2 and the one engine.** **BL-033** alone, for the reason its
+- **v19 — file-authority residue.** **BL-041** alone (decided 2026-08-23,
+  departing from the residue-rides-the-next-cycle precedent of BL-011…025):
+  the wall's blind spot and the grader hardenings are worth landing *before*
+  the edition that writes the most new prose, and BL-033's own entry asks
+  for an empty landing. No fleet sweep for v19 on its own — upgrade is
+  cumulative, the fleet moves 18 → 20 in one pass when BL-033 lands.
+- **v20 — OKF v2 and the one engine.** **BL-033** alone, for the reason its
   own entry gives: a transform of what "docs" means across the fleet must
   not share a landing with anything else.
-- **After v19:** BL-034 (self-legislation, depends on OKF v2, not on an
+- **After v20:** BL-034 (self-legislation, depends on OKF v2, not on an
   edition number), then BL-027 (outer placement mode, needs its own design
   cycle first).
 - **Off the edition track:** BL-035 (docs-only, runs any time), BL-039 and
@@ -943,7 +949,7 @@ if they need permanence).
 
 ## BL-027 — Outer placement mode (Vector A: legislation outside the codebase)
 
-**Status: queued (behavioral — skill/ changes, VERSION bump + full e2e) → edition v19+, after its own design cycle. Renamed 2026-08-20 from "Enterprise sidecar placement mode": outer names the mode (the AI layer sits outside the codebase — ontology §Placement modes), the sidecar is only the mechanism that hosts it.**
+**Status: queued (behavioral — skill/ changes, VERSION bump + full e2e) → edition v21+, after its own design cycle. Renamed 2026-08-20 from "Enterprise sidecar placement mode": outer names the mode (the AI layer sits outside the codebase — ontology §Placement modes), the sidecar is only the mechanism that hosts it.**
 
 **What:** a placement mode for legislating a repo the operator **cannot
 commit to** (real enterprise case, anonymized — large fast-mutating
@@ -1158,7 +1164,7 @@ everywhere.
 
 ## BL-033 — OKF v2 + the one engine: generated baseline, source anchors, spec linter (fleet-obs pilot)
 
-**Status: queued 2026-08-20 → edition v19 (moved from v18 on 2026-08-22 when the v18 scope was decided: v18 carries the rights-and-names group, and this case keeps the isolated landing its own entry argues for — behavioral: skill/ changes, VERSION bump + full e2e)**
+**Status: queued 2026-08-20 → edition v20 (moved from v18 to v19 on 2026-08-22 when the v18 scope was decided, and to v20 on 2026-08-23 when BL-041 took v19 on its own: v18 carries the rights-and-names group, and this case keeps the isolated landing its own entry argues for — behavioral: skill/ changes, VERSION bump + full e2e)**
 
 **What:** two interlocking pieces from deep-audit D2/D4. (1) **OKF v2
 decomposition by link hardness**: generated (baseline.md from annotated
@@ -1203,7 +1209,7 @@ migrates repos forward-only (no history rewritten).
 
 ## BL-034 — Self-legislation: the legislator repo joins its own fleet
 
-**Status: queued 2026-08-20 (process + one behavioral cycle) — after v19 lands (was "after v18" before the 2026-08-22 scope decision; the dependency is on BL-033's OKF v2, not on an edition number). Not an edition of its own.**
+**Status: queued 2026-08-20 (process + one behavioral cycle) — after v20 lands (was "after v18", then "after v19", before the 2026-08-22/23 scope decisions; the dependency is on BL-033's OKF v2, not on an edition number). Not an edition of its own.**
 
 **What:** apply the legislator to itself (A4, already seeded by
 `docs/ontology.md`): scaffold the repo that hosts the skill — its own
@@ -1605,7 +1611,7 @@ expressions, and a message is easy to forget.
 
 ## BL-041 — File-authority residue: one prose right the wall cannot see, and the `replace` carve-out for the manifest
 
-**Status: PROPOSED 2026-08-23 — raised by the v18 final review; rides edition v19 as a behavioral rider (skill/ edits, VERSION bump + full e2e).**
+**Status: IN PROGRESS 2026-08-23 — edition v19 on its own (see the edition plan; was "rides v19 as a rider" until the 2026-08-23 decision). Item 2 settled as a carve-out in the `replace` bullet, not a ninth value. Branch `feature/bl-041-authority-residue-v19`: asserts committed red (`d732b57`), law + grader green (`a8584aa`); benchmark pending.**
 
 **What:** the two Important findings the v18 final review deferred rather
 than pay a re-benchmark for wording, plus three grader/static-check
