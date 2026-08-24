@@ -1990,9 +1990,48 @@ two divergences here are its first inputs.
 
 ## BL-054 — Spike: full engine interchangeability as a design invariant, not a per-tool option
 
-**Status: SPIKE PROPOSED 2026-08-24** — exploration, time-boxed, no `skill/`
+**Status: SPIKE DONE 2026-08-24** — exploration, time-boxed, no `skill/`
 change, no VERSION, no benchmark. Its deliverable is an answer and a
 recommended contract, not code.
+
+**Answer:** `docs/superpowers/specs/2026-08-24-engine-interchangeability-spike.md`.
+Nine findings, each probed rather than read. The sharpest is **F1**: the two
+write-guard arms protect different sets — `docs/ai/engine.py` is blocked
+under Claude Code and **allowed** under opencode, so under that engine an
+agent may rewrite the anchor engine whose findings gate "done" via
+`core/verification.md`'s rung. It entered in v20, when the Claude arm was
+extended and the opencode arm was not. **F2** is why it shipped: the two
+guard suites (`evals/check_hooks.py`, `evals/check_opencode_plugin.mjs`) are
+independent hand-written sets deriving from no shared declaration, and both
+were green through a whole edition. F1 is the symptom; F2 is the defect.
+
+Also measured: the two delivery profiles start their agents from different
+states (F4 — the claude one loads the operator's personal `CLAUDE.md` and can
+invoke an installed `legislator` skill instead of reading the files the prompt
+points at); opencode has **no** `--safe-mode` equivalent, so the eval suite's
+fair-harness property is achievable under one profile only and is
+declarable-only, not closable (F5); permission posture differs in the
+dangerous direction (F6); model identity has no shared vocabulary, making
+"the same model floor under both profiles" currently **unexpressible** (F7);
+and `tools/link-skills.sh` is Claude-Code-only by construction (F8). The
+formatter arms are at parity; the stall oracle, kill pattern, resume flag and
+prompt channel are legitimate adapter differences, not divergences.
+
+**Recommendation:** the guarantee cannot live per-invocation — every
+divergence entered the same way, a profile added in one file by one case with
+nothing stating what a profile owes. A stated **engine contract** (seven
+properties, one adapter per engine, a mechanical conformance check in the
+commit gate, and a named exemption list for the declarable-only ones) is the
+recommended shape; it is BL-045's "one declaration, two projections" applied
+to invocation instead of imports, and the two should share a mechanism.
+
+**Also confirmed during the run:** the opencode credential is *still*
+invalid, so the fleet is deliverable today only under the claude profile —
+the emergency path is the only path. `opencode run` does exit `1` on that
+failure, so BL-053's FAIL branch fires correctly against it.
+
+**Five cases sized, none filed** — the spec lists them; order is the user's
+call.
 
 **The principle, settled by the user 2026-08-24 and not in question here:**
 every part of this resource must work under both profiles — opencode and
