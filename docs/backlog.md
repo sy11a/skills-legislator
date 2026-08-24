@@ -101,7 +101,8 @@ Gate 0/1 — that ordering is what makes the parallelism safe.
 - **Off the edition track:** BL-035 (docs-only, runs any time), BL-039 and
   BL-040 (repository-level operations, each wanting a deliberate moment),
   BL-050 and BL-053 (the two instruments — the eval runner and the fleet
-  tool — each able to report success while having done nothing).
+  tool, each able to report success while having done nothing) — both
+  **DONE 2026-08-24**.
 
 Personal machine to-do (not a Legislator task): adopt the official C# LSP
 plugin (`csharp-ls`) locally — symbol-level navigation for the dotnet fleet;
@@ -1816,7 +1817,22 @@ The law states the classes; the evals prove the loading. Static checks prove the
 
 ## BL-050 — Stage 1 must verify the workspace was materialized before an hour of agent runs starts
 
-**Status: PROPOSED 2026-08-23** — evals/tooling only, no VERSION, no benchmark.
+**Status: DONE 2026-08-24** — evals/tooling only, no VERSION, no benchmark.
+
+**Shipped:** stage 1 of `tools/evals-bg.sh` opens with a workspace
+precondition, ahead of the static and engine checks. Every scenario
+directory the invocation will touch — derived from its own flags, so
+`--only` and `--idem` are not blocked by fixtures they never open — must
+hold a `repo/` carrying the `eval-base` tag, else the failing directories
+are named and the run exits 1 having spawned nothing. The witness is the
+tag rather than mere directory presence because it is the same anchor
+`reset_repo` trusts: the check measures exactly what the run will later
+use. The dashboard now launches after the precondition, so an invocation
+that cannot run no longer opens a browser.
+
+**Measured red first:** on an empty workspace the previous script printed
+`static green`, spawned three `upgrade` attempts and exited 0. It now names
+the missing directories and exits 1 with an empty `orchestrate.log`.
 
 **What:** `tools/evals-bg.sh` spends an hour of agent runs without ever
 checking that the workspace was materialized. On 2026-08-23 it graded
@@ -1921,7 +1937,35 @@ recorded per `evals/README.md`, compared against v20.
 
 ## BL-053 — `fleet.sh` has one engine and no failure signal
 
-**Status: PROPOSED 2026-08-23** — tooling only (`tools/fleet.sh`), no `skill/` change, no VERSION, no benchmark. Both defects were met on the same run: the v20 sweep of 2026-08-23.
+**Status: DONE 2026-08-24** — tooling only (`tools/fleet.sh`), no `skill/` change, no VERSION, no benchmark. Both defects were met on the same run: the v20 sweep of 2026-08-23.
+
+**Shipped:** the invocation moved behind `run_upgrade_agent()` and takes a
+runner profile with the same shape `evals-bg.sh` uses (`--runner` / `RUNNER`,
+`opencode` by default, `claude` as the second profile); an unknown profile is
+rejected once, before the first repository. The `claude` profile passes its
+prompt on **stdin by construction**, so item 3's `--add-dir` trap cannot
+recur whatever flag order a later edit introduces. The five outcomes — ok,
+still behind, failed, skipped-dirty, excluded — are counted separately, and
+the sweep exits non-zero when any repository did not reach the current
+version; an `--exclude` is the operator's own decision and does not fail the
+sweep, `--dry-run` never fails. Verified over a fake scan root with a stub
+runner: every outcome branch, both profiles, an unknown profile, `--dry-run`,
+and a runner that exits 0 without draining stdin. Each failure case exited 0
+before the change.
+
+**Found while implementing, and NOT fixable here — a case for `fleet-obs`.**
+The `claude` profile has no counterpart to `--agent service-fleet`. That
+project ingests Claude Code sessions (it ships a hook adapter and a
+transcript miner), but only its opencode miner records an agent identity into
+bronze; the Claude adapter's `raw` is a clone of the hook payload, which
+carries no such field. Its silver and gold views select service sessions with
+`raw.agent_mode LIKE 'service-%'`, so the predicate can never match a Claude
+Code session — and by its ADR-0039 an unmarked session counts as practice.
+A sweep run under the `claude` profile therefore inflates exactly the lenses
+that ADR was written to protect. The launcher side is already correct; the
+missing half is a marking path in that project's Claude adapter. Recorded at
+the invocation in `fleet.sh` so the operator reads the next report knowing
+it.
 
 **What:** two independent faults in the fleet delivery tool, plus one caller trap worth recording beside them.
 
