@@ -96,12 +96,15 @@ Gate 0/1 — that ordering is what makes the parallelism safe.
 - **Spikes (raised 2026-08-23, toward the framework goal):** BL-047 (the
   decision inventory — what is still model-decided), BL-048 (per-job model
   floor), BL-049 (report derivability), BL-052 (does the constitution load
-  at all outside Claude Code and opencode). Each is time-boxed, produces
-  an answer rather than code, and sizes the cases that follow it.
+  at all outside Claude Code and opencode), and **BL-054** (raised
+  2026-08-24: full interchangeability of the two engine profiles as a design
+  invariant — the axes BL-044 and BL-052 do not cover). Each is time-boxed,
+  produces an answer rather than code, and sizes the cases that follow it.
 - **Off the edition track:** BL-035 (docs-only, runs any time), BL-039 and
   BL-040 (repository-level operations, each wanting a deliberate moment),
   BL-050 and BL-053 (the two instruments — the eval runner and the fleet
-  tool — each able to report success while having done nothing).
+  tool, each able to report success while having done nothing) — both
+  **DONE 2026-08-24**.
 
 Personal machine to-do (not a Legislator task): adopt the official C# LSP
 plugin (`csharp-ls`) locally — symbol-level navigation for the dotnet fleet;
@@ -1816,7 +1819,22 @@ The law states the classes; the evals prove the loading. Static checks prove the
 
 ## BL-050 — Stage 1 must verify the workspace was materialized before an hour of agent runs starts
 
-**Status: PROPOSED 2026-08-23** — evals/tooling only, no VERSION, no benchmark.
+**Status: DONE 2026-08-24** — evals/tooling only, no VERSION, no benchmark.
+
+**Shipped:** stage 1 of `tools/evals-bg.sh` opens with a workspace
+precondition, ahead of the static and engine checks. Every scenario
+directory the invocation will touch — derived from its own flags, so
+`--only` and `--idem` are not blocked by fixtures they never open — must
+hold a `repo/` carrying the `eval-base` tag, else the failing directories
+are named and the run exits 1 having spawned nothing. The witness is the
+tag rather than mere directory presence because it is the same anchor
+`reset_repo` trusts: the check measures exactly what the run will later
+use. The dashboard now launches after the precondition, so an invocation
+that cannot run no longer opens a browser.
+
+**Measured red first:** on an empty workspace the previous script printed
+`static green`, spawned three `upgrade` attempts and exited 0. It now names
+the missing directories and exits 1 with an empty `orchestrate.log`.
 
 **What:** `tools/evals-bg.sh` spends an hour of agent runs without ever
 checking that the workspace was materialized. On 2026-08-23 it graded
@@ -1921,7 +1939,44 @@ recorded per `evals/README.md`, compared against v20.
 
 ## BL-053 — `fleet.sh` has one engine and no failure signal
 
-**Status: PROPOSED 2026-08-23** — tooling only (`tools/fleet.sh`), no `skill/` change, no VERSION, no benchmark. Both defects were met on the same run: the v20 sweep of 2026-08-23.
+**Status: DONE 2026-08-24** — tooling only (`tools/fleet.sh`), no `skill/` change, no VERSION, no benchmark. Both defects were met on the same run: the v20 sweep of 2026-08-23.
+
+**Shipped:** the invocation moved behind `run_upgrade_agent()` and takes a
+runner profile with the same shape `evals-bg.sh` uses (`--runner` / `RUNNER`,
+`opencode` by default, `claude` as the second profile); an unknown profile is
+rejected once, before the first repository. The `claude` profile passes its
+prompt on **stdin by construction**, so item 3's `--add-dir` trap cannot
+recur whatever flag order a later edit introduces. The five outcomes — ok,
+still behind, failed, skipped-dirty, excluded — are counted separately, and
+the sweep exits non-zero when any repository did not reach the current
+version; an `--exclude` is the operator's own decision and does not fail the
+sweep, `--dry-run` never fails. Verified over a fake scan root with a stub
+runner: every outcome branch, both profiles, an unknown profile, `--dry-run`,
+and a runner that exits 0 without draining stdin. Each failure case exited 0
+before the change.
+
+**Found while implementing, and NOT fixable here — a case for `fleet-obs`.**
+The `claude` profile has no counterpart to `--agent service-fleet`. That
+project ingests Claude Code sessions (it ships a hook adapter and a
+transcript miner), but only its opencode miner records an agent identity into
+bronze; the Claude adapter's `raw` is a clone of the hook payload, which
+carries no such field. Its silver and gold views select service sessions with
+`raw.agent_mode LIKE 'service-%'`, so the predicate can never match a Claude
+Code session — and by its ADR-0039 an unmarked session counts as practice.
+A sweep run under the `claude` profile therefore inflates exactly the lenses
+that ADR was written to protect. The launcher side is already correct; the
+missing half is a marking path in that project's Claude adapter. Recorded at
+the invocation in `fleet.sh` so the operator reads the next report knowing
+it.
+
+**Not the whole of it, and not accepted as shipped.** This profile went in
+with *two* divergences from the opencode one — the service marking above, and
+the fact that it runs under the operator's full ambient context while the
+opencode profile runs under a dedicated service agent. Two accepted-in-passing
+divergences in one profile is a design signal, not a pair of gaps: nothing in
+this repo states what a profile owes. See **BL-054**, which takes
+interchangeability as the invariant and measures every axis against it. The
+two divergences here are its first inputs.
 
 **What:** two independent faults in the fleet delivery tool, plus one caller trap worth recording beside them.
 
@@ -1932,6 +1987,89 @@ recorded per `evals/README.md`, compared against v20.
 **Why:** the sweep is the moment the constitution stops being a local artifact and becomes law in other people's repositories. A tool that cannot run when one vendor's credential expires, and that cannot tell success from total failure in its own exit status, is the weakest link in that chain — and neither fault is visible until the day it matters.
 
 **Done when:** `fleet.sh` takes a runner profile with the same shape `evals-bg.sh` uses and the sweep completes under either engine; a run in which any repository fails or stays behind exits non-zero; and the `--add-dir` trap is either avoided by construction in the new profile or noted where the invocation is built.
+
+## BL-054 — Spike: full engine interchangeability as a design invariant, not a per-tool option
+
+**Status: SPIKE PROPOSED 2026-08-24** — exploration, time-boxed, no `skill/`
+change, no VERSION, no benchmark. Its deliverable is an answer and a
+recommended contract, not code.
+
+**The principle, settled by the user 2026-08-24 and not in question here:**
+every part of this resource must work under both profiles — opencode and
+Claude Code — and the two must be **fully interchangeable**. Where a tool
+behaves differently depending on which engine drives it, the tool's design
+is wrong; interchangeability is the foundation, not a feature one instrument
+may opt into. This spike does not decide the principle. It measures where we
+currently violate it and answers *at which layer* the guarantee has to live.
+
+**Why now, and why it is a design question rather than a bug list.** BL-053
+added a second engine to `fleet.sh` and shipped it with two divergences
+accepted in passing — the same way the glossary divergence entered (BL-044).
+That is the signal: divergence is not being introduced deliberately, it is
+being introduced because nothing states what a profile *owes*. Two profiles
+added by two different cases, in two different files, converge on nothing.
+
+**The inventory to measure, per axis. Four are known to diverge today; the
+spike's job is to complete the list and price each entry.**
+
+1. **Delivery — `tools/fleet.sh`.** Five known divergences. *(a)* Service
+   marking: the opencode profile passes `--agent service-fleet`, the
+   mechanism by which `fleet-obs` excludes a sweep from practice metrics
+   (its ADR-0039); the claude profile has no counterpart and none is
+   reachable from this side (see BL-053's finding). *(b)* Isolation: the
+   opencode profile runs under a dedicated service agent, the claude profile
+   under the operator's full ambient context — `CLAUDE.md`, auto-memory,
+   hooks, plugins, MCP, installed skills — so the two agents do not start
+   from the same state, and one of them can have an installed `legislator`
+   fire as a skill instead of being read as a file. *(c)* Prompt channel:
+   argv versus stdin. *(d)* Write scope: `--dir` versus `cd` plus two
+   `--add-dir`. *(e)* Model identity: `provider/model` strings versus bare
+   names, with no shared vocabulary — so "the same model floor" cannot even
+   be *stated* across profiles.
+2. **Measurement — `tools/evals-bg.sh`.** The suite already declares the
+   profiles non-comparable in writing (`evals/README.md`: "pass rates compare
+   *within* a profile, never across one"), and each edition's model floor is
+   recorded against one engine. Under the principle above that declaration is
+   no longer an acceptable resting place — it is the measurement axis of the
+   same defect. Also one-sided: `--safe-mode` is what makes the claude
+   profile a fair harness, and nothing isolates the opencode profile from the
+   machine's global agents and config, so the "fair harness" claim holds for
+   one profile only. The stall oracle, the kill pattern and the resume flag
+   differ too; those are adapter details and probably legitimate — the spike
+   must separate *legitimate adapter difference* from *behavioural
+   divergence*, which is the distinction the whole case turns on.
+3. **Enforcement — `plugin/`.** Two arms exist: `plugin/hooks/` for Claude
+   Code and `plugin/opencode/legislator-guard.ts` for opencode. Whether they
+   guard the same operations with the same verdicts has never been measured.
+   A write-guard that fires under one engine and not the other means the law
+   is enforced in one tool and advisory in the other, silently.
+4. **Law loading.** Already owned by BL-044 (the two-harness asymmetry study)
+   and BL-052 (the whole provider field). This spike must not re-run them —
+   it consumes their findings and covers the axes they do not: delivery,
+   measurement and enforcement.
+
+**The design question the inventory serves.** Is the guarantee per-invocation
+— each tool's profile block gets fixed once and re-diverges on the next edit
+— or is it a stated **engine contract**: a short list of properties every
+profile must deliver (isolation posture, prompt channel, write scope, service
+marking, permission posture, model identity), one adapter per engine that
+satisfies it, and a conformance check that fails when a profile cannot. The
+second shape is BL-045's "one declaration, two projections" applied to
+invocation instead of imports, and the two cases should probably share a
+mechanism. The spike recommends one shape and says what it costs.
+
+**Where interchangeability turns out to be impossible** — the `fleet-obs`
+service marking is the current candidate, since the fix lives in another
+repository — the answer must say so explicitly and name what is *declared*
+instead. An undeclared impossibility is the failure mode this whole case
+exists to stop.
+
+**Stop condition:** the deliverable is (a) the completed table — axis ×
+profile × observed behaviour × legitimate-adapter-difference or divergence,
+(b) a recommended shape for the guarantee with its cost, and (c) each
+divergence marked closable-here, closable-elsewhere, or declarable-only. No
+adapter is rewritten inside this spike; each entry becomes its own case,
+sized from the measurement.
 
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
 
