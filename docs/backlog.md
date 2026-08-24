@@ -96,8 +96,10 @@ Gate 0/1 — that ordering is what makes the parallelism safe.
 - **Spikes (raised 2026-08-23, toward the framework goal):** BL-047 (the
   decision inventory — what is still model-decided), BL-048 (per-job model
   floor), BL-049 (report derivability), BL-052 (does the constitution load
-  at all outside Claude Code and opencode). Each is time-boxed, produces
-  an answer rather than code, and sizes the cases that follow it.
+  at all outside Claude Code and opencode), and **BL-054** (raised
+  2026-08-24: full interchangeability of the two engine profiles as a design
+  invariant — the axes BL-044 and BL-052 do not cover). Each is time-boxed,
+  produces an answer rather than code, and sizes the cases that follow it.
 - **Off the edition track:** BL-035 (docs-only, runs any time), BL-039 and
   BL-040 (repository-level operations, each wanting a deliberate moment),
   BL-050 and BL-053 (the two instruments — the eval runner and the fleet
@@ -1967,6 +1969,15 @@ missing half is a marking path in that project's Claude adapter. Recorded at
 the invocation in `fleet.sh` so the operator reads the next report knowing
 it.
 
+**Not the whole of it, and not accepted as shipped.** This profile went in
+with *two* divergences from the opencode one — the service marking above, and
+the fact that it runs under the operator's full ambient context while the
+opencode profile runs under a dedicated service agent. Two accepted-in-passing
+divergences in one profile is a design signal, not a pair of gaps: nothing in
+this repo states what a profile owes. See **BL-054**, which takes
+interchangeability as the invariant and measures every axis against it. The
+two divergences here are its first inputs.
+
 **What:** two independent faults in the fleet delivery tool, plus one caller trap worth recording beside them.
 
 1. **One hardcoded engine.** Delivery is `opencode run --dir "$repo" --agent service-fleet`, with no alternative. On 2026-08-23 that agent's credential failed (`API key is invalid`) and the entire sweep became impossible — not one repository could be upgraded — although the delivery itself is engine-agnostic: the skill's owned-file work is `cp` plus a regenerated manifest, and any harness that can follow `SKILL.md` performs it identically. The repo already solved this problem once: `tools/evals-bg.sh` carries runner profiles (`opencode` / `claude`) precisely so the stages, contracts and grading survive a change of engine. Remedy: the same profile mechanism here, defaulting to `opencode`.
@@ -1976,6 +1987,89 @@ it.
 **Why:** the sweep is the moment the constitution stops being a local artifact and becomes law in other people's repositories. A tool that cannot run when one vendor's credential expires, and that cannot tell success from total failure in its own exit status, is the weakest link in that chain — and neither fault is visible until the day it matters.
 
 **Done when:** `fleet.sh` takes a runner profile with the same shape `evals-bg.sh` uses and the sweep completes under either engine; a run in which any repository fails or stays behind exits non-zero; and the `--add-dir` trap is either avoided by construction in the new profile or noted where the invocation is built.
+
+## BL-054 — Spike: full engine interchangeability as a design invariant, not a per-tool option
+
+**Status: SPIKE PROPOSED 2026-08-24** — exploration, time-boxed, no `skill/`
+change, no VERSION, no benchmark. Its deliverable is an answer and a
+recommended contract, not code.
+
+**The principle, settled by the user 2026-08-24 and not in question here:**
+every part of this resource must work under both profiles — opencode and
+Claude Code — and the two must be **fully interchangeable**. Where a tool
+behaves differently depending on which engine drives it, the tool's design
+is wrong; interchangeability is the foundation, not a feature one instrument
+may opt into. This spike does not decide the principle. It measures where we
+currently violate it and answers *at which layer* the guarantee has to live.
+
+**Why now, and why it is a design question rather than a bug list.** BL-053
+added a second engine to `fleet.sh` and shipped it with two divergences
+accepted in passing — the same way the glossary divergence entered (BL-044).
+That is the signal: divergence is not being introduced deliberately, it is
+being introduced because nothing states what a profile *owes*. Two profiles
+added by two different cases, in two different files, converge on nothing.
+
+**The inventory to measure, per axis. Four are known to diverge today; the
+spike's job is to complete the list and price each entry.**
+
+1. **Delivery — `tools/fleet.sh`.** Five known divergences. *(a)* Service
+   marking: the opencode profile passes `--agent service-fleet`, the
+   mechanism by which `fleet-obs` excludes a sweep from practice metrics
+   (its ADR-0039); the claude profile has no counterpart and none is
+   reachable from this side (see BL-053's finding). *(b)* Isolation: the
+   opencode profile runs under a dedicated service agent, the claude profile
+   under the operator's full ambient context — `CLAUDE.md`, auto-memory,
+   hooks, plugins, MCP, installed skills — so the two agents do not start
+   from the same state, and one of them can have an installed `legislator`
+   fire as a skill instead of being read as a file. *(c)* Prompt channel:
+   argv versus stdin. *(d)* Write scope: `--dir` versus `cd` plus two
+   `--add-dir`. *(e)* Model identity: `provider/model` strings versus bare
+   names, with no shared vocabulary — so "the same model floor" cannot even
+   be *stated* across profiles.
+2. **Measurement — `tools/evals-bg.sh`.** The suite already declares the
+   profiles non-comparable in writing (`evals/README.md`: "pass rates compare
+   *within* a profile, never across one"), and each edition's model floor is
+   recorded against one engine. Under the principle above that declaration is
+   no longer an acceptable resting place — it is the measurement axis of the
+   same defect. Also one-sided: `--safe-mode` is what makes the claude
+   profile a fair harness, and nothing isolates the opencode profile from the
+   machine's global agents and config, so the "fair harness" claim holds for
+   one profile only. The stall oracle, the kill pattern and the resume flag
+   differ too; those are adapter details and probably legitimate — the spike
+   must separate *legitimate adapter difference* from *behavioural
+   divergence*, which is the distinction the whole case turns on.
+3. **Enforcement — `plugin/`.** Two arms exist: `plugin/hooks/` for Claude
+   Code and `plugin/opencode/legislator-guard.ts` for opencode. Whether they
+   guard the same operations with the same verdicts has never been measured.
+   A write-guard that fires under one engine and not the other means the law
+   is enforced in one tool and advisory in the other, silently.
+4. **Law loading.** Already owned by BL-044 (the two-harness asymmetry study)
+   and BL-052 (the whole provider field). This spike must not re-run them —
+   it consumes their findings and covers the axes they do not: delivery,
+   measurement and enforcement.
+
+**The design question the inventory serves.** Is the guarantee per-invocation
+— each tool's profile block gets fixed once and re-diverges on the next edit
+— or is it a stated **engine contract**: a short list of properties every
+profile must deliver (isolation posture, prompt channel, write scope, service
+marking, permission posture, model identity), one adapter per engine that
+satisfies it, and a conformance check that fails when a profile cannot. The
+second shape is BL-045's "one declaration, two projections" applied to
+invocation instead of imports, and the two cases should probably share a
+mechanism. The spike recommends one shape and says what it costs.
+
+**Where interchangeability turns out to be impossible** — the `fleet-obs`
+service marking is the current candidate, since the fix lives in another
+repository — the answer must say so explicitly and name what is *declared*
+instead. An undeclared impossibility is the failure mode this whole case
+exists to stop.
+
+**Stop condition:** the deliverable is (a) the completed table — axis ×
+profile × observed behaviour × legitimate-adapter-difference or divergence,
+(b) a recommended shape for the guarantee with its cost, and (c) each
+divergence marked closable-here, closable-elsewhere, or declarable-only. No
+adapter is rewritten inside this spike; each entry becomes its own case,
+sized from the measurement.
 
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
 
