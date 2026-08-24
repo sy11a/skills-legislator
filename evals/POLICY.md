@@ -26,6 +26,31 @@ things, and all four are the edition's problem:
 Only the fourth class is resolved by changing *nothing* — and then only by
 raising the recorded model floor, never by lowering the bar.
 
+### The model class carries a burden of proof
+
+**"Model" is the only class whose fix costs nothing to write, which is exactly
+why it is the one to distrust.** Before a red may be called model-class, show
+that the law is unambiguous *at the point of use* — not merely correct
+somewhere in the file. Two questions, both answerable from the artifact:
+
+1. **Is the rule reachable from where the agent was working?** A prohibition
+   that binds the whole report but lives mid-paragraph in one section is
+   ambiguous in the operative sense, however exact its wording.
+2. **Does the rule enumerate what "done" means?** "Findings are always
+   `[decision]` items" does not say one item per file, so an agent that raised
+   one item has obeyed the sentence it read.
+
+Both questions failed on 2026-08-24 (v21). Two reds — an agent narrating that
+it had honored a suppression marker, and an agent raising one check-11 item
+where two were due — were classified model, and a full corpus run on a more
+expensive model was launched to "raise the floor". The owner stopped it: *if
+something breaks on sonnet, work out the situation and fix it, rather than
+raising the floor.* Re-read as law defects, both were ambiguity of exactly
+the two kinds above, and both were closed in SKILL.md's text.
+
+Raising the floor is what you do when the law is provably clear and the model
+still cannot execute it. It is not what you do when reading the law is hard.
+
 ## 2. Classify every red before fixing it
 
 Write the classification down before touching code. A red diagnosed from
