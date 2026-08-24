@@ -2215,6 +2215,36 @@ test rather than narrowing where it looks.
 a genuinely unfilled token in a scaffolded artifact still reports Critical, and
 a fixture in the corpus covers both directions.
 
+## BL-058 — The corpus stage cannot see a graded failure
+
+**Status: DONE 2026-08-24** — tooling only (`tools/evals-bg.sh`), no `skill/`
+change, no VERSION, no benchmark. Found by the v21 baseline run, fixed in the
+same cycle because the v21 corpus could not otherwise be trusted.
+
+**What:** stage 2 (smoke) reads the grading file and stops the run when the
+smoke scenario grades below 100%. Stage 3 (corpus) did not. `finish_scenario`
+computed the verdict, wrote `partial` into the queue — and returned nothing, so
+`CORPUS_FAILED` was set only when a scenario failed to *run*. A scenario that
+ran to completion and graded 43/44 left the corpus green.
+
+Measured, not inferred: the 2026-08-24 baseline of `v20` on `claude`/`sonnet`
+graded **193/194** with `rotted-layer` at 43/44, and the runner printed
+`=== ALL STAGES GREEN ===` and exited `0`.
+
+**Why it is the worst member of its family.** `evals/POLICY.md` §1 makes 100%
+the release bar and says there is no known red and no waiver. The instrument
+that decides releasability could not see a 99.5%. BL-050 let a run grade
+fixtures that did not exist; BL-053 let a sweep fail everywhere and exit 0;
+this one let an edition ship below its own stated bar. All three are the same
+defect wearing different clothes — a stage that computes a verdict and does not
+propagate it.
+
+**Shipped:** `finish_scenario` returns the failed-assert count; stage 3 sets
+`CORPUS_FAILED` on a graded failure as well as on a run failure and says which
+in `status.md`; the `--only` path exits non-zero when any targeted scenario
+fails to run or grades red. Verified by replaying the baseline's own grading
+files through the new logic: old verdict GREEN, new verdict FAIL.
+
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
 
 A master-agent that reviews an incoming request in a project and decides whether to route it to an existing project-local mini-agent (`.claude/agents/<name>.md`) or create a new fine-grained specialized one (task-appropriate model, scoped MCPs) is being built as its **own, separate skill** — not as part of Legislator. Rationale: Legislator is build-time scaffolding (runs occasionally, evolves via VERSION/manifest); request routing is a runtime concern with its own lifecycle. Folding both into one skill would blur SRP.
