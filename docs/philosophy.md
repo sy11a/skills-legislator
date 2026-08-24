@@ -3,7 +3,7 @@
 What this system is, why it is built the way it is, and how a repository comes
 to live under it. This is the narrative layer: it argues. The canonical term
 model is `docs/ontology.md`, the term-by-term definitions are in
-`docs/glossary.md`, and the operator's commands are in `README.md` — not one
+`docs/okf/glossary.md`, and the operator's commands are in `README.md` — not one
 shell command appears below, by design.
 
 Read it if you have just arrived and want to know what you are looking at,
@@ -311,10 +311,6 @@ outlive what it describes.
   dangling ids and uncovered requirements waits with it. Until they land, the
   truth-bonding principle above is enforced for what documents *name* and not
   yet for what they *promise*.
-- **Self-legislation** (BL-034) — the repository that hosts the skill is not
-  yet legislated by it. When it is, every new edition will be exercised on the
-  skill's own development before it reaches the fleet, and the manual practices
-  this repository already runs become instances of the law they produced.
 
 ---
 
@@ -322,7 +318,7 @@ outlive what it describes.
 
 - `docs/ontology.md` — the canonical model: strata, entities, relations, and
   the naming rules new terms must pass.
-- `docs/glossary.md` — every term with its definition, status, and home.
+- `docs/okf/glossary.md` — every term with its definition, status, and home.
 - `README.md` — installation, the invocation modes, fleet delivery, the eval
   suite, steward duties.
 - `evals/POLICY.md` — the bar an edition must clear before it ships.

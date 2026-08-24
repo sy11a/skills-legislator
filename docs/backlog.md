@@ -1221,7 +1221,37 @@ BL-043's.
 
 ## BL-034 — Self-legislation: the legislator repo joins its own fleet
 
-**Status: queued 2026-08-20 (process + one behavioral cycle) — after v20 lands (was "after v18", then "after v19", before the 2026-08-22/23 scope decisions; the dependency is on BL-033's OKF v2, not on an edition number). Not an edition of its own.**
+**Status: DONE 2026-08-24** — process only in the end: no `skill/` change, no
+VERSION bump, no benchmark. Case home: `docs/cases/BL-034-self-legislation/`
+(spec, plan, research, summary). Decision recorded in
+`docs/adr/0002-the-legislator-repo-is-governed-by-its-own-constitution.md`.
+
+**Shipped:** the repository is legislated at v20 in migration mode — thirteen
+owned files delivered and byte-verified, `CLAUDE.md` renamed to `AGENTS.md`
+and split three ways (`.claude/rules/evals.md`,
+`.claude/rules/constitution-source.md`, `.claude/rules/records.md`; the
+co-author-trailer rule removed as covered by `core/pair-development.md`), OKF
+bundle seeded, case home created, `stacks: []`. The 48-term glossary moved
+forward from `docs/glossary.md` into `docs/okf/glossary.md` with every row
+carried. `README.md` gained deliver-to-self as release step 4 and the
+branch version-skew rule.
+
+**The two probes that carried the risk.** Before delivery, the write-guard was
+driven over `skill/**` to prove it could not block development of the next
+edition; after delivery the same probe showed it flipping to BLOCKED on
+exactly `docs/ai/rules/**`, `docs/ai/engine.py` and `opencode.json`, and on
+nothing else. Then the hurting case was run for real: a source rule edited,
+`skill/VERSION` bumped to 21, delivered copy still holding v20 bytes, manifest
+still v20, both commit gates green on the skew. Bootstrap compilation, not
+self-modification — measured rather than argued.
+
+**What it caught on its first run, which is the whole point of the case:**
+audit check 2 produces **fourteen false Criticals** here (BL-057). It cannot
+tell an unfilled template token from one quoted in prose about templates, and
+this is the one repository whose documentation is *about* a templating system.
+Invisible everywhere else; unmissable here.
+
+**Status: was queued 2026-08-20 (process + one behavioral cycle) — after v20 lands (was "after v18", then "after v19", before the 2026-08-22/23 scope decisions; the dependency is on BL-033's OKF v2, not on an edition number). Not an edition of its own.**
 
 **What:** apply the legislator to itself (A4, already seeded by
 `docs/ontology.md`): scaffold the repo that hosts the skill — its own
@@ -1255,7 +1285,7 @@ clean or explains its findings.
 
 ## BL-035 — Docs overhaul: the philosophy manifest (`docs/philosophy.md`) + inner/outer modes
 
-**Status: DONE 2026-08-22** — `docs/philosophy.md` written (seven sections: what this is, philosophy, practices, application, placement modes, horizon, where to read next). README, `docs/ontology.md` and `docs/glossary.md` cross-reference it; five terms the manifest leans on gained glossary rows (drift, EARS, edition, grill, rot) so it introduces no orphan vocabulary. Docs-only as planned: no VERSION bump, no benchmark, static checks green. The **Horizon** section states what is designed but not built (BL-027, BL-033, BL-034, BL-038) and is expected to shrink as editions ship — a stale Horizon section is a finding for the edition that made it stale.
+**Status: DONE 2026-08-22** — `docs/philosophy.md` written (seven sections: what this is, philosophy, practices, application, placement modes, horizon, where to read next). README, `docs/ontology.md` and `docs/okf/glossary.md` cross-reference it; five terms the manifest leans on gained glossary rows (drift, EARS, edition, grill, rot) so it introduces no orphan vocabulary. Docs-only as planned: no VERSION bump, no benchmark, static checks green. The **Horizon** section states what is designed but not built (BL-027, BL-033, BL-034, BL-038) and is expected to shrink as editions ship — a stale Horizon section is a finding for the edition that made it stale.
 
 **What:** a standalone manifest document, `docs/philosophy.md` (English),
 stating what the legislator is and how it is applied — the document a
@@ -2109,6 +2139,81 @@ profile × observed behaviour × legitimate-adapter-difference or divergence,
 divergence marked closable-here, closable-elsewhere, or declarable-only. No
 adapter is rewritten inside this spike; each entry becomes its own case,
 sized from the measurement.
+
+## BL-055 — `fleet.sh` discovery cannot see a repository nested one level deeper
+
+**Status: PROPOSED 2026-08-24** — tooling only (`tools/fleet.sh`), no `skill/`
+change, no VERSION, no benchmark. Found by BL-034, which is barred from fixing
+it (that case's spec §Boundary).
+
+**What:** discovery is `find $SCAN_ROOTS -maxdepth 4 -path '*/docs/ai/manifest.json'`.
+Fleet repos sit at depth 4 and are found; this repository sits at depth 5 and
+is not. Having just become fleet member #0, it appears in neither `status` nor
+`upgrade`.
+
+**Why it is not a one-character fix.** Raising the depth decides the permanent
+delivery channel as a side effect — whether this repo is swept like every other
+member, or maintained by a distinct release step. That choice has a real
+hazard on one side (a sweep editing the repository that holds the law's source,
+mid-edition) and creates a second delivery path on the other, which is the
+divergence class BL-054 exists to stop. Decide the channel, then implement it.
+
+**Done when:** the channel is decided and recorded (ADR-0002 leaves it open),
+and `fleet.sh` implements exactly that one.
+
+## BL-056 — `fleet.sh status` reports uncommitted work as delivered
+
+**Status: PROPOSED 2026-08-24** — tooling only, no `skill/` change, no VERSION,
+no benchmark.
+
+**What:** `status` reads `docs/ai/manifest.json` from the working tree. On
+2026-08-24 it reported three repositories at v20 whose committed HEAD was v16,
+v16 and v14 — the 2026-08-23 sweep had upgraded them and nobody had reviewed or
+committed the diff. The table said 3 of 9 delivered; the true committed answer
+was **0 of 9**.
+
+There is a second-order effect: because those repos are dirty, the next sweep
+*skips* them, so the tool would leave them in the "upgraded but nowhere" state
+indefinitely, saying nothing beyond a `skip` line.
+
+**Why:** the sweep's whole purpose is putting law into other repositories, and
+law that is not committed is not there. A dashboard that counts a working-tree
+edit as delivery is optimistic in exactly the situation where the operator is
+relying on it — the same family as BL-050 and BL-053.
+
+**Done when:** `status` distinguishes committed version from working-tree
+version and names any repository where they differ; a repo carrying an
+unreviewed upgrade is visibly pending, not `ok`.
+
+## BL-057 — Audit check 2 cannot tell a quoted token from an unfilled one
+
+**Status: PROPOSED 2026-08-24** — behavioral (`skill/` change: SKILL.md's audit
+section, VERSION bump + full e2e). Found by BL-034's first audit run, which is
+barred from fixing it.
+
+**What:** check 2 (`unresolved-placeholders`) flags any `{{TOKEN}}` pattern in
+`AGENTS.md`, any `.md` under `docs/`, or any `.md` under `.claude/rules/`,
+exempting only `docs/adr/template.md`. In this repository that yields
+**fourteen Critical findings**, every one a token quoted inside backticks in
+prose that discusses the templating system — in `docs/backlog.md` and in
+thirteen historical specs and plans under `docs/superpowers/**`.
+
+**Why it matters beyond cosmetics.** Critical is the severity that means "the
+layer is broken". Fourteen false ones train the reader to skim the Critical
+section, which is precisely the section that must never be skimmed. And the
+failure is systematic, not incidental: any repository documenting a templating
+system trips it, and every repository that legislates *another* repository will
+document one.
+
+**Two candidate remedies, both cheap:** skip inline-code spans (a token inside
+backticks is a quotation, not a placeholder), and/or exempt the directories
+the other checks already treat as history and record — `docs/superpowers/**`,
+`docs/cases/**`, `docs/backlog.md`. The first is the more honest: it fixes the
+test rather than narrowing where it looks.
+
+**Done when:** a repository whose prose quotes template tokens audits clean,
+a genuinely unfilled token in a scaffolded artifact still reports Critical, and
+a fixture in the corpus covers both directions.
 
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
 

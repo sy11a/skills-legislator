@@ -1,4 +1,15 @@
-# Legislator — Glossary
+---
+type: System
+title: Legislator — Domain Glossary
+description: Domain terms mapped to their meaning in this codebase.
+tags: [system, glossary, domain]
+timestamp: 2026-08-24T00:00:00Z
+status: implemented
+---
+
+# Domain Glossary
+
+Map internal jargon to what it means in this codebase, so any session edits the right files. Add terms as they emerge; keep meanings current (the okf.md sync rule applies).
 
 Canonical term list. Status values: **industry** — established SDD/software-field
 term used in its field sense · **home** — legislator's own established term ·

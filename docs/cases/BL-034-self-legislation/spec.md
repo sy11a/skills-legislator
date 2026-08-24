@@ -74,8 +74,12 @@ Ids are permanent; tasks and verification reference them.
 - **R-007** — WHEN the glossary is migrated, THEN every term row present in
   `docs/glossary.md` before this case SHALL be present in
   `docs/okf/glossary.md` after it, and `docs/glossary.md` SHALL NOT exist.
-- **R-008** — No tracked file outside `docs/superpowers/**` SHALL reference
-  `docs/glossary.md` after this case.
+- **R-008** — No tracked file SHALL carry a *live* reference to
+  `docs/glossary.md` after this case. A live reference is one a reader would
+  follow to find the glossary. Two classes of mention are not live and are
+  exempt: `docs/superpowers/**`, which is retired history and never rewritten,
+  and this case's own record under `docs/cases/BL-034-self-legislation/`,
+  which must name the pre-migration path to describe what moved.
 - **R-009** — `docs/okf/codebase-map.md` SHALL anchor only to paths that
   exist in the repository.
 
@@ -146,6 +150,14 @@ A: The sixteen owned copies under `docs/ai/rules/**` may read to some static
 check as a second source of law. Adapting `check_static.py` so it knows about
 owned copies is inside this case's scope; changing what the checks *mean* is
 not.
+
+**Q4 — R-008 forbade every reference to `docs/glossary.md` outside
+`docs/superpowers/**`; the case's own spec, plan and research name it.**
+(found while executing T-05, 2026-08-24)
+A: The requirement was written too broadly. Its intent is that no *live*
+pointer survives — a mention inside the record of the move is not a pointer to
+follow. R-008 amended above to say so, rather than either weakening the check
+or rewording a record to satisfy a mis-stated rule.
 
 ## Rejected alternatives
 
