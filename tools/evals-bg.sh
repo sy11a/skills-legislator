@@ -3,7 +3,9 @@
 # the v17 benchmark's live iteration).
 #
 # Stages, in order, each only on the previous green:
-#   1. static   — evals/check_static.py (seconds)
+#   1. gates    — workspace precondition (every scenario dir this invocation
+#                 will use holds a repo/ at the `eval-base` tag), then
+#                 evals/check_static.py and evals/check_engine.py (seconds)
 #   2. smoke    — the upgrade scenario (most change-sensitive surface)
 #   3. corpus   — every scenario in evals.json except idempotency
 #   4. idem     — commit each run-1 result, second pass, zero-diff grade
@@ -394,15 +396,66 @@ import json,sys;sys.exit(0 if json.load(open('$g'))['summary']['failed']==0 else
   else upd_queue "$sc" partial; notify "eval $sc: $verdict (w/ errors)"; fi
 }
 
-# ---- dashboard + browser ----
+# ---- workspace precondition (BL-050) ------------------------------------
+# The runner never materialized the workspace and never checked that anyone
+# else had — `evals/README.md` step 1 is a separate command. On 2026-08-23 a
+# full corpus attempt ran for an hour against fixtures that did not exist:
+# agents improvised in absent repositories, two scenarios had no repo/ at all,
+# and two others still graded CLEAN. `eval-base` is the right witness because
+# it is the same tag reset_repo trusts — this checks exactly what the run will
+# later use, not a weaker proxy for it.
+scenario_dirs() { # -> the dir names THIS invocation will touch, one per line
+  if [ ${#IDEM[@]} -gt 0 ]; then
+    printf '%s\n' "${IDEM[@]}"
+  elif [ ${#ONLY[@]} -gt 0 ]; then
+    printf '%s\n' "${ONLY[@]}"
+  else
+    # stages 2-4: every scenario in evals.json except idempotency, which is a
+    # second pass over other scenarios and owns no directory of its own
+    python3 -c "
+import json
+d=json.load(open('$REPO/evals/evals.json'))
+print('\n'.join(e['name'] for e in d['evals'] if e['name'] != 'idempotency'))"
+  fi | while read -r n; do [ -n "$n" ] && DIR_OF "$n"; done
+}
+
+require_workspace() {
+  local sc line
+  local -a bad=()
+  while read -r sc; do
+    [ -n "$sc" ] || continue
+    if [ ! -d "$WS/$sc/repo" ]; then
+      bad+=("$sc — no repo/ directory")
+    elif ! git -C "$WS/$sc/repo" rev-parse -q --verify eval-base >/dev/null 2>&1; then
+      bad+=("$sc — repo/ carries no eval-base tag")
+    fi
+  done < <(scenario_dirs)
+  [ ${#bad[@]} -eq 0 ] && return 0
+  status "WORKSPACE NOT MATERIALIZED — $WS"
+  for line in "${bad[@]}"; do status "  $line"; done
+  status "  fix: python3 evals/setup_workspace.py $WS"
+  {
+    printf 'WORKSPACE NOT MATERIALIZED — %s\n' "$WS"
+    printf '  %s\n' "${bad[@]}"
+    printf '  fix: python3 evals/setup_workspace.py %s\n' "$WS"
+  } >&2
+  notify "evals: workspace not materialized — nothing ran"
+  return 1
+}
+
+# ============================= STAGES =============================
+
+status "profile: runner=$RUNNER model=$MODEL (run $RUN_ID)"
+status "=== stage 1: workspace precondition ==="
+require_workspace || exit 1
+status "workspace green"
+
+# ---- dashboard + browser ---- (only once the run can actually proceed)
 if [ -z "${NO_BROWSER:-}${KBO_EVALS_NO_BROWSER:-}" ]; then
   setsid nohup python3 "$REPO/evals/dashboard.py" "$WS" --interval 3 --open \
     > "$WS/dashboard.log" 2>&1 &
 fi
 
-# ============================= STAGES =============================
-
-status "profile: runner=$RUNNER model=$MODEL (run $RUN_ID)"
 status "=== stage 1: static checks ==="
 if ! ( cd "$REPO" && python3 evals/check_static.py > "$WS/static.log" 2>&1 ); then
   status "STATIC FAILED — see $WS/static.log"; notify "evals: static checks FAILED"
