@@ -182,6 +182,40 @@ def materialize_case_practice(dest: Path) -> None:
     os.symlink("AGENTS.md", dest / "CLAUDE.md")
 
 
+def materialize_audit_engine_absent(dest: Path) -> None:
+    """BL-051 item 5b: the one state check 15's Info branch describes and no
+    fixture reached — an OKF bundle present with `docs/ai/engine.py` absent.
+
+    The real-world shape of it is a repo legislated below v20: the engine
+    became an owned file in v20, so a v19 delivery has the bundle and no
+    engine. Building it that way keeps every other check honest — the engine
+    is not in `ownedFiles`, so check 3 (owned-integrity) stays clean rather
+    than reporting a missing owned file, which would be a different finding
+    wearing this one's clothes."""
+    shutil.copytree(EVALS / "fixtures" / "upgrade-base", dest)
+    rules_dst = dest / "docs/ai/rules/core"
+    rules_dst.mkdir(parents=True)
+    owned: list[str] = []
+    for f in sorted((SKILL / "assets/rules/core").glob("*.md")):
+        shutil.copy2(f, rules_dst / f.name)
+        owned.append(f"docs/ai/rules/core/{f.name}")
+    # Deliberately NO docs/ai/engine.py, and it is absent from ownedFiles.
+    (dest / "docs/ai/manifest.json").write_text(
+        "{\n"
+        '  "legislatorVersion": 19,\n'
+        '  "stacks": [],\n'
+        '  "keep": [],\n'
+        '  "ownedFiles": [\n'
+        + ",\n".join(f'    "{p}"' for p in sorted(owned))
+        + "\n  ]\n}\n")
+    imports = "\n".join(f"@{p}" for p in sorted(owned))
+    (dest / "AGENTS.md").write_text(
+        "# BillingApi\n\n" + imports +
+        "\n\n## Project notes\n\nBillingApi handles invoice generation and "
+        "payment webhooks. Legislated at v19 — before the engine existed.\n")
+    os.symlink("AGENTS.md", dest / "CLAUDE.md")
+
+
 def materialize_upgrade_drop_stack(dest: Path) -> None:
     """BL-036 Wave B: a repo subscribed to dotnet+aurelia whose user asks
     to drop aurelia. Asserts the only deletion-semantics-by-stack branch:
@@ -656,6 +690,10 @@ def main() -> None:
     repo = ws / "case-practice" / "repo"
     materialize_case_practice(repo)
     init_commit(repo, "fixture: case-practice (clean legislated repo)")
+
+    repo = ws / "audit-engine-absent" / "repo"
+    materialize_audit_engine_absent(repo)
+    init_commit(repo, "fixture: audit-engine-absent (v19 layer, bundle present, no engine)")
 
     repo = ws / "rotted-layer" / "repo"
     materialize_rotted(repo)

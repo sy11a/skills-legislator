@@ -213,6 +213,84 @@ check(code == 0 and out == "",
       "a directory anchor's history (the union of everything beneath it) never produces debt",
       f"exit={code} out={out!r}")
 
+print("== BL-051 item 1: a status: removed document is outside the anchored class ==")
+REMOVED = ("---\ntype: Concept\nstatus: removed\n---\n\n"
+           "# Payments\n\nThis concept was removed. It named `src/App/Gone.cs`.\n")
+LIVE = ("---\ntype: Concept\nstatus: implemented\n---\n\n"
+        "# Billing\n\nStill names `src/App/Gone.cs`.\n")
+root = make_repo({"payments.md": REMOVED, "billing.md": LIVE},
+                 {"src/App/WidgetStore.cs": "public class WidgetStore { }\n"})
+code, out = run(root, "anchors")
+check("payments.md" not in out,
+      "removed_doc_not_anchored: a status: removed document produces no anchor finding",
+      f"exit={code} out={out!r}")
+check("billing.md:8: path-anchor: src/App/Gone.cs" in out,
+      "removed_doc_not_anchored (control): a live sibling with the same dead path still reports",
+      f"exit={code} out={out!r}")
+
+print("== BL-051 item 1: nor does it accrue sync debt ==")
+root = make_repo({"payments.md": REMOVED, "billing.md": LIVE},
+                 {"src/App/Gone.cs": "public class Gone { }\n"})
+git(root, "init", "-q")
+git(root, "add", "-A", date="2026-01-01T12:00:00")
+git(root, "commit", "-q", "-m", "docs and code", date="2026-01-01T12:00:00")
+(root / "src/App/Gone.cs").write_text("public class Gone { void Later() {} }\n")
+git(root, "add", "-A", date="2026-04-01T12:00:00")
+git(root, "commit", "-q", "-m", "source moves on", date="2026-04-01T12:00:00")
+code, out = run(root, "okf-debt")
+check("payments.md" not in out,
+      "removed_doc_no_debt: a status: removed document accrues no okf-sync-debt",
+      f"exit={code} out={out!r}")
+check("billing.md" in out,
+      "removed_doc_no_debt (control): the live sibling still accrues debt",
+      f"exit={code} out={out!r}")
+
+print("== BL-051 item 2: build output is excluded at any depth, not just top level ==")
+root = make_repo(
+    {"widgets.md": "# Widgets\n\nHandled by `PaymentProcessor`.\n"},
+    {"src/App/obj/Debug/App.js": "var PaymentProcessor = 1;\n",
+     "src/App/WidgetStore.cs": "public class WidgetStore { }\n"})
+code, out = run(root, "anchors")
+check("symbol-anchor: PaymentProcessor" in out,
+      "nested_build_output_ignored: a symbol living only in nested build output stays unresolved",
+      f"exit={code} out={out!r}")
+
+print("== BL-051 item 2 (control): a symbol in real source still resolves ==")
+root = make_repo(
+    {"widgets.md": "# Widgets\n\nHandled by `PaymentProcessor`.\n"},
+    {"src/App/PaymentProcessor.cs": "public class PaymentProcessor { }\n"})
+code, out = run(root, "anchors")
+check(code == 0 and out == "",
+      "real_source_still_resolves: a symbol outside build output resolves as before",
+      f"exit={code} out={out!r}")
+
+print("== BL-051 item 3: an unhandled exception must not read as a clean audit ==")
+root = make_repo({"widgets.md": "# Widgets\n\nSee `src/App/WidgetStore.cs`.\n"},
+                 {"src/App/WidgetStore.cs": "public class WidgetStore { }\n"})
+unreadable = root / "docs" / "okf" / "locked.md"
+unreadable.write_text("# Locked\n\nNames `src/App/WidgetStore.cs`.\n")
+unreadable.chmod(0o000)
+code, out = run(root, "anchors")
+unreadable.chmod(0o644)
+check(code not in (0, 1, 2),
+      "crash_exits_distinctly: an unhandled exception exits with a code distinct from clean/findings/usage",
+      f"exit={code} out={out!r}")
+check(out == "",
+      "crash_exits_distinctly (control): a crash prints nothing to stdout, so a stdout-only reader sees no findings",
+      f"out={out!r}")
+
+print("== BL-051 item 3 (regression contract): the three documented exit codes ==")
+root = make_repo({"widgets.md": "# W\n\nSee `src/App/WidgetStore.cs`.\n"},
+                 {"src/App/WidgetStore.cs": "public class WidgetStore { }\n"})
+code, _ = run(root, "anchors")
+check(code == 0, "exit_codes_unchanged: clean is 0", f"exit={code}")
+root = make_repo({"widgets.md": "# W\n\nSee `src/App/Gone.cs`.\n"},
+                 {"src/App/WidgetStore.cs": "public class WidgetStore { }\n"})
+code, _ = run(root, "anchors")
+check(code == 1, "exit_codes_unchanged: findings is 1", f"exit={code}")
+code, _ = run(root, "no-such-job")
+check(code == 2, "exit_codes_unchanged: usage error is 2", f"exit={code}")
+
 if failures:
     print(f"\n{len(failures)} check(s) FAILED")
     sys.exit(1)

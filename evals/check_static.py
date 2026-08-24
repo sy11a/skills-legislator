@@ -241,6 +241,56 @@ check(not offenders, "no absolute local paths or fleet repo names in tracked fil
 if not names:
     print("  note  fleet-name check skipped — decoding key not on this machine")
 
+print("== BL-051: the engine's callers state its failure and absence branches ==")
+# Checks 15 and 17 are the audit's readers of docs/ai/engine.py. Both read
+# stdout lines only, so an engine that crashes (empty stdout, non-zero exit)
+# reads to them as "no findings" — the audit fails open on the one instrument
+# the verification rung fails closed on. Parse each check body out of SKILL.md
+# rather than restating its text here (POLICY.md §8).
+audit_body = skill_md.split("## Audit — read-only health check", 1)[-1]
+check_bodies = {}
+for num in ("15", "16", "17", "18"):
+    m = re.search(rf"^{num}\. \*\*(.+?)(?=^\d+\. \*\*|^Report format)",
+                  audit_body, re.M | re.S)
+    if m:
+        check_bodies[num] = m.group(0)
+check(set(check_bodies) >= {"15", "17"},
+      "audit checks 15 and 17 are parseable from SKILL.md",
+      f"parsed: {sorted(check_bodies)}")
+
+for num, slug in (("15", "okf-anchors"), ("17", "okf-sync-debt")):
+    body = check_bodies.get(num, "")
+    check("python3" in body and re.search(r"python3[^.]{0,80}(absent|missing|not (?:on|available))",
+                                          body, re.I | re.S) is not None,
+          f"check_{num}_has_python3_branch: check {num} ({slug}) states what it does when python3 is absent",
+          "no absent-branch sentence found")
+    # Two independent signals rather than one proximity match: the body must
+    # talk about the exit code AND declare a bad one not-clean. Requiring them
+    # within N characters measured sentence layout, not the obligation.
+    names_exit = re.search(r"\bexit(?:s|ed|ing)?\b", body, re.I) is not None
+    declares_failure = re.search(
+        r"(check failure|never (?:as )?a clean check|not a clean check|never clean)",
+        body, re.I) is not None
+    check(names_exit and declares_failure,
+          f"check_{num}_names_nonzero_exit: check {num} ({slug}) states that an engine exit beyond its findings code is a check failure",
+          f"names_exit={names_exit} declares_failure={declares_failure}")
+
+print("== BL-051: the keep refusal covers the whole owned set ==")
+# Since v20 the owned set is docs/ai/rules/**, docs/ai/engine.py and the root
+# opencode.json. A refusal phrased as "under docs/ai/rules/" leaves the other
+# two keep-listable, putting the kept-paths row (link-only) and the owned-law
+# row (replace) of the file-authority table in conflict.
+step3_keep = re.search(r"^6\. \*\*Keep list.+?(?=^7\. )", skill_md, re.M | re.S)
+report_keep = re.search(r"each refused request with why it was refused \(([^)]*)\)", skill_md)
+for label, text in (("step 3.6", step3_keep.group(0) if step3_keep else ""),
+                    ("the Step 7 Keep list section", report_keep.group(1) if report_keep else "")):
+    check(bool(text), f"keep_refusal_covers_owned_set: {label} is parseable from SKILL.md")
+    if text:
+        narrow = re.search(r"owned files? under `docs/ai/rules/`", text)
+        check(narrow is None,
+              f"keep_refusal_covers_owned_set: {label} does not describe the owned set as docs/ai/rules/ alone",
+              "found the narrow phrasing — engine.py and opencode.json remain keep-listable")
+
 if failures:
     print(f"\n{len(failures)} check(s) FAILED")
     sys.exit(1)

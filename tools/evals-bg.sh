@@ -156,7 +156,7 @@ REPORT_OF() { # <scenario-dir-name> -> relative expected deliverable
   case "$1" in
     legacy-migration|legacy-migration-agents-first) echo "outputs/migration-report.md";;
     upgrade|upgrade-drop-stack) echo "outputs/upgrade-report.md";;
-    rotted-layer) echo "outputs/audit-report.md";;
+    rotted-layer|audit-engine-absent) echo "outputs/audit-report.md";;
     restructure) echo "outputs/restructure-report.md";;
     *) echo "";;
   esac
@@ -239,7 +239,7 @@ msg_block() { # <dir>
   case "$sc" in
     legacy-migration|legacy-migration-agents-first|upgrade|upgrade-drop-stack) report="Write your full Step 7 report (all sections, including Health and any Constitution candidates) to $out/$(basename "$(REPORT_OF "$sc")") — overwrite if it exists.";;
     case-practice) report="";;
-    rotted-layer) report="Save your full audit report to $out/audit-report.md — outside the target repo (which you must not touch: zero writes).";;
+    rotted-layer|audit-engine-absent) report="Save your full audit report to $out/audit-report.md — outside the target repo (which you must not touch: zero writes).";;
     restructure) report="Write your final restructure report to $out/restructure-report.md — overwrite if it exists.";;
     *) report="";;
   esac
