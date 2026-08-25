@@ -51,6 +51,91 @@ the two kinds above, and both were closed in SKILL.md's text.
 Raising the floor is what you do when the law is provably clear and the model
 still cannot execute it. It is not what you do when reading the law is hard.
 
+**The class has a track record, and it is 0 for 3.** Every red ever filed as
+model-class was later shown to be something else:
+
+| Filed | Verdict |
+|---|---|
+| v18, the suppressed line quoted in a report's Notes — "law right, assert right, harness silent… did not recur" | Recurred in the v20 baseline and again in v21, three editions later. A law-placement defect: the prohibition binds the whole report but sits mid-paragraph in the candidates section, unreachable from the report-format spec. Fixed in v21. |
+| v18, `{{PROJECT_NAME}}` left unfilled | Filed model, described in the same row as "a redundancy gap… belongs to a later edition" — the author had already seen the law defect. |
+| v19, a missing stack-import line | Re-run clean, never examined again. |
+
+A label that has never once survived scrutiny is not a diagnosis. Treat
+"model" as a hypothesis of last resort, and write down what you checked.
+
+### What thirty-six recorded defects say about where they come from
+
+Counted from the chronicles of v17–v21, the first editions under this policy:
+
+| Class | Count | The shape it almost always takes |
+|---|---|---|
+| **law** | 13 | **Nine of thirteen are scope or completion**, not error: the rule is correct but never says *where* it applies (unreachable from the point of use) or *when you are done* (no enumeration, so an agent stops at the first satisfied clause). Those are exactly the two questions above. |
+| **harness** | 12 | Over half are **false green**: a stage that computes a verdict and does not propagate it (v20's unmaterialized workspace graded two scenarios CLEAN; v21's corpus stage printed ALL STAGES GREEN at 43/44), or an environment failure wearing a model's clothes (v21's quota exhaustion presenting as stalled agents). |
+| **grader** | 8 | Typography graded instead of value — two disjoint namespaces, order-sensitive markers, an assert reading the wrong artifact. **Two were green and empty in every run of every version** until found by accident. |
+| **model** | 3 | See above: none survived. |
+
+The single cross-cutting theme, spanning harness and grader both, is
+**silent non-measurement**. A red announces itself; a thing that was never
+measured does not. Every rule in the two sections below exists to make
+non-measurement noisy.
+
+## 1b. Not measured is not passed
+
+The suite's arithmetic must never award a point for an artifact that does not
+exist. Measured on 2026-08-25 against a real graded run, by blanking the
+artifact and re-grading:
+
+| Scenario | Survives an empty report | Legitimate |
+|---|---|---|
+| `audit` (`rotted-layer`) | **14 of 44 — 32%** | 3. The other 11 are free points. |
+| `restructure` | 30 of 38 — 79% | ~29. Its substance is the repo tree, not the report; 8 asserts correctly went red. |
+
+The concentration is not accidental. **Audit is a zero-writes mode, so all of
+its evidence is the report** — a scenario that produced nothing still scored
+nearly a third. Two mechanisms produce that:
+
+- **Negative asserts are vacuously true on an empty artifact.** Nine
+  `does NOT contain` asserts pass when the report is missing, which is the
+  `ghost_import_fixed` defect of v17 alive at scale: it was fixed as one
+  assert and never as a class.
+- **Existence is not substance.** `step7_report_saved` and its siblings test
+  `path.exists()`, so a zero-byte file passes.
+
+Two rules follow, and they are the same rule the runner learned in BL-058 —
+a verdict that is not propagated is a verdict that was not reached:
+
+1. **Every assert declares the artifact it reads.** When that artifact is
+   absent or empty, the assert is **not passed and not failed — it is
+   `unmeasured`**, and any unmeasured assert makes the scenario red. A
+   negative assert may never draw its truth from an absent artifact.
+2. **A scenario reports two numbers**: how many asserts were measured, and how
+   many of those passed. `44/44 measured, 44 passed` and `14/44 measured, 14
+   passed` must not both print as a percentage that looks like progress.
+
+## 1c. An assert must be falsifiable, and the suite must prove it
+
+§3's "a new assert must be shown RED before it is shown green" is right and
+insufficient, because it binds only the moment an assert is written. Nothing
+re-checks it afterwards, and **run history cannot help**: a healthy corpus is
+green by definition, so "green in every recorded run" describes a perfect
+assert and a dead one identically. On 2026-08-25, 199 of 200 observed asserts
+were green in every surviving run — a statistic with no information in it.
+
+Falsifiability therefore has to be *executed*, not remembered:
+
+- **Every assert carries a mutation** — a named, minimal corruption of the
+  artifact it reads that MUST turn it red. Mutations run against recorded
+  artifacts, so the whole pass costs no agent and no tokens.
+- **An assert with no mutation, or whose mutation leaves it green, measures
+  nothing and is deleted.** Not weakened, not annotated — deleted. An assert
+  that cannot fail is worse than no assert: it consumes a run and buys a false
+  sense of coverage.
+- **Two asserts whose mutations are identical are one assert.** Duplicate
+  coverage inflates the denominator and makes a pass rate look like breadth.
+
+The pruning criteria are deliberately mechanical, because the judgement call
+"is this assert important?" is exactly the one that keeps dead asserts alive.
+
 ## 2. Classify every red before fixing it
 
 Write the classification down before touching code. A red diagnosed from

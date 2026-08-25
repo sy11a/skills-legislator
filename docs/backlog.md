@@ -2294,6 +2294,47 @@ a three-hour masquerade as model stalls into a one-second refusal.
 still exhaust the quota mid-corpus. The remaining half is prevention — clean
 provably-unowned images, or stop the fixtures producing them.
 
+## BL-060 — The eval suite's false green, and pruning what measures nothing
+
+**Status: ANALYSIS DONE 2026-08-25** — exploration; findings recorded in
+`evals/POLICY.md` §§1b and 1c, full record in
+`docs/cases/BL-060-eval-false-green-audit/`. Four cases sized, none filed.
+
+**Measured, not argued.** Blanking a graded scenario's report and re-grading:
+the `audit` scenario **still scores 14/44 — 32% — with no report at all**, of
+which only 3 are legitimate. `restructure` survives at 79% and that is honest,
+because its evidence is the repository tree; its 8 report-reading asserts went
+red correctly. The asymmetry is the finding: audit is a zero-writes mode, so
+the report is its entire output.
+
+Two mechanisms. Nine `does NOT contain` asserts are vacuously true against an
+absent artifact — v17's `ghost_import_fixed` fixed as one assert and never as a
+class, so the class regrew. And `step7_report_saved` tests `path.exists()`
+where substance is meant, so a zero-byte file passes.
+
+**Run history cannot find a useless assert.** 199 of 200 asserts were green in
+every surviving run — a statistic with no information, because a healthy corpus
+is green by design and a perfect assert is indistinguishable from a dead one.
+Any pruning method built on "never fails" returns the whole suite. This is why
+§3's red-before-green rule, though right, is not sufficient: it binds only the
+moment an assert is authored.
+
+**Where defects come from, over 36 recorded across v17–v21:** law 13 (nine of
+them scope-or-completion, not error), harness 12 (over half false green),
+grader 8 (two green and empty in every version), model 3 (none survived
+scrutiny). The cross-cutting theme is silent non-measurement.
+
+**Designed:** an `unmeasured` third verdict that is fatal to its scenario; a
+scenario reporting measured-and-passed as two numbers; a mutation manifest
+where every assert carries a corruption that must turn it red, run against
+recorded artifacts at no token cost; and mechanical pruning — no mutation, or a
+mutation that leaves it green, or a mutation identical to another's, means
+delete rather than weaken.
+
+**Deliberately not done:** no assert is named for deletion. The mutation pass
+must run first; naming candidates by inspection would repeat exactly the
+judgement-call failure the mechanical criteria exist to prevent.
+
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
 
 A master-agent that reviews an incoming request in a project and decides whether to route it to an existing project-local mini-agent (`.claude/agents/<name>.md`) or create a new fine-grained specialized one (task-appropriate model, scoped MCPs) is being built as its **own, separate skill** — not as part of Legislator. Rationale: Legislator is build-time scaffolding (runs occasionally, evolves via VERSION/manifest); request routing is a runtime concern with its own lifecycle. Folding both into one skill would blur SRP.
