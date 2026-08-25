@@ -302,15 +302,6 @@ outlive what it describes.
 
 - **Outer mode** (BL-027) is designed and named, not implemented. Every
   legislated repository today is inner.
-- **Generation at full strength** (BL-043) — anchoring landed in v20: the
-  engine verifies every path and symbol a knowledge document names against
-  the source, and the verification ladder requires it before "done".
-  Generation did not: the third ownership class is declared and still has no
-  member, because the baseline it would hold is built from requirement ids
-  and annotated tests that no repository carries yet. The linter that catches
-  dangling ids and uncovered requirements waits with it. Until they land, the
-  truth-bonding principle above is enforced for what documents *name* and not
-  yet for what they *promise*.
 
 ---
 

@@ -8,6 +8,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Edition v22: the engine gains `sdd-lint` (the analyze gate's mechanical
+  passes — dangling per-R-NNN references, uncovered requirements in planned
+  cases, unresolved placeholders; converged cases are history and are
+  skipped) and `baseline` (writes `docs/ai/baseline.md`, the R-NNN ↔
+  annotated-tests register — the `generated` class's first member, per
+  ADR-0003). Audit check 2 learns the quotation rule: a `{{TOKEN}}` inside
+  backticks or a fence is prose about templating, never a Critical
+  (BL-057 — fourteen false Criticals in this repository alone).
+
 - The eval grader carries a third verdict, `unmeasured`: every assert declares
   the artifact it reads, and an assert whose artifact is absent or empty scores
   nothing instead of passing. Any unmeasured assert makes its scenario red and

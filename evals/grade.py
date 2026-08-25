@@ -713,17 +713,35 @@ class Grader:
                    f"{len(status.splitlines()) if status else 0} changed paths in working tree, {commits} commit(s)", artifact=self.repo_art)
 
     def no_unresolved_tokens(self, repo: Path) -> None:
-        # -uall lists every untracked file individually; without it, a wholly
-        # untracked docs/ tree collapses to one "?? docs/" entry and nothing
-        # under it gets scanned.
+        # The WHOLE tree — tracked files united with the porcelain set —
+        # never the diff alone. The porcelain-only form was blind to a
+        # planted token in a file the run left untouched: on the v22
+        # baseline (2026-08-25) restructure's run 1 skipped filling
+        # {{PROJECT_OVERVIEW}}, this assert reported "no stray {{TOKEN}}s"
+        # over a tree that carried one, run 2 filled it, and only the
+        # idempotency diff exposed the pair — v17's invisible-token defect
+        # alive again one layer up. (-uall so a wholly untracked docs/
+        # tree lists file by file instead of collapsing to one entry.)
         offenders = []
-        changed = git(repo, "status", "--porcelain", "-uall").splitlines()
-        for line in changed:
-            rel = line[3:].strip()
+        seen = set(git(repo, "ls-files").splitlines())
+        seen.update(line[3:].strip()
+                    for line in git(repo, "status", "--porcelain", "-uall").splitlines())
+        for rel in sorted(seen):
             path = repo / rel
             if rel == "docs/adr/template.md" or not path.is_file():
                 continue
-            if path.suffix == ".md" and re.search(r"\{\{[A-Z_]+\}\}", path.read_text(errors="ignore")):
+            if path.suffix != ".md":
+                continue
+            # The quotation rule (BL-057), applied identically here, in
+            # audit check 2 and in the engine's sdd-lint: a token inside
+            # backticks or a fenced block is prose about templating.
+            prose_lines, fenced = [], False
+            for line in path.read_text(errors="ignore").splitlines():
+                if line.lstrip().startswith("```"):
+                    fenced = not fenced
+                elif not fenced:
+                    prose_lines.append(re.sub(r"`[^`\n]*`", "", line))
+            if re.search(r"\{\{[A-Z_]+\}\}", "\n".join(prose_lines)):
                 offenders.append(rel)
         self.check("no_unresolved_placeholders", not offenders,
                    "adr template carve-out respected, no stray {{TOKEN}}s" if not offenders else f"unfilled tokens in: {offenders}", artifact=self.repo_art)
@@ -1579,6 +1597,23 @@ def grade_case_practice(ws: Path) -> Grader:
     g.check("converge_trail_present", converged is not None,
             "converge statement or append-only gap findings present" if converged
             else "no converge trail — the case cannot lawfully close", artifact=case_art)
+
+    # BL-043 (v22): the delivered engine's sdd-lint judges the agent's case
+    # practice — the analyze gate's mechanical passes, run by the exact
+    # artifact the constitution installed. Exit 0 is the contract: 2 means
+    # the delivered engine predates the job (v21), 1 means the case tree
+    # fails its own law's lint. Red against the v21 law by construction.
+    eng = repo / "docs/ai/engine.py"
+    if eng.exists():
+        r = subprocess.run([sys.executable, "docs/ai/engine.py", "sdd-lint"],
+                           cwd=repo, capture_output=True, text=True, timeout=60)
+        lint_ok, lint_ev = r.returncode == 0, (
+            "delivered engine lints the case tree clean" if r.returncode == 0
+            else f"exit={r.returncode}: {(r.stdout or r.stderr)[:160]}")
+    else:
+        lint_ok, lint_ev = False, "docs/ai/engine.py not delivered"
+    g.check("delivered_engine_sdd_lint_clean", lint_ok, lint_ev,
+            artifact=g.repo_art)
 
     # the pre-existing README must survive untouched (create-once discipline)
     readme = repo / "docs/cases/README.md"
