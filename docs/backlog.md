@@ -2245,6 +2245,43 @@ in `status.md`; the `--only` path exits non-zero when any targeted scenario
 fails to run or grades red. Verified by replaying the baseline's own grading
 files through the new logic: old verdict GREEN, new verdict FAIL.
 
+## BL-059 — The .NET runtime leaks into `/tmp` until the quota kills every eval run
+
+**Status: PROPOSED 2026-08-25** — evals/tooling, no `skill/` change, no VERSION,
+no benchmark. Found by losing three consecutive v21 corpus runs to it.
+
+**What:** `/tmp` on this machine is a tmpfs with a per-user quota (6124 MB).
+Every eval run that touches a dotnet fixture leaves `.NNN.so` files behind —
+runtime images the .NET host writes and never removes. On 2026-08-25 there were
+**1001 of them totalling 5.0 GB**, 835 older than a day, against a total of
+655 MB for every eval workspace of every edition combined. The quota was full,
+and nothing said so.
+
+**How it presents, which is the expensive part.** Not as "disk full". Writes
+fail with `OSError: [Errno 122] Disk quota exceeded`, so:
+
+- `streamfmt.py` dies mid-scenario and `run.jsonl` stops growing, which the
+  stall oracle correctly reads as a stalled agent — the runner then spends
+  three attempts and four resumes per scenario producing nothing;
+- every shell command that emits output fails while commands that emit none
+  succeed, because the harness cannot write the result file;
+- `df` reports the *filesystem* healthy (90 GB free on the btrfs root) and is
+  therefore actively misleading — `quota -s` is the instrument, and reading the
+  wrong one cost a thirteen-hour run and a retracted-then-reinstated diagnosis
+  on 2026-08-24/25.
+
+**Why it deserves a case when the workspace clutter did not.** 655 MB of old
+workspaces is untidiness. This is a silent killer with a delay fuse: it does
+not fail the run that creates the garbage, it fails some later run, and it
+fails it in a way that looks exactly like model stalling. Every future edition
+walks into it.
+
+**Done when:** an eval run cannot be killed by this — either the runner checks
+free quota before stage 2 and refuses with the real reason (the BL-050 shape),
+or it cleans stale `.so` files it can prove are unowned, or the dotnet fixtures
+stop producing them. Whichever is chosen, the failure mode must name the quota
+rather than present as a stalled agent.
+
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
 
 A master-agent that reviews an incoming request in a project and decides whether to route it to an existing project-local mini-agent (`.claude/agents/<name>.md`) or create a new fine-grained specialized one (task-appropriate model, scoped MCPs) is being built as its **own, separate skill** — not as part of Legislator. Rationale: Legislator is build-time scaffolding (runs occasionally, evolves via VERSION/manifest); request routing is a runtime concern with its own lifecycle. Folding both into one skill would blur SRP.
