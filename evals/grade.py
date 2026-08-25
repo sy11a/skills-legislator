@@ -826,6 +826,56 @@ def report_has_heal_item(report: str) -> bool:
     return re.search(r"^\s*\d+\. \[heal\]", report, re.M) is not None
 
 
+def grade_audit_engine_absent(ws: Path) -> Grader:
+    """BL-051 item 5b. Check 15 carries a branch for "bundle present, engine
+    absent → Info" that no fixture reached, so it was law nobody could
+    falsify. This scenario is the smallest thing that can: a repo legislated
+    at v19, OKF bundle on disk, no docs/ai/engine.py.
+
+    The assert reads the AUDIT REPORT, not the repo — naming the artifact is
+    what keeps it from reporting a confident wrong diagnosis (POLICY §3)."""
+    sc = ws / "audit-engine-absent"
+    repo = sc / "repo"
+    report_path = sc / "outputs" / "audit-report.md"
+    g = Grader()
+
+    has_report = report_path.exists()
+    report = report_path.read_text() if has_report else ""
+    g.check("audit_report_saved", has_report,
+            str(report_path) if has_report else f"missing: {report_path}")
+
+    # The fixture's premise, asserted rather than assumed: if a future edit
+    # ships the engine here, every check below would pass for the wrong
+    # reason and the branch would silently stop being measured.
+    engine_absent = not (repo / "docs/ai/engine.py").exists()
+    bundle_present = (repo / "docs/okf").is_dir()
+    g.check("fixture_state_is_bundle_without_engine", engine_absent and bundle_present,
+            "bundle present, engine absent"
+            if engine_absent and bundle_present
+            else f"engine_absent={engine_absent} bundle_present={bundle_present}")
+
+    info = re.search(r"^## Info\s*\n(.*?)(?=^## |\Z)", report, re.S | re.M)
+    info_section = info.group(1) if info else ""
+    named = "okf-anchors" in info_section and "docs/ai/engine.py" in info_section
+    g.check("check15_engine_absent_info", named,
+            "check 15's engine-absent Info line present under ## Info"
+            if named else f"not under ## Info (heading found={bool(info)})")
+
+    # Negative control: an absent engine is Info, never an anchors Warning.
+    # An assert that only checks presence is passed by an agent that reports
+    # the Info line AND invents anchor findings it cannot have measured.
+    warn = re.search(r"^## Warning\s*\n(.*?)(?=^## |\Z)", report, re.S | re.M)
+    warn_section = warn.group(1) if warn else ""
+    no_false_warning = "okf-anchors" not in warn_section and "okf-sync-debt" not in warn_section
+    g.check("no_anchor_warning_without_an_engine", no_false_warning,
+            "no anchors/debt Warning — nothing was measured, so nothing is claimed"
+            if no_false_warning else "reported anchor findings with no engine to produce them")
+
+    g.check("zero_writes", not git(repo, "status", "--porcelain").strip(),
+            "git status clean after a read-only audit")
+    return g
+
+
 def grade_restructure(ws: Path) -> Grader:
     repo = ws / "restructure" / "repo"
     meta = json.loads((ws / "restructure" / "fixture_meta.json").read_text())
@@ -1345,6 +1395,7 @@ SCENARIO_DIRS = {
     "case-practice": "case-practice",
     "upgrade": "upgrade",
     "audit": "rotted-layer",
+    "audit-engine-absent": "audit-engine-absent",
     "restructure": "restructure",
 }
 
@@ -1408,6 +1459,8 @@ def main() -> None:
             g, outdir = grade_upgrade(ws), ws / SCENARIO_DIRS[name]
         elif name == "audit":
             g, outdir = grade_audit(ws), ws / SCENARIO_DIRS[name]
+        elif name == "audit-engine-absent":
+            g, outdir = grade_audit_engine_absent(ws), ws / SCENARIO_DIRS[name]
         elif name == "restructure":
             g, outdir = grade_restructure(ws), ws / SCENARIO_DIRS[name]
         elif name.startswith("idempotency:"):

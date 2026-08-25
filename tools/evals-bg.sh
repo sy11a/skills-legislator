@@ -4,7 +4,9 @@
 #
 # Stages, in order, each only on the previous green:
 #   1. gates    — workspace precondition (every scenario dir this invocation
-#                 will use holds a repo/ at the `eval-base` tag), then
+#                 will use holds a repo/ at the `eval-base` tag), writable
+#                 headroom (BL-059: a quota-bounded tmpfs fails as fake
+#                 stalls, not as a full disk), then
 #                 evals/check_static.py and evals/check_engine.py (seconds)
 #   2. smoke    — the upgrade scenario (most change-sensitive surface)
 #   3. corpus   — every scenario in evals.json except idempotency
@@ -156,7 +158,7 @@ REPORT_OF() { # <scenario-dir-name> -> relative expected deliverable
   case "$1" in
     legacy-migration|legacy-migration-agents-first) echo "outputs/migration-report.md";;
     upgrade|upgrade-drop-stack) echo "outputs/upgrade-report.md";;
-    rotted-layer) echo "outputs/audit-report.md";;
+    rotted-layer|audit-engine-absent) echo "outputs/audit-report.md";;
     restructure) echo "outputs/restructure-report.md";;
     *) echo "";;
   esac
@@ -239,7 +241,7 @@ msg_block() { # <dir>
   case "$sc" in
     legacy-migration|legacy-migration-agents-first|upgrade|upgrade-drop-stack) report="Write your full Step 7 report (all sections, including Health and any Constitution candidates) to $out/$(basename "$(REPORT_OF "$sc")") — overwrite if it exists.";;
     case-practice) report="";;
-    rotted-layer) report="Save your full audit report to $out/audit-report.md — outside the target repo (which you must not touch: zero writes).";;
+    rotted-layer|audit-engine-absent) report="Save your full audit report to $out/audit-report.md — outside the target repo (which you must not touch: zero writes).";;
     restructure) report="Write your final restructure report to $out/restructure-report.md — overwrite if it exists.";;
     *) report="";;
   esac
@@ -394,6 +396,12 @@ print(f\"{s['passed']}/{s['total']}\" + (' CLEAN' if s['failed']==0 else ' WITH 
 import json,sys;sys.exit(0 if json.load(open('$g'))['summary']['failed']==0 else 1)" || failed=1
   if [ $failed -eq 0 ]; then upd_queue "$sc" done; notify "eval $sc: $verdict"
   else upd_queue "$sc" partial; notify "eval $sc: $verdict (w/ errors)"; fi
+  # The GRADE is the verdict, and it has to reach the caller. Stage 2 checked
+  # it and stage 3 did not, so a scenario that ran to completion and graded
+  # 43/44 left the corpus "green" and the run exited 0 — measured on the v20
+  # baseline of 2026-08-24. POLICY.md §1 makes 100% the release bar; the
+  # instrument that decides releasability could not see a 99.5%.
+  return $failed
 }
 
 # ---- workspace precondition (BL-050) ------------------------------------
@@ -456,6 +464,34 @@ if [ -z "${NO_BROWSER:-}${KBO_EVALS_NO_BROWSER:-}" ]; then
     > "$WS/dashboard.log" 2>&1 &
 fi
 
+status "=== stage 1: writable headroom ==="
+# BL-059: /tmp here is a quota-bounded tmpfs, and the dotnet fixtures leak
+# runtime .so images into it that nothing removes. When the quota runs out the
+# failure does not look like a full disk: streamfmt.py dies mid-scenario,
+# run.jsonl stops growing, and the stall oracle reads a perfectly healthy agent
+# as stalled — three attempts and four resumes per scenario, producing nothing.
+# Three v21 corpus runs were lost to it before anyone looked at `quota -s`.
+# `df` is the wrong instrument (it reports the filesystem, not the quota), so
+# this does not query anything: it WRITES, which is the thing that actually
+# fails.
+if ! dd if=/dev/zero of="$WS/.headroom-probe" bs=1M count=512 \
+     >/dev/null 2>"$WS/.headroom-probe.err"; then
+  rm -f "$WS/.headroom-probe"
+  status "NO WRITABLE HEADROOM — could not allocate 512 MB under $WS"
+  {
+    printf 'NO WRITABLE HEADROOM — could not allocate 512 MB under %s\n' "$WS"
+    printf '  %s\n' "$(tail -1 "$WS/.headroom-probe.err" 2>/dev/null)"
+    printf '  a corpus run needs room for agent transcripts; check `quota -s`, not `df`\n'
+    printf '  stale .NET runtime images are the usual culprit:\n'
+    printf "    find /tmp -maxdepth 1 -name '.*.so' -mtime +0 -delete\n"
+  } >&2
+  rm -f "$WS/.headroom-probe.err"
+  notify "evals: no writable headroom — nothing ran"
+  exit 1
+fi
+rm -f "$WS/.headroom-probe" "$WS/.headroom-probe.err"
+status "headroom green (512 MB writable)"
+
 status "=== stage 1: static checks ==="
 if ! ( cd "$REPO" && python3 evals/check_static.py > "$WS/static.log" 2>&1 ); then
   status "STATIC FAILED — see $WS/static.log"; notify "evals: static checks FAILED"
@@ -481,12 +517,16 @@ if [ ${#IDEM[@]} -gt 0 ]; then
 fi
 
 if [ ${#ONLY[@]} -gt 0 ]; then
+  ONLY_FAILED=0
   for name in "${ONLY[@]}"; do
     sc="$(DIR_OF "$name")"
-    run_scenario "$sc" && finish_scenario "$sc" || upd_queue "$sc" failed
+    if run_scenario "$sc"; then
+      finish_scenario "$sc" || ONLY_FAILED=1
+    else upd_queue "$sc" failed; ONLY_FAILED=1
+    fi
   done
   status "=== targeted run complete ==="; notify "evals: targeted run complete"
-  exit 0
+  exit $ONLY_FAILED
 fi
 
 if [ $SKIP_SMOKE -eq 0 ]; then
@@ -510,11 +550,12 @@ import json
 d=json.load(open('$REPO/evals/evals.json'))
 print(' '.join(e['name'] for e in d['evals'] if e['name'] not in ('idempotency','upgrade')))"); do
   sc="$(DIR_OF "$name")"
-  if run_scenario "$sc"; then finish_scenario "$sc"
+  if run_scenario "$sc"; then
+    finish_scenario "$sc" || { CORPUS_FAILED=1; status "$sc graded with failures"; }
   else upd_queue "$sc" failed; CORPUS_FAILED=1; notify "eval $sc: FAILED (3 attempts)"
   fi
 done
-[ $CORPUS_FAILED -eq 0 ] || { status "corpus had failures — idempotency stage skipped"; notify "evals: corpus had failures"; exit 1; }
+[ $CORPUS_FAILED -eq 0 ] || { status "corpus had failures (a scenario failed to run, or graded below 100%) — idempotency stage skipped"; notify "evals: corpus had failures"; exit 1; }
 
 status "=== stage 4: idempotency ==="
 for sc in fresh-scaffold-dotnet upgrade restructure; do

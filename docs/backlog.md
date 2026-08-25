@@ -1221,7 +1221,37 @@ BL-043's.
 
 ## BL-034 — Self-legislation: the legislator repo joins its own fleet
 
-**Status: queued 2026-08-20 (process + one behavioral cycle) — after v20 lands (was "after v18", then "after v19", before the 2026-08-22/23 scope decisions; the dependency is on BL-033's OKF v2, not on an edition number). Not an edition of its own.**
+**Status: DONE 2026-08-24** — process only in the end: no `skill/` change, no
+VERSION bump, no benchmark. Case home: `docs/cases/BL-034-self-legislation/`
+(spec, plan, research, summary). Decision recorded in
+`docs/adr/0002-the-legislator-repo-is-governed-by-its-own-constitution.md`.
+
+**Shipped:** the repository is legislated at v20 in migration mode — thirteen
+owned files delivered and byte-verified, `CLAUDE.md` renamed to `AGENTS.md`
+and split three ways (`.claude/rules/evals.md`,
+`.claude/rules/constitution-source.md`, `.claude/rules/records.md`; the
+co-author-trailer rule removed as covered by `core/pair-development.md`), OKF
+bundle seeded, case home created, `stacks: []`. The 48-term glossary moved
+forward from `docs/glossary.md` into `docs/okf/glossary.md` with every row
+carried. `README.md` gained deliver-to-self as release step 4 and the
+branch version-skew rule.
+
+**The two probes that carried the risk.** Before delivery, the write-guard was
+driven over `skill/**` to prove it could not block development of the next
+edition; after delivery the same probe showed it flipping to BLOCKED on
+exactly `docs/ai/rules/**`, `docs/ai/engine.py` and `opencode.json`, and on
+nothing else. Then the hurting case was run for real: a source rule edited,
+`skill/VERSION` bumped to 21, delivered copy still holding v20 bytes, manifest
+still v20, both commit gates green on the skew. Bootstrap compilation, not
+self-modification — measured rather than argued.
+
+**What it caught on its first run, which is the whole point of the case:**
+audit check 2 produces **fourteen false Criticals** here (BL-057). It cannot
+tell an unfilled template token from one quoted in prose about templates, and
+this is the one repository whose documentation is *about* a templating system.
+Invisible everywhere else; unmissable here.
+
+**Status: was queued 2026-08-20 (process + one behavioral cycle) — after v20 lands (was "after v18", then "after v19", before the 2026-08-22/23 scope decisions; the dependency is on BL-033's OKF v2, not on an edition number). Not an edition of its own.**
 
 **What:** apply the legislator to itself (A4, already seeded by
 `docs/ontology.md`): scaffold the repo that hosts the skill — its own
@@ -1255,7 +1285,7 @@ clean or explains its findings.
 
 ## BL-035 — Docs overhaul: the philosophy manifest (`docs/philosophy.md`) + inner/outer modes
 
-**Status: DONE 2026-08-22** — `docs/philosophy.md` written (seven sections: what this is, philosophy, practices, application, placement modes, horizon, where to read next). README, `docs/ontology.md` and `docs/glossary.md` cross-reference it; five terms the manifest leans on gained glossary rows (drift, EARS, edition, grill, rot) so it introduces no orphan vocabulary. Docs-only as planned: no VERSION bump, no benchmark, static checks green. The **Horizon** section states what is designed but not built (BL-027, BL-033, BL-034, BL-038) and is expected to shrink as editions ship — a stale Horizon section is a finding for the edition that made it stale.
+**Status: DONE 2026-08-22** — `docs/philosophy.md` written (seven sections: what this is, philosophy, practices, application, placement modes, horizon, where to read next). README, `docs/ontology.md` and `docs/okf/glossary.md` cross-reference it; five terms the manifest leans on gained glossary rows (drift, EARS, edition, grill, rot) so it introduces no orphan vocabulary. Docs-only as planned: no VERSION bump, no benchmark, static checks green. The **Horizon** section states what is designed but not built (BL-027, BL-033, BL-034, BL-038) and is expected to shrink as editions ship — a stale Horizon section is a finding for the edition that made it stale.
 
 **What:** a standalone manifest document, `docs/philosophy.md` (English),
 stating what the legislator is and how it is applied — the document a
@@ -1861,7 +1891,34 @@ directories failed the check and exiting non-zero.
 
 ## BL-051 — v20 final-review residue (edition v21)
 
-**Status: PROPOSED 2026-08-23** — behavioral (`skill/` changes, VERSION
+**Status: DONE 2026-08-25 — edition v21 shipped.** 199/199 corpus in one pass,
+idempotency ×3 zero diff, one law generation, model floor `sonnet` reproduced.
+Record: `evals/benchmarks/v21.md`. Case home:
+`docs/cases/BL-051-v20-residue/`.
+
+All five items resolved: `status: removed` documents exempt from anchoring in
+law and engine; build output excluded at any depth, not only top level; the
+engine exits 3 on an unhandled exception and checks 15/17 treat an exit outside
+`{0,1}` as a check failure; both checks carry the `python3`-absent branch;
+both keep refusals name the whole owned set; and `audit-engine-absent` is a new
+corpus scenario covering check 15's engine-absent branch, which shipped in v20
+as law with no measurement.
+
+**The corpus found five law defects on the way, none of them in the five
+items.** Four were scope-or-completion — a rule correct but silent about where
+it applies or when you are done — the shape nine of thirteen law defects in
+this repo's history take. One of them, the suppressed-line narration, had been
+filed as **model-class in v18 and left unfixed**; it returned three editions
+later and was law all along.
+
+**A model floor was nearly raised for the wrong reason.** Two reds were
+classified model-class and an opus corpus run was launched; the owner stopped
+it with *"if something breaks on sonnet, work out the situation and fix it,
+rather than raising the floor."* Both were law ambiguity. `POLICY.md` §1 now
+carries the burden of proof this produced, and the model class's 0-for-3
+record across the whole history.
+
+**Status: was PROPOSED 2026-08-23** — behavioral (`skill/` changes, VERSION
 bump + full e2e — which is exactly why it is not being done now).
 
 **What:** five findings from the v20 final review, none acted on in v20 so
@@ -2109,6 +2166,201 @@ profile × observed behaviour × legitimate-adapter-difference or divergence,
 divergence marked closable-here, closable-elsewhere, or declarable-only. No
 adapter is rewritten inside this spike; each entry becomes its own case,
 sized from the measurement.
+
+## BL-055 — `fleet.sh` discovery cannot see a repository nested one level deeper
+
+**Status: PROPOSED 2026-08-24** — tooling only (`tools/fleet.sh`), no `skill/`
+change, no VERSION, no benchmark. Found by BL-034, which is barred from fixing
+it (that case's spec §Boundary).
+
+**What:** discovery is `find $SCAN_ROOTS -maxdepth 4 -path '*/docs/ai/manifest.json'`.
+Fleet repos sit at depth 4 and are found; this repository sits at depth 5 and
+is not. Having just become fleet member #0, it appears in neither `status` nor
+`upgrade`.
+
+**Why it is not a one-character fix.** Raising the depth decides the permanent
+delivery channel as a side effect — whether this repo is swept like every other
+member, or maintained by a distinct release step. That choice has a real
+hazard on one side (a sweep editing the repository that holds the law's source,
+mid-edition) and creates a second delivery path on the other, which is the
+divergence class BL-054 exists to stop. Decide the channel, then implement it.
+
+**Done when:** the channel is decided and recorded (ADR-0002 leaves it open),
+and `fleet.sh` implements exactly that one.
+
+## BL-056 — `fleet.sh status` reports uncommitted work as delivered
+
+**Status: PROPOSED 2026-08-24** — tooling only, no `skill/` change, no VERSION,
+no benchmark.
+
+**What:** `status` reads `docs/ai/manifest.json` from the working tree. On
+2026-08-24 it reported three repositories at v20 whose committed HEAD was v16,
+v16 and v14 — the 2026-08-23 sweep had upgraded them and nobody had reviewed or
+committed the diff. The table said 3 of 9 delivered; the true committed answer
+was **0 of 9**.
+
+There is a second-order effect: because those repos are dirty, the next sweep
+*skips* them, so the tool would leave them in the "upgraded but nowhere" state
+indefinitely, saying nothing beyond a `skip` line.
+
+**Why:** the sweep's whole purpose is putting law into other repositories, and
+law that is not committed is not there. A dashboard that counts a working-tree
+edit as delivery is optimistic in exactly the situation where the operator is
+relying on it — the same family as BL-050 and BL-053.
+
+**Done when:** `status` distinguishes committed version from working-tree
+version and names any repository where they differ; a repo carrying an
+unreviewed upgrade is visibly pending, not `ok`.
+
+## BL-057 — Audit check 2 cannot tell a quoted token from an unfilled one
+
+**Status: PROPOSED 2026-08-24** — behavioral (`skill/` change: SKILL.md's audit
+section, VERSION bump + full e2e). Found by BL-034's first audit run, which is
+barred from fixing it.
+
+**What:** check 2 (`unresolved-placeholders`) flags any `{{TOKEN}}` pattern in
+`AGENTS.md`, any `.md` under `docs/`, or any `.md` under `.claude/rules/`,
+exempting only `docs/adr/template.md`. In this repository that yields
+**fourteen Critical findings**, every one a token quoted inside backticks in
+prose that discusses the templating system — in `docs/backlog.md` and in
+thirteen historical specs and plans under `docs/superpowers/**`.
+
+**Why it matters beyond cosmetics.** Critical is the severity that means "the
+layer is broken". Fourteen false ones train the reader to skim the Critical
+section, which is precisely the section that must never be skimmed. And the
+failure is systematic, not incidental: any repository documenting a templating
+system trips it, and every repository that legislates *another* repository will
+document one.
+
+**Two candidate remedies, both cheap:** skip inline-code spans (a token inside
+backticks is a quotation, not a placeholder), and/or exempt the directories
+the other checks already treat as history and record — `docs/superpowers/**`,
+`docs/cases/**`, `docs/backlog.md`. The first is the more honest: it fixes the
+test rather than narrowing where it looks.
+
+**Done when:** a repository whose prose quotes template tokens audits clean,
+a genuinely unfilled token in a scaffolded artifact still reports Critical, and
+a fixture in the corpus covers both directions.
+
+## BL-058 — The corpus stage cannot see a graded failure
+
+**Status: DONE 2026-08-24** — tooling only (`tools/evals-bg.sh`), no `skill/`
+change, no VERSION, no benchmark. Found by the v21 baseline run, fixed in the
+same cycle because the v21 corpus could not otherwise be trusted.
+
+**What:** stage 2 (smoke) reads the grading file and stops the run when the
+smoke scenario grades below 100%. Stage 3 (corpus) did not. `finish_scenario`
+computed the verdict, wrote `partial` into the queue — and returned nothing, so
+`CORPUS_FAILED` was set only when a scenario failed to *run*. A scenario that
+ran to completion and graded 43/44 left the corpus green.
+
+Measured, not inferred: the 2026-08-24 baseline of `v20` on `claude`/`sonnet`
+graded **193/194** with `rotted-layer` at 43/44, and the runner printed
+`=== ALL STAGES GREEN ===` and exited `0`.
+
+**Why it is the worst member of its family.** `evals/POLICY.md` §1 makes 100%
+the release bar and says there is no known red and no waiver. The instrument
+that decides releasability could not see a 99.5%. BL-050 let a run grade
+fixtures that did not exist; BL-053 let a sweep fail everywhere and exit 0;
+this one let an edition ship below its own stated bar. All three are the same
+defect wearing different clothes — a stage that computes a verdict and does not
+propagate it.
+
+**Shipped:** `finish_scenario` returns the failed-assert count; stage 3 sets
+`CORPUS_FAILED` on a graded failure as well as on a run failure and says which
+in `status.md`; the `--only` path exits non-zero when any targeted scenario
+fails to run or grades red. Verified by replaying the baseline's own grading
+files through the new logic: old verdict GREEN, new verdict FAIL.
+
+## BL-059 — The .NET runtime leaks into `/tmp` until the quota kills every eval run
+
+**Status: PROPOSED 2026-08-25** — evals/tooling, no `skill/` change, no VERSION,
+no benchmark. Found by losing three consecutive v21 corpus runs to it.
+
+**What:** `/tmp` on this machine is a tmpfs with a per-user quota (6124 MB).
+Every eval run that touches a dotnet fixture leaves `.NNN.so` files behind —
+runtime images the .NET host writes and never removes. On 2026-08-25 there were
+**1001 of them totalling 5.0 GB**, 835 older than a day, against a total of
+655 MB for every eval workspace of every edition combined. The quota was full,
+and nothing said so.
+
+**How it presents, which is the expensive part.** Not as "disk full". Writes
+fail with `OSError: [Errno 122] Disk quota exceeded`, so:
+
+- `streamfmt.py` dies mid-scenario and `run.jsonl` stops growing, which the
+  stall oracle correctly reads as a stalled agent — the runner then spends
+  three attempts and four resumes per scenario producing nothing;
+- every shell command that emits output fails while commands that emit none
+  succeed, because the harness cannot write the result file;
+- `df` reports the *filesystem* healthy (90 GB free on the btrfs root) and is
+  therefore actively misleading — `quota -s` is the instrument, and reading the
+  wrong one cost a thirteen-hour run and a retracted-then-reinstated diagnosis
+  on 2026-08-24/25.
+
+**Why it deserves a case when the workspace clutter did not.** 655 MB of old
+workspaces is untidiness. This is a silent killer with a delay fuse: it does
+not fail the run that creates the garbage, it fails some later run, and it
+fails it in a way that looks exactly like model stalling. Every future edition
+walks into it.
+
+**Done when:** an eval run cannot be killed by this — either the runner checks
+free quota before stage 2 and refuses with the real reason (the BL-050 shape),
+or it cleans stale `.so` files it can prove are unowned, or the dotnet fixtures
+stop producing them. Whichever is chosen, the failure mode must name the quota
+rather than present as a stalled agent.
+
+**Half shipped 2026-08-25 — detection, not prevention.** Stage 1 now allocates
+a 512 MB probe file under the workspace before any agent runs and refuses the
+run when it cannot, printing the real reason and the cleanup command. It
+**writes rather than queries** on purpose: `df` reports the filesystem and
+`quota -s` reports one quota system, while what actually fails is a write — so
+the probe performs the failing operation instead of predicting it. That turns
+a three-hour masquerade as model stalls into a one-second refusal.
+
+**Still open:** nothing stops the leak, and a run that starts with 512 MB can
+still exhaust the quota mid-corpus. The remaining half is prevention — clean
+provably-unowned images, or stop the fixtures producing them.
+
+## BL-060 — The eval suite's false green, and pruning what measures nothing
+
+**Status: ANALYSIS DONE 2026-08-25** — exploration; findings recorded in
+`evals/POLICY.md` §§1b and 1c, full record in
+`docs/cases/BL-060-eval-false-green-audit/`. Four cases sized, none filed.
+
+**Measured, not argued.** Blanking a graded scenario's report and re-grading:
+the `audit` scenario **still scores 14/44 — 32% — with no report at all**, of
+which only 3 are legitimate. `restructure` survives at 79% and that is honest,
+because its evidence is the repository tree; its 8 report-reading asserts went
+red correctly. The asymmetry is the finding: audit is a zero-writes mode, so
+the report is its entire output.
+
+Two mechanisms. Nine `does NOT contain` asserts are vacuously true against an
+absent artifact — v17's `ghost_import_fixed` fixed as one assert and never as a
+class, so the class regrew. And `step7_report_saved` tests `path.exists()`
+where substance is meant, so a zero-byte file passes.
+
+**Run history cannot find a useless assert.** 199 of 200 asserts were green in
+every surviving run — a statistic with no information, because a healthy corpus
+is green by design and a perfect assert is indistinguishable from a dead one.
+Any pruning method built on "never fails" returns the whole suite. This is why
+§3's red-before-green rule, though right, is not sufficient: it binds only the
+moment an assert is authored.
+
+**Where defects come from, over 36 recorded across v17–v21:** law 13 (nine of
+them scope-or-completion, not error), harness 12 (over half false green),
+grader 8 (two green and empty in every version), model 3 (none survived
+scrutiny). The cross-cutting theme is silent non-measurement.
+
+**Designed:** an `unmeasured` third verdict that is fatal to its scenario; a
+scenario reporting measured-and-passed as two numbers; a mutation manifest
+where every assert carries a corruption that must turn it red, run against
+recorded artifacts at no token cost; and mechanical pruning — no mutation, or a
+mutation that leaves it green, or a mutation identical to another's, means
+delete rather than weaken.
+
+**Deliberately not done:** no assert is named for deletion. The mutation pass
+must run first; naming candidates by inspection would repeat exactly the
+judgement-call failure the mechanical criteria exist to prevent.
 
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
 

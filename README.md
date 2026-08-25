@@ -150,9 +150,19 @@ law for (no empty placeholder files).
 1. Edit a file under `skill/assets/rules/`.
 2. Bump `skill/VERSION`.
 3. Run the eval suite (see below) — required before the change is done.
-4. `cd` into each downstream project and run `/legislator`.
-5. Review the `git diff` — only the changed owned file(s) and the manifest
+4. **Deliver to this repo first.** It is fleet member #0 (ADR-0002): run
+   `/legislator` here, byte-verify the owned layer against `skill/assets/`,
+   and commit. A rule that breaks its own author's repository must never
+   reach anyone else's.
+5. `cd` into each downstream project and run `/legislator`.
+6. Review the `git diff` — only the changed owned file(s) and the manifest
    should appear — then commit.
+
+**Version skew is normal on a branch.** While edition v(N+1) is under
+development, this repo stays legislated at v(N): `skill/assets/rules/**`
+carries the drafts and `docs/ai/rules/**` carries the last delivered
+edition. Step 4 is what closes the gap, and it belongs to the merge, not to
+every commit. Owned-integrity drift on the default branch is a finding.
 
 ### Fleet delivery — `tools/fleet.sh`
 

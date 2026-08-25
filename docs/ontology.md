@@ -4,7 +4,7 @@ Canonical model of the legislator system: strata, entities, relations, and the
 naming conventions that govern every term the product uses. Decisions recorded
 here came out of the 2026-08-20 ontology review (sessions R1–R5: every term
 checked against SDD-field conventions first, internal harmony second). Companion
-files: `docs/glossary.md` (term-by-term definitions and statuses) and
+files: `docs/okf/glossary.md` (term-by-term definitions and statuses) and
 `docs/philosophy.md` (the narrative layer above this model — what the system is
 and why it is built this way; it argues, this document defines). This document
 is the seed of self-legislation (A4): the legislator repo's own ontology, kept
@@ -165,7 +165,7 @@ cycle.
 3. **Coinage last.** A new word is minted only where the field is silent
    (OKF and harvest were such cases). A coinage must be non-colliding,
    register-consistent (jurisprudential, matching the legislator brand),
-   and immediately glossed in `docs/glossary.md`.
+   and immediately glossed in `docs/okf/glossary.md`.
 4. **One word, one meaning.** The constitution ambiguity (one word, three
    referents — A5) is the cautionary tale. Any term drifting toward a second
    meaning goes back to review.
