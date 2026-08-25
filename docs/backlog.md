@@ -2362,6 +2362,44 @@ delete rather than weaken.
 must run first; naming candidates by inspection would repeat exactly the
 judgement-call failure the mechanical criteria exist to prevent.
 
+## BL-061 — `fleet.sh`'s FAIL branch trusts the exit code and never checks the version
+
+**Status: PROPOSED 2026-08-25** — tooling only (`tools/fleet.sh`), no `skill/`
+change, no VERSION, no benchmark. Found by the v21 sweep the same day.
+
+**What:** the upgrade loop is
+
+```
+if run_upgrade_agent …; then   <re-read the manifest; ok or WARN-still-behind>
+else                           FAIL
+fi
+```
+
+The success branch does **not** trust the exit code — it re-reads the manifest,
+because a runner can exit 0 having achieved nothing (that is BL-053's `WARN`).
+The failure branch has no such scepticism: a non-zero exit is reported `FAIL`
+without ever asking whether the repository advanced.
+
+**Measured, not hypothetical.** On the v21 sweep of 2026-08-25 the Claude
+session limit was reached mid-run. `kbo` was reported `FAIL — claude exited
+non-zero`; its owned layer was afterwards verified **16/16 byte-identical to
+v21**. The agent had finished the delivery and the CLI exited non-zero later,
+plausibly while writing its Step 7 report. The work was complete and the tool
+said it had failed.
+
+**Why it matters more than the inverse.** A false `FAIL` is cheap to recover
+from — delivery is idempotent, so re-running costs one agent run. But it
+corrupts the exit code that BL-053 exists to make trustworthy: a sweep in which
+every repository was in fact delivered can still exit non-zero, which trains an
+operator to disbelieve exactly the signal that was just made honest. The
+version re-check is the authority in the success branch; it must be the
+authority in both.
+
+**Done when:** the loop re-reads the manifest in **both** branches and decides
+on the version, not on the exit code — a repository that reached the current
+version is `ok` whatever the runner returned (noting the odd exit), and one
+that did not is `FAIL` or `WARN`. The exit code becomes evidence, not verdict.
+
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
 
 A master-agent that reviews an incoming request in a project and decides whether to route it to an existing project-local mini-agent (`.claude/agents/<name>.md`) or create a new fine-grained specialized one (task-appropriate model, scoped MCPs) is being built as its **own, separate skill** — not as part of Legislator. Rationale: Legislator is build-time scaffolding (runs occasionally, evolves via VERSION/manifest); request routing is a runtime concern with its own lifecycle. Folding both into one skill would blur SRP.
