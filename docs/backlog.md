@@ -2282,6 +2282,18 @@ or it cleans stale `.so` files it can prove are unowned, or the dotnet fixtures
 stop producing them. Whichever is chosen, the failure mode must name the quota
 rather than present as a stalled agent.
 
+**Half shipped 2026-08-25 — detection, not prevention.** Stage 1 now allocates
+a 512 MB probe file under the workspace before any agent runs and refuses the
+run when it cannot, printing the real reason and the cleanup command. It
+**writes rather than queries** on purpose: `df` reports the filesystem and
+`quota -s` reports one quota system, while what actually fails is a write — so
+the probe performs the failing operation instead of predicting it. That turns
+a three-hour masquerade as model stalls into a one-second refusal.
+
+**Still open:** nothing stops the leak, and a run that starts with 512 MB can
+still exhaust the quota mid-corpus. The remaining half is prevention — clean
+provably-unowned images, or stop the fixtures producing them.
+
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
 
 A master-agent that reviews an incoming request in a project and decides whether to route it to an existing project-local mini-agent (`.claude/agents/<name>.md`) or create a new fine-grained specialized one (task-appropriate model, scoped MCPs) is being built as its **own, separate skill** — not as part of Legislator. Rationale: Legislator is build-time scaffolding (runs occasionally, evolves via VERSION/manifest); request routing is a runtime concern with its own lifecycle. Folding both into one skill would blur SRP.

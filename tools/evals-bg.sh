@@ -4,7 +4,9 @@
 #
 # Stages, in order, each only on the previous green:
 #   1. gates    — workspace precondition (every scenario dir this invocation
-#                 will use holds a repo/ at the `eval-base` tag), then
+#                 will use holds a repo/ at the `eval-base` tag), writable
+#                 headroom (BL-059: a quota-bounded tmpfs fails as fake
+#                 stalls, not as a full disk), then
 #                 evals/check_static.py and evals/check_engine.py (seconds)
 #   2. smoke    — the upgrade scenario (most change-sensitive surface)
 #   3. corpus   — every scenario in evals.json except idempotency
@@ -461,6 +463,34 @@ if [ -z "${NO_BROWSER:-}${KBO_EVALS_NO_BROWSER:-}" ]; then
   setsid nohup python3 "$REPO/evals/dashboard.py" "$WS" --interval 3 --open \
     > "$WS/dashboard.log" 2>&1 &
 fi
+
+status "=== stage 1: writable headroom ==="
+# BL-059: /tmp here is a quota-bounded tmpfs, and the dotnet fixtures leak
+# runtime .so images into it that nothing removes. When the quota runs out the
+# failure does not look like a full disk: streamfmt.py dies mid-scenario,
+# run.jsonl stops growing, and the stall oracle reads a perfectly healthy agent
+# as stalled — three attempts and four resumes per scenario, producing nothing.
+# Three v21 corpus runs were lost to it before anyone looked at `quota -s`.
+# `df` is the wrong instrument (it reports the filesystem, not the quota), so
+# this does not query anything: it WRITES, which is the thing that actually
+# fails.
+if ! dd if=/dev/zero of="$WS/.headroom-probe" bs=1M count=512 \
+     >/dev/null 2>"$WS/.headroom-probe.err"; then
+  rm -f "$WS/.headroom-probe"
+  status "NO WRITABLE HEADROOM — could not allocate 512 MB under $WS"
+  {
+    printf 'NO WRITABLE HEADROOM — could not allocate 512 MB under %s\n' "$WS"
+    printf '  %s\n' "$(tail -1 "$WS/.headroom-probe.err" 2>/dev/null)"
+    printf '  a corpus run needs room for agent transcripts; check `quota -s`, not `df`\n'
+    printf '  stale .NET runtime images are the usual culprit:\n'
+    printf "    find /tmp -maxdepth 1 -name '.*.so' -mtime +0 -delete\n"
+  } >&2
+  rm -f "$WS/.headroom-probe.err"
+  notify "evals: no writable headroom — nothing ran"
+  exit 1
+fi
+rm -f "$WS/.headroom-probe" "$WS/.headroom-probe.err"
+status "headroom green (512 MB writable)"
 
 status "=== stage 1: static checks ==="
 if ! ( cd "$REPO" && python3 evals/check_static.py > "$WS/static.log" 2>&1 ); then
