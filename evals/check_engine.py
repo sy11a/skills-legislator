@@ -291,6 +291,118 @@ check(code == 1, "exit_codes_unchanged: findings is 1", f"exit={code}")
 code, _ = run(root, "no-such-job")
 check(code == 2, "exit_codes_unchanged: usage error is 2", f"exit={code}")
 
+
+# ---------------------------------------------------------------------------
+# BL-043 (edition v22): the sdd-lint and baseline jobs. Written and shown
+# RED against the v21 engine (which has neither job) before either exists —
+# POLICY §3's red-before-green, at the engine rung where it costs seconds.
+# ---------------------------------------------------------------------------
+
+def make_case_repo() -> Path:
+    """A legislated-repo shape with a case tree and an annotated test:
+    spec defines R-001..R-003; plan traces R-001 and R-002; the test tree
+    carries R-001's marker only. The lint truth: R-003 uncovered... but the
+    case HAS a plan, so coverage applies; `per R-999` in the plan dangles;
+    a bare {{TOKEN}} in notes.md is reported while a backticked one in the
+    spec is quotation and is not."""
+    root = make_repo({}, {})
+    case = root / "docs" / "cases" / "BL-001-widget-flow"
+    case.mkdir(parents=True)
+    (case / "spec.md").write_text(
+        "# BL-001 — widget flow\n\n"
+        "Prose may quote a template token like `{{PROJECT_NAME}}` safely.\n\n"
+        "### R-001 — widgets persist\n\nWHEN a widget is saved THEN it SHALL persist.\n\n"
+        "### R-002 — widgets list\n\nWHEN listed THEN widgets SHALL appear.\n\n"
+        "### R-003 — widgets delete\n\nWHEN deleted THEN widgets SHALL disappear.\n")
+    (case / "plan.md").write_text(
+        "# plan\n\n1. store layer, per R-001\n2. list endpoint, per R-002\n"
+        "3. cleanup, per R-999\n")
+    (case / "notes.md").write_text("# notes\n\nLeft behind: {{PROJECT_OVERVIEW}}\n")
+    (root / "src" / "App.Tests").mkdir(parents=True)
+    (root / "src" / "App.Tests" / "WidgetStoreTests.cs").write_text(
+        "// per R-001\npublic class WidgetStoreTests { }\n")
+    return root
+
+
+print("== BL-043 sdd-lint: dangling, uncovered and bare tokens are findings ==")
+root = make_case_repo()
+code, out = run(root, "sdd-lint")
+check(code == 1, "sdd_lint_findings_exit_1", f"exit={code} out={out!r}")
+check("R-999" in out and "dangling" in out,
+      "sdd_lint_dangling_reference_named", f"out={out!r}")
+check("R-003" in out and "uncovered" in out,
+      "sdd_lint_uncovered_requirement_named", f"out={out!r}")
+check("notes.md" in out and "{{PROJECT_OVERVIEW}}" in out,
+      "sdd_lint_bare_token_reported", f"out={out!r}")
+check(code == 1 and "{{PROJECT_NAME}}" not in out,
+      "sdd_lint_quoted_token_exempt: a backticked token is quotation, not a placeholder",
+      f"exit={code} out={out!r}")
+check(code == 1 and "uncovered: R-001" not in out and "dangling: R-001" not in out,
+      "sdd_lint_covered_requirement_silent", f"exit={code} out={out!r}")
+
+print("== BL-043 sdd-lint: a case without a plan is not lint ==")
+root = make_case_repo()
+(root / "docs" / "cases" / "BL-001-widget-flow" / "plan.md").unlink()
+(root / "docs" / "cases" / "BL-001-widget-flow" / "notes.md").unlink()
+code, out = run(root, "sdd-lint")
+check(code == 0 and out == "",
+      "sdd_lint_planless_case_clean: tier 0/1 is lawful — no plan, no coverage findings",
+      f"exit={code} out={out!r}")
+
+print("== BL-043 sdd-lint: a clean case tree is silent ==")
+root = make_case_repo()
+plan = root / "docs" / "cases" / "BL-001-widget-flow" / "plan.md"
+plan.write_text("# plan\n\n1. store, per R-001\n2. list, per R-002\n3. delete, per R-003\n")
+(root / "docs" / "cases" / "BL-001-widget-flow" / "notes.md").unlink()
+code, out = run(root, "sdd-lint")
+check(code == 0 and out == "", "sdd_lint_clean_exit_0", f"exit={code} out={out!r}")
+
+print("== BL-043 baseline: rows for covered, an explicit uncovered list ==")
+root = make_case_repo()
+code, out = run(root, "baseline")
+bl = root / "docs" / "ai" / "baseline.md"
+check(code == 0 and bl.exists(), "baseline_writes_declared_target", f"exit={code}")
+text = bl.read_text() if bl.exists() else ""
+check("R-001" in text and "WidgetStoreTests.cs" in text,
+      "baseline_maps_requirement_to_test", f"text={text[:200]!r}")
+check("R-002" in text and "R-003" in text,
+      "baseline_lists_uncovered_requirements", f"text={text[:200]!r}")
+check("do not edit" in text.lower() or "do-not-edit" in text.lower(),
+      "baseline_declares_itself_generated", f"head={text[:120]!r}")
+
+print("== BL-043 baseline: deterministic, and a hand edit is destroyed ==")
+root = make_case_repo()
+run(root, "baseline")
+bl = root / "docs" / "ai" / "baseline.md"
+first = bl.read_bytes() if bl.exists() else None
+run(root, "baseline")
+second = bl.read_bytes() if bl.exists() else None
+check(first is not None and first == second, "baseline_bytes_deterministic",
+      "no baseline written" if first is None else "second run changed bytes")
+bl.parent.mkdir(parents=True, exist_ok=True)
+bl.write_text("hand edit\n")
+run(root, "baseline")
+third = bl.read_bytes() if bl.exists() else None
+check(first is not None and third == first,
+      "baseline_destroys_hand_edits: regeneration is the class's defining property",
+      "no baseline to compare" if first is None else "hand edit survived")
+
+print("== BL-043 baseline: writes exactly its declared target (ADR-0003) ==")
+root = make_case_repo()
+before = {str(q) for q in root.rglob("*") if q.is_file()}
+run(root, "baseline")
+after = {str(q) for q in root.rglob("*") if q.is_file()}
+created = {q.replace(str(root) + "/", "") for q in after - before}
+check(created == {"docs/ai/baseline.md"},
+      "baseline_writes_nothing_else", f"created={sorted(created)}")
+
+print("== BL-043: check jobs still write nothing ==")
+root = make_case_repo()
+before = {str(q) for q in root.rglob("*") if q.is_file()}
+run(root, "sdd-lint")
+after = {str(q) for q in root.rglob("*") if q.is_file()}
+check(before == after, "sdd_lint_writes_nothing", f"delta={after ^ before}")
+
 if failures:
     print(f"\n{len(failures)} check(s) FAILED")
     sys.exit(1)
