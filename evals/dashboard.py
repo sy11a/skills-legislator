@@ -305,10 +305,19 @@ def flaky_panel(d: Path, law: str | None = None) -> str:
     for r in runs:
         for name in r.get("fails", []):
             counts[name] = counts.get(name, 0) + 1
+    # Counted separately, never mixed into the flaky tally: an assert whose
+    # artifact was absent did not fail at what it measures — it measured
+    # nothing, and a repeat of THAT is a different defect (BL-062).
+    unmeasured: dict[str, int] = {}
+    for r in runs:
+        for name in r.get("unmeasured_asserts", []):
+            unmeasured[name] = unmeasured.get(name, 0) + 1
     n = len(runs)
     persistent = [(k, v) for k, v in counts.items() if v == n]
     flaky = [(k, v) for k, v in counts.items() if 0 < v < n]
     rows = []
+    for k, v in sorted(unmeasured.items(), key=lambda x: -x[1])[:3]:
+        rows.append(f'<div class="flaky persist">unmeasured ({v}/{n}): {esc(k[:70])}</div>')
     for k, v in sorted(persistent, key=lambda x: -x[1])[:3]:
         rows.append(f'<div class="flaky persist">persistent ({v}/{n}): {esc(k[:70])}</div>')
     for k, v in sorted(flaky, key=lambda x: -x[1])[:4]:
@@ -423,17 +432,23 @@ def render(ws: Path, timeline_log: Path) -> str:
         elif gr:
             sm = gr["summary"]
             rate = int(sm["pass_rate"] * 100)
+            # POLICY §1b rule 2. `.get` because grading.json files written
+            # before BL-062 carry neither key; they degrade to "everything
+            # was measured", which is what they meant at the time.
+            meas, unm = sm.get("measured", sm["total"]), sm.get("unmeasured", 0)
             stamp = (gr.get("ts") or "")[11:16]
             if state in ("running", "pending", "stalled", "retrying"):
                 # a grade from a previous run must not pose as current
-                grade_html = (f'<div class="dim prevgrade">prev run: {sm["passed"]}/{sm["total"]}'
-                              f' ({rate}%) — stale while {state}</div>')
+                grade_html = (f'<div class="dim prevgrade">prev run: {meas}/{sm["total"]}'
+                              f' measured, {sm["passed"]} passed ({rate}%)'
+                              f' — stale while {state}</div>')
             elif state == "failed" and not (d / "outputs" / "run.log").exists():
                 grade_html = ""
             else:
                 # terminal states: the orchestrator grades BEFORE flipping the
                 # queue to done, so a grade here is this run's grade
-                cls = "gok" if sm["failed"] == 0 else ("gsome" if rate >= 80 else "gbad")
+                cls = ("gok" if not (sm["failed"] or unm)
+                       else ("gsome" if rate >= 80 and not unm else "gbad"))
                 # BL-042 item 2: a verdict from another generation must say
                 # so. grading.json is overwritten in place, so without the
                 # stamp a re-grade under a different law or grader is
@@ -448,13 +463,25 @@ def render(ws: Path, timeline_log: Path) -> str:
                                   ' graded before BL-042</div>')
                 else:
                     stamp_html = ""
-                fails = [e for e in gr["expectations"] if not e["passed"]]
+                # Unmeasured first: a failed assert names a defect in the
+                # thing it measures, an unmeasured one says the measurement
+                # never happened — and the second is the more urgent read.
+                bad = sorted((e for e in gr["expectations"] if not e["passed"]),
+                             key=lambda e: e.get("verdict") != "unmeasured")
                 fail_rows = "".join(
-                    f'<div class="gfail">✗ {esc(e["text"])} — {esc(e["evidence"][:120])}</div>'
-                    for e in fails[:5])
-                more = f'<div class="dim">… +{len(fails) - 5} more</div>' if len(fails) > 5 else ""
-                grade_html = (f'<div class="grade {cls}">graded: {sm["passed"]}/{sm["total"]}'
-                              f' ({rate}%) · {stamp}</div>{stamp_html}{fail_rows}{more}')
+                    f'<div class="gfail">{"?" if e.get("verdict") == "unmeasured" else "✗"}'
+                    f' {esc(e["text"])} — {esc(e["evidence"][:120])}</div>'
+                    for e in bad[:5])
+                more = f'<div class="dim">… +{len(bad) - 5} more</div>' if len(bad) > 5 else ""
+                unm_html = (f'<div class="err">{unm} assert(s) UNMEASURED —'
+                            f' the artifact was absent or empty</div>' if unm else "")
+                # No percentage while anything is unmeasured: a rate taken
+                # over five measured asserts out of forty-four reads like
+                # progress, which is the exact sentence POLICY §1b forbids.
+                rate_html = "" if unm else f' ({rate}%)'
+                grade_html = (f'<div class="grade {cls}">graded: {meas}/{sm["total"]} measured,'
+                              f' {sm["passed"]} passed{rate_html} · {stamp}</div>'
+                              f'{unm_html}{stamp_html}{fail_rows}{more}')
         elif state == "done":
             grade_html = '<div class="dim">grading pending…</div>'
         idem_block = idem_html(events[sc], d)
@@ -513,11 +540,16 @@ def render(ws: Path, timeline_log: Path) -> str:
             entries = [h for h in history(ws / sc) if h.get("run_id") == rid]
             if entries:
                 e = entries[-1]
-                ok = e["failed"] == 0
+                e_unm = e.get("unmeasured", 0)
+                ok = not (e["failed"] or e_unm)
+                note = "; ".join(f[:40] for f in e["fails"][:3])
+                if e_unm:
+                    note = f"{e_unm} unmeasured" + (f"; {note}" if note else "")
                 hist_rows.append(
                     f'<div class="runsc{" rokken" if ok else " rbad"}">{esc(DISPLAY.get(sc, sc))}:'
-                    f' {e["passed"]}/{e["total"]}'
-                    + ("" if ok else f' — {esc("; ".join(f[:40] for f in e["fails"][:3]))}')
+                    f' {e.get("measured", e["total"])}/{e["total"]} measured,'
+                    f' {e["passed"]} passed'
+                    + ("" if ok else f' — {esc(note)}')
                     + '</div>')
     runs_html = "\n".join(hist_rows) or "(no runs recorded yet)"
 
