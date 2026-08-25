@@ -2406,7 +2406,7 @@ The failure branch has no such scepticism: a non-zero exit is reported `FAIL`
 without ever asking whether the repository advanced.
 
 **Measured, not hypothetical.** On the v21 sweep of 2026-08-25 the Claude
-session limit was reached mid-run. `kbo` was reported `FAIL — claude exited
+session limit was reached mid-run. `fleet-obs` was reported `FAIL — claude exited
 non-zero`; its owned layer was afterwards verified **16/16 byte-identical to
 v21**. The agent had finished the delivery and the CLI exited non-zero later,
 plausibly while writing its Step 7 report. The work was complete and the tool
