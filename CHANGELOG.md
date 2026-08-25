@@ -8,6 +8,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- The eval grader carries a third verdict, `unmeasured`: every assert declares
+  the artifact it reads, and an assert whose artifact is absent or empty scores
+  nothing instead of passing. Any unmeasured assert makes its scenario red and
+  the run exit non-zero. Scenarios now report two numbers — how many asserts
+  were measured, and how many of those passed — and the pass rate is computed
+  over what was measured (BL-062, `evals/POLICY.md` §1b).
+
 - Edition v21: `status: removed` OKF documents leave the anchored class; build
   output is excluded from symbol resolution at any depth; the engine exits 3 on
   an unhandled exception and the audit treats any exit outside `{0,1}` as a

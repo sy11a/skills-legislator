@@ -110,9 +110,10 @@ Gate 0/1 — that ordering is what makes the parallelism safe.
 
 Settled with the owner at the close of the v21 cycle, after the fleet sweep.
 
-1. **BL-060, designs D1+D2** — the `unmeasured` verdict and honest arithmetic.
-   Grader only: no `skill/` change, no VERSION, no benchmark. **First, and the
-   reason is not preference.** BL-060 measured that a third of the audit
+1. **BL-060, designs D1+D2 — filed as BL-062, DONE 2026-08-25.** The
+   `unmeasured` verdict and honest arithmetic. Grader only: no `skill/`
+   change, no VERSION, no benchmark. **First, and the reason is not
+   preference.** BL-060 measured that a third of the audit
    scenario passes with no report at all, and that run history cannot identify
    a useless assert even in principle. Until that is fixed, every corpus number
    is inflated by an unknown amount — and fixing law against a ruler that
@@ -2387,6 +2388,9 @@ delete rather than weaken.
 must run first; naming candidates by inspection would repeat exactly the
 judgement-call failure the mechanical criteria exist to prevent.
 
+**Filed since:** D1+D2 as **BL-062** (done 2026-08-25). D3, D4 and the
+substance half of D5 remain unfiled, in that order.
+
 ## BL-061 — `fleet.sh`'s FAIL branch trusts the exit code and never checks the version
 
 **Status: PROPOSED 2026-08-25** — tooling only (`tools/fleet.sh`), no `skill/`
@@ -2424,6 +2428,49 @@ authority in both.
 on the version, not on the exit code — a repository that reached the current
 version is `ok` whatever the runner returned (noting the odd exit), and one
 that did not is `FAIL` or `WARN`. The exit code becomes evidence, not verdict.
+
+## BL-062 — `unmeasured` as a third verdict, and honest scenario arithmetic
+
+**Status: DONE 2026-08-25** — tier 1, case `docs/cases/BL-062-unmeasured-verdict/`,
+branch `bl/062-unmeasured-verdict`. Grader and runner only: no `skill/` change,
+no VERSION bump, no benchmark. Implements BL-060's designs D1 and D2, which
+`evals/POLICY.md` §1b had carried as law with nothing executing it.
+
+**What it measured first.** BL-060 blanked two scenarios' reports; this case
+blanked all seven that read one. `legacy-migration-agents-first` scored a
+perfect **22/22 with a report containing nothing** — not partial credit, a full
+green — because its only report-reading assert tested `path.exists()` and a
+zero-byte file exists. `audit` reproduced BL-060's 14/44 exactly.
+
+**What changed.** Every assert declares the artifact it reads, as a required
+argument to `Grader.check` — so an assert naming no source cannot be written.
+When that artifact is absent, empty or unparseable the assert is `unmeasured`:
+not passed, not failed, and fatal to its scenario. One assert per artifact may
+go red on its absence — the probe, whose subject *is* the artifact. Scenarios
+print `<measured>/<total> measured, <passed> passed`, and the pass rate's
+denominator is `measured`. `tools/evals-bg.sh` gained `grade_clean`, one
+definition of green for all four stages that decide one; the dashboard shows
+measured, marks unmeasured red, and counts persistently-unmeasured asserts
+apart from flaky ones. Two silent skips were removed with it: an `if
+has_report:` guard that dropped an assert from the corpus entirely, and
+`case-practice`'s early return that dropped five.
+
+**After.** The same blanked reports now read `audit` 5/44 measured, 4 passed,
+and every scenario red. On unmutated v21 artifacts all ten scenarios reproduce
+their recorded verdicts fully measured — verification cost no agent and no
+tokens, which is the point of a grader-only case.
+
+**Riders:** `evals/POLICY.md` §5 gained the grader-change baseline rule (take
+the baseline from the last commit carrying the previous law with the *current*
+grader, never from the previous tag, whose grader is a different instrument);
+one fleet repository name that had leaked into BL-061's entry was replaced by
+its alias.
+
+**Left open, deliberately:** D3 (the mutation manifest) and D4 (pruning) — no
+assert is named for deletion, because D1 proves an artifact was read, not that
+a present artifact is measured meaningfully. The substance half of D5 stays
+open too: "empty" here means whitespace-only, so a structurally junk report is
+still `measured`.
 
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
 
