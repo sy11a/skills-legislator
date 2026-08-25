@@ -372,8 +372,7 @@ idem_scenario() { # <dir> — commit run 1, second pass, zero-diff grade.
   if [ -n "$ok" ]; then
     ( cd "$REPO" && python3 evals/grade.py "$WS" "idempotency:$sc" \
         > "$WS/$sc/outputs/idem-grade.txt" 2>&1 ) || true
-    if python3 -c "
-import json,sys;d=json.load(open('$WS/$sc/outputs/grading_idempotency.json'));sys.exit(0 if d['summary']['failed']==0 else 1)" 2>/dev/null; then
+    if grade_clean "$WS/$sc/outputs/grading_idempotency.json"; then
       tl "$sc" "idem ZERO DIFF"; notify "eval idem $sc: zero diff"
     else
       tl "$sc" "idem DIFF FOUND"; notify "eval idem $sc: DIFF"; exit 1
@@ -383,17 +382,33 @@ import json,sys;d=json.load(open('$WS/$sc/outputs/grading_idempotency.json'));sy
   fi
 }
 
+grade_clean() { # <grading.json> -> 0 when the grade is green, 1 otherwise
+  # POLICY §1b: not measured is not passed. A scenario is green only when
+  # nothing failed AND nothing went unmeasured — an assert whose artifact was
+  # absent did not score, it failed to measure, and an exit code that cannot
+  # tell the two apart is the same false green one level up (BL-058, BL-062).
+  # One definition, four callers: the previous shape restated
+  # `summary.failed == 0` at each site, which is how stage 3 came to disagree
+  # with stage 2 about what green means.
+  python3 -c "
+import json,sys
+s = json.load(open('$1'))['summary']
+sys.exit(1 if (s.get('failed', 0) or s.get('unmeasured', 0)) else 0)" 2>/dev/null
+}
+
 finish_scenario() { # <dir> — grade + queue + notify (after a DONE run)
   local sc="$1"
   auto_grade "$sc"
   local g="$WS/$sc/outputs/grading.json" verdict="?"
   [ -s "$g" ] && verdict=$(python3 -c "
 import json;d=json.load(open('$g'));s=d['summary']
-print(f\"{s['passed']}/{s['total']}\" + (' CLEAN' if s['failed']==0 else ' WITH FAILURES'))")
+m, u = s.get('measured', s['total']), s.get('unmeasured', 0)
+tag = ' CLEAN' if not (s['failed'] or u) else (
+      ' WITH FAILURES' if s['failed'] else '') + (f' WITH {u} UNMEASURED' if u else '')
+print(f\"{m}/{s['total']} measured, {s['passed']} passed\" + tag)")
   tl "$sc" "graded: $verdict"
   local failed=0
-  [ -s "$g" ] && python3 -c "
-import json,sys;sys.exit(0 if json.load(open('$g'))['summary']['failed']==0 else 1)" || failed=1
+  [ -s "$g" ] && grade_clean "$g" || failed=1
   if [ $failed -eq 0 ]; then upd_queue "$sc" done; notify "eval $sc: $verdict"
   else upd_queue "$sc" partial; notify "eval $sc: $verdict (w/ errors)"; fi
   # The GRADE is the verdict, and it has to reach the caller. Stage 2 checked
@@ -533,9 +548,8 @@ if [ $SKIP_SMOKE -eq 0 ]; then
   status "=== stage 2: smoke (upgrade) ==="
   if run_scenario upgrade; then
     finish_scenario upgrade
-    if ! python3 -c "
-import json,sys;sys.exit(0 if json.load(open('$WS/upgrade/outputs/grading.json'))['summary']['failed']==0 else 1)"; then
-      status "SMOKE GRADED WITH FAILURES — stopping before the full corpus (staged execution: don't burn five runs off a dead change)"
+    if ! grade_clean "$WS/upgrade/outputs/grading.json"; then
+      status "SMOKE GRADED WITH FAILURES OR UNMEASURED ASSERTS — stopping before the full corpus (staged execution: don't burn five runs off a dead change)"
       notify "evals: SMOKE FAILED — corpus not started"; exit 1
     fi
   else

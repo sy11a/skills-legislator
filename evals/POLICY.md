@@ -112,6 +112,18 @@ a verdict that is not propagated is a verdict that was not reached:
    many of those passed. `44/44 measured, 44 passed` and `14/44 measured, 14
    passed` must not both print as a percentage that looks like progress.
 
+Both rules execute as of BL-062. `Grader.check` in `evals/grade.py` takes the
+artifact as a **required** argument, so an assert that names no source cannot
+be written; the pass rate's denominator is `measured`; and `grade_clean` in
+`tools/evals-bg.sh` is the single definition of green that every stage and gate
+calls, because the previous shape restated `summary.failed == 0` at each site.
+Re-measured on the v21 artifacts afterwards, `audit` scores **5 of 44 measured,
+4 passed** against the blanked report it used to score 14/44 on, and
+`legacy-migration-agents-first` — which scored a full **22/22** with an empty
+report — goes red on its probe. One assert per artifact is entitled to fail on
+its absence: the probe, whose subject *is* the artifact. Every other assert
+that declares it is `unmeasured`.
+
 ## 1c. An assert must be falsifiable, and the suite must prove it
 
 §3's "a new assert must be shown RED before it is shown green" is right and
@@ -257,6 +269,24 @@ Do not try to point the current suite at an old skill directory instead: the
 grader derives its expectations from the skill source, so mixing a new
 grader with an old law measures neither. The worktree keeps the pair
 together.
+
+**When the grader changed and the law did not**, the tag is the wrong
+worktree: `v<N-1>` resurrects the previous edition's *grader* along with its
+law, and the baseline would then be measured on a different instrument than
+the edition it is the baseline for — the confound §9 requires you to name,
+introduced by the very act of taking the baseline. Take it from the last
+commit that still carries the previous law, with the current grader:
+
+```bash
+git worktree add /tmp/legislator-baseline-v<N-1> <commit where VERSION was N-1
+                                                  and the grader is today's>
+```
+
+The rule generalizes: **the baseline isolates the law, so everything else —
+grader, harness, model, prompt — is held at the value the edition will be
+measured at.** BL-062 is the first case that made the two diverge; it changed
+`evals/grade.py` alone, so the v22 baseline is taken from master at that
+change, not from the `v21` tag.
 
 v17 changed law, harness and model in the same cycle and paid for it — every
 red was ambiguous until each variable was isolated one at a time, which took
