@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Edition v21: `status: removed` OKF documents leave the anchored class; build
+  output is excluded from symbol resolution at any depth; the engine exits 3 on
+  an unhandled exception and the audit treats any exit outside `{0,1}` as a
+  check failure; audit checks 15 and 17 carry a `python3`-absent branch; no
+  owned file can be keep-listed. New corpus scenario `audit-engine-absent`.
 - This repository is legislated by its own constitution (fleet member #0):
   manifest, owned law under `docs/ai/`, OKF bundle, case home, project rules
   under `.claude/rules/`. See ADR-0002 and `docs/cases/BL-034-self-legislation/`.

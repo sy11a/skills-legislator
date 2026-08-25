@@ -1891,7 +1891,34 @@ directories failed the check and exiting non-zero.
 
 ## BL-051 — v20 final-review residue (edition v21)
 
-**Status: PROPOSED 2026-08-23** — behavioral (`skill/` changes, VERSION
+**Status: DONE 2026-08-25 — edition v21 shipped.** 199/199 corpus in one pass,
+idempotency ×3 zero diff, one law generation, model floor `sonnet` reproduced.
+Record: `evals/benchmarks/v21.md`. Case home:
+`docs/cases/BL-051-v20-residue/`.
+
+All five items resolved: `status: removed` documents exempt from anchoring in
+law and engine; build output excluded at any depth, not only top level; the
+engine exits 3 on an unhandled exception and checks 15/17 treat an exit outside
+`{0,1}` as a check failure; both checks carry the `python3`-absent branch;
+both keep refusals name the whole owned set; and `audit-engine-absent` is a new
+corpus scenario covering check 15's engine-absent branch, which shipped in v20
+as law with no measurement.
+
+**The corpus found five law defects on the way, none of them in the five
+items.** Four were scope-or-completion — a rule correct but silent about where
+it applies or when you are done — the shape nine of thirteen law defects in
+this repo's history take. One of them, the suppressed-line narration, had been
+filed as **model-class in v18 and left unfixed**; it returned three editions
+later and was law all along.
+
+**A model floor was nearly raised for the wrong reason.** Two reds were
+classified model-class and an opus corpus run was launched; the owner stopped
+it with *"if something breaks on sonnet, work out the situation and fix it,
+rather than raising the floor."* Both were law ambiguity. `POLICY.md` §1 now
+carries the burden of proof this produced, and the model class's 0-for-3
+record across the whole history.
+
+**Status: was PROPOSED 2026-08-23** — behavioral (`skill/` changes, VERSION
 bump + full e2e — which is exactly why it is not being done now).
 
 **What:** five findings from the v20 final review, none acted on in v20 so
