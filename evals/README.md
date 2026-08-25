@@ -56,7 +56,8 @@ productivity":
 
 | Number | Question it answers |
 |---|---|
-| Pass rate (per scenario) | Did the change break correctness? Any drop is a regression to find before downstream repos do. |
+| Measured / total (per scenario) | Was there anything to grade? An assert whose artifact was absent or empty is `unmeasured` — it scores nothing and makes the scenario red (`POLICY.md` §1b). |
+| Pass rate (passed / measured) | Did the change break correctness? Any drop is a regression to find before downstream repos do. The denominator is what was measured, never the assert count. |
 | Tokens + wall time | Did the change make runs more expensive? A SKILL.md edit that makes agents wander costs real money across many repos. |
 | Idempotency diff count | Did the change introduce noise? A re-run with nothing changed must produce a zero diff (this caught the manifest-formatting bug at v5). |
 
