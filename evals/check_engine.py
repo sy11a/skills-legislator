@@ -403,6 +403,54 @@ run(root, "sdd-lint")
 after = {str(q) for q in root.rglob("*") if q.is_file()}
 check(before == after, "sdd_lint_writes_nothing", f"delta={after ^ before}")
 
+
+print("== BL-043 sdd-lint: all three real definition forms parse ==")
+root = make_repo({}, {})
+case = root / "docs" / "cases" / "BL-002-forms"
+case.mkdir(parents=True)
+(case / "spec.md").write_text(
+    "# BL-002 — forms\n\n"
+    "### R-001 — heading form\n\nWHEN a THEN b SHALL c.\n\n"
+    "- **R-002** — bullet form: the store SHALL persist `docs/x.md` rows.\n\n"
+    "R-003 — bare form SHALL hold.\n")
+(case / "plan.md").write_text(
+    "# plan\n\n1. all of it, per R-001, R-002, R-003\n")
+code, out = run(root, "sdd-lint")
+check(code == 0 and out == "",
+      "sdd_lint_accepts_three_definition_forms_and_list_refs",
+      f"exit={code} out={out!r}")
+code, out = run(root, "baseline")
+text = (root / "docs" / "ai" / "baseline.md").read_text() \
+    if (root / "docs" / "ai" / "baseline.md").exists() else ""
+check("R-002" in text and "`docs/x.md`" in text,
+      "baseline_definition_keeps_inline_code",
+      f"text={text[:300]!r}")
+
+print("== BL-043 sdd-lint: a cross-case reference is not dangling ==")
+root = make_repo({}, {})
+for name, spec, plan in (
+        ("BL-003-owner", "### R-001 — owner req\n\na SHALL b.\n", None),
+        ("BL-004-rider", "# rider\n\n(no requirements of its own)\n",
+         "# plan\n\n1. fix the sibling too, per R-001\n")):
+    d = root / "docs" / "cases" / name
+    d.mkdir(parents=True)
+    (d / "spec.md").write_text(f"# {name}\n\n{spec}")
+    if plan:
+        (d / "plan.md").write_text(plan)
+code, out = run(root, "sdd-lint")
+check(code == 0 and out == "",
+      "sdd_lint_cross_case_reference_resolves: a rider may trace a sibling case's requirement",
+      f"exit={code} out={out!r}")
+
+print("== BL-043 sdd-lint: a converged case is history, not lint ==")
+root = make_case_repo()   # carries dangling + uncovered + bare token
+case = root / "docs" / "cases" / "BL-001-widget-flow"
+(case / "summary.md").write_text("# done\n\n\u2705 Converged.\n")
+code, out = run(root, "sdd-lint")
+check(code == 0 and out == "",
+      "sdd_lint_converged_case_skipped: completed lifecycle artifacts are never re-judged",
+      f"exit={code} out={out!r}")
+
 if failures:
     print(f"\n{len(failures)} check(s) FAILED")
     sys.exit(1)

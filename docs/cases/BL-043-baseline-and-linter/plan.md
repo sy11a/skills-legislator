@@ -34,20 +34,20 @@ POLICY §3 — asserts written and shown RED before the change they measure.
    `baseline` (synthetic case tree: dangling ref, uncovered R, quoted token
    exempt, bare token reported; determinism ×2; hand-edit destroyed;
    usage/exit contract). Run against the v21 engine: must FAIL. Commit the
-   red. per R-206, R-203, R-204, R-209
+   red. per R-203, R-204, R-205, R-206, R-209
 2. **audit fixture red** — plant the quoted-token doc in the rotted-layer
    fixture, add its `absent_markers` entry; extend `grade_case_practice`
    with the delivered-engine `sdd-lint` exit-0 assert. Grade the v22
    baseline workspace (v21 law): both must be RED. Record. per R-101,
    R-102 (BL-057), and BL-043's corpus item
 3. **engine** — implement `sdd-lint` and `baseline` jobs; docstring's
-   write-policy sentence per ADR-0003. check_engine green. per R-201..R-206,
-   R-209
+   write-policy sentence per ADR-0003. check_engine green. per R-201, R-202,
+   R-203, R-204, R-205, R-206, R-209
 4. **law** — SKILL.md check 2 quotation rule (BL-057 R-101..R-103);
    `core/sdd.md` analyze gate names the command (R-208);
    `core/artifact-lifecycle.md` generated member (R-207); SKILL.md's
    audit/upgrade prose wherever baseline.md needs naming (R-207);
-   VERSION 21 → 22. per R-101..R-103, R-207, R-208
+   VERSION 21 → 22. per R-101, R-102, R-103, R-207, R-208
 5. **bookkeeping** — ontology `generated` entry populated; glossary
    `baseline` row updated; philosophy §Horizon item removed (check_static
    enforces); backlog rows; OKF log; CHANGELOG. per R-207
