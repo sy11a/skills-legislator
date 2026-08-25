@@ -126,11 +126,14 @@ check(engine_src.exists(), "assets/engine/engine.py exists")
 if engine_src.exists():
     eng = engine_src.read_text()
     check(eng.startswith("#!/usr/bin/env python3"), "engine has a python3 shebang")
-    STDLIB_OK = {"re", "sys", "subprocess", "pathlib", "datetime", "__future__"}
+    # v22 adds os + tempfile: the baseline job stages its one write in a
+    # sibling temp file and os.replace's it (ADR-0003's atomicity clause).
+    STDLIB_OK = {"re", "sys", "subprocess", "pathlib", "datetime",
+                 "__future__", "os", "tempfile"}
     imported = set(re.findall(r"^\s*(?:from|import)\s+([a-zA-Z_][\w.]*)", eng, re.M))
     check(imported <= STDLIB_OK, "engine imports only stdlib modules",
           f"unexpected: {sorted(imported - STDLIB_OK)}")
-    for job in ("anchors", "okf-debt"):
+    for job in ("anchors", "okf-debt", "sdd-lint", "baseline"):
         check(f'"{job}"' in eng, f"engine declares the {job} job")
 check("assets/engine/engine.py" in skill_md,
       "SKILL.md Step 3 names the engine source", "Step 3 does not deliver it")
