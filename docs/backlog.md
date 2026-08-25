@@ -106,6 +106,31 @@ Gate 0/1 — that ordering is what makes the parallelism safe.
   tool, each able to report success while having done nothing) — both
   **DONE 2026-08-24**.
 
+## Agreed order after v21 (2026-08-25)
+
+Settled with the owner at the close of the v21 cycle, after the fleet sweep.
+
+1. **BL-060, designs D1+D2** — the `unmeasured` verdict and honest arithmetic.
+   Grader only: no `skill/` change, no VERSION, no benchmark. **First, and the
+   reason is not preference.** BL-060 measured that a third of the audit
+   scenario passes with no report at all, and that run history cannot identify
+   a useless assert even in principle. Until that is fixed, every corpus number
+   is inflated by an unknown amount — and fixing law against a ruler that
+   overstates itself is building on an unverified instrument.
+2. **BL-057 with BL-043 as edition v22** — the false Criticals from audit check
+   2, alongside the generated baseline and the spec/plan linter. Check 2 yields
+   fourteen false Criticals in this repository; `Critical` is the severity that
+   means "the layer is broken", and fourteen false ones train a reader to skim
+   exactly the section that must never be skimmed.
+3. **The instrument backlog, as one batch** — BL-061 (the false `FAIL`),
+   BL-056 (`status` reads the working tree), BL-055 (`fleet.sh` cannot see its
+   own repository), BL-059's prevention half. Each is small alone; together
+   they are four places where a tool misinforms its operator, which is this
+   repo's most expensive recorded defect class.
+
+D3 (the mutation manifest) and D4 (mechanical pruning) follow D1+D2 — no assert
+may be named for deletion until the mutation pass can name it by measurement.
+
 Personal machine to-do (not a Legislator task): adopt the official C# LSP
 plugin (`csharp-ls`) locally — symbol-level navigation for the dotnet fleet;
 independent of this repo entirely.
@@ -2361,6 +2386,44 @@ delete rather than weaken.
 **Deliberately not done:** no assert is named for deletion. The mutation pass
 must run first; naming candidates by inspection would repeat exactly the
 judgement-call failure the mechanical criteria exist to prevent.
+
+## BL-061 — `fleet.sh`'s FAIL branch trusts the exit code and never checks the version
+
+**Status: PROPOSED 2026-08-25** — tooling only (`tools/fleet.sh`), no `skill/`
+change, no VERSION, no benchmark. Found by the v21 sweep the same day.
+
+**What:** the upgrade loop is
+
+```
+if run_upgrade_agent …; then   <re-read the manifest; ok or WARN-still-behind>
+else                           FAIL
+fi
+```
+
+The success branch does **not** trust the exit code — it re-reads the manifest,
+because a runner can exit 0 having achieved nothing (that is BL-053's `WARN`).
+The failure branch has no such scepticism: a non-zero exit is reported `FAIL`
+without ever asking whether the repository advanced.
+
+**Measured, not hypothetical.** On the v21 sweep of 2026-08-25 the Claude
+session limit was reached mid-run. `kbo` was reported `FAIL — claude exited
+non-zero`; its owned layer was afterwards verified **16/16 byte-identical to
+v21**. The agent had finished the delivery and the CLI exited non-zero later,
+plausibly while writing its Step 7 report. The work was complete and the tool
+said it had failed.
+
+**Why it matters more than the inverse.** A false `FAIL` is cheap to recover
+from — delivery is idempotent, so re-running costs one agent run. But it
+corrupts the exit code that BL-053 exists to make trustworthy: a sweep in which
+every repository was in fact delivered can still exit non-zero, which trains an
+operator to disbelieve exactly the signal that was just made honest. The
+version re-check is the authority in the success branch; it must be the
+authority in both.
+
+**Done when:** the loop re-reads the manifest in **both** branches and decides
+on the version, not on the exit code — a repository that reached the current
+version is `ok` whatever the runner returned (noting the odd exit), and one
+that did not is `FAIL` or `WARN`. The exit code becomes evidence, not verdict.
 
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
 
