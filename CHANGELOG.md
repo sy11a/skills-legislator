@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- The cross-platform audit (BL-068, spike): 21 executable surfaces judged
+  on Linux/macOS/Windows-native — two silent Windows killers found (the
+  hook launcher and the CLAUDE.md symlink checkout), a ranked patch list,
+  and the patch-vs-port verdict with its criterion, in
+  `docs/cases/BL-068-cross-platform-audit/audit.md`.
 - The git conduct guard (BL-064): a fourth enforcement hook
   (`plugin/hooks/guard_git_conduct.py`, PreToolUse on Bash, with the
   opencode port) blocks merge/push onto the default branch, AI attribution

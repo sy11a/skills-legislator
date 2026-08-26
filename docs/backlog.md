@@ -2560,7 +2560,7 @@ still `measured`.
 
 ## BL-068 — Spike: cross-platform portability — where does the system break outside Linux?
 
-**Status: PROPOSED 2026-08-26** — exploration, time-boxed, no `skill/` change, no VERSION, no benchmark. Raised from the BL-064 review question: what happens when a legislated repo (or the legislator itself) lives on Windows or macOS?
+**Status: DONE 2026-08-26** — exploration, executed as `docs/cases/BL-068-cross-platform-audit/` (tier 1; clarified: Windows-native only — WSL is not an answer; operator side audited on the same footing). No `skill/` change, no VERSION, no benchmark. The deliverable is `audit.md` there.
 
 **The question:** which executable surfaces of this system are OS-portable, which degrade silently, and which break an invariant — and is the right fix a set of small patches or a migration of the logic to one cross-platform runtime?
 
@@ -2576,6 +2576,8 @@ still `measured`.
 **What the answer decides:** patch vs port. The patch path (launcher fallback `py`/`python`, `.exe`-aware command heads, a symlink strategy, an autocrlf ruling for owned files) is S–M. The port path — moving the engine and hooks to one runtime — is L and only one candidate respects the owned-file law: **.NET file-based apps** (`dotnet run engine.cs`), which keep the engine a byte-verifiable delivered *text* while standing on the SDK the dotnet fleet already requires; a compiled-binary port is ruled out by the delivery model (per-platform artifacts cannot be one byte-identical owned file). The opencode arm stays TS regardless, so a port never buys single-language purity — that cost stays either way.
 
 **Stop condition:** the classified table and the patch-vs-port recommendation are the deliverable. No fix is written inside the spike; each fix class becomes its own case, sized from the measurement.
+
+**The answer (2026-08-26):** 21 surfaces × 3 axes. Linux 21× fine (verified); macOS 16 fine / 3 degrades / 2 breaks (both operator-side: `setsid`, `stat -c`); Windows-native 6 fine / 9 degrades / 6 breaks. The two deadliest Windows cells are **silent**: the hook launcher (`python3` absent → non-2 exit → every guard stops enforcing while looking installed) and the `CLAUDE.md` symlink checkout (without `core.symlinks` git materializes a one-word text file → **the constitution does not load at all**). Both are *environment-contract* cells — which is the verdict's criterion: **patch, with one targeted mini-port**, because a language port buys nothing where the breakage lives in interpreter resolution, git symlink semantics, or autocrlf. Hooks stay Python (per-call latency rules out `dotnet run`); the engine is the one legitimate .NET file-based candidate but only pending BL-069's register (dotnet-SDK-guaranteed vs python3-undeclarable); the operator bash scripts are the genuine port targets (to Python; evals-bg's process control first). Ranked patch list S→M in the audit; the symlink file-model fork (config-and-enforce vs an `@AGENTS.md`-import real file) is decision-gate material for its own case. Rider found along the way: the engine reads every file with locale encoding (zero `encoding=`) — a mojibake bug worth an S fix in the next edition regardless of OS plans.
 
 ## BL-069 — Spike: the dependency register — what this system stands on, and the policy for adding more
 
