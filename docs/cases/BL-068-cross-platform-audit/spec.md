@@ -108,3 +108,15 @@ anchors, sdd-lint all clean. Gaps: none (missing / partial / contradicts
 / unrequested: none).
 
 ✅ Converged
+
+## Converge — second pass, 2026-08-26
+
+Owner review produced one finding against the deliverable: the hook-latency
+argument in the recommendation section conflated `dotnet run` with compiled
+NativeAOT binaries — gap class: partial. Resolved
+append-only: the audit gains a dated addendum correcting the claim and
+recording the accepted direction (ADR-0005) and its phasing; the patch
+list's work is filed as BL-070/BL-071, the platform work as BL-072. The
+table itself needed no change — every cell verdict stands.
+
+✅ Converged

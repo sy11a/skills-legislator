@@ -116,3 +116,22 @@ patches now plus the launcher fix and the symlink design case; operator
 side = migrate off bash incrementally; the engine's .NET question stays
 open pending BL-069, with the latency and delivery-model constraints
 recorded here as its entry conditions.
+
+## Addendum — 2026-08-26, post-review (ADR-0005)
+
+Two corrections and a decision, appended after the owner's review:
+
+- **Latency correction.** The "hooks should stay Python" argument above
+  applies to `dotnet run` (JIT + script host), not to compiled binaries:
+  a NativeAOT binary starts in ~10–30 ms, which is viable for PreToolUse
+  hooks. In compiled form, .NET hooks are not ruled out by latency.
+- **The end state is decided** — ADR-0005 (accepted): the deterministic
+  arm becomes one machine-installed .NET binary (NativeAOT per platform),
+  the law stays delivered text, integrity for the arm moves from byte-diff
+  to version-pin + release checksum. The criterion above stands where it
+  applied: the environment-contract cells (D1–D3) are owned by BL-071
+  regardless of platform.
+- **Phasing (the owner's):** finish the existing fixes first on the
+  current substrate — BL-070 (this audit's patch set) and BL-071 (the
+  file-model fork) — so the scope is measured; then BL-072 builds the
+  binary arm on top, engine first, after BL-069's register.
