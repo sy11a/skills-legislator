@@ -95,6 +95,11 @@ def _drop_lines(text: str, needle: str) -> str:
 
 def _replace_everywhere(rev, repo: Path, needle: str,
                         replacement: str = "REDACTED") -> None:
+    """Case-insensitive, like the fidelity grep it mutates against: the law
+    lawfully re-cases carried lines (table capitalization), so a literal
+    redaction misses the carried copy — 'billing period' survived exactly
+    that way on the first full pass."""
+    pat = re.compile(re.escape(needle), re.I)
     for p in repo.rglob("*"):
         if ".git" in p.parts or not p.is_file():
             continue
@@ -102,9 +107,9 @@ def _replace_everywhere(rev, repo: Path, needle: str,
             text = p.read_text()
         except (UnicodeDecodeError, OSError):
             continue
-        if needle in text:
+        if pat.search(text):
             rev.touch(p)
-            p.write_text(text.replace(needle, replacement))
+            p.write_text(pat.sub(replacement, text))
 
 
 def _move_out_of_section(text: str, marker: str, heading: str) -> str:
@@ -671,10 +676,16 @@ def mutations_for(ws: Path, scenario: str) -> dict[str, Mutation]:
             "redact-everywhere", "orphan-notes.md",
             fn=lambda ws_, rev, r=repo: _replace_everywhere(
                 rev, r, "orphan-notes.md", "gone.md"))
+        def unindex_but_keep_linked(ws_, rev, p=idx, r=repo):
+            # keep the `linked` gate true (a conditional assert switches
+            # off, it does not fail — BL-062's converge note, met live):
+            # plant a reference elsewhere, then drop the index's.
+            _edit(rev, r / "docs/okf/log.md",
+                  lambda t: t + "\nSee `docs/okf/orphan-notes.md`.\n")
+            _edit(rev, p, lambda t: _drop_lines(t, "orphan-notes.md"))
         muts["link_post_state_in_index"] = Mutation(
-            "remove-lines", "docs/okf/index.md", "orphan-notes.md",
-            fn=lambda ws_, rev, p=idx: _edit(
-                rev, p, lambda t: _drop_lines(t, "orphan-notes.md")))
+            "unindex-but-keep-linked", "orphan-notes.md",
+            fn=unindex_but_keep_linked)
         muts["stale_map_row_gone"] = Mutation(
             "insert-line", "docs/okf/codebase-map.md", "legacy/",
             fn=lambda ws_, rev,

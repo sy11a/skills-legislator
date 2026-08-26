@@ -96,6 +96,12 @@ def validate_substrate(ws: Path, name: str) -> tuple[list[dict] | None, str]:
     if not recorded_file.exists():
         return None, "no recorded grading.json"
     recorded = json.loads(recorded_file.read_text())["expectations"]
+    # the idempotency stage overwrites reports; evals-bg snapshots the
+    # corpus copy as *-report.corpus.md before run 2 — restore it first.
+    for snap in sorted(outdir.glob("*-report.corpus.md")):
+        live = snap.with_name(snap.name.replace(".corpus.md", ".md"))
+        if not live.exists() or live.read_bytes() != snap.read_bytes():
+            live.write_bytes(snap.read_bytes())
     repo = ws / SCENARIO_DIRS[name] / "repo"
     if repo.exists() and grade_mod.fixture_off_base(repo):
         err = reconstruct_run1(repo)

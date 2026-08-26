@@ -148,6 +148,24 @@ Falsifiability therefore has to be *executed*, not remembered:
 The pruning criteria are deliberately mechanical, because the judgement call
 "is this assert important?" is exactly the one that keeps dead asserts alive.
 
+This section executes as of BL-063. **`python3 evals/mutate.py <workspace>`
+is the pass**: the manifest lives in `evals/mutations.py` (marker-named
+asserts derive their mutations from the same fixture_meta that names them —
+§8 applied to mutations), and an assert with no entry is `uncovered`, which
+is red — the obligation covers every future assert by construction. The
+cadence: **the full pass is mandatory in every edition cycle — after the
+green corpus, before `evals/benchmarks/v<N>.md` is written — on the
+benchmark run's own workspace**, and the benchmark file records the summary
+(killed / survived / uncovered / duplicate groups). Survivors and duplicates
+are the pruning candidates; deletion itself is a separate, owner-reviewed
+step (the D4 half), never part of the pass. Three operational rules the
+first pass paid for: the runner validates the substrate against the recorded
+corpus verdict before mutating (a verdict measured on a moved state is not a
+verdict); the idempotency stage snapshots each scenario's corpus report
+before run 2 (`*-report.corpus.md`), because run 2 overwrites the pass's
+substrate; and a kill is `failed` — `unmeasured` counts only for the probe
+asserts, whose mutation IS removal.
+
 ## 2. Classify every red before fixing it
 
 Write the classification down before touching code. A red diagnosed from
