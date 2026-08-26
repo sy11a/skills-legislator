@@ -359,6 +359,14 @@ idem_scenario() { # <dir> — commit run 1, second pass, zero-diff grade.
                   # --only cannot serve this: it resets the fixture to
                   # eval-base and would destroy exactly what is under test.
   local sc="$1" pid ok attempt
+  # BL-063: run 2 overwrites the scenario's report, and the corpus report
+  # is the mutation pass's substrate (POLICY §1c). Snapshot it first —
+  # losing it cost restructure's 38 mutations a fresh agent run on
+  # 2026-08-26. .corpus.md files are ignored by every reader (globs match
+  # *-report.md); mutate.py restores them on validation.
+  for rep in "$WS/$sc/outputs/"*-report.md; do
+    [ -f "$rep" ] && cp "$rep" "${rep%.md}.corpus.md"
+  done
   git -C "$WS/$sc/repo" add -A >/dev/null 2>&1
   git -C "$WS/$sc/repo" commit -q -m "run 1" >/dev/null 2>&1 || true
   : > "$WS/$sc/outputs/idem-run.log"

@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- The mutation pass (`python3 evals/mutate.py <workspace>`): every corpus
+  assert carries a named minimal corruption that must flip it to failed,
+  derived from fixture data where the assert names are data; uncovered or
+  surviving asserts are red. Mandatory per edition cycle before the
+  benchmark file (POLICY §1c). First full pass: 201/201 killed, zero
+  pruning candidates (BL-063).
+
 ### Fixed
 
 - `tools/fleet.sh status` names member #0 explicitly — delivered as a
