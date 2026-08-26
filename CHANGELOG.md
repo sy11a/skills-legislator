@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- The git conduct guard (BL-064): a fourth enforcement hook
+  (`plugin/hooks/guard_git_conduct.py`, PreToolUse on Bash, with the
+  opencode port) blocks merge/push onto the default branch, AI attribution
+  in commit and PR text, and `gh pr merge` — in legislated repos, fail-open
+  on every undecidable case. The first every-commit-cadence law moved from
+  enforceable to enforced.
 - The decision inventory (BL-047, spike): the shipped law and `SKILL.md`
   measured for enforceability — 176 units, split 11 enforced / 97
   enforceable-by-nameable-check / 68 genuinely interpretive; ranked

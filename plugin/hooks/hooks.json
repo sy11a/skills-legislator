@@ -1,5 +1,5 @@
 {
-  "description": "legislator-hooks — write-guard on owned law, format-on-edit, OKF-sync reminder",
+  "description": "legislator-hooks \u2014 write-guard on owned law, git conduct guard, format-on-edit, OKF-sync reminder",
   "hooks": {
     "PreToolUse": [
       {
@@ -8,6 +8,15 @@
           {
             "type": "command",
             "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guard_owned_files.py\""
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guard_git_conduct.py\""
           }
         ]
       }

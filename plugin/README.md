@@ -21,6 +21,7 @@ The enforcement ships for **two harnesses** from one repo:
 | Claude Code hook | opencode mapping |
 |---|---|
 | `guard_owned_files.py` (PreToolUse, blocks) | `tool.execute.before` on edit/write/patch → `throw` (opencode surfaces the message to the agent; verified to block) |
+| `guard_git_conduct.py` (PreToolUse, blocks) | `tool.execute.before` on bash → `throw`; git state read from `.git` directly (no shell needed) |
 | `format_on_edit.py` (PostToolUse, best-effort) | `tool.execute.after` on edit/write — dotnet-format / prettier, never blocks |
 | `okf_sync_check.py` (Stop reminder) | `event` `session.idle` — warns via `client.app.log` |
 
@@ -32,11 +33,14 @@ write-guard — the load-bearing hook — is a true block in both harnesses.
 
 ### opencode tests
 
-`node evals/check_opencode_plugin.mjs` — 12 deterministic checks (no agent,
+`node evals/check_opencode_plugin.mjs` — 26 deterministic checks (no agent,
 no opencode runtime): owned-rule edits blocked for edit/write/patch, new
 files under `docs/ai/rules/**` blocked, non-owned paths allowed, manifest
 and `.claude/rules/**` intentionally unguarded, non-edit tools ignored,
-non-legislated repos no-op, relative-path resolution, malformed-args safety.
+non-legislated repos no-op, relative-path resolution, malformed-args safety;
+plus the git-conduct block set (merge/push onto the default branch,
+attribution in commit and PR text, `gh pr merge`) with its allow-side
+controls.
 Manual acceptance (real `opencode run` in a legislated repo): an edit of
 `docs/ai/rules/core/okf.md` is blocked and the file's hash is unchanged.
 
@@ -48,7 +52,7 @@ Code plugin loader expects it. `hooks/hooks.json` uses
 `${CLAUDE_PLUGIN_ROOT}`-relative paths, so the plugin works from any install
 location.
 
-## The three hooks
+## The four hooks
 
 ### 1. `guard_owned_files.py` — PreToolUse write-guard
 
@@ -85,7 +89,46 @@ no-op.
   a deliberate act legislator never performs, and audit's byte-diff catches
   the resulting drift after the fact.
 
-### 2. `format_on_edit.py` — PostToolUse format-on-edit
+### 2. `guard_git_conduct.py` — PreToolUse git conduct guard
+
+Matcher: `Bash` (BL-064; requirements R-641–R-649 in
+`docs/cases/BL-064-git-conduct-guard/`).
+
+Parses the agent's command line (quote-aware tokenization, compound commands
+split on `&& || ; | &`) and blocks, in legislated repos only:
+
+- `git merge` while the current branch IS the default branch, and
+  `gh pr merge` — merging is the user's act, whatever the channel;
+- `git push` whose effect updates the default branch: an explicit refspec
+  targeting it (`master`, `HEAD:master`, `:master`, `refs/heads/master`),
+  `--all`/`--mirror`, or a bare/remote-only push while ON it;
+- `git commit` / `gh pr create|edit` whose message/title/body carries an
+  AI-attribution marker — a `Co-Authored-By:` trailer naming
+  Claude/Anthropic, or a "Generated with …" footer. A human co-author
+  trailer passes.
+
+Default branch detection: `origin/HEAD` first, else the only one of
+`main`/`master` that exists locally; both or neither → undecidable → allow.
+`git -C <path>` is honored; `git merge --abort/--quit` is cleanup, not
+merging, and passes.
+
+**Fail-open by contract:** malformed input, unbalanced quotes, no git,
+detached HEAD, unknown default branch, any exception → exit 0. The human
+path is untouched by construction — hooks fire on the agent's tool calls,
+never on the user's own terminal (`!`-prefixed commands included).
+
+**Accepted limitations (by design, not bugs):**
+
+- **Command-string inspection only.** A commit message supplied via `-F
+  <file>` or an editor is not read; a push driven by a script the command
+  merely names is not seen. The guard stops the *direct* act, which is how
+  an agent actually performs these operations; review still catches the
+  exotic path.
+- **`gh pr merge` is blocked outright** — no attempt to check which branch
+  the PR targets; merging any PR is the user's act under
+  `core/pair-development.md`.
+
+### 3. `format_on_edit.py` — PostToolUse format-on-edit
 
 Matcher: `Edit|Write|MultiEdit`, 10s timeout (set in `hooks.json`).
 
@@ -109,7 +152,7 @@ track — that's a rule-content change requiring a VERSION bump and a full
 e2e benchmark, logged as a follow-up rider for the next benchmarked rules
 cycle.
 
-### 3. `okf_sync_check.py` — Stop-hook OKF-sync check
+### 4. `okf_sync_check.py` — Stop-hook OKF-sync check
 
 On session Stop: if the working tree has uncommitted changes under `src/**`
 but none under `docs/okf/**`, exits 2 with a reminder — the enforcement arm
@@ -142,10 +185,16 @@ Run once after installing, in a real legislated repo:
    the file comes back formatted.
 4. In a legislated repo, touch a file under `src/` and end the turn without
    touching `docs/okf/**` → the Stop-hook reminder appears.
+5. In a legislated repo checked out on its default branch, ask the agent to
+   run `git merge <any-branch>` → the call is blocked with the
+   "user's act" message; the same command typed by hand (`!`-prefix or a
+   plain terminal) still runs.
 
 ## Automated tests
 
-`evals/check_hooks.py` in the legislator repo covers the guard (3 cases),
+`evals/check_hooks.py` in the legislator repo covers the write-guard (3
+cases), the git-conduct guard (22 cases: block and allow sides of merge,
+push, commit/PR attribution, `gh pr merge`, plus the fail-open set),
 format-on-edit (2 cases + defensive malformed-input cases), OKF-sync (4
 cases + non-legislated/non-git cases), and `hooks.json` well-formedness.
 Run `python3 evals/check_hooks.py` — seconds, no agent required.
