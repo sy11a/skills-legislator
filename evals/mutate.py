@@ -111,6 +111,17 @@ def validate_substrate(ws: Path, name: str) -> tuple[list[dict] | None, str]:
     return recorded, ""
 
 
+def is_kill(verdict: str, probe: bool) -> bool:
+    """R-602: a kill is `failed`. `unmeasured` counts only for a probe
+    assert, whose subject IS the artifact's existence and whose mutation is
+    its removal — for every other assert an unmeasured outcome means the
+    mutation was too coarse (it destroyed the artifact instead of
+    corrupting it) and does not prove the assert can fail."""
+    if verdict == "failed":
+        return True
+    return probe and verdict == "unmeasured"
+
+
 class Reverter:
     """Byte-restore for every path a mutation touches, plus git-HEAD
     restore for commit mutations. One substrate serves every mutation."""
@@ -177,7 +188,7 @@ def run_pass(ws: Path, names: list[str]) -> int:
                 rev.restore()
             verdict = next((e["verdict"] for e in live
                             if e["text"] == assert_name), "absent")
-            ok = verdict == "failed" or (mut.probe and verdict != "passed")
+            ok = is_kill(verdict, mut.probe)
             if ok:
                 killed.append(f"{name}: {assert_name}")
                 n_killed += 1
