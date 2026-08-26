@@ -99,8 +99,13 @@ Gate 0/1 — that ordering is what makes the parallelism safe.
   floor), BL-049 (report derivability), BL-052 (does the constitution load
   at all outside Claude Code and opencode), and **BL-054** (raised
   2026-08-24: full interchangeability of the two engine profiles as a design
-  invariant — the axes BL-044 and BL-052 do not cover). Each is time-boxed,
-  produces an answer rather than code, and sizes the cases that follow it.
+  invariant — the axes BL-044 and BL-052 do not cover), **BL-068**
+  (raised 2026-08-26: cross-platform portability of every executable
+  surface, and the patch-vs-port question), and **BL-069** (raised
+  2026-08-26: the dependency register — what the system stands on, absence
+  behavior per dependency, and the adoption policy for future ones). Each
+  is time-boxed, produces an answer rather than code, and sizes the cases
+  that follow it.
 - **Off the edition track:** BL-035 (docs-only, runs any time), BL-039 and
   BL-040 (repository-level operations, each wanting a deliberate moment),
   BL-050 and BL-053 (the two instruments — the eval runner and the fleet
@@ -2552,6 +2557,59 @@ still `measured`.
 **The finding:** 25 of 28 stack clauses (dotnet coding-standards, architecture, data-access) are classic analyzer / architecture-test / msbuild-property territory — enforcement exists off the shelf; nothing needs the engine. What does not exist is the **binding**: the legislator neither ships nor verifies any of it, so the fleet's stack law is adjudicated by session judgement at every-edit cadence.
 
 **The design question (answer before code):** what is the delivery channel — a scaffolded `.editorconfig`/`Directory.Build.props` layer (owned? create-if-absent? kept?), an audit check that the analyzers are wired, or only a documented binding the repo owns (`.claude/rules/verification.md` style)? Owned-file semantics collide with repo autonomy here; that collision is the case, the analyzer list is an appendix. Cost M to specify; implementation sized by the answer.
+
+## BL-068 — Spike: cross-platform portability — where does the system break outside Linux?
+
+**Status: DONE 2026-08-26** — exploration, executed as `docs/cases/BL-068-cross-platform-audit/` (tier 1; clarified: Windows-native only — WSL is not an answer; operator side audited on the same footing). No `skill/` change, no VERSION, no benchmark. The deliverable is `audit.md` there.
+
+**The question:** which executable surfaces of this system are OS-portable, which degrade silently, and which break an invariant — and is the right fix a set of small patches or a migration of the logic to one cross-platform runtime?
+
+**The probe:** enumerate every executable surface and classify it per OS (Linux / macOS / Windows-native+Git-Bash / WSL) as *fine / degrades / breaks*, naming the cheapest fix for each:
+
+- **Claude Code hooks** (`plugin/hooks/*.py` + `hooks.json`): the `python3` launcher name (absent on most Windows installs → hooks silently stop enforcing — the dangerous failure: a non-2 exit is a non-blocking error, so protection looks installed but is not); `git.exe`/backslash command heads the conduct guard's parser does not recognize (missed block, fail-open).
+- **opencode plugin** (`legislator-guard.ts`): node fs/path — the most portable arm; same command-head caveat.
+- **The engine** (`docs/ai/engine.py`, delivered fleet-wide): stdlib-only, but invoked as `python3` everywhere the law names it (verification rung, audit checks 15/17).
+- **Operator tools** (`tools/*.sh`): bash-only by construction — fleet.sh, evals-bg.sh; acceptable if declared operator-side-Linux-only, but that declaration does not exist anywhere yet.
+- **The eval suite** (`evals/*.py`, `check_opencode_plugin.mjs`): same launcher question; path/tmpdir assumptions.
+- **The file model and git config**: the `CLAUDE.md → AGENTS.md` symlink (`ln -s` on Windows needs Developer Mode; Git Bash silently copies instead — a broken v14 invariant audit check 9 would then report); `core.autocrlf` rewriting owned files → false Critical from check 3 (owned-integrity byte-diff); `ln -s`/`cp`/`mv` steps inside SKILL.md's own procedure.
+
+**What the answer decides:** patch vs port. The patch path (launcher fallback `py`/`python`, `.exe`-aware command heads, a symlink strategy, an autocrlf ruling for owned files) is S–M. The port path — moving the engine and hooks to one runtime — is L and only one candidate respects the owned-file law: **.NET file-based apps** (`dotnet run engine.cs`), which keep the engine a byte-verifiable delivered *text* while standing on the SDK the dotnet fleet already requires; a compiled-binary port is ruled out by the delivery model (per-platform artifacts cannot be one byte-identical owned file). The opencode arm stays TS regardless, so a port never buys single-language purity — that cost stays either way.
+
+**Stop condition:** the classified table and the patch-vs-port recommendation are the deliverable. No fix is written inside the spike; each fix class becomes its own case, sized from the measurement.
+
+**The answer (2026-08-26):** 21 surfaces × 3 axes. Linux 21× fine (verified); macOS 16 fine / 3 degrades / 2 breaks (both operator-side: `setsid`, `stat -c`); Windows-native 6 fine / 9 degrades / 6 breaks. The two deadliest Windows cells are **silent**: the hook launcher (`python3` absent → non-2 exit → every guard stops enforcing while looking installed) and the `CLAUDE.md` symlink checkout (without `core.symlinks` git materializes a one-word text file → **the constitution does not load at all**). Both are *environment-contract* cells — which is the verdict's criterion: **patch, with one targeted mini-port**, because a language port buys nothing where the breakage lives in interpreter resolution, git symlink semantics, or autocrlf. Hooks stay Python (per-call latency rules out `dotnet run`); the engine is the one legitimate .NET file-based candidate but only pending BL-069's register (dotnet-SDK-guaranteed vs python3-undeclarable); the operator bash scripts are the genuine port targets (to Python; evals-bg's process control first). Ranked patch list S→M in the audit; the symlink file-model fork (config-and-enforce vs an `@AGENTS.md`-import real file) is decision-gate material for its own case. Rider found along the way: the engine reads every file with locale encoding (zero `encoding=`) — a mojibake bug worth an S fix in the next edition regardless of OS plans.
+
+**Direction decided post-review (ADR-0005, accepted 2026-08-26):** the end state is one machine-installed .NET binary for the whole deterministic arm (NativeAOT; the latency objection was corrected — it applied to `dotnet run`, not compiled binaries); the law stays text; arm integrity moves to version-pin + checksum. Owner phasing: existing fixes first (BL-070, BL-071) to measure the scope, the binary arm (BL-072) after, gated on BL-069.
+
+## BL-069 — Spike: the dependency register — what this system stands on, and the policy for adding more
+
+**Status: PROPOSED 2026-08-26** — exploration, time-boxed, no `skill/` change, no VERSION, no benchmark. Companion to BL-068 and deliberately disjoint from it: BL-068 asks where *our code* breaks per OS; this spike asks what *external tools* we stand on, how each is declared, what happens when it is absent, and by what rule a new one may enter.
+
+**The question:** which dependencies are already embedded in the system, how does each behave cross-platform and when missing, and what is the adoption policy for future ones?
+
+**The probe:** build the register — every external tool/runtime any surface invokes, one row each: surface(s) that call it, class (**hard** — the surface cannot run without it / **best-effort** — swallowed when absent, e.g. the formatters / **operator-side** — needed on the operator's machine only, never in a legislated repo), declared-where (mostly nowhere today — the only declarations that exist are the `python3`-absent branches in `core/verification.md` and audit checks 15/17, and the machine-relative skill list of check 14), and absence behavior as *measured*, not assumed (fail-open, crash, silent skip, false green). Known classes to inventory, without prejudging the list: interpreters (`python3`, `node`, `bash`), the VCS toolchain (`git`, `gh`), best-effort formatters (`dotnet format`, `npx prettier`), OS utilities the scripts lean on (`ln -s`, `cp`, `mv`, `fuser`, coreutils at large), the eval substrate (dotnet SDK for the fixture builds), and the harnesses themselves (Claude Code, opencode).
+
+**The policy half (the part that outlives the table):** propose the adoption rule for future dependencies — what a candidate must bring before it may enter: a cross-platform story per BL-068's axes, a defined absence behavior (fail-open for enforcement arms, loud failure for verification rungs — never silent false green), a declaration home (one authoritative place a machine can be checked against, check-14-style), and a stated class. Candidates already on the horizon to test the policy against: a database for the constitution's register (the direction the owner has set), .NET file-based apps for the engine (BL-068's port candidate), and any future analyzer binding (BL-067). The engine's own stdlib-only invariant is already enforced by `check_static.py` — the policy generalizes that discipline instead of leaving it a single hard-coded case.
+
+**Stop condition:** the register and the proposed adoption policy are the deliverable. No dependency is added or removed inside the spike; the policy text, if accepted, becomes law material for a later edition (a constitution candidate, not a silent write).
+
+## BL-070 — The portability patch set (ADR-0005 phase 1)
+
+**Status: PROPOSED 2026-08-26** — the executable half of BL-068's ranked patch list, on the current substrate. Per ADR-0005's phasing this work is not throwaway: it defines the behavior the future binary arm must reproduce, and its measured scope is what BL-072 is sized against.
+
+**Items (audit cell → fix, costs from `docs/cases/BL-068-cross-platform-audit/audit.md`):** A3/B2 command heads in both conduct-guard arms (S); C1 explicit `encoding="utf-8"` across the engine (S, VERSION rider — engine is law-delivered); E6 check_engine Windows guard + E8 dashboard ps/tmp portability (S); A1/E4 the interpreter-resolving hook/tool launcher (M — needs one verification on real Windows); D3 the autocrlf/.gitattributes ruling for owned files (M, edition material); E1/E2 evals-bg process control off bash to Python (M); E5 link scripts off bash (M). Split across editions as sized at pickup; the S set can ride the next edition together.
+
+## BL-071 — The file-model fork: the CLAUDE.md symlink vs an import-line real file
+
+**Status: PROPOSED 2026-08-26** — the decision case for BL-068's D1/D2/E7, the deadliest silent Windows cell: a symlink-less checkout materializes `CLAUDE.md` as a one-word text file and the constitution does not load at all. Platform-independent — ADR-0005 explicitly leaves it here.
+
+**The fork (decision-gate material, the owner chooses):** (a) keep the symlink model and make its preconditions law — require `core.symlinks=true` (+ Developer Mode on Windows, `MSYS=winsymlinks:nativestrict`), enforced by a new audit check that reads the checked-out `CLAUDE.md` and fails loudly when it is a plain file; or (b) change the v14 file model — `CLAUDE.md` becomes a real file whose entire content is the import line `@AGENTS.md`, symlink-free and portable everywhere. Option (b) is a law + template + eval + grader change (edition-size) and touches every fleet repo on upgrade; option (a) is cheaper but makes Windows onboarding a config ritual. The eval substrate's symlink-aware save/restore (E7) follows whichever branch wins.
+
+## BL-072 — The machine-installed binary arm (ADR-0005 phase 2)
+
+**Status: PROPOSED 2026-08-26** — the design-and-migration case for ADR-0005's end state: one .NET binary (NativeAOT per platform) carrying the engine jobs, the Claude Code hooks and the operator tools; machine-installed and versioned like the hooks plugin; edition pins the tool version, audit verifies version + release checksum; the law stays delivered text; the opencode guard stays TS (accepted exception).
+
+**Gates, in order:** BL-069's dependency register (what the binary replaces and what it may depend on), BL-070 complete (the behavior contract it must reproduce, measured), BL-071 decided (the file model it must serve). **Design first:** distribution channel and install/update flow, checksum recording at tag time, reproducibility story, the audit-check split (text byte-diff vs arm version+checksum), migration order (engine as pilot → hooks → operator tools), each step red-first under `evals/POLICY.md`. Implementation is L+, multi-edition, and starts only when the owner picks this case up explicitly.
 
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
 
