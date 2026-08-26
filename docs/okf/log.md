@@ -8,6 +8,14 @@ timestamp: 2026-08-24T00:00:00Z
 
 # OKF Bundle Changelog
 
+## 2026-08-26 — BL-047: the decision inventory
+
+The glossary gains `decision inventory` — the bucket vocabulary (a/b/c) the
+repo will now reason in when sizing engine growth. No concept document
+changed: the inventory is a lifecycle artifact living in its case home
+(`docs/cases/BL-047-decision-inventory/`), and no code changed in this
+spike.
+
 ## 2026-08-25 — edition v22: baseline, sdd-lint, and the quotation rule
 
 BL-043 populated the `generated` class: `docs/ai/baseline.md` exists, written
