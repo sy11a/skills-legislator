@@ -99,8 +99,10 @@ Gate 0/1 — that ordering is what makes the parallelism safe.
   floor), BL-049 (report derivability), BL-052 (does the constitution load
   at all outside Claude Code and opencode), and **BL-054** (raised
   2026-08-24: full interchangeability of the two engine profiles as a design
-  invariant — the axes BL-044 and BL-052 do not cover). Each is time-boxed,
-  produces an answer rather than code, and sizes the cases that follow it.
+  invariant — the axes BL-044 and BL-052 do not cover), and **BL-068**
+  (raised 2026-08-26: cross-platform portability of every executable
+  surface, and the patch-vs-port question). Each is time-boxed, produces an
+  answer rather than code, and sizes the cases that follow it.
 - **Off the edition track:** BL-035 (docs-only, runs any time), BL-039 and
   BL-040 (repository-level operations, each wanting a deliberate moment),
   BL-050 and BL-053 (the two instruments — the eval runner and the fleet
@@ -2552,6 +2554,25 @@ still `measured`.
 **The finding:** 25 of 28 stack clauses (dotnet coding-standards, architecture, data-access) are classic analyzer / architecture-test / msbuild-property territory — enforcement exists off the shelf; nothing needs the engine. What does not exist is the **binding**: the legislator neither ships nor verifies any of it, so the fleet's stack law is adjudicated by session judgement at every-edit cadence.
 
 **The design question (answer before code):** what is the delivery channel — a scaffolded `.editorconfig`/`Directory.Build.props` layer (owned? create-if-absent? kept?), an audit check that the analyzers are wired, or only a documented binding the repo owns (`.claude/rules/verification.md` style)? Owned-file semantics collide with repo autonomy here; that collision is the case, the analyzer list is an appendix. Cost M to specify; implementation sized by the answer.
+
+## BL-068 — Spike: cross-platform portability — where does the system break outside Linux?
+
+**Status: PROPOSED 2026-08-26** — exploration, time-boxed, no `skill/` change, no VERSION, no benchmark. Raised from the BL-064 review question: what happens when a legislated repo (or the legislator itself) lives on Windows or macOS?
+
+**The question:** which executable surfaces of this system are OS-portable, which degrade silently, and which break an invariant — and is the right fix a set of small patches or a migration of the logic to one cross-platform runtime?
+
+**The probe:** enumerate every executable surface and classify it per OS (Linux / macOS / Windows-native+Git-Bash / WSL) as *fine / degrades / breaks*, naming the cheapest fix for each:
+
+- **Claude Code hooks** (`plugin/hooks/*.py` + `hooks.json`): the `python3` launcher name (absent on most Windows installs → hooks silently stop enforcing — the dangerous failure: a non-2 exit is a non-blocking error, so protection looks installed but is not); `git.exe`/backslash command heads the conduct guard's parser does not recognize (missed block, fail-open).
+- **opencode plugin** (`legislator-guard.ts`): node fs/path — the most portable arm; same command-head caveat.
+- **The engine** (`docs/ai/engine.py`, delivered fleet-wide): stdlib-only, but invoked as `python3` everywhere the law names it (verification rung, audit checks 15/17).
+- **Operator tools** (`tools/*.sh`): bash-only by construction — fleet.sh, evals-bg.sh; acceptable if declared operator-side-Linux-only, but that declaration does not exist anywhere yet.
+- **The eval suite** (`evals/*.py`, `check_opencode_plugin.mjs`): same launcher question; path/tmpdir assumptions.
+- **The file model and git config**: the `CLAUDE.md → AGENTS.md` symlink (`ln -s` on Windows needs Developer Mode; Git Bash silently copies instead — a broken v14 invariant audit check 9 would then report); `core.autocrlf` rewriting owned files → false Critical from check 3 (owned-integrity byte-diff); `ln -s`/`cp`/`mv` steps inside SKILL.md's own procedure.
+
+**What the answer decides:** patch vs port. The patch path (launcher fallback `py`/`python`, `.exe`-aware command heads, a symlink strategy, an autocrlf ruling for owned files) is S–M. The port path — moving the engine and hooks to one runtime — is L and only one candidate respects the owned-file law: **.NET file-based apps** (`dotnet run engine.cs`), which keep the engine a byte-verifiable delivered *text* while standing on the SDK the dotnet fleet already requires; a compiled-binary port is ruled out by the delivery model (per-platform artifacts cannot be one byte-identical owned file). The opencode arm stays TS regardless, so a port never buys single-language purity — that cost stays either way.
+
+**Stop condition:** the classified table and the patch-vs-port recommendation are the deliverable. No fix is written inside the spike; each fix class becomes its own case, sized from the measurement.
 
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
 
