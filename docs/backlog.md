@@ -2208,7 +2208,13 @@ sized from the measurement.
 
 ## BL-055 — `fleet.sh` discovery cannot see a repository nested one level deeper
 
-**Status: PROPOSED 2026-08-24** — tooling only (`tools/fleet.sh`), no `skill/`
+**Status: DONE 2026-08-26** — branch `bl/055-member-zero-channel`, case
+`docs/cases/BL-055-member-zero-channel/` (tier 1, converged). Owner's ruling:
+**release-step** (ADR-0004) — member #0 is delivered on the edition branch,
+byte-verified, before the sweep, and the sweep never touches it. `status`
+prints an explicit member-#0 line (computed, never a hardcoded path),
+informative only; discovery's depth is unchanged and the invisibility is now
+a recorded decision. Originally **PROPOSED 2026-08-24** — tooling only (`tools/fleet.sh`), no `skill/`
 change, no VERSION, no benchmark. Found by BL-034, which is barred from fixing
 it (that case's spec §Boundary).
 
@@ -2366,9 +2372,13 @@ run when it cannot, printing the real reason and the cleanup command. It
 the probe performs the failing operation instead of predicting it. That turns
 a three-hour masquerade as model stalls into a one-second refusal.
 
-**Still open:** nothing stops the leak, and a run that starts with 512 MB can
-still exhaust the quota mid-corpus. The remaining half is prevention — clean
-provably-unowned images, or stop the fixtures producing them.
+**Prevention half shipped 2026-08-26 — case DONE** (rode
+`bl/055-member-zero-channel`, case `docs/cases/BL-059-tmp-quota-prevention/`,
+converged): stage 1 reclaims every `/tmp/.<16hex>-<n>.so` it can prove
+unowned — the invoking user's, open in no process (`fuser` silent); proof,
+not age. One log line reports the count even at zero; `fuser` absent degrades
+to the probe unchanged. First real pass: 457 files, 1.88 GB reclaimed, the
+user quota back from 3.3 GB to 1.45 GB. Both halves of the done-when hold.
 
 ## BL-060 — The eval suite's false green, and pruning what measures nothing
 

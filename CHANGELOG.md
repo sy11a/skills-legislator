@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- `tools/fleet.sh status` names member #0 explicitly — delivered as a
+  release step, never swept (ADR-0004); the line is informative and outside
+  the exit contract. `tools/evals-bg.sh` stage 1 reclaims provably-unowned
+  dotnet map files from `/tmp` (owner + open in no process) before the
+  headroom probe, closing BL-059: first pass reclaimed 457 files / 1.88 GB.
+
 - `tools/fleet.sh upgrade` no longer reports `FAIL` over a completed
   delivery: both branches re-read the manifest and decide on the version —
   the runner's exit code is evidence on the line, never the verdict
