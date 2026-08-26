@@ -2523,11 +2523,11 @@ still `measured`.
 
 ## BL-064 — The git conduct guard: the highest-frequency unenforced law
 
-**Status: PROPOSED 2026-08-26** — enforcement arms (`plugin/`), sized from BL-047's ranked list (group 1). Whether anything under `skill/` moves (and with it VERSION) is a pickup-time decision — the guard itself is hook code, not law text.
+**Status: DONE 2026-08-26** — shipped as `docs/cases/BL-064-git-conduct-guard/` (tier 1, R-641–R-649). Enforcement arms only: nothing under `skill/` moved, no VERSION, no benchmark.
 
 **What it enforces:** the constitution's git-conduct clauses that today bind only the model's discipline — never merge to the main branch yourself (pair-6), no AI attribution anywhere in the VCS record (pair-7), no skill commits/pushes on its own authority (skl-3) — with immutability riders where the same arm can carry them: never renumber/delete a past ADR (adr-5), permanent `R-NNN` ids (sdd-12), converged case files never rewritten (life-4).
 
-**The shape:** a PreToolUse git guard (block `git merge`/`git push` onto the default branch, block commits whose message carries `Co-Authored-By`/"Generated with") plus a history check for the immutability riders. Same plugin family as `guard_owned_files.py`; the opencode port rides along. Cost S–M. These clauses fire at every-commit cadence across the whole fleet — the cheapest (b)→(a) move the inventory found.
+**Shipped:** `plugin/hooks/guard_git_conduct.py` (PreToolUse, matcher `Bash`) blocks — in legislated repos only, fail-open on every "can't tell" — `git merge` on the default branch, `git push` updating it (refspec, `--all`/`--mirror`, bare push while on it), AI attribution in `git commit` / `gh pr create|edit` text (human co-authors pass), and `gh pr merge` (merging is the user's act whatever the channel — clarified 2026-08-26). The opencode port mirrors all of it reading git state from `.git` directly. 22 new checks in `evals/check_hooks.py` + 14 in `check_opencode_plugin.mjs`, shown red before the arm existed (R-649). The immutability riders (adr-5, sdd-12, life-4) were deliberately deferred at clarify: they inspect the staged diff, a different mechanism with its own false-block budget — their case is sized once this arm has field history.
 
 ## BL-065 — `sdd-lint` grows the case-shape lints
 

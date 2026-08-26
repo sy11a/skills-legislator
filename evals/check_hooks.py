@@ -264,6 +264,162 @@ proc = subprocess.run([sys.executable, str(OKF)], input="not json",
 check(proc.returncode == 0, "malformed stdin allowed (exit 0)", f"got {proc.returncode}")
 
 
+
+# =====================================================================
+# Git-conduct guard (guard_git_conduct.py)
+# =====================================================================
+print("== guard_git_conduct.py ==")
+CONDUCT = HOOKS / "guard_git_conduct.py"
+
+
+def bash_payload(command: str, cwd: str) -> dict:
+    return {
+        "hook_event_name": "PreToolUse",
+        "tool_name": "Bash",
+        "tool_input": {"command": command},
+        "cwd": cwd,
+    }
+
+
+def make_conduct_repo(root: Path, legislated: bool = True,
+                      default: str = "master") -> None:
+    root.mkdir(parents=True, exist_ok=True)
+    if legislated:
+        (root / "docs" / "ai").mkdir(parents=True)
+        (root / "docs" / "ai" / "manifest.json").write_text("{}")
+    subprocess.run(["git", "init", "-q", "-b", default], cwd=str(root), check=True)
+    subprocess.run(["git", "config", "user.email", "t@example.com"], cwd=str(root), check=True)
+    subprocess.run(["git", "config", "user.name", "T"], cwd=str(root), check=True)
+    (root / "README.md").write_text("x\n")
+    subprocess.run(["git", "add", "-A"], cwd=str(root), check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "init"], cwd=str(root), check=True)
+
+
+def conduct(command: str, cwd: Path):
+    return run_hook(CONDUCT, bash_payload(command, str(cwd)))
+
+
+if not have_git:
+    check(False, "git available for guard_git_conduct.py tests", "git not found on PATH")
+else:
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp) / "fleet-repo"
+        make_conduct_repo(repo)
+        subprocess.run(["git", "branch", "bl/064-x"], cwd=str(repo), check=True)
+
+        # per R-641: merging while ON the default branch is blocked.
+        proc = conduct("git merge bl/064-x", repo)
+        check(proc.returncode == 2, "merge into default branch blocked (exit 2) per R-641",
+              f"got exit {proc.returncode}, stderr={proc.stderr!r}")
+        check("pair-development" in proc.stderr,
+              "merge block message names the rule per R-641", f"stderr={proc.stderr!r}")
+
+        # per R-641: the same merge from a feature branch is allowed.
+        subprocess.run(["git", "checkout", "-q", "bl/064-x"], cwd=str(repo), check=True)
+        proc = conduct("git merge master", repo)
+        check(proc.returncode == 0, "merge INTO a feature branch allowed per R-641",
+              f"got exit {proc.returncode}, stderr={proc.stderr!r}")
+
+        # per R-642: pushing the default branch explicitly is blocked, from any branch.
+        proc = conduct("git push origin master", repo)
+        check(proc.returncode == 2, "push origin master blocked per R-642",
+              f"got exit {proc.returncode}, stderr={proc.stderr!r}")
+        proc = conduct("git push origin HEAD:master", repo)
+        check(proc.returncode == 2, "push HEAD:master blocked per R-642",
+              f"got exit {proc.returncode}, stderr={proc.stderr!r}")
+
+        # per R-642: pushing a task branch is allowed.
+        proc = conduct("git push -u origin bl/064-x", repo)
+        check(proc.returncode == 0, "push of a task branch allowed per R-642",
+              f"got exit {proc.returncode}, stderr={proc.stderr!r}")
+
+        # per R-642: a bare push while ON the default branch is blocked.
+        subprocess.run(["git", "checkout", "-q", "master"], cwd=str(repo), check=True)
+        proc = conduct("git push", repo)
+        check(proc.returncode == 2, "bare push on default branch blocked per R-642",
+              f"got exit {proc.returncode}, stderr={proc.stderr!r}")
+
+        # per R-641: a compound command hides no merge.
+        proc = conduct("git fetch && git merge origin/master", repo)
+        check(proc.returncode == 2, "merge inside a compound command blocked per R-641",
+              f"got exit {proc.returncode}, stderr={proc.stderr!r}")
+
+        # per R-641: aborting a merge is cleanup, not merging.
+        proc = conduct("git merge --abort", repo)
+        check(proc.returncode == 0, "merge --abort allowed per R-641",
+              f"got exit {proc.returncode}, stderr={proc.stderr!r}")
+
+        # per R-643: an AI-attribution trailer in a commit message is blocked.
+        proc = conduct(
+            'git commit -m "fix: x\n\nCo-Authored-By: Claude <noreply@anthropic.com>"', repo)
+        check(proc.returncode == 2, "Claude co-author trailer blocked per R-643",
+              f"got exit {proc.returncode}, stderr={proc.stderr!r}")
+        check("attribution" in proc.stderr.lower(),
+              "attribution block message says why per R-643", f"stderr={proc.stderr!r}")
+        proc = conduct(
+            'git commit -m "docs: y" -m "Generated with [Claude Code](https://claude.com/claude-code)"',
+            repo)
+        check(proc.returncode == 2, "Generated-with footer blocked per R-643",
+              f"got exit {proc.returncode}, stderr={proc.stderr!r}")
+
+        # per R-643: a human co-author and an ordinary message pass.
+        proc = conduct(
+            'git commit -m "fix: x\n\nCo-Authored-By: Jane Doe <jane@example.com>"', repo)
+        check(proc.returncode == 0, "human co-author trailer allowed per R-643",
+              f"got exit {proc.returncode}, stderr={proc.stderr!r}")
+        proc = conduct('git commit -m "fix: ordinary message"', repo)
+        check(proc.returncode == 0, "ordinary commit message allowed per R-643",
+              f"got exit {proc.returncode}, stderr={proc.stderr!r}")
+
+        # per R-643: attribution outside a commit/pr command is not the guard's business.
+        proc = conduct('grep "Co-Authored-By: Claude" README.md', repo)
+        check(proc.returncode == 0, "grep for the pattern allowed per R-643",
+              f"got exit {proc.returncode}, stderr={proc.stderr!r}")
+
+        # per R-644: attribution in a PR body is blocked; a clean body passes.
+        proc = conduct(
+            'gh pr create --title "x" --body "🤖 Generated with [Claude Code](https://claude.com/claude-code)"',
+            repo)
+        check(proc.returncode == 2, "attribution in gh pr body blocked per R-644",
+              f"got exit {proc.returncode}, stderr={proc.stderr!r}")
+        proc = conduct('gh pr create --title "x" --body "plain delivery notes"', repo)
+        check(proc.returncode == 0, "clean gh pr body allowed per R-644",
+              f"got exit {proc.returncode}, stderr={proc.stderr!r}")
+
+        # per R-645: merging the PR is the user's act.
+        proc = conduct("gh pr merge 23 --squash", repo)
+        check(proc.returncode == 2, "gh pr merge blocked per R-645",
+              f"got exit {proc.returncode}, stderr={proc.stderr!r}")
+
+        # per R-646: a detached HEAD is undecidable — allow.
+        subprocess.run(["git", "checkout", "-q", "--detach"], cwd=str(repo), check=True)
+        proc = conduct("git merge bl/064-x", repo)
+        check(proc.returncode == 0, "detached HEAD merge allowed (can't tell) per R-646",
+              f"got exit {proc.returncode}, stderr={proc.stderr!r}")
+        subprocess.run(["git", "checkout", "-q", "master"], cwd=str(repo), check=True)
+
+    with tempfile.TemporaryDirectory() as tmp:
+        # per R-647: outside a legislated repo the guard is a silent no-op.
+        plain = Path(tmp) / "plain-repo"
+        make_conduct_repo(plain, legislated=False)
+        subprocess.run(["git", "branch", "topic"], cwd=str(plain), check=True)
+        proc = conduct("git merge topic", plain)
+        check(proc.returncode == 0, "non-legislated repo: merge on default allowed per R-647",
+              f"got exit {proc.returncode}, stderr={proc.stderr!r}")
+
+    # per R-646: malformed stdin and non-git commands never block.
+    proc = subprocess.run([sys.executable, str(CONDUCT)], input="not json",
+                          capture_output=True, text=True, timeout=15)
+    check(proc.returncode == 0, "malformed stdin allowed (exit 0) per R-646",
+          f"got {proc.returncode}")
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp) / "fleet-repo2"
+        make_conduct_repo(repo)
+        proc = conduct("ls -la && echo done", repo)
+        check(proc.returncode == 0, "non-git command allowed per R-646",
+              f"got exit {proc.returncode}, stderr={proc.stderr!r}")
+
+
 # =====================================================================
 # hooks.json well-formedness
 # =====================================================================
@@ -308,6 +464,14 @@ for event_name, entries in events.items():
                 script_path = HOOKS / found
                 check(script_path.is_file(), f"{event_name} script exists: {found}",
                       f"expected at {script_path}")
+
+
+# per R-641: the Bash matcher entry registering the git-conduct guard exists.
+bash_entries = [e for e in events.get("PreToolUse", [])
+                if e.get("matcher") == "Bash"]
+check(any("guard_git_conduct.py" in h.get("command", "")
+          for e in bash_entries for h in e.get("hooks", [])),
+      "PreToolUse has a Bash entry running guard_git_conduct.py per R-641")
 
 
 if failures:

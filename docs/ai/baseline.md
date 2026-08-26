@@ -43,9 +43,21 @@
 | R-009 | `SKILL.md` Step 3 item 6 and Step 7's Keep-list section SHALL | `docs/cases/BL-051-v20-residue` | — |
 | R-010 | A corpus fixture SHALL place a repository in the "bundle present, | `docs/cases/BL-051-v20-residue` | — |
 | R-011 | `skill/VERSION` SHALL read 21, and `evals/benchmarks/v21.md` | `docs/cases/BL-051-v20-residue` | — |
+| R-401 | `fleet.sh status` SHALL print an explicit member-#0 line, computed | `docs/cases/BL-055-member-zero-channel` | — |
+| R-402 | The member-#0 line SHALL NOT participate in the exit contract: | `docs/cases/BL-055-member-zero-channel` | — |
+| R-403 | Discovery SHALL stay at its current depth; the invisibility is | `docs/cases/BL-055-member-zero-channel` | — |
+| R-311 | WHEN `status` reports a repository, THEN the version column SHALL be | `docs/cases/BL-056-status-committed` | — |
+| R-312 | WHILE the working-tree manifest version differs from the committed | `docs/cases/BL-056-status-committed` | — |
+| R-313 | The exit contract SHALL stay: 0 iff every repository's **committed** | `docs/cases/BL-056-status-committed` | — |
 | R-101 | a quotation is not a placeholder | `docs/cases/BL-057-quoted-tokens` | — |
 | R-102 | a fenced block is quotation too | `docs/cases/BL-057-quoted-tokens` | — |
 | R-103 | a bare token still bites | `docs/cases/BL-057-quoted-tokens` | — |
+| R-501 | WHEN `tools/evals-bg.sh` runs its stage-1 gates, THEN before the | `docs/cases/BL-059-tmp-quota-prevention` | — |
+| R-502 | The reclaim SHALL be reported, never silent: one line naming how | `docs/cases/BL-059-tmp-quota-prevention` | — |
+| R-503 | WHERE reclaiming fails or `fuser` is unavailable, the run SHALL | `docs/cases/BL-059-tmp-quota-prevention` | — |
+| R-301 | WHEN a runner invocation returns, THEN the loop SHALL re-read the | `docs/cases/BL-061-fleet-false-fail` | — |
+| R-302 | WHILE the manifest reads the current version, the repo SHALL be | `docs/cases/BL-061-fleet-false-fail` | — |
+| R-303 | WHILE the manifest does not read the current version, a zero exit | `docs/cases/BL-061-fleet-false-fail` | — |
 | R-001 | a declaration is data, not a comment | `docs/cases/BL-062-unmeasured-verdict` | — |
 | R-002 | not measured is not passed | `docs/cases/BL-062-unmeasured-verdict` | — |
 | R-003 | unmeasured is fatal | `docs/cases/BL-062-unmeasured-verdict` | — |
@@ -57,6 +69,23 @@
 | R-009 | the dashboard shows what was measured | `docs/cases/BL-062-unmeasured-verdict` | — |
 | R-010 | history distinguishes the two | `docs/cases/BL-062-unmeasured-verdict` | — |
 | R-011 | the baseline recipe survives a grader change | `docs/cases/BL-062-unmeasured-verdict` | — |
+| R-601 | Every corpus assert SHALL carry exactly one mutation: a named, | `docs/cases/BL-063-mutation-manifest` | — |
+| R-602 | WHEN the runner grades a mutated copy, THEN the target assert SHALL | `docs/cases/BL-063-mutation-manifest` | — |
+| R-603 | WHEN an assert has no mutation in the manifest, THEN the pass SHALL | `docs/cases/BL-063-mutation-manifest` | — |
+| R-604 | WHEN an assert survives its mutation, THEN the pass SHALL report it | `docs/cases/BL-063-mutation-manifest` | — |
+| R-605 | Before mutating anything, the runner SHALL validate the substrate: | `docs/cases/BL-063-mutation-manifest` | — |
+| R-606 | Mutations SHALL be applied and reverted in place (byte-restore of | `docs/cases/BL-063-mutation-manifest` | — |
+| R-607 | The pass SHALL print and record one summary — total, killed, | `docs/cases/BL-063-mutation-manifest` | — |
+| R-608 | `evals/POLICY.md` §1c SHALL name the command and the cadence | `docs/cases/BL-063-mutation-manifest` | — |
+| R-641 | WHEN the agent invokes Bash with a `git merge` command WHILE | `docs/cases/BL-064-git-conduct-guard` | — |
+| R-642 | WHEN the agent invokes Bash with a `git push` command whose | `docs/cases/BL-064-git-conduct-guard` | — |
+| R-643 | WHEN a `git commit` (or `git commit --amend`) command's | `docs/cases/BL-064-git-conduct-guard` | — |
+| R-644 | WHEN a `gh pr create` / `gh pr edit` command's title/body | `docs/cases/BL-064-git-conduct-guard` | — |
+| R-645 | WHEN the agent invokes Bash with a `gh pr merge` command, in | `docs/cases/BL-064-git-conduct-guard` | — |
+| R-646 | WHILE the input is malformed, the command is not a git/gh | `docs/cases/BL-064-git-conduct-guard` | — |
+| R-647 | WHILE the working directory is not inside a legislated repo | `docs/cases/BL-064-git-conduct-guard` | — |
+| R-648 | The opencode plugin SHALL mirror R-641–R-645 for its bash | `docs/cases/BL-064-git-conduct-guard` | — |
+| R-649 | Every new check in the two harnesses SHALL be shown failing | `docs/cases/BL-064-git-conduct-guard` | — |
 
 ## Uncovered — requirements no test carries
 
@@ -95,9 +124,21 @@
 - R-009 — `SKILL.md` Step 3 item 6 and Step 7's Keep-list section SHALL (`docs/cases/BL-051-v20-residue`)
 - R-010 — A corpus fixture SHALL place a repository in the "bundle present, (`docs/cases/BL-051-v20-residue`)
 - R-011 — `skill/VERSION` SHALL read 21, and `evals/benchmarks/v21.md` (`docs/cases/BL-051-v20-residue`)
+- R-401 — `fleet.sh status` SHALL print an explicit member-#0 line, computed (`docs/cases/BL-055-member-zero-channel`)
+- R-402 — The member-#0 line SHALL NOT participate in the exit contract: (`docs/cases/BL-055-member-zero-channel`)
+- R-403 — Discovery SHALL stay at its current depth; the invisibility is (`docs/cases/BL-055-member-zero-channel`)
+- R-311 — WHEN `status` reports a repository, THEN the version column SHALL be (`docs/cases/BL-056-status-committed`)
+- R-312 — WHILE the working-tree manifest version differs from the committed (`docs/cases/BL-056-status-committed`)
+- R-313 — The exit contract SHALL stay: 0 iff every repository's **committed** (`docs/cases/BL-056-status-committed`)
 - R-101 — a quotation is not a placeholder (`docs/cases/BL-057-quoted-tokens`)
 - R-102 — a fenced block is quotation too (`docs/cases/BL-057-quoted-tokens`)
 - R-103 — a bare token still bites (`docs/cases/BL-057-quoted-tokens`)
+- R-501 — WHEN `tools/evals-bg.sh` runs its stage-1 gates, THEN before the (`docs/cases/BL-059-tmp-quota-prevention`)
+- R-502 — The reclaim SHALL be reported, never silent: one line naming how (`docs/cases/BL-059-tmp-quota-prevention`)
+- R-503 — WHERE reclaiming fails or `fuser` is unavailable, the run SHALL (`docs/cases/BL-059-tmp-quota-prevention`)
+- R-301 — WHEN a runner invocation returns, THEN the loop SHALL re-read the (`docs/cases/BL-061-fleet-false-fail`)
+- R-302 — WHILE the manifest reads the current version, the repo SHALL be (`docs/cases/BL-061-fleet-false-fail`)
+- R-303 — WHILE the manifest does not read the current version, a zero exit (`docs/cases/BL-061-fleet-false-fail`)
 - R-001 — a declaration is data, not a comment (`docs/cases/BL-062-unmeasured-verdict`)
 - R-002 — not measured is not passed (`docs/cases/BL-062-unmeasured-verdict`)
 - R-003 — unmeasured is fatal (`docs/cases/BL-062-unmeasured-verdict`)
@@ -109,3 +150,20 @@
 - R-009 — the dashboard shows what was measured (`docs/cases/BL-062-unmeasured-verdict`)
 - R-010 — history distinguishes the two (`docs/cases/BL-062-unmeasured-verdict`)
 - R-011 — the baseline recipe survives a grader change (`docs/cases/BL-062-unmeasured-verdict`)
+- R-601 — Every corpus assert SHALL carry exactly one mutation: a named, (`docs/cases/BL-063-mutation-manifest`)
+- R-602 — WHEN the runner grades a mutated copy, THEN the target assert SHALL (`docs/cases/BL-063-mutation-manifest`)
+- R-603 — WHEN an assert has no mutation in the manifest, THEN the pass SHALL (`docs/cases/BL-063-mutation-manifest`)
+- R-604 — WHEN an assert survives its mutation, THEN the pass SHALL report it (`docs/cases/BL-063-mutation-manifest`)
+- R-605 — Before mutating anything, the runner SHALL validate the substrate: (`docs/cases/BL-063-mutation-manifest`)
+- R-606 — Mutations SHALL be applied and reverted in place (byte-restore of (`docs/cases/BL-063-mutation-manifest`)
+- R-607 — The pass SHALL print and record one summary — total, killed, (`docs/cases/BL-063-mutation-manifest`)
+- R-608 — `evals/POLICY.md` §1c SHALL name the command and the cadence (`docs/cases/BL-063-mutation-manifest`)
+- R-641 — WHEN the agent invokes Bash with a `git merge` command WHILE (`docs/cases/BL-064-git-conduct-guard`)
+- R-642 — WHEN the agent invokes Bash with a `git push` command whose (`docs/cases/BL-064-git-conduct-guard`)
+- R-643 — WHEN a `git commit` (or `git commit --amend`) command's (`docs/cases/BL-064-git-conduct-guard`)
+- R-644 — WHEN a `gh pr create` / `gh pr edit` command's title/body (`docs/cases/BL-064-git-conduct-guard`)
+- R-645 — WHEN the agent invokes Bash with a `gh pr merge` command, in (`docs/cases/BL-064-git-conduct-guard`)
+- R-646 — WHILE the input is malformed, the command is not a git/gh (`docs/cases/BL-064-git-conduct-guard`)
+- R-647 — WHILE the working directory is not inside a legislated repo (`docs/cases/BL-064-git-conduct-guard`)
+- R-648 — The opencode plugin SHALL mirror R-641–R-645 for its bash (`docs/cases/BL-064-git-conduct-guard`)
+- R-649 — Every new check in the two harnesses SHALL be shown failing (`docs/cases/BL-064-git-conduct-guard`)

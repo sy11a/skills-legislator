@@ -155,6 +155,94 @@ try {
   ok("event_hook_safe", false, `event threw: ${e.message}`);
 }
 
+
+// =====================================================================
+// Git-conduct guard (BL-064) — bash tool, per R-648
+// =====================================================================
+
+function makeFakeGitRepo(root, { legislated = true, head = "master", branches = ["master"] } = {}) {
+  mkdirSync(path.join(root, ".git", "refs", "heads"), { recursive: true });
+  writeFileSync(path.join(root, ".git", "HEAD"), `ref: refs/heads/${head}\n`);
+  for (const b of branches) {
+    const ref = path.join(root, ".git", "refs", "heads", b);
+    mkdirSync(path.dirname(ref), { recursive: true });
+    writeFileSync(ref, "0000000000000000000000000000000000000000\n");
+  }
+  if (legislated) {
+    mkdirSync(path.join(root, "docs", "ai"), { recursive: true });
+    writeFileSync(path.join(root, "docs", "ai", "manifest.json"), "{}");
+  }
+}
+
+async function conduct(hooksObj, command) {
+  try {
+    await hooksObj["tool.execute.before"]({ tool: "bash" }, { args: { command } });
+    return null;
+  } catch (e) {
+    return e.message ?? String(e);
+  }
+}
+
+const gitRepo = mkdtempSync(path.join(tmpdir(), "leg-conduct-"));
+makeFakeGitRepo(gitRepo, { head: "master", branches: ["master", "bl/064-x"] });
+const gitHooks = await makePlugin({ directory: gitRepo });
+
+// per R-641: merging while ON the default branch is blocked.
+let msg = await conduct(gitHooks, "git merge bl/064-x");
+ok("bash_merge_on_default_blocked", msg !== null && msg.includes("pair-development"),
+   `got: ${msg}`);
+
+// per R-641: a compound command hides no merge.
+msg = await conduct(gitHooks, "git fetch && git merge origin/master");
+ok("bash_compound_merge_blocked", msg !== null, `got: ${msg}`);
+
+// per R-642: pushing the default branch is blocked; a task branch passes.
+msg = await conduct(gitHooks, "git push origin master");
+ok("bash_push_default_blocked", msg !== null, `got: ${msg}`);
+msg = await conduct(gitHooks, "git push -u origin bl/064-x");
+ok("bash_push_task_branch_allowed", msg === null, `got: ${msg}`);
+
+// per R-643: attribution in a commit message is blocked; ordinary passes.
+msg = await conduct(gitHooks,
+  'git commit -m "x" -m "Co-Authored-By: Claude <noreply@anthropic.com>"');
+ok("bash_commit_attribution_blocked", msg !== null && msg.includes("attribution"),
+   `got: ${msg}`);
+msg = await conduct(gitHooks, 'git commit -m "fix: ordinary message"');
+ok("bash_commit_ordinary_allowed", msg === null, `got: ${msg}`);
+
+// per R-644: attribution in a PR body is blocked.
+msg = await conduct(gitHooks,
+  'gh pr create --title "x" --body "Generated with [Claude Code](https://claude.com/claude-code)"');
+ok("bash_pr_body_attribution_blocked", msg !== null, `got: ${msg}`);
+
+// per R-645: merging the PR is the user's act.
+msg = await conduct(gitHooks, "gh pr merge 23 --squash");
+ok("bash_pr_merge_blocked", msg !== null && msg.includes("pair-development"), `got: ${msg}`);
+
+// per R-641: the same merge from a feature branch is allowed.
+const featRepo = mkdtempSync(path.join(tmpdir(), "leg-conduct-feat-"));
+makeFakeGitRepo(featRepo, { head: "bl/064-x", branches: ["master", "bl/064-x"] });
+const featHooks = await makePlugin({ directory: featRepo });
+msg = await conduct(featHooks, "git merge master");
+ok("bash_merge_on_feature_allowed", msg === null, `got: ${msg}`);
+
+// per R-647: outside a legislated repo the guard is a silent no-op.
+const plainRepo = mkdtempSync(path.join(tmpdir(), "leg-conduct-plain-"));
+makeFakeGitRepo(plainRepo, { legislated: false });
+const plainHooks = await makePlugin({ directory: plainRepo });
+msg = await conduct(plainHooks, "git merge anything");
+ok("bash_non_legislated_noop", msg === null, `got: ${msg}`);
+
+// per R-646: malformed args and non-git commands never throw.
+msg = await conduct(gitHooks, undefined);
+ok("bash_missing_command_noop", msg === null, `got: ${msg}`);
+msg = await conduct(gitHooks, "ls -la && echo done");
+ok("bash_non_git_command_noop", msg === null, `got: ${msg}`);
+
+rmSync(gitRepo, { recursive: true, force: true });
+rmSync(featRepo, { recursive: true, force: true });
+rmSync(plainRepo, { recursive: true, force: true });
+
 // cleanup
 rmSync(repo, { recursive: true, force: true });
 rmSync(free, { recursive: true, force: true });

@@ -8,6 +8,15 @@ timestamp: 2026-08-24T00:00:00Z
 
 # OKF Bundle Changelog
 
+## 2026-08-26 — BL-064: the git conduct guard
+
+The glossary gains `git conduct guard`. The codebase map's `plugin/` row
+already covers the new hook ("the deterministic enforcement arms"), so no
+map change; the plugin's own README carries the concept in depth. The
+regenerated `docs/ai/baseline.md` picks up R-641–R-649 alongside the
+R-3xx/4xx/5xx/6xx rows the earlier cases had defined since its last
+regeneration.
+
 ## 2026-08-26 — BL-047: the decision inventory
 
 The glossary gains `decision inventory` — the bucket vocabulary (a/b/c) the
