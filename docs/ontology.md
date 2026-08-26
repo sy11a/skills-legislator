@@ -68,9 +68,10 @@ Flow directions:
   in the repo**, not delivered from the center and not hand-maintained.
   Properties: do-not-edit, regenerated from their source on demand, die
   together with their source; not listed in `ownedFiles` (nothing is
-  byte-copied onto them), not keepable. The class is **declared and
-  unpopulated**: `baseline.md` (from annotated tests) is its first member and
-  arrives with BL-043. `codebase-map.md` and `index.md` are *not* members —
+  byte-copied onto them), not keepable. The class's first member is
+  `docs/ai/baseline.md` (BL-043, edition v22): the R-NNN ↔ annotated-tests
+  register, written by `python3 docs/ai/engine.py baseline` and by nothing
+  else. `codebase-map.md` and `index.md` are *not* members —
   D2 assumed they were, and the fleet showed otherwise: their rows carry
   judgment a generator would destroy, while their structure is already
   machine-checked (audit checks 6 and 5). They are anchored instead.

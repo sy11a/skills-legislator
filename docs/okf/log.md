@@ -8,6 +8,14 @@ timestamp: 2026-08-24T00:00:00Z
 
 # OKF Bundle Changelog
 
+## 2026-08-25 — edition v22: baseline, sdd-lint, and the quotation rule
+
+BL-043 populated the `generated` class: `docs/ai/baseline.md` exists, written
+by the engine's third job. The glossary's `baseline` and `generated` rows
+drop their "arrives with BL-043" tense; a new `annotated test` row pins the
+marker form. BL-057's quotation rule (a backticked token is quotation, not a
+placeholder) now governs audit check 2 and sdd-lint's placeholder pass alike.
+
 ## 2026-08-25 — `unmeasured` and `declared artifact` enter the glossary
 
 BL-062 gave the eval grader a third verdict. Two terms were minted with it:

@@ -118,8 +118,10 @@ Settled with the owner at the close of the v21 cycle, after the fleet sweep.
    a useless assert even in principle. Until that is fixed, every corpus number
    is inflated by an unknown amount — and fixing law against a ruler that
    overstates itself is building on an unverified instrument.
-2. **BL-057 with BL-043 as edition v22** — the false Criticals from audit check
-   2, alongside the generated baseline and the spec/plan linter. Check 2 yields
+2. **BL-057 with BL-043 as edition v22 — DONE 2026-08-26** (201/201 one
+   pass, idempotency ×3 zero diff, floor sonnet; `evals/benchmarks/v22.md`).
+   The false Criticals from audit check 2, alongside the generated baseline
+   and the spec/plan linter. Check 2 yields
    fourteen false Criticals in this repository; `Critical` is the severity that
    means "the layer is broken", and fourteen false ones train a reader to skim
    exactly the section that must never be skimmed.
@@ -1778,9 +1780,18 @@ divergence loud, not impossible. Collapsing the two — the dashboard reading
 the append-only record and `grading.json` becoming a derived cache or
 disappearing — is the real fix, and it is a bigger change than this one.
 
-## BL-043 — Generated baseline and the spec/plan linter (edition v21)
+## BL-043 — Generated baseline and the spec/plan linter (edition v22)
 
-**Status: queued 2026-08-23 → edition v21**
+**Status: DONE 2026-08-26** — edition v22, branch `bl/043-baseline-and-linter`,
+case `docs/cases/BL-043-baseline-and-linter/` (tier 2, converged). Benchmark
+`evals/benchmarks/v22.md`: 201/201 one pass on `v22-e277e4c`, idempotency ×3
+zero diff, model floor sonnet, baseline per POLICY §5's grader-change rule
+(master at BL-062, not the v21 tag). The engine gained `sdd-lint` and
+`baseline` (ADR-0003); `docs/ai/baseline.md` is the `generated` class's first
+member; one law defect (restructure's ask-the-user token derivation) and one
+grader defect (the porcelain-blind token scan) found and closed in-cycle.
+Remaining: the fleet-obs registry half (reference row in the case) after the
+sweep. Originally queued for v21 and displaced by BL-051's residue.
 
 **What:** the baseline generator (`R-NNN` ↔ annotated tests →
 `docs/ai/baseline.md`), the linter and its binding in `core/sdd.md`'s
@@ -2240,7 +2251,13 @@ unreviewed upgrade is visibly pending, not `ok`.
 
 ## BL-057 — Audit check 2 cannot tell a quoted token from an unfilled one
 
-**Status: PROPOSED 2026-08-24** — behavioral (`skill/` change: SKILL.md's audit
+**Status: DONE 2026-08-26** — rode edition v22 (case
+`docs/cases/BL-057-quoted-tokens/`, tier 1, converged). Check 2 gained the
+quotation rule — a `{{TOKEN}}` in backticks or a fence is prose about
+templating, never a finding — and the same rule now governs the engine's
+`sdd-lint` and the grader's token scan. Both directions covered in the
+rotted-layer fixture; the absent-marker was shown red by a live v21-law agent
+run (`red-evidence.md`). Originally **PROPOSED 2026-08-24** — behavioral (`skill/` change: SKILL.md's audit
 section, VERSION bump + full e2e). Found by BL-034's first audit run, which is
 barred from fixing it.
 

@@ -363,7 +363,8 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
     (okf / "index.md").write_text(
         "# OKF Index\n\n- [Log](log.md)\n- [Overview draft](overview-draft.md)\n"
         "- [Old notes](renamed-away.md)\n- [Glossary](glossary.md)\n"
-        "- [Importer](importer.md)\n- [Endpoints](endpoints.md)\n")
+        "- [Importer](importer.md)\n- [Endpoints](endpoints.md)\n"
+        "- [Templating notes](templating-notes.md)\n")
     (okf / "log.md").write_text(
         "# OKF Log\n\n## 2026-01-10 — Initial legislation\n\nSet up.\n")
     # Defect 2 — unresolved placeholder (linked from the index, so it is
@@ -388,6 +389,17 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
         "tags: [system, glossary, domain]\ntimestamp: 2026-01-10T00:00:00Z\n"
         "status: implemented\n---\n\n# Domain Glossary\n\n"
         "| Term | Meaning in this codebase |\n|------|--------------------------|\n")
+    # Negative control (BL-057, edition v22): a document whose prose QUOTES
+    # template tokens — inline code and a fenced block. Check 2's quotation
+    # rule means none of these is a finding; the absent-marker
+    # "templating-notes.md" asserts the report never names this file. Linked
+    # from the index so it cannot double-report as an orphan.
+    (okf / "templating-notes.md").write_text(
+        "# Templating notes\n\n"
+        "Scaffolds fill `{{PROJECT_NAME}}` and `{{PROJECT_OVERVIEW}}` from "
+        "the repo; a template row looks like:\n\n"
+        "```\n| `docs/x.md` | x.md.tpl | fill {{STACK_SUMMARY}} |\n```\n")
+
     # Defect 7 — orphan: linked from nowhere.
     (okf / "orphan-notes.md").write_text(
         "# Scratch notes\n\nNobody links to this file.\n")
@@ -590,6 +602,9 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
             "stray-rulebooks] docs/cases",
             # not-law suppression: the marked statement must not be proposed
             "Never delete rows from the invoices table",
+            # BL-057 (v22): quoted tokens are quotation, not placeholders —
+            # the report must not name the quoting document at all
+            "templating-notes.md",
         ],
         # Scoped to the report's "### Constitution candidates" section only
         # (findings may legitimately name these files/statements):
