@@ -606,10 +606,9 @@ def mutations_for(ws: Path, scenario: str) -> dict[str, Mutation]:
             "delete", "CLAUDE.md",
             fn=lambda ws_, rev, p=repo / "CLAUDE.md": _delete(rev, p))
         muts["conflict_surfaced_as_decision"] = Mutation(
-            "remove-lines", REPORT[scenario][1],
-            "We do not maintain CHANGELOG.md",
+            "remove-lines", REPORT[scenario][1], "core/changelog.md",
             fn=lambda ws_, rev, p=rp: _edit(rev, p, lambda t: _drop_lines(
-                t, "We do not maintain CHANGELOG.md")))
+                t, "core/changelog.md")))
         prc = repo / meta["project_rule_conflict_path"]
         muts["project_rule_conflict_decision_gated"] = Mutation(
             "edit-file", meta["project_rule_conflict_path"],
