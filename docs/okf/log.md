@@ -8,6 +8,13 @@ timestamp: 2026-08-24T00:00:00Z
 
 # OKF Bundle Changelog
 
+## 2026-08-26 — BL-069: the dependency register
+
+The glossary gains `dependency register` (with its absence-behavior
+taxonomy — fail-open / fail-loud / crash / silent false green). No concept
+document changed: the register is a lifecycle artifact in its case home,
+and no code changed in this spike.
+
 ## 2026-08-26 — BL-064: the git conduct guard
 
 The glossary gains `git conduct guard`. The codebase map's `plugin/` row
