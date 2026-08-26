@@ -8,6 +8,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- The dependency register (BL-069, spike): 13 external dependencies
+  classified with measured absence behavior on the load-bearing cells —
+  one silent false green found (`engine okf-debt` without git reports
+  clean), a dependency-discipline policy drafted as a constitution
+  candidate, and the three future candidates (DB, binary arm, analyzer
+  binding) given verdicts, in
+  `docs/cases/BL-069-dependency-register/register.md`.
 - ADR-0005 (accepted): the deterministic arm's end state is one
   machine-installed .NET binary (NativeAOT per platform) — the law stays
   delivered text, arm integrity moves to version-pin + checksum; phased as

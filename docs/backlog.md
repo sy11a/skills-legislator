@@ -2583,7 +2583,7 @@ still `measured`.
 
 ## BL-069 — Spike: the dependency register — what this system stands on, and the policy for adding more
 
-**Status: PROPOSED 2026-08-26** — exploration, time-boxed, no `skill/` change, no VERSION, no benchmark. Companion to BL-068 and deliberately disjoint from it: BL-068 asks where *our code* breaks per OS; this spike asks what *external tools* we stand on, how each is declared, what happens when it is absent, and by what rule a new one may enter.
+**Status: DONE 2026-08-26** — exploration, executed as `docs/cases/BL-069-dependency-register/` (tier 1; clarified: measurements on load-bearing cells only — verification cost is optimized down, never up). No `skill/` change, no VERSION, no benchmark. Deliverable: `register.md` there. Companion to BL-068 and deliberately disjoint from it: BL-068 asks where *our code* breaks per OS; this spike asks what *external tools* we stand on, how each is declared, what happens when it is absent, and by what rule a new one may enter.
 
 **The question:** which dependencies are already embedded in the system, how does each behave cross-platform and when missing, and what is the adoption policy for future ones?
 
@@ -2593,11 +2593,13 @@ still `measured`.
 
 **Stop condition:** the register and the proposed adoption policy are the deliverable. No dependency is added or removed inside the spike; the policy text, if accepted, becomes law material for a later edition (a constitution candidate, not a silent write).
 
+**The answer (2026-08-26):** 13 external dependencies; one law-declared (`python3`), one check-enforced (the engine's stdlib-only rule), eleven folklore. Load-bearing absence behaviors measured: the hooks fail open exactly as contracted (git hidden → exit 0; controls block), with one worst-class exception — **`engine okf-debt` without git reports clean, silently** (proven on a repo with an 85-day debt: with git exit 1 + finding, without git exit 0, not a word). Findings: F1 that silent false green (S, engine VERSION rider — filed into BL-070); F2 the mjs harness's undeclared node ≥ 22.6 floor (S, operator-side); F3 dashboard's unguarded `ps` (evidence for BL-070's E8); F4 the structural gap the policy ends. The policy draft (a `core/dependencies.md` candidate) generalizes the two good precedents — declared class, proven absence behavior (enforcement fails open, verification fails loud, silent false green forbidden), version floors checked, BL-068 axes story required. Candidate verdicts: constitution DB **pass if stdlib `sqlite3`**; binary arm **pass if self-contained + presence/version audit** (it shrinks the register rather than growing it); analyzer binding **out of register by class** (repo-owned build dependency). Gate 1 of ADR-0005 phase 2: delivered.
+
 ## BL-070 — The portability patch set (ADR-0005 phase 1)
 
 **Status: PROPOSED 2026-08-26** — the executable half of BL-068's ranked patch list, on the current substrate. Per ADR-0005's phasing this work is not throwaway: it defines the behavior the future binary arm must reproduce, and its measured scope is what BL-072 is sized against.
 
-**Items (audit cell → fix, costs from `docs/cases/BL-068-cross-platform-audit/audit.md`):** A3/B2 command heads in both conduct-guard arms (S); C1 explicit `encoding="utf-8"` across the engine (S, VERSION rider — engine is law-delivered); E6 check_engine Windows guard + E8 dashboard ps/tmp portability (S); A1/E4 the interpreter-resolving hook/tool launcher (M — needs one verification on real Windows); D3 the autocrlf/.gitattributes ruling for owned files (M, edition material); E1/E2 evals-bg process control off bash to Python (M); E5 link scripts off bash (M). Split across editions as sized at pickup; the S set can ride the next edition together.
+**Items (audit cell → fix, costs from `docs/cases/BL-068-cross-platform-audit/audit.md`):** A3/B2 command heads in both conduct-guard arms (S); C1 explicit `encoding="utf-8"` across the engine (S, VERSION rider — engine is law-delivered); E6 check_engine Windows guard + E8 dashboard ps/tmp portability (S); A1/E4 the interpreter-resolving hook/tool launcher (M — needs one verification on real Windows); D3 the autocrlf/.gitattributes ruling for owned files (M, edition material); E1/E2 evals-bg process control off bash to Python (M); E5 link scripts off bash (M). **Added from BL-069:** F1 `okf-debt` git-absence must fail loud, never report clean (S, engine VERSION rider — rides with C1); F2 node ≥ 22.6 floor assert in `check_opencode_plugin.mjs` (S, operator-side). Split across editions as sized at pickup; the S set can ride the next edition together.
 
 ## BL-071 — The file-model fork: the CLAUDE.md symlink vs an import-line real file
 
