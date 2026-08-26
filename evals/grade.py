@@ -987,7 +987,17 @@ def check_engine_backed_report(g: "Grader", repo: Path, report: str) -> None:
             else "no emitter stamp — the report was not engine-printed",
             artifact=g.report_art)
     engine_lines = engine_audit_findings(repo)
-    missing = [l for l in engine_lines if l not in report]
+    report_finding_lines = [l for l in report.splitlines() if l.startswith("- [")]
+
+    def escalated(line: str) -> bool:
+        # The model-findings channel may lawfully supersede an engine Info
+        # entry (check-9 escalation): the engine's raw line is then absent,
+        # but its path must still be named by some finding line.
+        m = re.match(r"- \[[^\]]+\] ([^:]+):", line)
+        path = m.group(1).strip() if m else None
+        return bool(path) and any(path in l for l in report_finding_lines)
+
+    missing = [l for l in engine_lines if l not in report and not escalated(l)]
     g.check("audit_mechanical_findings_match_engine", not missing,
             f"all {len(engine_lines)} engine finding lines present verbatim"
             if not missing else f"engine lines absent from the report: "
