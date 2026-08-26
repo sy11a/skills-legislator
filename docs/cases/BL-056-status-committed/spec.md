@@ -43,3 +43,19 @@ the exit code is 1 — where today it reads `v22  ok` and can exit 0.
 
 Same stub harness: fake repos with committed vs worktree manifest divergence;
 asserted before (red) and after.
+
+## Converge — 2026-08-26
+
+- **per R-311 (complete).** The version column is `HEAD:docs/ai/manifest.json`;
+  a path with no git/commit falls back to the worktree value with a `no-git`
+  state.
+- **per R-312 (complete).** Harness: `status-pending` (HEAD v21, worktree
+  v22) reads `v21  pending review (worktree v22, uncommitted)` and counts
+  behind — the unchanged tool read `v22  ok`. The two stub-delivered repos
+  show the same state, which is the 2026-08-24 incident's exact shape:
+  uncommitted sweep output never again counts as delivery.
+- **per R-313 (complete).** Exit 1 while anything is not committed-current;
+  verified against the live fleet (8 repos committed v21 → exit 1) and the
+  harness's mixed set.
+
+✅ Converged.

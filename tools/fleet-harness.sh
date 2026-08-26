@@ -3,9 +3,9 @@
 # Usage: run_harness.sh <fleet.sh-path>
 set -u
 FLEET_SH="${1:?usage: run_harness.sh <fleet.sh>}"
-HARNESS="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-WORK="$HARNESS/work"
-rm -rf "$WORK"; mkdir -p "$WORK/roots" "$WORK/bin" "$WORK/proposals"
+WORK="$(mktemp -d "${TMPDIR:-/tmp}/fleet-harness-XXXXXX")"
+trap 'rm -rf "$WORK"' EXIT
+mkdir -p "$WORK/roots" "$WORK/bin" "$WORK/proposals"
 
 REPO_ROOT="$(cd "$(dirname "$FLEET_SH")/.." && pwd)"
 CUR="$(cat "$REPO_ROOT/skill/VERSION")"

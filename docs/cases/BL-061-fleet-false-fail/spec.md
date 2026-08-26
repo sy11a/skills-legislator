@@ -53,3 +53,23 @@ A stub-runner harness (no agent, no tokens): a fake `claude` on PATH that
 byte-copies the delivery and exits with a chosen code; four scenarios —
 delivered+0, delivered+1, undelivered+0, undelivered+1 — asserted against the
 printed verdicts and the sweep exit code, before (red) and after the fix.
+
+## Converge — 2026-08-26
+
+- **per R-301 (complete).** Both branches re-read the manifest; the verdict
+  is the version. Harness: `delivered-crash` (manifest current, runner exit
+  1) reads `ok … (runner exited 1 after delivery — the version is the
+  verdict…)` where the unchanged tool printed `FAIL`.
+- **per R-302 (complete).** Counted `ok`; the odd exit and the possibly
+  truncated report are noted on the line.
+- **per R-303 (complete).** `behind-clean` stays WARN, `behind-crash` stays
+  FAIL (now naming the version *and* the code).
+- **Unchanged verified:** sweep exit contract (2 misses → exit 1 in the same
+  harness run), dirty-skip, flags, both profiles untouched.
+
+Verification is `tools/fleet-harness.sh` — a stub runner, no agent, no
+tokens; committed red in `a1de5a8` against the unchanged tool. The harness
+found one bonus fact on its first run: repos seeded one level too deep were
+silently invisible to discovery — BL-055 biting its own test harness.
+
+✅ Converged.
