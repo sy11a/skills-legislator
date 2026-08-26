@@ -99,10 +99,13 @@ Gate 0/1 — that ordering is what makes the parallelism safe.
   floor), BL-049 (report derivability), BL-052 (does the constitution load
   at all outside Claude Code and opencode), and **BL-054** (raised
   2026-08-24: full interchangeability of the two engine profiles as a design
-  invariant — the axes BL-044 and BL-052 do not cover), and **BL-068**
+  invariant — the axes BL-044 and BL-052 do not cover), **BL-068**
   (raised 2026-08-26: cross-platform portability of every executable
-  surface, and the patch-vs-port question). Each is time-boxed, produces an
-  answer rather than code, and sizes the cases that follow it.
+  surface, and the patch-vs-port question), and **BL-069** (raised
+  2026-08-26: the dependency register — what the system stands on, absence
+  behavior per dependency, and the adoption policy for future ones). Each
+  is time-boxed, produces an answer rather than code, and sizes the cases
+  that follow it.
 - **Off the edition track:** BL-035 (docs-only, runs any time), BL-039 and
   BL-040 (repository-level operations, each wanting a deliberate moment),
   BL-050 and BL-053 (the two instruments — the eval runner and the fleet
@@ -2573,6 +2576,18 @@ still `measured`.
 **What the answer decides:** patch vs port. The patch path (launcher fallback `py`/`python`, `.exe`-aware command heads, a symlink strategy, an autocrlf ruling for owned files) is S–M. The port path — moving the engine and hooks to one runtime — is L and only one candidate respects the owned-file law: **.NET file-based apps** (`dotnet run engine.cs`), which keep the engine a byte-verifiable delivered *text* while standing on the SDK the dotnet fleet already requires; a compiled-binary port is ruled out by the delivery model (per-platform artifacts cannot be one byte-identical owned file). The opencode arm stays TS regardless, so a port never buys single-language purity — that cost stays either way.
 
 **Stop condition:** the classified table and the patch-vs-port recommendation are the deliverable. No fix is written inside the spike; each fix class becomes its own case, sized from the measurement.
+
+## BL-069 — Spike: the dependency register — what this system stands on, and the policy for adding more
+
+**Status: PROPOSED 2026-08-26** — exploration, time-boxed, no `skill/` change, no VERSION, no benchmark. Companion to BL-068 and deliberately disjoint from it: BL-068 asks where *our code* breaks per OS; this spike asks what *external tools* we stand on, how each is declared, what happens when it is absent, and by what rule a new one may enter.
+
+**The question:** which dependencies are already embedded in the system, how does each behave cross-platform and when missing, and what is the adoption policy for future ones?
+
+**The probe:** build the register — every external tool/runtime any surface invokes, one row each: surface(s) that call it, class (**hard** — the surface cannot run without it / **best-effort** — swallowed when absent, e.g. the formatters / **operator-side** — needed on the operator's machine only, never in a legislated repo), declared-where (mostly nowhere today — the only declarations that exist are the `python3`-absent branches in `core/verification.md` and audit checks 15/17, and the machine-relative skill list of check 14), and absence behavior as *measured*, not assumed (fail-open, crash, silent skip, false green). Known classes to inventory, without prejudging the list: interpreters (`python3`, `node`, `bash`), the VCS toolchain (`git`, `gh`), best-effort formatters (`dotnet format`, `npx prettier`), OS utilities the scripts lean on (`ln -s`, `cp`, `mv`, `fuser`, coreutils at large), the eval substrate (dotnet SDK for the fixture builds), and the harnesses themselves (Claude Code, opencode).
+
+**The policy half (the part that outlives the table):** propose the adoption rule for future dependencies — what a candidate must bring before it may enter: a cross-platform story per BL-068's axes, a defined absence behavior (fail-open for enforcement arms, loud failure for verification rungs — never silent false green), a declaration home (one authoritative place a machine can be checked against, check-14-style), and a stated class. Candidates already on the horizon to test the policy against: a database for the constitution's register (the direction the owner has set), .NET file-based apps for the engine (BL-068's port candidate), and any future analyzer binding (BL-067). The engine's own stdlib-only invariant is already enforced by `check_static.py` — the policy generalizes that discipline instead of leaving it a single hard-coded case.
+
+**Stop condition:** the register and the proposed adoption policy are the deliverable. No dependency is added or removed inside the spike; the policy text, if accepted, becomes law material for a later edition (a constitution candidate, not a silent write).
 
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
 
