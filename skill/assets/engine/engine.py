@@ -27,6 +27,7 @@ sdd-lint and baseline. The rung that requires the anchor jobs is
 """
 from __future__ import annotations
 
+import json
 import os
 import re
 import shutil
@@ -591,14 +592,480 @@ def job_baseline() -> list[str]:
     return []
 
 
+
+# --- BL-066 (v23): the audit job and the report emitter ----------------
+#
+# The mechanical audit checks (SKILL.md's Audit section: 1-10, 13, 14, 16,
+# plus the two engine checks 15/17 folded in) executed here, and the
+# pinned report printed from the results. The model supplies the semantic
+# checks (11, 12, check-9 escalations, constitution candidates) through
+# --model-findings; the engine merges them into their sections. Reads
+# everything, writes nothing (ADR-0003).
+
+AUDIT_ORDER = ["imports-resolve", "unresolved-placeholders",
+               "owned-integrity", "staleness", "okf-index-links",
+               "codebase-map", "orphan-docs", "journal-recency",
+               "foreign-structures", "keep-list", "project-rules",
+               "stray-rulebooks", "glossary-vitality", "skill-bindings",
+               "okf-anchors", "legacy-home-violation", "okf-sync-debt"]
+AUDIT_MODEL_CHECKS = {"project-rules", "stray-rulebooks"}
+SEVERITIES = ("Critical", "Warning", "Info")
+MD_LINK = re.compile(r"\]\(([^)#\s]+)\)")
+IMPORT_LINE = re.compile(r"(?m)^@(\S+)")
+FOREIGN_FIXED = [".cursorrules", ".cursor", ".github/copilot-instructions.md",
+                 "wiki", ".superpowers", ".specify", "adrs", "doc/adr",
+                 ".claude/plans", "CONTEXT.md", "CONTEXT-MAP.md",
+                 "UBIQUITOUS_LANGUAGE.md", "NOTES.md", "docs/agents", ".scratch"]
+GENERATED_DIRS = {"bin", "obj", "node_modules", "dist"}
+SKILL_NAME_TOKEN = re.compile(r"`([a-z][a-z0-9-]{2,})`")
+
+
+def _entry_doc() -> Path | None:
+    a = ROOT / "AGENTS.md"
+    if a.is_file():
+        return a
+    c = ROOT / "CLAUDE.md"
+    if c.is_file() and not c.is_symlink():
+        return c
+    return None
+
+
+def _read(p: Path) -> str:
+    return p.read_text(encoding="utf-8", errors="ignore")
+
+
+def _git_out(args: list[str]) -> str | None:
+    try:
+        r = subprocess.run(["git", *args], cwd=str(ROOT),
+                           capture_output=True, text=True, timeout=30)
+    except OSError as exc:
+        raise RuntimeError(
+            "git unavailable — the audit's git-backed checks cannot run; "
+            "install git or run where it exists") from exc
+    if r.returncode != 0:
+        return None
+    return r.stdout.strip()
+
+
+class AuditResult:
+    def __init__(self) -> None:
+        self.findings: dict[str, list[tuple[str, str]]] = {s: [] for s in SEVERITIES}
+        self.dirty: set[str] = set()
+
+    def add(self, severity: str, slug: str, line: str) -> None:
+        self.findings[severity].append((slug, line))
+        self.dirty.add(slug)
+
+
+def _all_md(exclude: Path | None = None) -> list[Path]:
+    out = []
+    for p in ROOT.rglob("*.md"):
+        parts = p.relative_to(ROOT).parts
+        if any(x in GENERATED_DIRS or x.startswith(".git") for x in parts):
+            continue
+        if exclude and p == exclude:
+            continue
+        out.append(p)
+    entry = _entry_doc()
+    if entry and entry not in out:
+        out.append(entry)
+    return out
+
+
+def _referenced(candidate: Path, referrers: list[Path]) -> bool:
+    rel = candidate.relative_to(ROOT).as_posix()
+    name = candidate.name
+    for other in referrers:
+        if other == candidate:
+            continue
+        text = _read(other)
+        if rel in text:
+            return True
+        for m in MD_LINK.finditer(text):
+            target = m.group(1)
+            if target.startswith(("http:", "https:")):
+                continue
+            try:
+                if (other.parent / target).resolve() == candidate.resolve():
+                    return True
+            except OSError:
+                continue
+    return False
+
+
+def audit_checks(skill: Path) -> AuditResult:
+    res = AuditResult()
+    entry = _entry_doc()
+
+    # 1 imports-resolve (Critical)
+    if entry:
+        for m in IMPORT_LINE.finditer(_read(entry)):
+            target = m.group(1)
+            if not (ROOT / target).exists():
+                res.add("Critical", "imports-resolve",
+                        f"{entry.name}: `@{target}` does not resolve → the "
+                        f"file does not exist; remove the import line or restore it")
+
+    # 2 unresolved-placeholders (Critical)
+    scan: list[Path] = []
+    if entry:
+        scan.append(entry)
+    scan += sorted((ROOT / "docs").rglob("*.md")) if (ROOT / "docs").is_dir() else []
+    scan += sorted((ROOT / ".claude" / "rules").glob("*.md")) if (ROOT / ".claude" / "rules").is_dir() else []
+    for f in scan:
+        if f == ROOT / "docs" / "adr" / "template.md":
+            continue
+        for lineno, line in enumerate(prose_only(_read(f)).splitlines(), 1):
+            for m in PLACEHOLDER.finditer(line):
+                res.add("Critical", "unresolved-placeholders",
+                        f"{f.relative_to(ROOT).as_posix()}:{lineno}: bare "
+                        f"`{m.group(0)}` token left unfilled → fill it in or "
+                        f"regenerate the file from the template")
+
+    # 3 owned-integrity (Critical) + manifest read
+    manifest_path = ROOT / "docs" / "ai" / "manifest.json"
+    manifest: dict = {}
+    if manifest_path.is_file():
+        try:
+            manifest = json.loads(_read(manifest_path))
+        except ValueError:
+            res.add("Critical", "owned-integrity",
+                    "docs/ai/manifest.json: does not parse as JSON → re-run "
+                    "/legislator to regenerate it")
+    for rel in manifest.get("ownedFiles", []):
+        p = ROOT / rel
+        if not p.exists():
+            res.add("Critical", "owned-integrity",
+                    f"{rel}: named in ownedFiles but missing from disk → "
+                    f"re-run /legislator to restore it")
+            continue
+        if rel.startswith("docs/ai/rules/"):
+            src = skill / "assets" / "rules" / rel[len("docs/ai/rules/"):]
+        elif rel == "docs/ai/engine.py":
+            src = skill / "assets" / "engine" / "engine.py"
+        elif rel == "opencode.json":
+            src = skill / "assets" / "templates" / "opencode.json.tpl"
+        else:
+            continue
+        if src.is_file() and p.read_bytes() != src.read_bytes():
+            res.add("Critical", "owned-integrity",
+                    f"{rel}: diverges from the skill source → re-run "
+                    f"/legislator to restore it byte-for-byte")
+
+    # 4 staleness (Info)
+    version = (skill / "VERSION").read_text(encoding="utf-8").strip() \
+        if (skill / "VERSION").is_file() else "?"
+    repo_v = manifest.get("legislatorVersion", "?")
+    if str(repo_v) != version:
+        res.add("Info", "staleness",
+                f"docs/ai/manifest.json: legislatorVersion {repo_v}, skill "
+                f"source is v{version} → re-run /legislator to upgrade")
+
+    # 5 okf-index-links (Warning)
+    index = OKF / "index.md"
+    if index.is_file():
+        for m in MD_LINK.finditer(_read(index)):
+            target = m.group(1)
+            if target.startswith(("http:", "https:")):
+                continue
+            if not (index.parent / target).exists() and not (ROOT / target).exists():
+                res.add("Warning", "okf-index-links",
+                        f"docs/okf/index.md: link target `{target}` does not "
+                        f"resolve → fix or remove the link")
+
+    # 6 codebase-map (Warning)
+    cmap = OKF / "codebase-map.md"
+    if cmap.is_file():
+        rows = re.findall(r"(?m)^\|\s*`([^`]+)`", _read(cmap))
+        for row in rows:
+            if not (ROOT / row.rstrip("/")).is_dir():
+                res.add("Warning", "codebase-map",
+                        f"docs/okf/codebase-map.md: row for `{row}` names a "
+                        f"directory that no longer exists on disk → remove or "
+                        f"update the row")
+        mapped = {r.rstrip("/") for r in rows}
+        for d in sorted(top_level_dirs() - GENERATED_DIRS):
+            if d not in mapped:
+                res.add("Warning", "codebase-map",
+                        f"docs/okf/codebase-map.md: top-level directory `{d}/` "
+                        f"has no row → add one")
+
+    # 7 orphan-docs (Warning)
+    exempt_prefixes = ("docs/ai/rules/", "docs/adr/", "docs/journal/",
+                       "docs/superpowers/", "docs/cases/")
+    all_md = _all_md()
+    candidates = []
+    if OKF.is_dir():
+        candidates += sorted(OKF.glob("*.md"))
+    if (ROOT / "docs").is_dir():
+        candidates += sorted((ROOT / "docs").glob("*.md"))
+    for c in candidates:
+        rel = c.relative_to(ROOT).as_posix()
+        if rel == "docs/backlog.md" or any(rel.startswith(e) for e in exempt_prefixes):
+            continue
+        if not _referenced(c, all_md):
+            res.add("Warning", "orphan-docs",
+                    f"{rel}: not referenced by docs/okf/index.md or any other "
+                    f"markdown file in the repo → link it in or delete it")
+
+    # 8 journal-recency (Warning) — git-backed
+    jdir = ROOT / "docs" / "journal"
+    if jdir.is_dir():
+        dates = sorted(f.stem for f in jdir.glob("*.md")
+                       if re.match(r"^\d{4}-\d{2}-\d{2}$", f.stem))
+        last_code = _git_out(["log", "-1", "--format=%cs", "--", ".",
+                              ":(exclude)docs"])
+        if last_code:
+            newest = dates[-1] if dates else None
+            from datetime import date as _date
+            code_d = _date.fromisoformat(last_code)
+            if newest is None or (code_d - _date.fromisoformat(newest)).days > 30:
+                cited = newest or "no dated entries found"
+                res.add("Warning", "journal-recency",
+                        f"docs/journal/: newest entry is {cited}, but the last "
+                        f"commit touching paths outside docs/ is {last_code} → "
+                        f"write the missing entry or record why none is needed")
+
+    # 9 foreign-structures (Info; real CLAUDE.md beside AGENTS.md → Warning)
+    kept_paths = {k.get("path") for k in manifest.get("keep", [])}
+    for rel in FOREIGN_FIXED:
+        p = ROOT / rel
+        if rel in kept_paths or not p.exists():
+            continue
+        if p.is_dir():
+            inner = sorted(x for x in p.rglob("*") if x.is_file())
+            for x in inner or [p]:
+                xrel = x.relative_to(ROOT).as_posix()
+                res.add("Info", "foreign-structures",
+                        f"{xrel}: foreign AI-layer structure / agent-tooling "
+                        f"debris → clean it up or fold it into the AI layer")
+        else:
+            res.add("Info", "foreign-structures",
+                    f"{rel}: foreign AI-layer structure → fold its law into "
+                    f".claude/rules/ or clean it up")
+    claude_md = ROOT / "CLAUDE.md"
+    if claude_md.is_file() and not claude_md.is_symlink() and (ROOT / "AGENTS.md").is_file():
+        res.add("Warning", "foreign-structures",
+                "CLAUDE.md: is a real file beside AGENTS.md → it should be "
+                "the symlink to AGENTS.md (v14 file model)")
+
+    # 10 keep-list (Warning / Info)
+    if manifest and "keep" not in manifest:
+        res.add("Info", "keep-list",
+                "docs/ai/manifest.json: no keep key (pre-keep-schema "
+                "manifest) → re-run /legislator to refresh")
+    for entry_k in manifest.get("keep", []):
+        kpath = entry_k.get("path", "")
+        kp = ROOT / kpath
+        if not kp.exists():
+            res.add("Warning", "keep-list",
+                    f"{kpath}: kept path missing from disk → restore it or "
+                    f"remove the keep entry")
+            continue
+        if kpath.startswith(".claude/rules/"):
+            continue
+        if kp.suffix == ".md" and not _referenced(kp, all_md):
+            res.add("Warning", "keep-list",
+                    f"{kpath}: kept but referenced from nowhere → link it "
+                    f"from docs/okf/index.md or AGENTS.md")
+
+    # 13 glossary-vitality (Warning)
+    gl = OKF / "glossary.md"
+    src_dirs = top_level_dirs() - GENERATED_DIRS - {"docs"}
+    if gl.is_file() and src_dirs:
+        body_rows = [ln for ln in _read(gl).splitlines()
+                     if ln.startswith("|") and not re.match(r"^\|[\s|-]+$", ln)]
+        if len(body_rows) <= 1:                      # header only
+            res.add("Warning", "glossary-vitality",
+                    "docs/okf/glossary.md: glossary empty in a repo with "
+                    "source code → seed it or add the domain's terms")
+
+    # 14 skill-bindings (Info) — machine-relative by design
+    sk = ROOT / ".claude" / "rules" / "skills.md"
+    if sk.is_file():
+        homes = [Path.home() / ".claude" / "skills",
+                 Path.home() / ".agents" / "skills",
+                 Path.home() / ".config" / "opencode" / "skills"]
+        for name in sorted(set(SKILL_NAME_TOKEN.findall(prose_only(_read(sk))))):
+            if any((h / name).exists() for h in homes):
+                continue
+            res.add("Info", "skill-bindings",
+                    f"{name}: sanctioned in .claude/rules/skills.md but not "
+                    f"installed on this machine → link it (see the legislator "
+                    f"README's \"Skill ecosystem setup\") or remove it from "
+                    f"the list")
+
+    # 16 legacy-home-violation (Warning) — git-backed
+    legislated = _git_out(["log", "--diff-filter=A", "--format=%cs", "--",
+                           "docs/ai/manifest.json"])
+    legislated_date = legislated.splitlines()[-1] if legislated else None
+    if legislated_date:
+        legacy: list[Path] = []
+        for sub in ("specs", "plans"):
+            d = ROOT / "docs" / "superpowers" / sub
+            if d.is_dir():
+                legacy += sorted(x for x in d.rglob("*") if x.is_file())
+        for f in legacy:
+            frel = f.relative_to(ROOT).as_posix()
+            born = _git_out(["log", "--diff-filter=A", "--format=%cs",
+                             "--", frel])
+            born_date = born.splitlines()[-1] if born else None
+            if born_date and born_date > legislated_date:
+                res.add("Warning", "legacy-home-violation",
+                        f"{frel}: born in a legacy home after legislation "
+                        f"({born_date}) → move it to its standard home "
+                        f"(docs/cases/BL-NNN/)")
+
+    # 15 okf-anchors + engine-absent Info
+    if OKF.is_dir():
+        if not (ROOT / "docs" / "ai" / "engine.py").is_file():
+            res.add("Info", "okf-anchors",
+                    "docs/ai/engine.py: engine absent (repo below v20) → "
+                    "re-run /legislator to upgrade")
+        for line in job_anchors():
+            res.add("Warning", "okf-anchors",
+                    f"{line.split(' → ')[0]} → the repo no longer contains "
+                    f"it; update the document or fix the reference")
+        # 17 okf-sync-debt
+        for line in job_okf_debt():
+            res.add("Warning", "okf-sync-debt",
+                    f"{line} → update the document or state why it still holds")
+    return res
+
+
+def load_model_findings(path: Path) -> dict:
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise RuntimeError(
+            f"model-findings file unreadable or malformed ({path}): {exc}") from exc
+    if not isinstance(data, dict) or not isinstance(data.get("findings", []), list) \
+            or not isinstance(data.get("candidates", []), list):
+        raise RuntimeError(
+            f"model-findings file has the wrong shape ({path}): expected "
+            f"{{findings: [...], candidates: [...]}}")
+    for f in data.get("findings", []):
+        if not isinstance(f, dict) or f.get("severity") not in SEVERITIES \
+                or not isinstance(f.get("line"), str) or not f.get("check"):
+            raise RuntimeError(
+                f"model-findings entry malformed ({path}): {f!r}")
+    return data
+
+
+def job_audit(skill: Path, model_findings: Path | None) -> tuple[str, bool]:
+    """(report text, any findings) — the emitter (R-661..R-663, R-669)."""
+    res = audit_checks(skill)
+    model = load_model_findings(model_findings) if model_findings else None
+    if model:
+        for f in model["findings"]:
+            esc = f.get("escalates")
+            if esc:
+                for sev in SEVERITIES:
+                    res.findings[sev] = [(s, l) for s, l in res.findings[sev]
+                                         if esc not in l or s != f["check"]]
+            text = f["line"].strip()
+            if text.startswith("- "):
+                text = text[2:]
+            prefix = f"[{f['check']}] "
+            if text.startswith(prefix):
+                text = text[len(prefix):]
+            res.findings[f["severity"]].append((f["check"], text))
+            res.dirty.add(f["check"])
+
+    manifest_path = ROOT / "docs" / "ai" / "manifest.json"
+    repo_v = "?"
+    if manifest_path.is_file():
+        try:
+            repo_v = json.loads(_read(manifest_path)).get("legislatorVersion", "?")
+        except ValueError:
+            pass
+    version = (skill / "VERSION").read_text(encoding="utf-8").strip() \
+        if (skill / "VERSION").is_file() else "?"
+    state = "up to date" if str(repo_v) == version else "behind"
+
+    lines = [f"# AI-Layer Audit — {ROOT.name}, {datetime.now().date().isoformat()}",
+             "",
+             f"Constitution: v{repo_v} (skill source: v{version}) — {state}",
+             ""]
+    any_findings = any(res.findings[s] for s in SEVERITIES)
+    if not any_findings:
+        lines += ["No findings.", ""]
+    else:
+        order = {slug: i for i, slug in enumerate(AUDIT_ORDER)}
+        for sev in SEVERITIES:
+            if not res.findings[sev]:
+                continue
+            lines.append(f"## {sev}")
+            for slug, text in sorted(res.findings[sev],
+                                     key=lambda x: (order.get(x[0], 99), x[1])):
+                lines.append(f"- [{slug}] {text}")
+            lines.append("")
+    if model and model.get("candidates"):
+        lines.append("## Constitution candidates")
+        lines.extend(model["candidates"])
+        lines.append("")
+
+    mech = [s for s in AUDIT_ORDER if s not in AUDIT_MODEL_CHECKS]
+    clean = [s for s in mech if s not in res.dirty]
+    if model is not None:
+        clean += [s for s in sorted(AUDIT_MODEL_CHECKS) if s not in res.dirty]
+        model_note = None
+    else:
+        model_note = ("Model checks (project-rules, stray-rulebooks, "
+                      "constitution candidates): not supplied — this print "
+                      "is the mechanical half only.")
+    ordered_clean = [s for s in AUDIT_ORDER if s in clean]
+    lines.append("Clean checks: " + (", ".join(ordered_clean) if ordered_clean else "none"))
+    if model_note:
+        lines.append(model_note)
+    if model and isinstance(model.get("verification"), str):
+        lines.append("")
+        lines.append(model["verification"])
+    lines.append("")
+    lines.append(f"Emitted by docs/ai/engine.py audit — constitution v{version}.")
+    return "\n".join(lines) + "\n", any_findings
+
 JOBS = {"anchors": job_anchors, "okf-debt": job_okf_debt,
         "sdd-lint": job_sdd_lint, "baseline": job_baseline}
 
 
 def main(argv: list[str]) -> int:
+    if len(argv) >= 2 and argv[1] == "audit":
+        args = argv[2:]
+        skill: Path | None = None
+        model_findings: Path | None = None
+        root: Path | None = None
+        while args:
+            flag = args.pop(0)
+            if flag == "--skill" and args:
+                skill = Path(args.pop(0))
+            elif flag == "--model-findings" and args:
+                model_findings = Path(args.pop(0))
+            elif flag == "--root" and args:
+                root = Path(args.pop(0))
+            else:
+                print("usage: python3 engine.py audit --skill <skill-path> "
+                      "[--model-findings <json>] [--root <repo>]",
+                      file=sys.stderr)
+                return 2
+        if skill is None or not skill.is_dir():
+            print("audit requires --skill <skill-path> (the legislator "
+                  "package root)", file=sys.stderr)
+            return 2
+        global ROOT, OKF, CASES
+        ROOT = (root or Path.cwd()).resolve()
+        OKF = ROOT / "docs" / "okf"
+        CASES = ROOT / "docs" / "cases"
+        try:
+            report, any_findings = job_audit(skill, model_findings)
+        except Exception as exc:               # noqa: BLE001 — deliberate
+            print(f"engine failed: {type(exc).__name__}: {exc}", file=sys.stderr)
+            return 3
+        print(report, end="")
+        return 1 if any_findings else 0
     if len(argv) != 2 or argv[1] not in JOBS:
         print(f"usage: python3 {Path(__file__).name} "
-              f"{{{'|'.join(sorted(JOBS))}}}", file=sys.stderr)
+              f"{{{'|'.join(sorted(JOBS) + ['audit'])}}}", file=sys.stderr)
         return 2
     try:
         findings = JOBS[argv[1]]()

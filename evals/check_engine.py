@@ -506,6 +506,130 @@ converged = TIER1_HEAD.replace("**Tier: 1 (light).** x\n\n", "") + "done\n\n\u27
 code, out = run(case_repo(converged), "sdd-lint")
 check(code == 0, "lint_converged_case_exempt: history is never re-linted", f"exit={code} out={out!r}")
 
+
+# =====================================================================
+# v23 BL-066: the engine audit job + emitter (R-661..R-669)
+# =====================================================================
+
+def audit_repo(files: dict[str, str], manifest: str = '{"legislatorVersion": 23, "stacks": [], "keep": [], "ownedFiles": []}') -> Path:
+    root = Path(tempfile.mkdtemp(prefix="audit-eval-"))
+    (root / "docs" / "ai").mkdir(parents=True)
+    if manifest is not None:
+        (root / "docs" / "ai" / "manifest.json").write_text(manifest)
+    shutil.copy2(ENGINE_SRC, root / "docs" / "ai" / "engine.py")
+    (root / "AGENTS.md").write_text("# Repo\n\n@docs/okf/index.md\n")
+    (root / "docs" / "okf").mkdir(parents=True)
+    (root / "docs" / "okf" / "index.md").write_text("# OKF\n\nSee `docs/okf/codebase-map.md`.\n")
+    (root / "docs" / "okf" / "codebase-map.md").write_text("# Map\n\n| Directory | What |\n|---|---|\n| `src/` | code |\n| `docs/` | docs |\n")
+    (root / "src").mkdir()
+    (root / "src" / "a.py").write_text("x = 1\n")
+    for rel, text in files.items():
+        f = root / rel
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.write_text(text)
+    return root
+
+
+def audit(root: Path, *extra: str) -> tuple[int, str, str]:
+    r = subprocess.run([sys.executable, "docs/ai/engine.py", "audit",
+                        "--skill", str(REPO / "skill"), *extra],
+                       cwd=root, capture_output=True, text=True)
+    return r.returncode, r.stdout, r.stderr
+
+
+print("== R-661: a clean repo prints a clean report, exit 0 ==")
+root = audit_repo({})
+code, out, err = audit(root)
+check(code == 0 and "# AI-Layer Audit" in out and "No findings." in out,
+      "audit_clean_repo_clean_report", f"exit={code} out={out[:200]!r} err={err[:200]!r}")
+check("Clean checks:" in out, "audit_clean_checks_line_present", f"out={out[-300:]!r}")
+
+print("== R-663: the emitter stamp is printed ==")
+check("engine.py audit" in out and "constitution v" in out,
+      "audit_report_carries_engine_stamp", f"out={out[-300:]!r}")
+
+print("== R-661: planted defects are found with their pinned slugs ==")
+root = audit_repo({
+    "AGENTS.md": "# Repo\n\n@docs/ai/rules/core/ghost-rule.md\n@docs/okf/index.md\n",
+    "docs/okf/overview-draft.md": "# Draft\n\n{{PROJECT_OVERVIEW}}\n\nSee `docs/okf/index.md`.\n",
+    "docs/okf/orphan-notes.md": "# Orphan\n",
+    ".cursorrules": "Always write tests first.\n",
+})
+code, out, err = audit(root)
+check(code == 1, "audit_defects_exit_1", f"exit={code} err={err[:200]!r}")
+for slug, needle in [("imports-resolve", "ghost-rule.md"),
+                     ("unresolved-placeholders", "{{PROJECT_OVERVIEW}}"),
+                     ("orphan-docs", "orphan-notes.md"),
+                     ("foreign-structures", ".cursorrules")]:
+    check(f"[{slug}]" in out and needle in out,
+          f"audit_finds_{slug}", f"out={out[:600]!r}")
+check("## Critical" in out and "## Warning" in out,
+      "audit_severity_sections_present", f"out={out[:400]!r}")
+
+print("== R-669: byte-stable across runs ==")
+code2, out2, _ = audit(root)
+check(out == out2, "audit_report_byte_stable", "two runs differ")
+
+print("== R-667: the audit job writes nothing ==")
+before = sorted(str(p.relative_to(root)) + str(p.stat().st_size)
+                for p in root.rglob("*") if p.is_file())
+audit(root)
+after = sorted(str(p.relative_to(root)) + str(p.stat().st_size)
+               for p in root.rglob("*") if p.is_file())
+check(before == after, "engine_audit_writes_nothing", "tree changed")
+
+print("== R-662: model findings merge into their sections ==")
+mf = root / "mf.json"
+mf.write_text('{"findings": [{"check": "project-rules", "severity": "Warning", '
+              '"line": "- [project-rules] .claude/rules/x.md: contradicts core/sdd.md -> align it"}], '
+              '"candidates": ["- \\"Always deploy on Fridays.\\" - AGENTS.md"]}')
+code, out, err = audit(root, "--model-findings", str(mf))
+warn = out.split("## Warning", 1)[1].split("##", 1)[0] if "## Warning" in out else ""
+check("[project-rules]" in warn, "model_findings_in_pinned_sections", f"warn={warn!r} err={err[:200]!r}")
+check("## Constitution candidates" in out and "Always deploy on Fridays" in out,
+      "model_candidates_appended", f"out={out[-500:]!r}")
+
+print("== R-662: a malformed model-findings file is a loud exit ==")
+bad = root / "bad.json"
+bad.write_text("{nope")
+code, out, err = audit(root, "--model-findings", str(bad))
+check(code not in (0, 1, 2) and out == "",
+      "audit_malformed_model_findings_fails_loud", f"exit={code} out={out[:100]!r}")
+
+print("== R-665: audit without git fails loud ==")
+with tempfile.TemporaryDirectory() as shim:
+    os.symlink(sys.executable, Path(shim) / "python3")
+    r = subprocess.run([sys.executable, "docs/ai/engine.py", "audit",
+                        "--skill", str(REPO / "skill")],
+                       cwd=root, capture_output=True, text=True, env={"PATH": shim})
+    check(r.returncode not in (0, 1, 2) and "git" in r.stderr.lower(),
+          "engine_audit_fails_loud_without_git",
+          f"exit={r.returncode} stderr={r.stderr[:200]!r}")
+
+print("== R-661: staleness and the constitution header ==")
+root = audit_repo({}, manifest='{"legislatorVersion": 21, "stacks": [], "keep": [], "ownedFiles": []}')
+code, out, err = audit(root)
+check("(skill source: v23) — behind" in out, "audit_constitution_header_behind", f"out={out[:300]!r}")
+check("[staleness]" in out and "legislatorVersion 21" in out,
+      "audit_finds_staleness", f"out={out[:600]!r}")
+
+print("== R-661: keep-list integrity and the no-keep-key Info ==")
+root = audit_repo({}, manifest='{"legislatorVersion": 23, "stacks": [], "ownedFiles": []}')
+code, out, err = audit(root)
+check("[keep-list]" in out and "no keep key" in out,
+      "audit_keep_key_missing_info", f"out={out[:600]!r}")
+root = audit_repo({}, manifest='{"legislatorVersion": 23, "stacks": [], "keep": [{"path": "docs/notes/gone.md", "reason": "x"}], "ownedFiles": []}')
+code, out, err = audit(root)
+check("[keep-list]" in out and "gone.md" in out and "missing from disk" in out,
+      "audit_keep_path_missing", f"out={out[:600]!r}")
+
+print("== R-661: codebase-map freshness both directions ==")
+root = audit_repo({"docs/okf/codebase-map.md": "# Map\n\n| Directory | What |\n|---|---|\n| `legacy/` | gone |\n"})
+code, out, err = audit(root)
+check("[codebase-map]" in out and "legacy/" in out, "audit_map_stale_row", f"out={out[:700]!r}")
+check("src/" in out.split("[codebase-map]", 1)[1] if out.count("[codebase-map]") >= 1 else False,
+      "audit_map_missing_row", f"out={out[:700]!r}")
+
 print("== BL-043 baseline: rows for covered, an explicit uncovered list ==")
 root = make_case_repo()
 code, out = run(root, "baseline")
