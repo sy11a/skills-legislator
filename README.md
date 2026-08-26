@@ -120,7 +120,7 @@ work:
    are the worked example): skills that file issues elsewhere, auto-commit,
    or keep their own glossaries are either pruned or kept *governed* — the
    `core/skills.md` redirects make the borderline ones safe.
-3. **`tools/link-skills.sh`** encodes the curated keep list: run it plain
+3. **`tools/link_skills.py`** encodes the curated keep list: run it plain
    to link anything missing, `--check` to print drift (pairs with audit
    check 14, `skill-bindings`), `--prune` to drop off-list links into the
    same source. `SRC=` overrides the pack location.
@@ -185,7 +185,7 @@ de-legislating it is fine — pass it via `--exclude` during rollouts.
 
 1. Clone this repo; symlink the skill:
    `ln -s "$(pwd)/skill" ~/.claude/skills/legislator` (plus
-   `tools/link-opencode-plugin.sh` for the opencode write-guard).
+   `tools/link_opencode_plugin.py` for the opencode write-guard).
 2. A `service-fleet` opencode agent (any minimal definition in
    `~/.config/opencode/agents/service-fleet.md`) — `fleet.sh` launches
    upgrades under it so knowledge observability can exclude the runs from

@@ -264,20 +264,26 @@ check(code == 0 and out == "",
       "real_source_still_resolves: a symbol outside build output resolves as before",
       f"exit={code} out={out!r}")
 
-print("== BL-051 item 3: an unhandled exception must not read as a clean audit ==")
-root = make_repo({"widgets.md": "# Widgets\n\nSee `src/App/WidgetStore.cs`.\n"},
-                 {"src/App/WidgetStore.cs": "public class WidgetStore { }\n"})
-unreadable = root / "docs" / "okf" / "locked.md"
-unreadable.write_text("# Locked\n\nNames `src/App/WidgetStore.cs`.\n")
-unreadable.chmod(0o000)
-code, out = run(root, "anchors")
-unreadable.chmod(0o644)
-check(code not in (0, 1, 2),
-      "crash_exits_distinctly: an unhandled exception exits with a code distinct from clean/findings/usage",
-      f"exit={code} out={out!r}")
-check(out == "",
-      "crash_exits_distinctly (control): a crash prints nothing to stdout, so a stdout-only reader sees no findings",
-      f"out={out!r}")
+if os.name == "nt":
+    # chmod 0o000 does not revoke read permission on Windows; the
+    # unreadable-file fixture is not constructible there. Stated per
+    # BL-070 R-704 — never a silent skip.
+    print("== BL-051 item 3: SKIPPED on Windows — chmod cannot make a file unreadable (R-704) ==")
+else:
+    print("== BL-051 item 3: an unhandled exception must not read as a clean audit ==")
+    root = make_repo({"widgets.md": "# Widgets\n\nSee `src/App/WidgetStore.cs`.\n"},
+                     {"src/App/WidgetStore.cs": "public class WidgetStore { }\n"})
+    unreadable = root / "docs" / "okf" / "locked.md"
+    unreadable.write_text("# Locked\n\nNames `src/App/WidgetStore.cs`.\n")
+    unreadable.chmod(0o000)
+    code, out = run(root, "anchors")
+    unreadable.chmod(0o644)
+    check(code not in (0, 1, 2),
+          "crash_exits_distinctly: an unhandled exception exits with a code distinct from clean/findings/usage",
+          f"exit={code} out={out!r}")
+    check(out == "",
+          "crash_exits_distinctly (control): a crash prints nothing to stdout, so a stdout-only reader sees no findings",
+          f"out={out!r}")
 
 print("== BL-051 item 3 (regression contract): the three documented exit codes ==")
 root = make_repo({"widgets.md": "# W\n\nSee `src/App/WidgetStore.cs`.\n"},

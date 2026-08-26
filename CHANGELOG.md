@@ -8,6 +8,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- The portability patch set, light half (BL-070): both conduct-guard arms
+  recognize Windows-style command heads (`git.exe`, backslashed paths);
+  the hooks launcher resolves `python3` → `py` → `python`; the link
+  scripts are Python (`tools/link_skills.py`,
+  `tools/link_opencode_plugin.py`) and fail loud when symlinks cannot be
+  created; the eval harnesses gained a Windows chmod-skip, a guarded
+  dashboard `ps` probe, and a node ≥ 22.6 floor assert. Engine riders
+  (encoding, okf-debt fail-loud), the autocrlf ruling and the evals-bg
+  port ride edition v23.
 - The dependency register (BL-069, spike): 13 external dependencies
   classified with measured absence behavior on the load-bearing cells —
   one silent false green found (`engine okf-debt` without git reports

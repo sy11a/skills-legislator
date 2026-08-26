@@ -8,6 +8,15 @@ import { tmpdir } from "node:os";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 
+// BL-070 R-706 / BL-069 F2: importing the .ts plugin below relies on
+// node's type-stripping (node >= 22.6). Fail loud beneath the floor —
+// an older node dies on the import with a message that names nothing.
+const [njMajor, njMinor] = process.versions.node.split(".").map(Number);
+if (njMajor < 22 || (njMajor === 22 && njMinor < 6)) {
+  console.error(`node >= 22.6 required (type-stripping .ts import); found ${process.versions.node}`);
+  process.exit(1);
+}
+
 const here = path.dirname(fileURLToPath(import.meta.url));
 const mod = await import(path.resolve(here, "../plugin/opencode/legislator-guard.ts"));
 const makePlugin = mod.LegislatorGuard;
@@ -218,6 +227,15 @@ ok("bash_pr_body_attribution_blocked", msg !== null, `got: ${msg}`);
 // per R-645: merging the PR is the user's act.
 msg = await conduct(gitHooks, "gh pr merge 23 --squash");
 ok("bash_pr_merge_blocked", msg !== null && msg.includes("pair-development"), `got: ${msg}`);
+
+
+// per R-701 (BL-070): Windows-style command heads are recognized.
+msg = await conduct(gitHooks, "git.exe merge bl/064-x");
+ok("bash_gitexe_merge_blocked", msg !== null, `got: ${msg}`);
+msg = await conduct(gitHooks, '"C:\\Program Files\\Git\\bin\\git.exe" push origin master');
+ok("bash_backslash_gitexe_push_blocked", msg !== null, `got: ${msg}`);
+msg = await conduct(gitHooks, "github merge topic");
+ok("bash_github_head_not_git", msg === null, `got: ${msg}`);
 
 // per R-641: the same merge from a feature branch is allowed.
 const featRepo = mkdtempSync(path.join(tmpdir(), "leg-conduct-feat-"));

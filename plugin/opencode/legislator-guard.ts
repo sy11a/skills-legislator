@@ -353,7 +353,9 @@ function judgeGitConduct(command: string, cwd: string): string | null {
   for (const rawSeg of conductSegments(command)) {
     const seg = stripEnvPrefix(rawSeg);
     if (!seg.length) continue;
-    const head = seg[0].split("/").pop();
+    // Windows-style heads too: backslashed paths, `git.exe`, mixed case.
+    let head = (seg[0].replace(/\\/g, "/").split("/").pop() ?? "").toLowerCase();
+    if (head.endsWith(".exe")) head = head.slice(0, -4);
 
     if (head === "git") {
       const { sub, args, cPath } = gitSubcommand(seg);
@@ -407,7 +409,8 @@ export const LegislatorGuard = async (ctx: {
         if ((input.tool ?? "") === "bash") {
           const command = commandFromArgs(output?.args);
           if (!command) return;
-          if (!command.includes("git") && !command.includes("gh")) return;
+          const lower = command.toLowerCase();
+          if (!lower.includes("git") && !lower.includes("gh")) return;
           if (!findRepoRoot(base)) return;
           const msg = judgeGitConduct(command, base);
           if (msg) throw new Error(msg);
