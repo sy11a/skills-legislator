@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guard_owned_files.py\""
+            "command": "sh -c 'for p in python3 py python; do command -v \"$p\" >/dev/null 2>&1 && exec \"$p\" \"$1\"; done; exit 0' hookshim \"${CLAUDE_PLUGIN_ROOT}/hooks/guard_owned_files.py\""
           }
         ]
       },
@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/guard_git_conduct.py\""
+            "command": "sh -c 'for p in python3 py python; do command -v \"$p\" >/dev/null 2>&1 && exec \"$p\" \"$1\"; done; exit 0' hookshim \"${CLAUDE_PLUGIN_ROOT}/hooks/guard_git_conduct.py\""
           }
         ]
       }
@@ -27,7 +27,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/format_on_edit.py\"",
+            "command": "sh -c 'for p in python3 py python; do command -v \"$p\" >/dev/null 2>&1 && exec \"$p\" \"$1\"; done; exit 0' hookshim \"${CLAUDE_PLUGIN_ROOT}/hooks/format_on_edit.py\"",
             "timeout": 10
           }
         ]
@@ -38,7 +38,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/okf_sync_check.py\""
+            "command": "sh -c 'for p in python3 py python; do command -v \"$p\" >/dev/null 2>&1 && exec \"$p\" \"$1\"; done; exit 0' hookshim \"${CLAUDE_PLUGIN_ROOT}/hooks/okf_sync_check.py\""
           }
         ]
       }

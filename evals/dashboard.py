@@ -24,6 +24,7 @@ import json
 import os
 import re
 import subprocess
+import tempfile
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -170,7 +171,10 @@ def count_runner(runner: str, ws: Path) -> int:
     Each profile has its own process shape (counting 'opencode' while a
     claude run is live reports zero and reads as a dead run), and the
     workspace scope keeps unrelated agents on the machine out of the count."""
-    r = subprocess.run(["ps", "-eo", "cmd"], capture_output=True, text=True)
+    try:
+        r = subprocess.run(["ps", "-eo", "cmd"], capture_output=True, text=True)
+    except OSError:
+        return 0  # no usable `ps` (BL-070 R-705): count unknown, never a crash
     lines = [l for l in r.stdout.splitlines()
              if "dashboard" not in l and str(ws) in l]
     if runner == "claude":
@@ -695,7 +699,7 @@ def main() -> None:
     a = ap.parse_args()
     timeline = a.timeline or a.workspace / "orchestrate.log"
     if not timeline.exists():
-        timeline = Path("/tmp/opencode/orchestrate-all.log")
+        timeline = Path(tempfile.gettempdir()) / "opencode" / "orchestrate-all.log"
     out = a.workspace / "dashboard.html"
     first = True
     while True:

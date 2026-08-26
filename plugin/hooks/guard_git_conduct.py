@@ -189,7 +189,10 @@ def judge(command: str, cwd: Path) -> str | None:
         seg = strip_env_prefix(raw_seg)
         if not seg:
             continue
-        head = seg[0].rsplit("/", 1)[-1]
+        # Windows-style heads too: backslashed paths, `git.exe`, mixed case.
+        head = seg[0].replace("\\", "/").rsplit("/", 1)[-1].lower()
+        if head.endswith(".exe"):
+            head = head[:-4]
 
         if head == "git":
             sub, args, c_path = git_subcommand(seg)
@@ -229,7 +232,7 @@ def main() -> int:
         command = (payload.get("tool_input") or {}).get("command")
         if not command or not isinstance(command, str):
             return 0
-        if "git" not in command and "gh" not in command:
+        if "git" not in command.lower() and "gh" not in command.lower():
             return 0
         cwd = Path(payload.get("cwd") or Path.cwd())
         if find_repo_root(cwd) is None:

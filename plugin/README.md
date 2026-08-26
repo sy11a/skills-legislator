@@ -12,7 +12,7 @@ The enforcement ships for **two harnesses** from one repo:
 - **Claude Code** — `plugin/hooks/*.py` + `hooks/hooks.json` (PreToolUse /
   PostToolUse / Stop). Install below.
 - **opencode** — `plugin/opencode/legislator-guard.ts` (a global opencode
-  plugin). Install with `tools/link-opencode-plugin.sh`, which symlinks it
+  plugin). Install with `tools/link_opencode_plugin.py`, which symlinks it
   into `~/.config/opencode/plugins/`. It is a silent no-op outside legislated
   repos, so loading it globally is safe.
 
@@ -33,7 +33,7 @@ write-guard — the load-bearing hook — is a true block in both harnesses.
 
 ### opencode tests
 
-`node evals/check_opencode_plugin.mjs` — 26 deterministic checks (no agent,
+`node evals/check_opencode_plugin.mjs` — 29 deterministic checks (no agent,
 no opencode runtime): owned-rule edits blocked for edit/write/patch, new
 files under `docs/ai/rules/**` blocked, non-owned paths allowed, manifest
 and `.claude/rules/**` intentionally unguarded, non-edit tools ignored,
@@ -193,8 +193,10 @@ Run once after installing, in a real legislated repo:
 ## Automated tests
 
 `evals/check_hooks.py` in the legislator repo covers the write-guard (3
-cases), the git-conduct guard (22 cases: block and allow sides of merge,
-push, commit/PR attribution, `gh pr merge`, plus the fail-open set),
+cases), the git-conduct guard (26 cases: block and allow sides of merge,
+push, commit/PR attribution, `gh pr merge`, the fail-open set, and the
+Windows-style command heads), the interpreter-resolving launcher (2
+cases: the guard blocks with only `python` on PATH),
 format-on-edit (2 cases + defensive malformed-input cases), OKF-sync (4
 cases + non-legislated/non-git cases), and `hooks.json` well-formedness.
 Run `python3 evals/check_hooks.py` — seconds, no agent required.

@@ -420,6 +420,35 @@ else:
               f"got exit {proc.returncode}, stderr={proc.stderr!r}")
 
 
+
+# --- BL-070 R-701: Windows-style command heads -------------------------
+if have_git:
+    with tempfile.TemporaryDirectory() as tmp:
+        repo = Path(tmp) / "fleet-repo3"
+        make_conduct_repo(repo)
+        subprocess.run(["git", "branch", "topic"], cwd=str(repo), check=True)
+
+        # per R-701: git.exe is git.
+        proc = conduct("git.exe merge topic", repo)
+        check(proc.returncode == 2, "git.exe merge on default branch blocked per R-701",
+              f"got exit {proc.returncode}, stderr={proc.stderr!r}")
+
+        # per R-701: a backslashed absolute Windows path is git.
+        proc = conduct('"C:\\Program Files\\Git\\bin\\git.exe" push origin master', repo)
+        check(proc.returncode == 2, "backslashed git.exe path push blocked per R-701",
+              f"got exit {proc.returncode}, stderr={proc.stderr!r}")
+
+        # per R-701: upper-case head is git.
+        proc = conduct("GIT.EXE merge topic", repo)
+        check(proc.returncode == 2, "GIT.EXE merge blocked per R-701",
+              f"got exit {proc.returncode}, stderr={proc.stderr!r}")
+
+        # per R-701 (control): a github-named binary is NOT git.
+        proc = conduct("github merge topic", repo)
+        check(proc.returncode == 0, "github-named binary not treated as git per R-701",
+              f"got exit {proc.returncode}, stderr={proc.stderr!r}")
+
+
 # =====================================================================
 # hooks.json well-formedness
 # =====================================================================
@@ -464,6 +493,55 @@ for event_name, entries in events.items():
                 script_path = HOOKS / found
                 check(script_path.is_file(), f"{event_name} script exists: {found}",
                       f"expected at {script_path}")
+
+
+
+# --- BL-070 R-702: the launcher resolves python3 -> py -> python --------
+# Build a PATH where only `python` exists (a Windows-shaped machine), and
+# run the hooks.json PreToolUse guard command through it. The guard must
+# still block an owned-file edit — the shim, not the caller, finds the
+# interpreter.
+print("== hooks.json launcher (R-702) ==")
+with tempfile.TemporaryDirectory() as tmp:
+    shim = Path(tmp) / "bin"
+    shim.mkdir()
+    import os as _os
+    for tool in ("sh", "env"):
+        real = shutil.which(tool)
+        if real:
+            _os.symlink(real, shim / tool)
+    _os.symlink(sys.executable, shim / "python")  # python, NOT python3
+
+    repo = Path(tmp) / "legislated"
+    rules = repo / "docs" / "ai" / "rules" / "core"
+    rules.mkdir(parents=True)
+    (repo / "docs" / "ai" / "manifest.json").write_text("{}")
+    rule = rules / "x.md"
+    rule.write_text("## X\n")
+
+    guard_entry = next(
+        h["command"]
+        for e in events.get("PreToolUse", [])
+        for h in e.get("hooks", [])
+        if "guard_owned_files.py" in h.get("command", ""))
+    cmd = guard_entry.replace("${CLAUDE_PLUGIN_ROOT}", str(PLUGIN))
+    proc = subprocess.run(
+        ["sh", "-c", cmd],
+        input=json.dumps(edit_payload(str(rule))),
+        capture_output=True, text=True, timeout=15,
+        env={"PATH": str(shim)})
+    check(proc.returncode == 2,
+          "guard blocks through the launcher with only `python` on PATH per R-702",
+          f"got exit {proc.returncode}, stderr={proc.stderr!r}")
+
+    proc = subprocess.run(
+        ["sh", "-c", cmd],
+        input=json.dumps(edit_payload(str(repo / "src" / "a.cs"))),
+        capture_output=True, text=True, timeout=15,
+        env={"PATH": str(shim)})
+    check(proc.returncode == 0,
+          "non-owned edit passes through the launcher per R-702",
+          f"got exit {proc.returncode}, stderr={proc.stderr!r}")
 
 
 # per R-641: the Bash matcher entry registering the git-conduct guard exists.
