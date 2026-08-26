@@ -67,6 +67,20 @@ with tempfile.TemporaryDirectory() as td:
                            capture_output=True, text=True).stdout.strip()
     check(dirty == "", "worktree_clean_after_round_trip", dirty[:80])
 
+print("== revert fidelity: a deleted symlink comes back as a symlink ==")
+with tempfile.TemporaryDirectory() as td:
+    root = Path(td)
+    (root / "AGENTS.md").write_text("canonical\n")
+    (root / "CLAUDE.md").symlink_to("AGENTS.md")
+    rev = Reverter()
+    rev.touch(root / "CLAUDE.md")
+    (root / "CLAUDE.md").unlink()
+    rev.restore()
+    check((root / "CLAUDE.md").is_symlink(),
+          "symlink_restored_as_symlink: bytes-only restore silently converts "
+          "it to a regular file and poisons the substrate",
+          "restored as a regular file")
+
 print("== duplicate detection (R-604): identity is the canonical operation ==")
 m1 = Mutation("remove-line", "report.md", "marker X", fn=lambda ws, r: None)
 m2 = Mutation("remove-line", "report.md", "marker X", fn=lambda ws, r: None)

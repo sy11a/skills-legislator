@@ -29,6 +29,7 @@ is `uncovered`, and uncovered is red.
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -127,12 +128,23 @@ class Reverter:
     restore for commit mutations. One substrate serves every mutation."""
 
     def __init__(self) -> None:
-        self.saved: dict[Path, bytes | None] = {}
+        # value: ("absent", None) | ("link", target) | ("file", bytes).
+        # A symlink is saved as its TARGET, never as its target's bytes —
+        # a bytes-only restore silently converts CLAUDE.md from a symlink
+        # to a regular file and poisons the substrate for every later
+        # mutation (caught by R-605's validation on 2026-08-26, first day).
+        self.saved: dict[Path, tuple[str, object]] = {}
         self.git_heads: dict[Path, str] = {}
 
     def touch(self, path: Path) -> None:
-        if path not in self.saved:
-            self.saved[path] = path.read_bytes() if path.is_file() else None
+        if path in self.saved:
+            return
+        if path.is_symlink():
+            self.saved[path] = ("link", os.readlink(path))
+        elif path.is_file():
+            self.saved[path] = ("file", path.read_bytes())
+        else:
+            self.saved[path] = ("absent", None)
 
     def touch_git(self, repo: Path) -> None:
         if repo not in self.git_heads:
@@ -142,13 +154,15 @@ class Reverter:
         for repo, head in self.git_heads.items():
             subprocess.run(["git", "-C", str(repo), "reset", "--mixed", head],
                            capture_output=True, check=True)
-        for path, content in self.saved.items():
-            if content is None:
-                if path.is_file():
-                    path.unlink()
-            else:
+        for path, (kind, payload) in self.saved.items():
+            if path.is_symlink() or path.is_file():
+                path.unlink()
+            if kind == "file":
                 path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_bytes(content)
+                path.write_bytes(payload)
+            elif kind == "link":
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.symlink_to(payload)
         self.saved.clear()
         self.git_heads.clear()
 
