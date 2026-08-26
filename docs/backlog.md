@@ -125,9 +125,11 @@ Settled with the owner at the close of the v21 cycle, after the fleet sweep.
    fourteen false Criticals in this repository; `Critical` is the severity that
    means "the layer is broken", and fourteen false ones train a reader to skim
    exactly the section that must never be skimmed.
-3. **The instrument backlog, as one batch** — BL-061 (the false `FAIL`),
-   BL-056 (`status` reads the working tree), BL-055 (`fleet.sh` cannot see its
-   own repository), BL-059's prevention half. Each is small alone; together
+3. **The instrument backlog** — reordered 2026-08-26 with the owner:
+   BL-061 and BL-056 landed **before** the v22 sweep (the sweep uses the very
+   instrument they repair; done, `bl/061-fleet-false-fail`); BL-055 (the
+   delivery-channel decision for member #0) and BL-059's prevention half
+   follow the sweep. Each is small alone; together
    they are four places where a tool misinforms its operator, which is this
    repo's most expensive recorded defect class.
 
@@ -2227,7 +2229,11 @@ and `fleet.sh` implements exactly that one.
 
 ## BL-056 — `fleet.sh status` reports uncommitted work as delivered
 
-**Status: PROPOSED 2026-08-24** — tooling only, no `skill/` change, no VERSION,
+**Status: DONE 2026-08-26** — rode `bl/061-fleet-false-fail`, case
+`docs/cases/BL-056-status-committed/` (tier 1, converged). `status` reads the
+committed manifest; a worktree that differs is `pending review (worktree vX,
+uncommitted)` and counts as behind; no-git falls back visibly. Verified by the
+same harness plus the live fleet. Originally **PROPOSED 2026-08-24** — tooling only, no `skill/` change, no VERSION,
 no benchmark.
 
 **What:** `status` reads `docs/ai/manifest.json` from the working tree. On
@@ -2410,7 +2416,13 @@ substance half of D5 remain unfiled, in that order.
 
 ## BL-061 — `fleet.sh`'s FAIL branch trusts the exit code and never checks the version
 
-**Status: PROPOSED 2026-08-25** — tooling only (`tools/fleet.sh`), no `skill/`
+**Status: DONE 2026-08-26** — branch `bl/061-fleet-false-fail`, case
+`docs/cases/BL-061-fleet-false-fail/` (tier 1, converged). Both branches now
+re-read the manifest and decide on the version; the exit code is evidence on
+the line, never the verdict. Verified by `tools/fleet-harness.sh` (stub
+runner, no agent), red-first. Fixed ahead of the v22 sweep by the owner's
+2026-08-26 ordering — the sweep must not run on the instrument it is about
+to distrust. Originally **PROPOSED 2026-08-25** — tooling only (`tools/fleet.sh`), no `skill/`
 change, no VERSION, no benchmark. Found by the v21 sweep the same day.
 
 **What:** the upgrade loop is

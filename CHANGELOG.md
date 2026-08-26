@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+- `tools/fleet.sh upgrade` no longer reports `FAIL` over a completed
+  delivery: both branches re-read the manifest and decide on the version —
+  the runner's exit code is evidence on the line, never the verdict
+  (BL-061). `tools/fleet.sh status` reads the committed manifest; an
+  uncommitted upgrade shows as `pending review`, never `ok` (BL-056).
+  Verified by the new stub-runner harness `tools/fleet-harness.sh`.
+
 ### Added
 
 - Edition v22: the engine gains `sdd-lint` (the analyze gate's mechanical

@@ -73,21 +73,47 @@ discover() {
   done
 }
 
+manifest_version_at_head() { # <repo> -> committed version, or "" (no git / no commit / not tracked)
+  git -C "$1" show HEAD:docs/ai/manifest.json 2>/dev/null \
+    | python3 -c 'import json,sys;print(json.load(sys.stdin).get("legislatorVersion","?"))' 2>/dev/null || true
+}
+
 cmd_status() {
+  # BL-056: the version column is the COMMITTED one. On 2026-08-24 status
+  # read the working tree and reported three repositories delivered whose
+  # HEAD said otherwise — an unreviewed sweep diff counted as delivery, and
+  # the dirty-tree skip then parked them there indefinitely. Law that is
+  # not committed is not there; a worktree that differs from HEAD is
+  # "pending review", visibly, and never ok.
   behind=0 total=0
   printf '%-55s %-8s %s\n' "repo" "version" "state"
-  while IFS=$'\t' read -r repo version; do
+  while IFS=$'\t' read -r repo wt_version; do
     total=$((total + 1))
-    if [ "$version" = "$CURRENT_VERSION" ]; then
+    committed="$(manifest_version_at_head "$repo")"
+    if [ -z "$committed" ]; then
+      version="$wt_version"
+      if [ "$wt_version" = "$CURRENT_VERSION" ]; then
+        state="ok (no-git — nothing committed to trust)"
+      else
+        state="behind (skill: v$CURRENT_VERSION; no-git)"
+        behind=$((behind + 1))
+      fi
+    elif [ "$committed" != "$wt_version" ]; then
+      version="$committed"
+      state="pending review (worktree v$wt_version, uncommitted)"
+      behind=$((behind + 1))
+    elif [ "$committed" = "$CURRENT_VERSION" ]; then
+      version="$committed"
       state="ok"
     else
+      version="$committed"
       state="behind (skill: v$CURRENT_VERSION)"
       behind=$((behind + 1))
     fi
     printf '%-55s %-8s %s\n' "$repo" "v$version" "$state"
   done < <(discover)
   echo
-  echo "$total legislated repo(s), $behind behind skill v$CURRENT_VERSION"
+  echo "$total legislated repo(s), $behind not delivered at skill v$CURRENT_VERSION (committed)"
   [ "$behind" -eq 0 ]
 }
 
@@ -168,17 +194,27 @@ cmd_upgrade() {
     fi
 
     echo "== $name: v$version → v$CURRENT_VERSION ($RUNNER) =="
-    if run_upgrade_agent "$repo" "$name"; then
-      after="$(python3 -c "import json,sys;print(json.load(open(sys.argv[1])).get('legislatorVersion','?'))" "$repo/docs/ai/manifest.json" 2>/dev/null || echo '?')"
-      if [ "$after" = "$CURRENT_VERSION" ]; then
+    # BL-061: the exit code is evidence, never the verdict. The success
+    # branch already re-read the manifest (a runner can exit 0 having
+    # achieved nothing — BL-053's WARN); the failure branch trusted the
+    # code, and on the 2026-08-25 sweep reported FAIL over a completed
+    # delivery — the session limit killed the CLI after the byte-copies
+    # were done. Both branches now re-read and decide on the version.
+    rc=0
+    run_upgrade_agent "$repo" "$name" || rc=$?
+    after="$(python3 -c "import json,sys;print(json.load(open(sys.argv[1])).get('legislatorVersion','?'))" "$repo/docs/ai/manifest.json" 2>/dev/null || echo '?')"
+    if [ "$after" = "$CURRENT_VERSION" ]; then
+      if [ "$rc" -eq 0 ]; then
         echo "ok    $name at v$after — review the diff, then apply $PROPOSALS_DIR/$name.md and commit"
-        ok=$((ok + 1))
       else
-        echo "WARN  $name still at v$after — read the run output above"
-        behind=$((behind + 1))
+        echo "ok    $name at v$after (runner exited $rc after delivery — the version is the verdict; the Step 7 report at $PROPOSALS_DIR/$name.md may be truncated)"
       fi
+      ok=$((ok + 1))
+    elif [ "$rc" -eq 0 ]; then
+      echo "WARN  $name still at v$after — read the run output above"
+      behind=$((behind + 1))
     else
-      echo "FAIL  $name — $RUNNER exited non-zero"
+      echo "FAIL  $name still at v$after — $RUNNER exited $rc"
       failed=$((failed + 1))
     fi
   done < <(discover)
