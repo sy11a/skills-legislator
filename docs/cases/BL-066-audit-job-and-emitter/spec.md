@@ -85,6 +85,15 @@ section only when non-empty (the law's omit-when-empty rule).
 | `okf_debt_fails_loud_without_git` | check_engine (unit) | the BL-069 M4 repo shape | same | exit 0 clean → red | engine bug |
 | engine unit replicas of checks 1–10, 13, 14, 16 | check_engine | synthetic fixtures per check (the rotted-layer defect set, replicated small) | each check's planted defect found; clean tree silent | finding on a clean fixture → red | engine bug |
 
+**Red-first deviation, recorded (2026-08-26):**
+`model_findings_in_pinned_sections` is green against the v22 artifacts —
+the v22 model already placed those lines lawfully, so a law-level red is
+impossible for this assert by construction. Its falsifiability evidence is
+its mutation (`move-out-of-section`), which the v23 mutation pass must
+show killing it; the other new asserts went honestly red against the v22
+workspace (stamp ×2 scenarios, 16 engine lines absent, `.gitattributes`
+missing in scaffold).
+
 Existing rotted-layer/engine-absent asserts (40 + 2) stay as written —
 after this change they measure the engine's output through the model's
 delivery, and the D4 pruning pass may migrate them later; deleting is not
