@@ -193,8 +193,8 @@ PYEOF
 
 runner_kill() { # <pid> — the stalled agent's own process group first, then a
                 # profile-scoped sweep for anything it detached
-  [ -n "${1:-}" ] && kill -TERM -"$1" 2>/dev/null
-  pkill -f "$PMATCH" 2>/dev/null
+  [ -n "${1:-}" ] && python3 "$REPO/tools/proc.py" stop "$1"
+  command -v pkill >/dev/null 2>&1 && pkill -f "$PMATCH" 2>/dev/null
   return 0
 }
 
@@ -255,7 +255,7 @@ MSG
 }
 
 spawn() { # <dir> <fresh|resume> — self-contained: no /tmp helper
-  local sc="$1" log="$WS/$1/outputs/run.log" msg
+  local sc="$1" log="$WS/$1/outputs/run.log" msg pid
   mkdir -p "$WS/$sc/outputs"
   : >> "$log"
   [ "$2" = fresh ] && msg_block "$sc" > "$WS/$sc/outputs/prompt.txt"
@@ -267,11 +267,11 @@ spawn() { # <dir> <fresh|resume> — self-contained: no /tmp helper
   case "$RUNNER" in
     opencode)
       if [ "$2" = resume ]; then
-        setsid opencode run --dir "$WS/$sc" -m "$MODEL" --continue "$msg" \
-          </dev/null >> "$log" 2>&1 &
+        pid=$(python3 "$REPO/tools/proc.py" spawn --log "$log" -- \
+          opencode run --dir "$WS/$sc" -m "$MODEL" --continue "$msg")
       else
-        setsid opencode run --dir "$WS/$sc" -m "$MODEL" "$msg" \
-          </dev/null >> "$log" 2>&1 &
+        pid=$(python3 "$REPO/tools/proc.py" spawn --log "$log" -- \
+          opencode run --dir "$WS/$sc" -m "$MODEL" "$msg")
       fi
       ;;
     claude)
@@ -285,22 +285,22 @@ spawn() { # <dir> <fresh|resume> — self-contained: no /tmp helper
                    --output-format stream-json --verbose
                    --include-partial-messages)
       [ "$2" = resume ] && flags+=(-c)
-      setsid env SC_DIR="$WS/$sc" RAW="$WS/$sc/outputs/run.jsonl" \
-                 FMT="$REPO/evals/streamfmt.py" \
+      pid=$(python3 "$REPO/tools/proc.py" spawn --log "$log" -- \
+        env SC_DIR="$WS/$sc" RAW="$WS/$sc/outputs/run.jsonl" \
+            FMT="$REPO/evals/streamfmt.py" \
         bash -c 'cd "$SC_DIR" && claude "$@" | python3 "$FMT" "$RAW"' \
-             _ "${flags[@]}" "$msg" \
-        </dev/null >> "$log" 2>&1 &
+             _ "${flags[@]}" "$msg")
       ;;
   esac
-  echo $!
+  echo "$pid"
 }
 
 wait_or_stall() { # <pid> <dir>
   local pid=$1 sc="$2" last=-1 last_dirty=-1 last_change size dirty now
   last_change=$(date +%s)
-  while kill -0 "$pid" 2>/dev/null; do
+  while python3 "$REPO/tools/proc.py" alive "$pid"; do
     sleep 15
-    size=$(stat -c%s "$WS/$sc/outputs/$ACTIVITY" 2>/dev/null || echo 0)
+    size=$(python3 "$REPO/tools/proc.py" size "$WS/$sc/outputs/$ACTIVITY")
     dirty=$(git -C "$WS/$sc/repo" status --porcelain 2>/dev/null | wc -l)
     now=$(date +%s)
     if [ "$size" != "$last" ] || [ "$dirty" != "$last_dirty" ]; then
@@ -483,8 +483,8 @@ status "workspace green"
 
 # ---- dashboard + browser ---- (only once the run can actually proceed)
 if [ -z "${NO_BROWSER:-}${KBO_EVALS_NO_BROWSER:-}" ]; then
-  setsid nohup python3 "$REPO/evals/dashboard.py" "$WS" --interval 3 --open \
-    > "$WS/dashboard.log" 2>&1 &
+  python3 "$REPO/tools/proc.py" spawn --log "$WS/dashboard.log" -- \
+    python3 "$REPO/evals/dashboard.py" "$WS" --interval 3 --open >/dev/null
 fi
 
 status "=== stage 1: reclaim dotnet map files ==="
