@@ -630,6 +630,24 @@ check("[codebase-map]" in out and "legacy/" in out, "audit_map_stale_row", f"out
 check("src/" in out.split("[codebase-map]", 1)[1] if out.count("[codebase-map]") >= 1 else False,
       "audit_map_missing_row", f"out={out[:700]!r}")
 
+
+print("== v23 defect fixes: check 14 sees backticked names; journal dates from prefix+content ==")
+root = audit_repo({".claude/rules/skills.md": "# Skills\n\n- **implement:** `made-up-skill-zz`\n"})
+code, out, err = audit(root)
+check("[skill-bindings]" in out and "made-up-skill-zz" in out,
+      "audit_check14_sees_backticked_names", f"out={out[:500]!r}")
+import subprocess as _sp
+root = audit_repo({"docs/journal/2026-01-15-setup.md": "# 2026-01-15 — setup\n",
+                   "docs/journal/README.md": "# j\n"})
+_sp.run(["git", "init", "-q"], cwd=root, check=True)
+_sp.run(["git", "-c", "user.email=t@t", "-c", "user.name=t", "add", "-A"], cwd=root, check=True)
+_sp.run(["git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "x"],
+        cwd=root, check=True, env={**os.environ,
+        "GIT_AUTHOR_DATE": "2026-07-01T00:00:00Z", "GIT_COMMITTER_DATE": "2026-07-01T00:00:00Z"})
+code, out, err = audit(root)
+check("newest entry is 2026-01-15" in out,
+      "audit_journal_date_from_prefixed_filename", f"out={out[:800]!r} err={err[:200]!r}")
+
 print("== BL-043 baseline: rows for covered, an explicit uncovered list ==")
 root = make_case_repo()
 code, out = run(root, "baseline")

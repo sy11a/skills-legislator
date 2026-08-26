@@ -811,8 +811,16 @@ def audit_checks(skill: Path) -> AuditResult:
     # 8 journal-recency (Warning) — git-backed
     jdir = ROOT / "docs" / "journal"
     if jdir.is_dir():
-        dates = sorted(f.stem for f in jdir.glob("*.md")
-                       if re.match(r"^\d{4}-\d{2}-\d{2}$", f.stem))
+        dates = []
+        for f in sorted(jdir.glob("*.md")):
+            if f.name == "README.md":
+                continue
+            m = re.match(r"^(\d{4}-\d{2}-\d{2})", f.stem)
+            if not m:
+                m = re.search(r"(\d{4}-\d{2}-\d{2})", _read(f))
+            if m:
+                dates.append(m.group(1))
+        dates.sort()
         last_code = _git_out(["log", "-1", "--format=%cs", "--", ".",
                               ":(exclude)docs"])
         if last_code:
@@ -886,7 +894,7 @@ def audit_checks(skill: Path) -> AuditResult:
         homes = [Path.home() / ".claude" / "skills",
                  Path.home() / ".agents" / "skills",
                  Path.home() / ".config" / "opencode" / "skills"]
-        for name in sorted(set(SKILL_NAME_TOKEN.findall(prose_only(_read(sk))))):
+        for name in sorted(set(SKILL_NAME_TOKEN.findall(_read(sk)))):
             if any((h / name).exists() for h in homes):
                 continue
             res.add("Info", "skill-bindings",

@@ -1218,7 +1218,10 @@ def grade_restructure(ws: Path) -> Grader:
             "AGENTS.md canonical, CLAUDE.md a symlink to it" if v14_ok
             else f"AGENTS.md exists={agents_f.exists()}, "
                  f"CLAUDE.md is symlink={claude_f.is_symlink()}", artifact=g.repo_art)
-    decision_open = "[decision]" in report and "We do not maintain CHANGELOG.md" in report
+    # v23: match the conflict by value, not typography (the v18 lesson) —
+    # the agent may lawfully re-case the quoted sentence inside its item.
+    decision_open = ("[decision]" in report
+                     and "do not maintain changelog.md" in report.lower())
     g.check("conflict_surfaced_as_decision", decision_open,
             "[decision] item names the conflict" if decision_open
             else "report lacks a [decision] item naming the conflict", artifact=g.report_art)
