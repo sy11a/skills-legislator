@@ -8,6 +8,12 @@ timestamp: 2026-08-24T00:00:00Z
 
 # OKF Bundle Changelog
 
+## 2026-08-26 — BL-049: report derivability
+
+The glossary gains `report emitter` — the concept v23's composition will
+build against. No concept document changed: the classification is a
+lifecycle artifact in its case home, and no code changed in this spike.
+
 ## 2026-08-26 — BL-069: the dependency register
 
 The glossary gains `dependency register` (with its absence-behavior

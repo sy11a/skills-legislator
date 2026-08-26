@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Report derivability (BL-049, spike): the live v22 corpus measured — 86%
+  of report lines are pure-emitter, 75% of report asserts (21% of the
+  whole corpus) test what an engine could print, 22% of all classified
+  defects in the chronicles are report-composition; the emitter contract
+  for BL-066/v23 is stated in
+  `docs/cases/BL-049-report-derivability/derivability.md`.
 - The portability patch set, light half (BL-070): both conduct-guard arms
   recognize Windows-style command heads (`git.exe`, backslashed paths);
   the hooks launcher resolves `python3` → `py` → `python`; the link
