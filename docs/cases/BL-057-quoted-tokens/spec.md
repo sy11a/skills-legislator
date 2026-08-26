@@ -79,3 +79,28 @@ new negative assert red, which is its red-before-green demonstration.
    same as every other absent-marker; the fixture is the authoritative copy.
 6. **A red would mean:** law class before the fix (the check text commands
    the false positive); grader class after it (the marker drifted).
+
+## Converge — 2026-08-26
+
+Judged against R-101..R-103 and the eval design:
+
+- **per R-101/R-102 (complete).** Check 2 carries the quotation rule; the
+  planted `templating-notes.md` (inline code and a fence) audits silent under
+  v22 — `report does NOT contain 'templating-notes.md'` green in both v22
+  corpus passes, and shown red against the v21 law by a live agent run
+  (`red-evidence.md`).
+- **per R-103 (complete).** The bare `{{PROJECT_OVERVIEW}}` plant still
+  reports Critical — `report names 'overview-draft.md'` and its
+  severity-anchored twin green throughout; the `docs/adr/template.md`
+  exemption untouched.
+- **Beyond the spec, same rule:** the quotation rule now also governs the
+  engine's `sdd-lint` placeholder pass and the grader's whole-tree token
+  scan — three scanners, one definition of prose. The rule promptly earned
+  its keep against its own author: `sdd-lint` flagged a bare token in this
+  case's red-evidence file, which quoted the v21 agent's finding *about*
+  bare tokens without backticking its own example.
+
+Measured close: `audit` 45/45 in both v22 corpus passes
+(`evals/benchmarks/v22.md`).
+
+✅ Converged.

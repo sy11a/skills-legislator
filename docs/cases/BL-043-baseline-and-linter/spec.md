@@ -61,8 +61,12 @@ contains `test` (case-insensitive) — covering `*.Tests/` and `*Tests.cs`
 build-dir and size exclusions.
 
 R-202 — The requirement register SHALL be the set of `R-NNN` ids defined by
-EARS headings (`### R-NNN — <title>`) in `docs/cases/*/spec.md` — every
-case, whatever its status. The baseline is the R↔tests mapping, not a case
+EARS definition lines in `docs/cases/*/spec.md` — every case, whatever its
+status. *(Amended at converge: "definition line" replaced "### heading". The
+first dry-run against this repository's real case tree found three definition
+forms in use — `### R-NNN — t`, `- **R-NNN** — t`, bare `R-NNN — t` — and the
+em-dash after the id is the signature all three share; the heading-only form
+would have dropped BL-034's and BL-051's registers entirely.)* The baseline is the R↔tests mapping, not a case
 tracker: an open case's requirement without a test is honestly visible in
 the uncovered list, and no status parsing keeps the generator
 deterministic.
@@ -88,12 +92,20 @@ its generator and its sources.
 
 R-206 — WHEN `python3 docs/ai/engine.py sdd-lint` runs, THEN it SHALL
 report, read-only, in the engine's finding format: **dangling** `per R-NNN`
-references (the id resolves to no EARS heading in the same case's spec),
-**uncovered** requirements (an EARS heading in a case that has a `plan.md`,
-with no `per R-NNN` task tracing it — a case without a plan is not lint,
-tier 0/1 is lawful), and **unresolved placeholders** (`{{TOKEN}}` outside
-inline code and fences, in case files — the same quotation rule BL-057
-gives audit check 2).
+references (the id resolves to no EARS definition in *any* case's spec),
+**uncovered** requirements (an EARS definition in a case that has a
+`plan.md`, with no `per R-NNN` task tracing it — a case without a plan is
+not lint, tier 0/1 is lawful), and **unresolved placeholders** (`{{TOKEN}}`
+outside inline code and fences, in case files — the same quotation rule
+BL-057 gives audit check 2). *(Amended at converge, three ways the dry-run
+forced: dangling is judged against every case's definitions, because a rider
+lawfully traces the case it rides with — this case's own plan traces
+BL-057's R-101; `per R-001, R-002` list references count for every id
+listed, because the first real plan written under this law used the list
+form; and a case carrying "✅ Converged" is history
+(`core/artifact-lifecycle.md`) and is skipped entirely — without that,
+BL-034 and BL-051 yield 25 retroactive findings the lint's owner cannot act
+on.)*
 
 ### Law and lifecycle
 
@@ -165,3 +177,48 @@ run, which is the generated class's defining property, observed.
   list already expresses.
 - **Q4 — fleet-obs sequencing?** → After v22 merges and the fleet sweep
   delivers it; this case carries the reference row only.
+
+## Converge — 2026-08-26
+
+Judged against every promise: R-201..R-209, the plan's tasks, ADR-0003's
+consequences, and the constitutional MUSTs the edition touches. Findings:
+
+1. **per R-202 (contradicts, spec side).** The spec pinned `###` headings;
+   the repository's own cases use three definition forms. The
+   implementation follows the em-dash signature; the spec text is amended
+   above with the reasoning. Grader-visible: `check_engine.py`'s
+   `sdd_lint_accepts_three_definition_forms_and_list_refs`.
+2. **per R-206 (partial, spec side).** Dangling scope (same-case → any-case),
+   list references, and the converged-case skip were all forced by the
+   dry-run against this repo and pinned by checks before the engine
+   existed; the spec text is amended above. All three were committed red
+   first (`aa50794`).
+3. **per R-203/R-204 (unrequested, accepted).** The baseline is keyed by
+   (case, id), not by id: the dry-run found R-001 defined in three cases —
+   ids are unique within a case only, and a test's `per R-NNN` marker maps
+   into every case defining that id, ambiguity displayed rather than
+   silently resolved. Recorded in the engine's docstring; no spec line
+   demanded it and none forbids it.
+4. **per R-207 (complete).** Generated member named in
+   `core/artifact-lifecycle.md`; the keep gate refuses `docs/ai/baseline.md`;
+   no new audit check, as specified.
+5. **per R-208 (complete).** `core/sdd.md`'s analyze gate names the command,
+   with the python3-absent fallback wording.
+6. **per R-209 (complete).** Exit contract exercised red and green by
+   `check_engine.py` — 62 checks, all green on the final generation.
+
+Measured close: corpus 201/201 in one pass on `v22-e277e4c`, idempotency ×3
+zero diff, model floor sonnet (`evals/benchmarks/v22.md`). One law defect
+found and closed in-cycle (fix round 1 — restructure's ask-the-user token
+derivation); one grader defect found by the baseline and closed before the
+corpus ran (the whole-tree token scan). Self-delivery byte-verified 13/13;
+the delivered engine's own `sdd-lint` ran against this repository and caught
+one bare token in this edition's own evidence file — fixed, now clean — and
+`baseline` generated `docs/ai/baseline.md`: 49 requirements, all honestly
+uncovered (this repository carries no annotated tests yet).
+
+Cross-repo remainder (reference row, per the sdd cross-repo rule): fleet-obs
+gains a `generated` content-type and its gold-panel exclusion — after this
+edition merges and the sweep delivers v22 there.
+
+✅ Converged.

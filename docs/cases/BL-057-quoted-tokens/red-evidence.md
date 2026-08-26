@@ -35,7 +35,7 @@ run. Grader class if it recurs.
 
 The v22 baseline's restructure run 1 left the planted `{{PROJECT_OVERVIEW}}`
 unfilled; the porcelain-only `no_unresolved_placeholders` graded that tree
-**38/38** ("no stray {{TOKEN}}s") because the untouched file never entered
+**38/38** ("no stray `{{TOKEN}}`s") because the untouched file never entered
 the scan; run 2 filled it and only the idempotency diff exposed the pair.
 Re-graded on the reconstructed run-1 state with the whole-tree scan:
 **35/38, `unfilled tokens in: ['docs/okf/overview-draft.md']`**. The same
