@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- The decision inventory (BL-047, spike): the shipped law and `SKILL.md`
+  measured for enforceability — 176 units, split 11 enforced / 97
+  enforceable-by-nameable-check / 68 genuinely interpretive; ranked
+  bucket-(b) list in `docs/cases/BL-047-decision-inventory/inventory.md`,
+  top candidates filed as BL-064–BL-067.
 - The mutation pass (`python3 evals/mutate.py <workspace>`): every corpus
   assert carries a named minimal corruption that must flip it to failed,
   derived from fixture data where the assert names are data; uncovered or

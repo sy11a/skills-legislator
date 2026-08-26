@@ -94,7 +94,8 @@ Gate 0/1 — that ordering is what makes the parallelism safe.
   BL-045 (the owned import index) → BL-046 (the context-scope law, its own
   edition). BL-046 is recommended **before** BL-043 — see its entry.
 - **Spikes (raised 2026-08-23, toward the framework goal):** BL-047 (the
-  decision inventory — what is still model-decided), BL-048 (per-job model
+  decision inventory — **DONE 2026-08-26**, answer in its case file; fed
+  BL-064–BL-067), BL-048 (per-job model
   floor), BL-049 (report derivability), BL-052 (does the constitution load
   at all outside Claude Code and opencode), and **BL-054** (raised
   2026-08-24: full interchangeability of the two engine profiles as a design
@@ -1854,7 +1855,7 @@ The law states the classes; the evals prove the loading. Static checks prove the
 
 ## BL-047 — Spike: the decision inventory — what is still decided by a model
 
-**Status: SPIKE PROPOSED 2026-08-23** — exploration (the spec type `core/sdd.md` names), time-boxed, no `skill/` change, no VERSION, no benchmark. Its deliverable is an answer, not code.
+**Status: DONE 2026-08-26** — exploration, executed as `docs/cases/BL-047-decision-inventory/` (tier 1, spec + clarifications there). No `skill/` change, no VERSION, no benchmark. Its deliverable is an answer, not code: `inventory.md` in the case file.
 
 **The question:** which decisions in this system are taken by a model, and which of them could be taken by code instead?
 
@@ -1865,6 +1866,8 @@ The law states the classes; the evals prove the loading. Static checks prove the
 **Why a spike and not a case:** the ranked list is what tells us whether the constitution can shrink by ten lines or by a hundred. Those two answers imply completely different roadmaps, and neither is guessable from here.
 
 **Stop condition:** the inventory is the deliverable. No check is written inside this spike; each bucket-(b) entry becomes its own case, sized from the measurement.
+
+**The answer (2026-08-26):** 176 units classified — 110 core clauses, 28 stack clauses, 38 `SKILL.md` decision points — split **11 (a) / 97 (b) / 68 (c)**. More than half of what a model decides today is mechanically adjudicable by code that does not exist yet, in three concentrations: the stack law (25/28 clauses — off-the-shelf analyzers and architecture tests, not engine code), the SKILL.md run mechanics (28/38 points — audit, apply/verify, the report emitter BL-049 already sizes), and ~20 case-shape lints over the existing `sdd-lint` frame. Bucket (c) is coherent, not amorphous: classification jobs (BL-048's subject), prose judgement (the irreducible model core — exactly what the eval corpus measures), and owner input that is human by design. No core clause failed the law-not-advice bar; the dilution risk sits in the few "consult X before Y" conduct clauses observable only in a transcript. Top of the ranked (b) list filed as **BL-064–BL-067**; the remainder (engine `apply`/`verify`, the fidelity-pass job, placement/immutability checks) stays ranked in the inventory, deliberately unfiled until the four are sized.
 
 ## BL-048 — Spike: per-job model floor — can a small local model take the classification work?
 
@@ -2517,6 +2520,38 @@ assert is named for deletion, because D1 proves an artifact was read, not that
 a present artifact is measured meaningfully. The substance half of D5 stays
 open too: "empty" here means whitespace-only, so a structurally junk report is
 still `measured`.
+
+## BL-064 — The git conduct guard: the highest-frequency unenforced law
+
+**Status: PROPOSED 2026-08-26** — enforcement arms (`plugin/`), sized from BL-047's ranked list (group 1). Whether anything under `skill/` moves (and with it VERSION) is a pickup-time decision — the guard itself is hook code, not law text.
+
+**What it enforces:** the constitution's git-conduct clauses that today bind only the model's discipline — never merge to the main branch yourself (pair-6), no AI attribution anywhere in the VCS record (pair-7), no skill commits/pushes on its own authority (skl-3) — with immutability riders where the same arm can carry them: never renumber/delete a past ADR (adr-5), permanent `R-NNN` ids (sdd-12), converged case files never rewritten (life-4).
+
+**The shape:** a PreToolUse git guard (block `git merge`/`git push` onto the default branch, block commits whose message carries `Co-Authored-By`/"Generated with") plus a history check for the immutability riders. Same plugin family as `guard_owned_files.py`; the opencode port rides along. Cost S–M. These clauses fire at every-commit cadence across the whole fleet — the cheapest (b)→(a) move the inventory found.
+
+## BL-065 — `sdd-lint` grows the case-shape lints
+
+**Status: PROPOSED 2026-08-26** — engine change → VERSION bump, its own edition cycle per `evals/POLICY.md`. Sized from BL-047's ranked list (group 3).
+
+**What it enforces:** ~20 bucket-(b) clauses at every-task cadence, all shape checks over files the engine already knows how to find: case headers carry tier and spec type (sdd-3, sdd-7), a bugfix spec has its current/expected/unchanged sections (sdd-8), boundary sections present (sdd-9), EARS shape — one `R-NNN`, one SHALL per line (sdd-11), a named GIVEN/WHEN/THEN hurting case (sdd-13), a `## Clarifications` session for tier ≥1 (sdd-15), the "✅ Converged" close marker (sdd-29); ADR filename/sequence/template/status (adr-2..4); journal day-file shape (jrnl-1, jrnl-5); Keep-a-Changelog structure and the task-commit changelog touch (chlog-1, chlog-2); OKF front-matter `status`/`timestamp` and the log-entry rule (okf-5, okf-6, okf-9).
+
+**The bar:** each lint lands with a red-first eval per POLICY; converged cases stay history (skipped), matching how `sdd-lint` already treats them.
+
+## BL-066 — The engine audit job: thirteen checks off the model
+
+**Status: PROPOSED 2026-08-26** — engine + SKILL.md wiring → VERSION bump, its own edition. Sized from BL-047's ranked list (group 5); the largest single block of model-executed mechanics in the procedure.
+
+**The claim to cash in:** of the audit's 17 checks, 13 are file/diff/glob/date logic already specified to mechanical precision — 1–10, 13, 14, 16. Port them to an engine `audit` job the model invokes and reads, exactly as SKILL.md already treats checks 15/17 (`anchors`, `okf-debt`). The model keeps what genuinely needs it: 11 (contradictions), 12 (predominant law-shapedness), the constitution-candidates scan, and the report prose. Step 3/6's apply/verify mechanics and restructure's fidelity pass are the same family — decide at pickup whether they ride here or split.
+
+**What it buys:** the audit stops being reproducible-in-principle and becomes reproducible-in-fact; grader asserts over audit output stop measuring a model's arithmetic. This is the run-predictability half of the framework goal.
+
+## BL-067 — The analyzer binding: stack law adjudicated by the repo's own build
+
+**Status: PROPOSED 2026-08-26** — design-first; sized from BL-047's ranked list (group 2), the biggest single bucket-(b) mass.
+
+**The finding:** 25 of 28 stack clauses (dotnet coding-standards, architecture, data-access) are classic analyzer / architecture-test / msbuild-property territory — enforcement exists off the shelf; nothing needs the engine. What does not exist is the **binding**: the legislator neither ships nor verifies any of it, so the fleet's stack law is adjudicated by session judgement at every-edit cadence.
+
+**The design question (answer before code):** what is the delivery channel — a scaffolded `.editorconfig`/`Directory.Build.props` layer (owned? create-if-absent? kept?), an audit check that the analyzers are wired, or only a documented binding the repo owns (`.claude/rules/verification.md` style)? Owned-file semantics collide with repo autonomy here; that collision is the case, the analyzer list is an appendix. Cost M to specify; implementation sized by the answer.
 
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
 
