@@ -379,6 +379,119 @@ def annotated_tests() -> dict[str, list[str]]:
     return {rid: sorted(files) for rid, files in cov.items()}
 
 
+
+# --- BL-065 (v23): the case-shape lints -------------------------------
+
+CASE_TIER = re.compile(r"^\*\*Tier:\s*(\d)", re.M)
+CASE_TYPE = re.compile(r"^\*\*Spec type:\s*([A-Za-z]+)", re.M)
+REQ_BULLET = re.compile(
+    r"(?ms)^- \*\*(R-\d{3})\*\*(.*?)(?=^- \*\*R-\d{3}\*\*|^R-\d{3}\b|^#|\Z)")
+ADR_NAME = re.compile(r"^(\d{4})-[a-z0-9][a-z0-9-]*\.md$")
+ADR_STATUSES = {"proposed", "accepted", "deprecated"}
+JOURNAL_NAME = re.compile(r"^\d{4}-\d{2}-\d{2}\.md$")
+OKF_STATUSES = {"planned", "partial", "implemented", "removed"}
+
+
+def spec_shape_findings(case: Path) -> list[str]:
+    """Case-file shape (sdd-3/7/8/9/11/13/15): only where a spec exists —
+    a tier-0 case without one is lawful (core/sdd.md)."""
+    spec = case / "spec.md"
+    if not spec.is_file():
+        return []
+    rel = spec.relative_to(ROOT).as_posix()
+    text = spec.read_text(encoding="utf-8", errors="ignore")
+    prose = prose_only(text)
+    out: list[str] = []
+    tier_m = CASE_TIER.search(prose)
+    if not tier_m:
+        out.append(f"{rel}: no declared tier in the header "
+                   f"(**Tier: N**) → declare it per core/sdd.md")
+    type_m = CASE_TYPE.search(prose)
+    if not type_m:
+        out.append(f"{rel}: no declared spec type in the header "
+                   f"(**Spec type: ...**) → declare feature/bugfix/exploration")
+    if type_m and type_m.group(1).lower() == "bugfix":
+        for word in ("current", "expected", "unchanged"):
+            if not re.search(rf"(?i)\b{word}\b", prose):
+                out.append(f"{rel}: bugfix spec states no {word} behavior "
+                           f"→ add the current/expected/unchanged statements")
+    tier = int(tier_m.group(1)) if tier_m else None
+    if tier is not None and tier >= 1:
+        has_in = re.search(r"(?i)(\*\*in\b|\bin[- ]scope\b)", prose)
+        has_out = re.search(r"(?i)(\*\*out\b|\bout[- ]of[- ]scope\b)", prose)
+        if not (has_in and has_out):
+            out.append(f"{rel}: no boundary (in-scope and out-of-scope) "
+                       f"→ state both halves per core/sdd.md")
+        if not ("GIVEN" in prose and "WHEN" in prose and "THEN" in prose):
+            out.append(f"{rel}: no GIVEN/WHEN/THEN hurting case "
+                       f"→ ship the scenario per core/sdd.md")
+        if not re.search(r"(?m)^## Clarifications", prose):
+            out.append(f"{rel}: no ## Clarifications session "
+                       f"→ record the grill per core/sdd.md")
+    for rid, body in REQ_BULLET.findall(prose):
+        shalls = len(re.findall(r"\bSHALL\b", body))
+        if shalls != 1:
+            out.append(f"{rel}: {rid} carries {shalls} SHALLs "
+                       f"→ one line, one behavior, one SHALL")
+    return out
+
+
+def tree_shape_findings() -> list[str]:
+    """Repo-level shapes: ADRs, journal names, changelog structure, OKF
+    front-matter status (adr-2/3/4, jrnl-1, chlog-1, okf-5)."""
+    out: list[str] = []
+    adr_dir = ROOT / "docs" / "adr"
+    if adr_dir.is_dir():
+        numbers: list[int] = []
+        for f in sorted(adr_dir.glob("*.md")):
+            if f.name == "template.md":
+                continue
+            rel = f.relative_to(ROOT).as_posix()
+            m = ADR_NAME.match(f.name)
+            if not m:
+                out.append(f"{rel}: ADR filename is not NNNN-kebab-title.md "
+                           f"→ rename it per core/adr.md")
+                continue
+            numbers.append(int(m.group(1)))
+            text = prose_only(f.read_text(encoding="utf-8", errors="ignore"))
+            for sect in ("Status", "Context", "Decision", "Consequences"):
+                if not re.search(rf"(?m)^## {sect}\b", text):
+                    out.append(f"{rel}: no ## {sect} section "
+                               f"→ use docs/adr/template.md's shape")
+            sm = re.search(r"(?ms)^## Status\s+(\S[^\n]*)", text)
+            if sm:
+                status = sm.group(1).strip().lower()
+                if status not in ADR_STATUSES and not status.startswith("superseded by "):
+                    out.append(f"{rel}: status {status!r} outside the closed set "
+                               f"→ proposed/accepted/deprecated/superseded by NNNN")
+        for missing in sorted(set(range(1, max(numbers) + 1)) - set(numbers)) if numbers else []:
+            out.append(f"docs/adr/: sequence gap — {missing:04d} is missing "
+                       f"→ ADRs are numbered gaplessly, never renumbered")
+    jrnl = ROOT / "docs" / "journal"
+    if jrnl.is_dir():
+        for f in sorted(jrnl.glob("*.md")):
+            if f.name == "README.md" or JOURNAL_NAME.match(f.name):
+                continue
+            rel = f.relative_to(ROOT).as_posix()
+            out.append(f"{rel}: journal file is not YYYY-MM-DD.md "
+                       f"→ one file per working day, per core/dev-journal.md")
+    chlog = ROOT / "CHANGELOG.md"
+    if chlog.is_file():
+        if "## [Unreleased]" not in chlog.read_text(encoding="utf-8", errors="ignore"):
+            out.append("CHANGELOG.md: no ## [Unreleased] section "
+                       "→ keep the Keep-a-Changelog structure per core/changelog.md")
+    okf = ROOT / "docs" / "okf"
+    if okf.is_dir():
+        for f in sorted(okf.glob("*.md")):
+            if f.name in ("glossary.md", "log.md"):
+                continue                     # human class, per core/okf.md
+            m = STATUS.search(front_matter(f.read_text(encoding="utf-8", errors="ignore")))
+            if m and m.group(1).strip().lower() not in OKF_STATUSES:
+                rel = f.relative_to(ROOT).as_posix()
+                out.append(f"{rel}: front-matter status {m.group(1)!r} outside "
+                           f"planned/partial/implemented/removed → fix the field")
+    return out
+
 def job_sdd_lint() -> list[str]:
     """The analyze gate's mechanical passes (core/sdd.md), read-only.
     Scope: docs/cases/** only — docs/superpowers/** is retired history and
@@ -415,6 +528,8 @@ def job_sdd_lint() -> list[str]:
             for rid in sorted(set(reqs) - plan_refs):
                 findings.append(
                     f"{case_rel}/plan.md: uncovered: {rid} has no per-{rid} task")
+        findings.extend(spec_shape_findings(case))
+    findings.extend(tree_shape_findings())
     return sorted(findings)
 
 

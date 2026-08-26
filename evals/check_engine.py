@@ -357,6 +357,7 @@ def make_case_repo() -> Path:
     case.mkdir(parents=True)
     (case / "spec.md").write_text(
         "# BL-001 — widget flow\n\n"
+        "**Tier: 0 (direct).** fixture\n\n**Spec type: exploration.** fixture\n\n"
         "Prose may quote a template token like `{{PROJECT_NAME}}` safely.\n\n"
         "### R-001 — widgets persist\n\nWHEN a widget is saved THEN it SHALL persist.\n\n"
         "### R-002 — widgets list\n\nWHEN listed THEN widgets SHALL appear.\n\n"
@@ -403,6 +404,107 @@ plan.write_text("# plan\n\n1. store, per R-001\n2. list, per R-002\n3. delete, p
 (root / "docs" / "cases" / "BL-001-widget-flow" / "notes.md").unlink()
 code, out = run(root, "sdd-lint")
 check(code == 0 and out == "", "sdd_lint_clean_exit_0", f"exit={code} out={out!r}")
+
+
+# =====================================================================
+# v23 BL-065: the case-shape lints (R-651..R-659) — red-first pairs
+# =====================================================================
+
+def case_repo(spec: str | None = None, name: str = "BL-900-test-case",
+              extra: dict[str, str] | None = None) -> Path:
+    files = dict(extra or {})
+    if spec is not None:
+        files[f"docs/cases/{name}/spec.md"] = spec
+    return make_repo({}, files)
+
+TIER1_HEAD = "# BL-900 — test\n\n**Tier: 1 (light).** x\n\n**Spec type: feature.** y\n\n"
+BOUNDARY = "## Boundary\n\n**In:** a thing.\n\n**Out:** another thing (out of scope).\n\n"
+HURT = "## The hurting case\n\nGIVEN a repo, WHEN it runs, THEN it works.\n\n"
+CLAR = "## Clarifications\n\n- **Q: x?** -> y.\n\n"
+REQ_OK = "## Requirements\n\n- **R-901** — WHEN x happens the tool SHALL do y.\n\n"
+GOOD_SPEC = TIER1_HEAD + REQ_OK + BOUNDARY + HURT + CLAR
+
+print("== R-651: tier and spec type declared ==")
+code, out = run(case_repo(GOOD_SPEC), "sdd-lint")
+check(code == 0, "lint_tier_and_type (control): a headered spec is silent", f"exit={code} out={out!r}")
+code, out = run(case_repo(GOOD_SPEC.replace("**Tier: 1 (light).** x\n\n", "")), "sdd-lint")
+check(code == 1 and "tier" in out.lower(), "lint_tier_required: missing tier is a finding", f"exit={code} out={out!r}")
+code, out = run(case_repo(GOOD_SPEC.replace("**Spec type: feature.** y\n\n", "")), "sdd-lint")
+check(code == 1 and "spec type" in out.lower(), "lint_type_required: missing spec type is a finding", f"exit={code} out={out!r}")
+
+print("== R-651 boundary: a case with no spec at all is lawful (tier 0) ==")
+code, out = run(case_repo(None, extra={"docs/cases/BL-901-direct/summary.md": "# done\n"}), "sdd-lint")
+check(code == 0, "lint_specless_case_clean: tier-0 direct case stays silent", f"exit={code} out={out!r}")
+
+print("== R-652: bugfix spec states current/expected/unchanged ==")
+bugfix = GOOD_SPEC.replace("**Spec type: feature.**", "**Spec type: bugfix.**")
+bugfix_full = bugfix + "## Behavior\n\nCurrent behavior: a. Expected behavior: b. Unchanged: c.\n"
+code, out = run(case_repo(bugfix_full), "sdd-lint")
+check(code == 0, "lint_bugfix (control): current/expected/unchanged present is silent", f"exit={code} out={out!r}")
+code, out = run(case_repo(bugfix), "sdd-lint")
+check(code == 1 and "unchanged" in out.lower(), "lint_bugfix_sections: missing unchanged statement is a finding", f"exit={code} out={out!r}")
+
+print("== R-653: boundary and hurting case for tier >= 1 ==")
+code, out = run(case_repo(TIER1_HEAD + REQ_OK + HURT + CLAR), "sdd-lint")
+check(code == 1 and "boundary" in out.lower(), "lint_boundary_required: missing boundary is a finding", f"exit={code} out={out!r}")
+code, out = run(case_repo(TIER1_HEAD + REQ_OK + BOUNDARY + CLAR), "sdd-lint")
+check(code == 1 and ("hurting" in out.lower() or "GIVEN" in out), "lint_hurting_case_required: missing GIVEN/WHEN/THEN is a finding", f"exit={code} out={out!r}")
+
+print("== R-654: one SHALL per requirement line ==")
+two = GOOD_SPEC.replace("the tool SHALL do y.", "the tool SHALL do y and SHALL do z.")
+code, out = run(case_repo(two), "sdd-lint")
+check(code == 1 and "SHALL" in out, "lint_ears_two_shalls: two SHALLs on one R-line is a finding", f"exit={code} out={out!r}")
+zero = GOOD_SPEC.replace("the tool SHALL do y.", "the tool does y.")
+code, out = run(case_repo(zero), "sdd-lint")
+check(code == 1 and "SHALL" in out, "lint_ears_no_shall: an R-line with no SHALL is a finding", f"exit={code} out={out!r}")
+quoted = GOOD_SPEC.replace("the tool SHALL do y.", "the tool SHALL do y (never write `SHALL SHALL` bare).")
+code, out = run(case_repo(quoted), "sdd-lint")
+check(code == 0, "lint_ears_quoted_shall (control): backticked SHALL is quotation", f"exit={code} out={out!r}")
+
+print("== R-655: Clarifications required for tier >= 1 ==")
+code, out = run(case_repo(TIER1_HEAD + REQ_OK + BOUNDARY + HURT), "sdd-lint")
+check(code == 1 and "clarification" in out.lower(), "lint_clarifications_required: missing session is a finding", f"exit={code} out={out!r}")
+
+print("== R-656: ADR shape ==")
+ADR_OK = "# 0001. Record decisions\n\n## Status\n\naccepted\n\n## Context\n\nx\n\n## Decision\n\ny\n\n## Consequences\n\nz\n"
+code, out = run(case_repo(GOOD_SPEC, extra={"docs/adr/0001-record.md": ADR_OK, "docs/adr/template.md": "{{TITLE}} skeleton\n"}), "sdd-lint")
+check(code == 0, "lint_adr (control): well-shaped ADR + template are silent", f"exit={code} out={out!r}")
+code, out = run(case_repo(GOOD_SPEC, extra={"docs/adr/0001-record.md": ADR_OK, "docs/adr/0003-gap.md": ADR_OK.replace("0001.", "0003.")}), "sdd-lint")
+check(code == 1 and "sequence" in out.lower(), "lint_adr_sequence_gap: 0002 missing is a finding", f"exit={code} out={out!r}")
+bad_status = ADR_OK.replace("accepted", "done-ish")
+code, out = run(case_repo(GOOD_SPEC, extra={"docs/adr/0001-record.md": bad_status}), "sdd-lint")
+check(code == 1 and "status" in out.lower(), "lint_adr_status_closed_set: unknown status is a finding", f"exit={code} out={out!r}")
+no_sect = ADR_OK.replace("## Consequences\n\nz\n", "")
+code, out = run(case_repo(GOOD_SPEC, extra={"docs/adr/0001-record.md": no_sect}), "sdd-lint")
+check(code == 1 and "consequences" in out.lower(), "lint_adr_missing_section: absent Consequences is a finding", f"exit={code} out={out!r}")
+
+print("== R-657: journal day-file names ==")
+code, out = run(case_repo(GOOD_SPEC, extra={"docs/journal/2026-08-26.md": "# day\n", "docs/journal/README.md": "# how\n"}), "sdd-lint")
+check(code == 0, "lint_journal (control): dated file + README are silent", f"exit={code} out={out!r}")
+code, out = run(case_repo(GOOD_SPEC, extra={"docs/journal/notes.md": "# stray\n"}), "sdd-lint")
+check(code == 1 and "journal" in out.lower(), "lint_journal_filename: a stray name is a finding", f"exit={code} out={out!r}")
+
+print("== R-658: CHANGELOG carries [Unreleased] ==")
+code, out = run(case_repo(GOOD_SPEC, extra={"CHANGELOG.md": "# Changelog\n\n## [Unreleased]\n"}), "sdd-lint")
+check(code == 0, "lint_changelog (control): Unreleased present is silent", f"exit={code} out={out!r}")
+code, out = run(case_repo(GOOD_SPEC, extra={"CHANGELOG.md": "# Changelog\n\nstuff\n"}), "sdd-lint")
+check(code == 1 and "unreleased" in out.lower(), "lint_changelog_unreleased: missing heading is a finding", f"exit={code} out={out!r}")
+
+print("== R-659: OKF front-matter status closed set ==")
+okf_ok = "---\ntype: Concept\nstatus: implemented\n---\n\nx\n"
+code, out = run(make_repo({"widgets.md": okf_ok}, {f"docs/cases/BL-900-t/spec.md": GOOD_SPEC}), "sdd-lint")
+check(code == 0, "lint_okf_status (control): implemented is silent", f"exit={code} out={out!r}")
+okf_bad = okf_ok.replace("implemented", "shipped")
+code, out = run(make_repo({"widgets.md": okf_bad}, {f"docs/cases/BL-900-t/spec.md": GOOD_SPEC}), "sdd-lint")
+check(code == 1 and "status" in out.lower(), "lint_okf_status_closed_set: 'shipped' is a finding", f"exit={code} out={out!r}")
+gloss = "---\ntype: System\nstatus: whatever\n---\n\nterms\n"
+code, out = run(make_repo({"glossary.md": gloss}, {f"docs/cases/BL-900-t/spec.md": GOOD_SPEC}), "sdd-lint")
+check(code == 0, "lint_okf_status_human_exempt: glossary.md is never linted", f"exit={code} out={out!r}")
+
+print("== BL-065: a converged case is skipped by every case lint ==")
+converged = TIER1_HEAD.replace("**Tier: 1 (light).** x\n\n", "") + "done\n\n\u2705 Converged\n"
+code, out = run(case_repo(converged), "sdd-lint")
+check(code == 0, "lint_converged_case_exempt: history is never re-linted", f"exit={code} out={out!r}")
 
 print("== BL-043 baseline: rows for covered, an explicit uncovered list ==")
 root = make_case_repo()
@@ -457,6 +559,7 @@ case = root / "docs" / "cases" / "BL-002-forms"
 case.mkdir(parents=True)
 (case / "spec.md").write_text(
     "# BL-002 — forms\n\n"
+    "**Tier: 0 (direct).** fixture\n\n**Spec type: exploration.** fixture\n\n"
     "### R-001 — heading form\n\nWHEN a THEN b SHALL c.\n\n"
     "- **R-002** — bullet form: the store SHALL persist `docs/x.md` rows.\n\n"
     "R-003 — bare form SHALL hold.\n")
@@ -481,7 +584,9 @@ for name, spec, plan in (
          "# plan\n\n1. fix the sibling too, per R-001\n")):
     d = root / "docs" / "cases" / name
     d.mkdir(parents=True)
-    (d / "spec.md").write_text(f"# {name}\n\n{spec}")
+    (d / "spec.md").write_text(
+        f"# {name}\n\n**Tier: 0 (direct).** fixture\n\n"
+        f"**Spec type: exploration.** fixture\n\n{spec}")
     if plan:
         (d / "plan.md").write_text(plan)
 code, out = run(root, "sdd-lint")

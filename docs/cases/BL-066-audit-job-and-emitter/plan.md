@@ -34,7 +34,7 @@ origin cases; requirements to the two v23 specs.
    writes-nothing test. per R-661, R-667.
 7. The emitter: report printing (header, severity sections, clean-checks
    line, stamp) + the model-findings merge, byte-stable; defensive
-   validation fails loud. per R-661, R-662, R-663.
+   validation fails loud. per R-661, R-662, R-663, R-669.
 8. SKILL.md Audit section rewrite: engine invocation + model-findings
    workflow; check definitions, slug sentence and severity list stay
    parsable — `check_static` and `selftest:derivation` prove it.

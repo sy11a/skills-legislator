@@ -26,8 +26,9 @@ Step-7 and restructure emitters ride v24 with engine apply/verify.
   its entries — semantic findings for checks 11 and 12, check-9
   law-shaped severity escalations, and constitution candidates — into the
   correct severity sections and the candidates appendix, sorted with the
-  engine's own findings; the report SHALL be byte-stable for identical
-  inputs.
+  engine's own findings.
+- **R-669** — WHILE inputs are identical, the printed report SHALL be
+  byte-stable across runs.
 - **R-663** — The printed report SHALL carry a provenance line naming the
   engine and its constitution version (the emitter stamp); the report
   format specification in SKILL.md gains this line.
@@ -48,8 +49,8 @@ Step-7 and restructure emitters ride v24 with engine apply/verify.
   audit scenarios' repos are byte-identical before and after the run
   (existing asserts continue to bind; the engine's own tests add a
   writes-nothing check for the new job).
-- **R-668** — Every new assert SHALL be shown red against the v22 law
-  before green, and SHALL carry a mutation in `evals/mutations.py`
+- **R-668** — Every new corpus assert SHALL be shown red against the v22
+  law before green, with a mutation entry in `evals/mutations.py`
   (uncovered = red, POLICY §1c).
 
 ## The model-findings channel (the contract's data shape)
@@ -90,11 +91,25 @@ delivery, and the D4 pruning pass may migrate them later; deleting is not
 this case's act. Mutations: stamp-strip, finding-line-strip,
 section-displacement — named entries per assert in `evals/mutations.py`.
 
+## Boundary
+
+**In:** the engine audit job, the emitter, the model-findings channel,
+the SKILL.md Audit rewiring, the riders R-665/R-666, the new corpus
+asserts and mutations.
+
 ## Out of scope
 
 Step-7 and restructure emitters (v24, with engine apply/verify); deleting
 or migrating any existing assert (D4 is owner-reviewed, separate); any
 change to checks 11/12's semantic definitions.
+
+## Clarifications
+
+### Session 2026-08-26 (edition composition)
+
+- **Q: emitter slice?** → Audit only; Step-7/restructure emitters ride
+  v24 with engine apply/verify (they need the run record).
+- **Q: D3 form?** → Scaffolded `.gitattributes`, create-if-absent.
 
 ## The hurting case
 
