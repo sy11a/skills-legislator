@@ -479,6 +479,31 @@ if [ -z "${NO_BROWSER:-}${KBO_EVALS_NO_BROWSER:-}" ]; then
     > "$WS/dashboard.log" 2>&1 &
 fi
 
+status "=== stage 1: reclaim dotnet map files ==="
+# BL-059 prevention: the leak the probe below only detects. The .NET host
+# maps assembly images as /tmp/.<16hex>-<n>.so and deletes them on a clean
+# exit; a killed process (the stall ladder's own job) abandons them, and
+# they accumulate until some LATER run's writes start failing mid-corpus in
+# a shape that reads as a stalled agent. Reclaim what is PROVABLY unowned —
+# ours by owner, open in no process (fuser silent). Proof, not age: a file
+# some process still maps is never touched, however old. If fuser is
+# missing or a removal fails, fall through to the probe unchanged — the
+# probe stays the authority on room; this only makes room.
+reclaimed_n=0 reclaimed_kb=0
+if command -v fuser >/dev/null 2>&1; then
+  for f in /tmp/.[0-9a-f]*-*.so; do
+    [ -e "$f" ] || continue
+    [ -O "$f" ] || continue
+    fuser -s "$f" 2>/dev/null && continue
+    sz=$(du -k "$f" 2>/dev/null | cut -f1 || echo 0)
+    rm -f "$f" 2>/dev/null || continue
+    reclaimed_n=$((reclaimed_n + 1)); reclaimed_kb=$((reclaimed_kb + sz))
+  done
+  status "reclaimed $reclaimed_n unowned dotnet map file(s), $((reclaimed_kb / 1024)) MB"
+else
+  status "fuser unavailable — reclaim skipped, probe will judge headroom"
+fi
+
 status "=== stage 1: writable headroom ==="
 # BL-059: /tmp here is a quota-bounded tmpfs, and the dotnet fixtures leak
 # runtime .so images into it that nothing removes. When the quota runs out the

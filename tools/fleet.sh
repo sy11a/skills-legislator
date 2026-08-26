@@ -113,6 +113,22 @@ cmd_status() {
     printf '%-55s %-8s %s\n' "$repo" "v$version" "$state"
   done < <(discover)
   echo
+  # BL-055 / ADR-0004: member #0 — the repository this tool lives in — is
+  # delivered as a release step, never swept, and discovery deliberately
+  # does not see it. Named here so the absence reads as the decision it is,
+  # not as an omission. Informative only: mid-edition skew is branch-normal,
+  # so this line never participates in the exit code — the delivery
+  # guarantee is the release runbook's byte-verify step and audit check 3
+  # on the default branch.
+  self_root="$(cd "$HERE/.." && pwd)"
+  if [ -f "$self_root/docs/ai/manifest.json" ]; then
+    self_v="$(python3 -c "import json,sys;print(json.load(open(sys.argv[1])).get('legislatorVersion','?'))" "$self_root/docs/ai/manifest.json" 2>/dev/null || echo '?')"
+    if [ "$self_v" = "$CURRENT_VERSION" ]; then
+      echo "member #0 (this repo): v$self_v — delivered as a release step, never swept (ADR-0004)"
+    else
+      echo "member #0 (this repo): v$self_v — behind skill v$CURRENT_VERSION; branch-normal mid-edition, delivered by the release runbook, never swept (ADR-0004)"
+    fi
+  fi
   echo "$total legislated repo(s), $behind not delivered at skill v$CURRENT_VERSION (committed)"
   [ "$behind" -eq 0 ]
 }
