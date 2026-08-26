@@ -213,6 +213,47 @@ check(code == 0 and out == "",
       "a directory anchor's history (the union of everything beneath it) never produces debt",
       f"exit={code} out={out!r}")
 
+
+print("== v23 R-665: okf-debt without git fails loud, never clean ==")
+root = make_repo(
+    {"mod.md": "---\ntype: Concept\nstatus: implemented\n---\n\nDescribes `src/mod.py`.\n"},
+    {"src/mod.py": "x = 1\n"})
+git(root, "init", "-q")
+git(root, "add", "docs/okf/mod.md", date="2026-06-01T00:00:00Z")
+git(root, "commit", "-q", "-m", "doc", "docs/okf/mod.md", date="2026-06-01T00:00:00Z")
+git(root, "add", "src/mod.py", date="2026-08-25T00:00:00Z")
+git(root, "commit", "-q", "-m", "src", "src/mod.py", date="2026-08-25T00:00:00Z")
+code, out = run(root, "okf-debt")
+check(code == 1 and "okf-sync-debt" in out,
+      "okf_debt_git_absent (control): with git the 85-day debt is a finding",
+      f"exit={code} out={out!r}")
+with tempfile.TemporaryDirectory() as shim:
+    for tool in ("sh",):
+        real = shutil.which(tool)
+        if real:
+            os.symlink(real, Path(shim) / tool)
+    os.symlink(sys.executable, Path(shim) / "python3")
+    r = subprocess.run([sys.executable, "docs/ai/engine.py", "okf-debt"],
+                       cwd=root, capture_output=True, text=True,
+                       env={"PATH": shim})
+    check(r.returncode not in (0, 1, 2) and "git" in r.stderr.lower(),
+          "okf_debt_git_absent: without git the job exits as a check failure, never clean",
+          f"exit={r.returncode} stderr={r.stderr!r} stdout={r.stdout!r}")
+    check(r.stdout == "",
+          "okf_debt_git_absent (stdout control): no findings text a stdout-reader could mistake",
+          f"stdout={r.stdout!r}")
+
+print("== v23 R-665 boundary: no anchored docs needs no git ==")
+root = make_repo({}, {"src/a.py": "x\n"})
+with tempfile.TemporaryDirectory() as shim:
+    os.symlink(sys.executable, Path(shim) / "python3")
+    r = subprocess.run([sys.executable, "docs/ai/engine.py", "okf-debt"],
+                       cwd=root, capture_output=True, text=True,
+                       env={"PATH": shim})
+    check(r.returncode == 0,
+          "okf_debt_git_absent (boundary): nothing to measure is clean even without git",
+          f"exit={r.returncode} stderr={r.stderr!r}")
+
 print("== BL-051 item 1: a status: removed document is outside the anchored class ==")
 REMOVED = ("---\ntype: Concept\nstatus: removed\n---\n\n"
            "# Payments\n\nThis concept was removed. It named `src/App/Gone.cs`.\n")

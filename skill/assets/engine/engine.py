@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -84,7 +85,7 @@ def is_removed(doc: Path) -> bool:
     mark it; anchoring it would make obedience to the checklist wedge every
     later task through the verification rung, which is repo-global."""
     try:
-        m = STATUS.search(front_matter(doc.read_text(errors="ignore")))
+        m = STATUS.search(front_matter(doc.read_text(encoding="utf-8", errors="ignore")))
     except OSError:
         return False
     return bool(m) and m.group(1).strip().strip('"\'') == "removed"
@@ -161,7 +162,7 @@ def resolve_symbols(symbols: set[str]) -> set[str]:
             try:
                 if p.stat().st_size > MAX_BYTES:
                     continue
-                text = p.read_text(errors="ignore")
+                text = p.read_text(encoding="utf-8", errors="ignore")
             except OSError:
                 continue
             for s in symbols - found:
@@ -178,7 +179,7 @@ def job_anchors() -> list[str]:
     symbols: set[str] = set()
     for doc in anchored_docs():
         rel = doc.relative_to(ROOT).as_posix()
-        for lineno, line in scannable_lines(doc.read_text(errors="ignore")):
+        for lineno, line in scannable_lines(doc.read_text(encoding="utf-8", errors="ignore")):
             for m in TOKEN.finditer(line):
                 token = m.group(1).strip()
                 kind = classify(token, top)
@@ -210,14 +211,21 @@ def git_iso(rel: str) -> str | None:
 def job_okf_debt() -> list[str]:
     top = top_level_dirs()
     findings: list[str] = []
-    for doc in anchored_docs():
+    docs = anchored_docs()
+    if docs and shutil.which("git") is None:
+        # R-665 (v23): a verification job must fail loud, never report
+        # clean, when its measuring instrument is absent (BL-069 F1).
+        raise RuntimeError(
+            "git unavailable — okf-debt cannot measure staleness; "
+            "install git or run where it exists")
+    for doc in docs:
         rel = doc.relative_to(ROOT).as_posix()
         doc_iso = git_iso(rel)
         if not doc_iso:
             continue                      # untracked, or no git — nothing to compare
         doc_dt = datetime.fromisoformat(doc_iso)
         worst: tuple[str, int] | None = None
-        for _lineno, line in scannable_lines(doc.read_text(errors="ignore")):
+        for _lineno, line in scannable_lines(doc.read_text(encoding="utf-8", errors="ignore")):
             for m in TOKEN.finditer(line):
                 token = m.group(1).strip()
                 if classify(token, top) != "path":
@@ -267,6 +275,7 @@ INLINE_CODE = re.compile(r"`[^`\n]*`")
 
 def per_refs(text: str) -> set[str]:
     """Every R-NNN referenced by a `per ...` in the text."""
+
     out: set[str] = set()
     for group in PER_REF.findall(text):
         out.update(RID.findall(group))
@@ -290,7 +299,7 @@ def case_requirements(case: Path) -> dict[str, str]:
     spec = case / "spec.md"
     if not spec.is_file():
         return {}
-    return dict(EARS_DEF.findall(_blank_fences(spec.read_text(errors="ignore"))))
+    return dict(EARS_DEF.findall(_blank_fences(spec.read_text(encoding="utf-8", errors="ignore"))))
 
 
 def case_is_converged(case: Path) -> bool:
@@ -300,7 +309,7 @@ def case_is_converged(case: Path) -> bool:
     gate serves work in flight, not the record."""
     for f in case.rglob("*.md"):
         try:
-            if "\u2705 Converged" in f.read_text(errors="ignore"):
+            if "\u2705 Converged" in f.read_text(encoding="utf-8", errors="ignore"):
                 return True
         except OSError:
             continue
@@ -361,7 +370,7 @@ def annotated_tests() -> dict[str, list[str]]:
     cov: dict[str, list[str]] = {}
     for p in test_files():
         try:
-            text = p.read_text(errors="ignore")
+            text = p.read_text(encoding="utf-8", errors="ignore")
         except OSError:
             continue
         rel = p.relative_to(ROOT).as_posix()
@@ -389,7 +398,7 @@ def job_sdd_lint() -> list[str]:
         case_rel = case.relative_to(ROOT).as_posix()
         for f in sorted(case.rglob("*.md")):
             rel = f.relative_to(ROOT).as_posix()
-            prose = prose_only(f.read_text(errors="ignore"))
+            prose = prose_only(f.read_text(encoding="utf-8", errors="ignore"))
             for rid in sorted(per_refs(prose)):
                 if rid not in all_reqs:
                     findings.append(
@@ -402,7 +411,7 @@ def job_sdd_lint() -> list[str]:
         # lawful (core/sdd.md), so a spec-only case yields no coverage noise.
         if (case / "plan.md").is_file():
             plan_refs = per_refs(
-                prose_only((case / "plan.md").read_text(errors="ignore")))
+                prose_only((case / "plan.md").read_text(encoding="utf-8", errors="ignore")))
             for rid in sorted(set(reqs) - plan_refs):
                 findings.append(
                     f"{case_rel}/plan.md: uncovered: {rid} has no per-{rid} task")
@@ -455,7 +464,7 @@ def job_baseline() -> list[str]:
     fd, tmp = tempfile.mkstemp(dir=BASELINE.parent, prefix=".baseline-",
                                suffix=".tmp")
     try:
-        with os.fdopen(fd, "w") as fh:
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
             fh.write(content)
         os.replace(tmp, BASELINE)
     except BaseException:
