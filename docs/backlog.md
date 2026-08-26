@@ -1792,8 +1792,11 @@ zero diff, model floor sonnet, baseline per POLICY §5's grader-change rule
 `baseline` (ADR-0003); `docs/ai/baseline.md` is the `generated` class's first
 member; one law defect (restructure's ask-the-user token derivation) and one
 grader defect (the porcelain-blind token scan) found and closed in-cycle.
-Remaining: the fleet-obs registry half (reference row in the case) after the
-sweep. Originally queued for v21 and displaced by BL-051's residue.
+The fleet-obs half resolved 2026-08-26 with no work: that repo's ADR-0040
+(2026-08-20) had already excluded `/docs/ai/` machine writes — the generated
+baseline named explicitly — from the gold-panel docs-vs-code metric, with
+`NoteRole` covering the note inventory; the case's converge trail records
+the verification. Originally queued for v21 and displaced by BL-051's residue.
 
 **What:** the baseline generator (`R-NNN` ↔ annotated tests →
 `docs/ai/baseline.md`), the linter and its binding in `core/sdd.md`'s

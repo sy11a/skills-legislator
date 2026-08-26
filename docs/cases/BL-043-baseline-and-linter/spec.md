@@ -217,8 +217,15 @@ one bare token in this edition's own evidence file — fixed, now clean — and
 `baseline` generated `docs/ai/baseline.md`: 49 requirements, all honestly
 uncovered (this repository carries no annotated tests yet).
 
-Cross-repo remainder (reference row, per the sdd cross-repo rule): fleet-obs
-gains a `generated` content-type and its gold-panel exclusion — after this
-edition merges and the sweep delivers v22 there.
+Cross-repo remainder — **resolved 2026-08-26, no work needed**: fleet-obs
+had already shipped the substance on 2026-08-20 as its ADR-0040 —
+machine-managed writes (any `/docs/ai/` subject, the generated baseline
+named explicitly) are excluded from the gold-panel docs-vs-code metric and
+counted separately, and its `NoteRole` classifier gives the same class to
+the note inventory. The "generated content-type" landed as a fleet-wide
+code convention rather than a registry entry (that repo's ADR-0036
+posture); the semantics this case promised are fully covered, and adding a
+duplicate class there would have contradicted an accepted ADR of the
+sibling repo. Verified in its source on 2026-08-26, post-v22-delivery.
 
 ✅ Converged.
