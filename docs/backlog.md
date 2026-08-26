@@ -1888,7 +1888,7 @@ The law states the classes; the evals prove the loading. Static checks prove the
 
 ## BL-049 — Spike: how much of the Step 7 report is machine-derivable?
 
-**Status: SPIKE PROPOSED 2026-08-23** — exploration, time-boxed, no `skill/` change, no VERSION, no benchmark.
+**Status: DONE 2026-08-26** — exploration, executed as `docs/cases/BL-049-report-derivability/` (tier 1; clarified: all three report families — Step-7, audit, restructure). No `skill/` change, no VERSION, no benchmark; zero agents — the live v22 workspace artifacts were the material. Deliverable: `derivability.md` there.
 
 **The question:** what fraction of a Step 7 report could the engine print from the run's own facts, and where exactly is the seam with the parts that need a model?
 
@@ -1897,6 +1897,8 @@ The law states the classes; the evals prove the loading. Static checks prove the
 **What the answer decides:** whether the report emitter is a large win or a small one. The suspicion worth testing is that a large share of this repository's historical benchmark defects were report-*shape* defects — a drifted heading level, a missing section, an order-sensitive marker — and that a printed skeleton would delete that entire class along with the asserts guarding it.
 
 **Stop condition:** the classification and the assert count are the deliverable. No emitter is written.
+
+**The answer (2026-08-26):** the emitter is a **large** win, measured three ways on the live v22 corpus. (1) Of 294 report lines across 7 artifacts: **86% pure-emitter** (D), 13% pinned model-slots (Dm — candidates, contradictions, dispositions, term derivations), **1% free prose** (3 lines of rationale — the contract drops the channel, closing the v21 suppression-leak class by construction). Two reports are 100% derivable; the scaffold report is chat-only and ungraded today — the emitter makes it a persisted, gradeable artifact for free. (2) Of the 56 report asserts (28% of the corpus): 4 shape-only die, **38 mechanical-fact migrate to deterministic engine tests**, 14 judgement asserts remain as the model corpus — exactly BL-047's (c) core. (3) Of the 36 classified defects v17–v21, **8 (22%) are report-composition** — all named in the deliverable, all prevented or de-channeled by the emitter. Sizes BL-066's emitter slice for v23: audit report + Step-7 skeleton + restructure skeleton, model slots pinned.
 
 ## BL-050 — Stage 1 must verify the workspace was materialized before an hour of agent runs starts
 
