@@ -133,8 +133,9 @@ Settled with the owner at the close of the v21 cycle, after the fleet sweep.
    they are four places where a tool misinforms its operator, which is this
    repo's most expensive recorded defect class.
 
-D3 (the mutation manifest) and D4 (mechanical pruning) follow D1+D2 — no assert
-may be named for deletion until the mutation pass can name it by measurement.
+D3 (the mutation manifest) landed as BL-063 (2026-08-26): 201/201 killed,
+zero pruning candidates — D4 closes empty, its criteria standing in POLICY
+§1c for every future pass.
 
 Personal machine to-do (not a Legislator task): adopt the official C# LSP
 plugin (`csharp-ls`) locally — symbol-level navigation for the dotnet fleet;
@@ -2424,8 +2425,11 @@ delete rather than weaken.
 must run first; naming candidates by inspection would repeat exactly the
 judgement-call failure the mechanical criteria exist to prevent.
 
-**Filed since:** D1+D2 as **BL-062** (done 2026-08-25). D3, D4 and the
-substance half of D5 remain unfiled, in that order.
+**Filed since:** D1+D2 as **BL-062** (done 2026-08-25); D3 as **BL-063**
+(done 2026-08-26 — 201/201 killed, and the D4 candidate list came back
+EMPTY, so D4 closes with nothing to prune today; its criteria stay live in
+every future pass per POLICY §1c). The substance half of D5 remains
+unfiled.
 
 ## BL-061 — `fleet.sh`'s FAIL branch trusts the exit code and never checks the version
 

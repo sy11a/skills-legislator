@@ -117,3 +117,41 @@ The runner is itself the eval; its red-before-green is structural:
    with the assert); survived = the assert measures nothing (D4 candidate)
    or the mutation is wrong (fix the mutation, shown red first); unusable =
    the substrate moved (restore it, or re-run the corpus).
+
+## Converge — 2026-08-26
+
+- **per R-601 (complete).** 201/201 covered: ~90 derived from fixture_meta
+  (report markers, severity anchors, absent/candidate markers, fidelity
+  sentences), the rest named in the closed operation vocabulary.
+- **per R-602 (complete).** Kill = failed; unmeasured counts only for the
+  probes. Pinned in `check_mutate.py` alongside the byte-exact revert.
+- **per R-603 (complete).** Dropping one mutation → 5 uncovered (the common
+  family), exit 1 — the hurting case's demonstration, run live.
+- **per R-604 (complete).** Survivors were real five times on the way to
+  201/201, and each survival taught a genuine fact (commit -a vs untracked;
+  no-op unpin on a populated keep; a kept path absent from a fixture; `per`
+  across a line break; case-insensitive fidelity; a conditional assert
+  switching off instead of failing). Duplicate groups: keyed canonically,
+  currently zero.
+- **per R-605 (complete).** The substrate validation caught, within one
+  run, the Reverter's own symlink-poisoning bug — CLAUDE.md restored as a
+  regular file — before a single false verdict was recorded. Fixed
+  (symlinks save their targets), pinned red-first in `check_mutate.py`.
+- **per R-606 (complete).** In-place apply/revert; the full 201 pass runs
+  in ~4 seconds with no copies beyond the byte snapshots.
+- **per R-607 (complete).** One summary, every non-killed item by name,
+  exit 0 only on a fully-killed pass — observed in both directions.
+- **per R-608 (complete).** POLICY §1c names the command, the manifest, the
+  cadence, and the three operational rules the first pass paid for; the
+  idem stage snapshots corpus reports (`*-report.corpus.md`) so future
+  substrates survive run 2.
+
+**The measured result BL-060 asked for:** the D4 candidate list is
+**empty** — 0 survived, 0 uncovered, 0 duplicates. After BL-062's
+arithmetic and the v22 grader repairs, the corpus carries no
+mechanically-provable dead assert. D4 (pruning) therefore closes with
+nothing to prune *today*; its criteria stay live in every future pass, and
+the first future survivor or duplicate is a deletion candidate by the
+standing POLICY rule, not by a new case.
+
+✅ Converged.
