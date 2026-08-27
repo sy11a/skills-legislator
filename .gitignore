@@ -3,7 +3,7 @@
 # .NET build artifacts inside eval fixtures (agents may run dotnet build there)
 evals/fixtures/**/obj/
 evals/fixtures/**/bin/
-evals/__pycache__/
+__pycache__/
 
 # Eval run artifacts — never committed. A run produces graded output, agent
 # transcripts, raw event streams and a dashboard; those carry absolute local
