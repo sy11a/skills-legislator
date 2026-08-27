@@ -129,3 +129,23 @@ inside their severity sections, the stamp present — AND the repo is
 byte-identical before and after. The case that hurts most: a report that
 *looks* engine-printed but was hand-composed — the stamp plus the
 re-run-match assert exist precisely to make that unfakeable-by-accident.
+
+## Converge — 2026-08-27
+
+Judged against R-661–R-669 and the eval-design table: the engine audit
+job executes the fifteen mechanical checks and prints the pinned report
+(19 unit checks red-first in check_engine); the model-findings channel
+merges, escalates and fails loud on malformed input; the stamp is law
+(SKILL.md report format) and grader-enforced; byte-stability and
+writes-nothing proven; git absence exits outside {0,1} both standalone
+and folded (R-665); encoding pinned (R-666). SKILL.md's rewire kept
+every grader derivation alive (static suite + selftest). The live cycle
+exercised the whole contract: the rotted-layer report was engine-printed
+with merged model findings and one lawful escalation through the
+`escalates` channel. Deviations honestly recorded: the pinned-sections
+assert's red evidence is its mutation (spec note); two engine defects and
+two grader defects surfaced by the corpus were classified before fixing
+and closed red-first (`evals/benchmarks/v23.md`, chronicle). Existing
+audit asserts were not migrated (D4 stays owner-reviewed). Gaps: none.
+
+✅ Converged

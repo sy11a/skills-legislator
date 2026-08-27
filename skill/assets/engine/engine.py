@@ -310,10 +310,16 @@ def case_is_converged(case: Path) -> bool:
     gate serves work in flight, not the record."""
     for f in case.rglob("*.md"):
         try:
-            if "\u2705 Converged" in f.read_text(encoding="utf-8", errors="ignore"):
-                return True
+            text = f.read_text(encoding="utf-8", errors="ignore")
         except OSError:
             continue
+        # Line-anchored: the marker closes a case only when a line STARTS
+        # with it (bold and a trailing date/period are lawful decoration).
+        # A spec QUOTING the marker mid-sentence (BL-065 did, explaining a
+        # dropped lint) must not read as a closure — the BL-057 lesson:
+        # a quotation is never the artifact.
+        if re.search(r"(?m)^\s*(?:\*\*)?\u2705 Converged\b", text):
+            return True
     return False
 
 

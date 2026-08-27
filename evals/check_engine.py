@@ -501,6 +501,19 @@ gloss = "---\ntype: System\nstatus: whatever\n---\n\nterms\n"
 code, out = run(make_repo({"glossary.md": gloss}, {f"docs/cases/BL-900-t/spec.md": GOOD_SPEC}), "sdd-lint")
 check(code == 0, "lint_okf_status_human_exempt: glossary.md is never linted", f"exit={code} out={out!r}")
 
+
+print("== v23 defect: a QUOTED converge marker must not converge the case ==")
+quoted = TIER1_HEAD + REQ_OK + BOUNDARY + HURT + CLAR + \
+    'Note: the "\u2705 Converged" close marker binds a closing act.\n'
+code, out = run(case_repo(quoted.replace(CLAR, "")), "sdd-lint")
+check(code == 1 and "clarification" in out.lower(),
+      "lint_quoted_converge_marker_not_a_closure: an inline mention does not exempt the case",
+      f"exit={code} out={out!r}")
+code, out = run(case_repo(quoted + "\n\u2705 Converged\n"), "sdd-lint")
+check(code == 0,
+      "lint_standalone_converge_marker_closes (control): the standalone line still exempts",
+      f"exit={code} out={out!r}")
+
 print("== BL-065: a converged case is skipped by every case lint ==")
 converged = TIER1_HEAD.replace("**Tier: 1 (light).** x\n\n", "") + "done\n\n\u2705 Converged\n"
 code, out = run(case_repo(converged), "sdd-lint")

@@ -92,3 +92,34 @@ above, THEN the lint names exactly that file with its remedy. The case
 that hurts most: a lint that fires on lawful history — converged cases
 and human-class documents must stay exempt, or the fleet's first upgrade
 run buries owners in findings about finished work.
+
+## Converge — 2026-08-27
+
+Judged against R-651–R-660: every lint has its red-first fixture pair in
+check_engine (14 reds shown), the dropped clauses are named with reasons
+in the spec, `core/sdd.md` names the grown families (R-660, in the v23
+VERSION bump), and the hurting case held both ways — member #0 lints
+clean under the delivered engine (verified on the delivered copy after
+self-delivery), and the lints' first live catches were real: this repo's
+own BL-060 closure marker, and the edition's own spec defects (R-662/
+R-668 split, missing Boundary/Clarifications in BL-066's spec). Benchmark:
+205/205 corpus, idem ×3 zero, mutation pass clean — `evals/benchmarks/v23.md`.
+Gaps: none.
+
+✅ Converged
+
+## Converge — second pass, 2026-08-27 (the self-audit catch)
+
+The first converge note claimed "member #0 lints clean" on evidence that
+was partially vacuous: this spec's own prose *quotes* the close marker
+(in the dropped-clauses paragraph), and `case_is_converged` matched it as
+a substring — the case read as converged from the day the spec was
+written, so its own missing Boundary and Clarifications were never
+flagged. Fixed red-first in the engine (line-leading marker only;
+quotations never close a case — BL-057's lesson, third appearance),
+delivered, and the battery re-run green. This spec's ritual gaps stand as
+recorded history: its boundary and clarify lived in the edition's shared
+plan and BL-066's spec, and the defect chronicle carries the full record
+(`evals/benchmarks/v23.md`, law defect 4).
+
+✅ Converged
