@@ -8,6 +8,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **Edition v23** (BL-065 + BL-066 + the BL-070/BL-069 riders): the engine
+  `audit` job executes all fifteen mechanical audit checks and prints the
+  report (the model supplies checks 11/12 and candidates via the
+  model-findings JSON channel; the report carries an emitter stamp);
+  `sdd-lint` grows nine case-shape lint families; scaffolds gain
+  `.gitattributes` (LF pinned on machine-managed paths); the engine reads
+  UTF-8 explicitly and fails loud without git; the eval runner's process
+  control is portable (`tools/proc.py`). Benchmark: 205/205 corpus,
+  idempotency ×3 zero diff, mutation pass 205/205 killed, model floor
+  sonnet (`evals/benchmarks/v23.md`).
+
+### Added
+
 - Report derivability (BL-049, spike): the live v22 corpus measured — 86%
   of report lines are pure-emitter, 75% of report asserts (21% of the
   whole corpus) test what an engine could print, 22% of all classified

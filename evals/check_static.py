@@ -129,7 +129,7 @@ if engine_src.exists():
     # v22 adds os + tempfile: the baseline job stages its one write in a
     # sibling temp file and os.replace's it (ADR-0003's atomicity clause).
     STDLIB_OK = {"re", "sys", "subprocess", "pathlib", "datetime",
-                 "__future__", "os", "tempfile"}
+                 "__future__", "json", "os", "shutil", "tempfile"}
     imported = set(re.findall(r"^\s*(?:from|import)\s+([a-zA-Z_][\w.]*)", eng, re.M))
     check(imported <= STDLIB_OK, "engine imports only stdlib modules",
           f"unexpected: {sorted(imported - STDLIB_OK)}")

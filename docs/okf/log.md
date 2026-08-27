@@ -8,6 +8,13 @@ timestamp: 2026-08-24T00:00:00Z
 
 # OKF Bundle Changelog
 
+## 2026-08-27 — edition v23: the audit engine and the case-shape lints
+
+The glossary gains `audit job` and `model-findings channel`. The map's
+rows still hold (the engine grew in place; `tools/` gained `proc.py`
+under the existing description). Benchmark and defect chronicle:
+`evals/benchmarks/v23.md`.
+
 ## 2026-08-26 — BL-049: report derivability
 
 The glossary gains `report emitter` — the concept v23's composition will

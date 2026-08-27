@@ -162,3 +162,15 @@ Recommended, not filed — order is the owner's:
    one that makes D4 possible.
 3. **D4** — the pruning pass, once D3 can name candidates by measurement.
 4. **D5** — the two immediate repairs, small enough to ride any cycle.
+
+## Converge — 2026-08-26 (closure record, appended by the BL-065 self-lint)
+
+The case's four designs all executed: D1+D2 as BL-062 (done 2026-08-25),
+D3 as BL-063 (done 2026-08-26, 201/201 killed), D4 closed empty by the
+same pass (0 survived / 0 uncovered / 0 duplicates — criteria live in
+POLICY §1c for every future pass); the substance half of D5 stays a
+backlog note by owner decision. This exploration predates the grown
+case-shape lints; its boundary and clarifications live in the backlog
+entry and the owner sessions it records, per its 2026-08-20 form.
+
+✅ Converged

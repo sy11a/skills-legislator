@@ -488,6 +488,20 @@ def mutations_for(ws: Path, scenario: str) -> dict[str, Mutation]:
             "plant-report-in-repo", "docs/planted-report.md",
             fn=lambda ws_, rev,
             p=repo / "docs/planted-report.md": _write(rev, p, "# report\n"))
+        # v23 BL-066: the engine-backed report contracts.
+        muts["audit_report_carries_engine_stamp"] = Mutation(
+            "remove-lines", REPORT[scenario][1], "Emitted by docs/ai/engine.py",
+            fn=lambda ws_, rev, p=rp: _edit(
+                rev, p, lambda t: _drop_lines(t, "Emitted by docs/ai/engine.py")))
+        muts["audit_mechanical_findings_match_engine"] = Mutation(
+            "remove-lines", REPORT[scenario][1], "[staleness]",
+            fn=lambda ws_, rev, p=rp: _edit(
+                rev, p, lambda t: _drop_lines(t, "[staleness]")))
+        muts["model_findings_in_pinned_sections"] = Mutation(
+            "move-out-of-section", REPORT[scenario][1], "[project-rules]",
+            fn=lambda ws_, rev, p=rp: _edit(
+                rev, p, lambda t: _move_out_of_section(
+                    t, "[project-rules]", "Warning")))
         slug = "imports-resolve"
         muts["parity_every_check_has_a_defect"] = Mutation(
             "meta-drop-slug", slug,
@@ -497,6 +511,10 @@ def mutations_for(ws: Path, scenario: str) -> dict[str, Mutation]:
     elif scenario == "audit-engine-absent":
         probe_report("audit_report_saved")
         zero_writes()
+        muts["audit_report_carries_engine_stamp"] = Mutation(
+            "remove-lines", REPORT[scenario][1], "Emitted by docs/ai/engine.py",
+            fn=lambda ws_, rev, p=rp: _edit(
+                rev, p, lambda t: _drop_lines(t, "Emitted by docs/ai/engine.py")))
         muts["fixture_state_is_bundle_without_engine"] = Mutation(
             "plant-engine", "docs/ai/engine.py",
             fn=lambda ws_, rev,
@@ -588,10 +606,9 @@ def mutations_for(ws: Path, scenario: str) -> dict[str, Mutation]:
             "delete", "CLAUDE.md",
             fn=lambda ws_, rev, p=repo / "CLAUDE.md": _delete(rev, p))
         muts["conflict_surfaced_as_decision"] = Mutation(
-            "remove-lines", REPORT[scenario][1],
-            "We do not maintain CHANGELOG.md",
+            "remove-lines", REPORT[scenario][1], "core/changelog.md",
             fn=lambda ws_, rev, p=rp: _edit(rev, p, lambda t: _drop_lines(
-                t, "We do not maintain CHANGELOG.md")))
+                t, "core/changelog.md")))
         prc = repo / meta["project_rule_conflict_path"]
         muts["project_rule_conflict_decision_gated"] = Mutation(
             "edit-file", meta["project_rule_conflict_path"],

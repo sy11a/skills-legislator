@@ -962,6 +962,56 @@ def grade_upgrade(ws: Path) -> Grader:
     return g
 
 
+
+def engine_audit_findings(repo: Path) -> list[str]:
+    """The engine's own mechanical finding lines for `repo`, re-run at grade
+    time on the same tree (audit is zero-writes, so run-time and grade-time
+    trees are identical). v23 BL-066: the report must carry every one."""
+    r = subprocess.run(
+        [sys.executable, str(SKILL / "assets/engine/engine.py"), "audit",
+         "--root", str(repo), "--skill", str(SKILL)],
+        capture_output=True, text=True)
+    if r.returncode not in (0, 1):
+        raise RuntimeError(f"engine audit re-run failed ({r.returncode}): "
+                           f"{r.stderr[:300]}")
+    return [l for l in r.stdout.splitlines() if l.startswith("- [")]
+
+
+AUDIT_STAMP = "Emitted by docs/ai/engine.py audit — constitution v"
+
+
+def check_engine_backed_report(g: "Grader", repo: Path, report: str) -> None:
+    """v23 BL-066 (R-661..R-663): the audit report is the engine's print."""
+    g.check("audit_report_carries_engine_stamp", AUDIT_STAMP in report,
+            "engine stamp present" if AUDIT_STAMP in report
+            else "no emitter stamp — the report was not engine-printed",
+            artifact=g.report_art)
+    engine_lines = engine_audit_findings(repo)
+    report_finding_lines = [l for l in report.splitlines() if l.startswith("- [")]
+
+    def escalated(line: str) -> bool:
+        # The model-findings channel may lawfully supersede an engine Info
+        # entry (check-9 escalation): the engine's raw line is then absent,
+        # but its path must still be named by some finding line.
+        m = re.match(r"- \[[^\]]+\] ([^:]+):", line)
+        path = m.group(1).strip() if m else None
+        return bool(path) and any(path in l for l in report_finding_lines)
+
+    missing = [l for l in engine_lines if l not in report and not escalated(l)]
+    g.check("audit_mechanical_findings_match_engine", not missing,
+            f"all {len(engine_lines)} engine finding lines present verbatim"
+            if not missing else f"engine lines absent from the report: "
+            f"{missing[:3]!r} (+{max(0, len(missing) - 3)} more)",
+            artifact=g.report_art)
+    m = re.search(r"^## Warning\s*\n(.*?)(?=^## |\Z)", report, re.S | re.M)
+    warn = m.group(1) if m else ""
+    displaced = [slug for slug in ("project-rules", "stray-rulebooks")
+                 if f"[{slug}]" in report and f"[{slug}]" not in warn]
+    g.check("model_findings_in_pinned_sections", not displaced,
+            "model findings sit inside ## Warning" if not displaced
+            else f"model findings outside their section: {displaced}",
+            artifact=g.report_art)
+
 def grade_audit(ws: Path) -> Grader:
     home = ws / "rotted-layer"
     repo = home / "repo"
@@ -1026,6 +1076,8 @@ def grade_audit(ws: Path) -> Grader:
                 "correctly not proposed" if marker not in section
                 else "non-candidate statement proposed as fleet law", artifact=g.report_art)
 
+    check_engine_backed_report(g, repo, report)
+
     status = git(repo, "status", "--porcelain").strip()
     head = git(repo, "rev-parse", "HEAD").strip()
     clean = not status and head == meta["fixture_head"]
@@ -1058,6 +1110,13 @@ def grade_audit_engine_absent(ws: Path) -> Grader:
 
     report = report_text(g)
     g.probe("audit_report_saved", g.report_art, container=g.home_art)
+
+    # v23 BL-066: this repo has no delivered engine, so the stamp also
+    # proves the model reached for the skill package's own copy.
+    g.check("audit_report_carries_engine_stamp", AUDIT_STAMP in report,
+            "engine stamp present" if AUDIT_STAMP in report
+            else "no emitter stamp — the report was not engine-printed",
+            artifact=g.report_art)
 
     # The fixture's premise, asserted rather than assumed: if a future edit
     # ships the engine here, every check below would pass for the wrong
@@ -1169,7 +1228,13 @@ def grade_restructure(ws: Path) -> Grader:
             "AGENTS.md canonical, CLAUDE.md a symlink to it" if v14_ok
             else f"AGENTS.md exists={agents_f.exists()}, "
                  f"CLAUDE.md is symlink={claude_f.is_symlink()}", artifact=g.repo_art)
-    decision_open = "[decision]" in report and "We do not maintain CHANGELOG.md" in report
+    # v23: match the conflict by value, not typography (the v18 lesson,
+    # twice) — the agent may re-case or paraphrase the quote entirely; what
+    # the law pins is the item's shape: a [decision] line pairing the entry
+    # document with the owned changelog rule.
+    decision_open = bool(re.search(
+        r"(?m)^.*\[decision\].*AGENTS\.md.*core/changelog\.md.*$"
+        r"|^.*\[decision\].*core/changelog\.md.*AGENTS\.md.*$", report))
     g.check("conflict_surfaced_as_decision", decision_open,
             "[decision] item names the conflict" if decision_open
             else "report lacks a [decision] item naming the conflict", artifact=g.report_art)

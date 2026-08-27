@@ -86,6 +86,32 @@
 | R-647 | WHILE the working directory is not inside a legislated repo | `docs/cases/BL-064-git-conduct-guard` | — |
 | R-648 | The opencode plugin SHALL mirror R-641–R-645 for its bash | `docs/cases/BL-064-git-conduct-guard` | — |
 | R-649 | Every new check in the two harnesses SHALL be shown failing | `docs/cases/BL-064-git-conduct-guard` | — |
+| R-651 | WHEN a case spec under `docs/cases/*/spec.md` lacks a | `docs/cases/BL-065-case-shape-lints` | — |
+| R-652 | WHEN a spec of type bugfix lacks current/expected/unchanged | `docs/cases/BL-065-case-shape-lints` | — |
+| R-653 | WHEN a spec of tier ≥ 1 lacks an in-scope/out-of-scope | `docs/cases/BL-065-case-shape-lints` | — |
+| R-654 | WHEN a requirement bullet defines an `R-NNN` id whose line | `docs/cases/BL-065-case-shape-lints` | — |
+| R-655 | WHEN a spec of tier ≥ 1 lacks a `## Clarifications` | `docs/cases/BL-065-case-shape-lints` | — |
+| R-656 | WHEN a file under `docs/adr/` breaks the ADR shape — | `docs/cases/BL-065-case-shape-lints` | — |
+| R-657 | WHEN a file under `docs/journal/` (except `README.md`) is | `docs/cases/BL-065-case-shape-lints` | — |
+| R-658 | WHEN `CHANGELOG.md` lacks the `## [Unreleased]` heading, | `docs/cases/BL-065-case-shape-lints` | — |
+| R-659 | WHEN an OKF concept document's front-matter `status` is | `docs/cases/BL-065-case-shape-lints` | — |
+| R-660 | `core/sdd.md`'s sentence naming the mechanical passes SHALL | `docs/cases/BL-065-case-shape-lints` | — |
+| R-661 | WHEN `python3 docs/ai/engine.py audit` runs from a repo | `docs/cases/BL-066-audit-job-and-emitter` | — |
+| R-662 | WHERE a model-findings file is passed | `docs/cases/BL-066-audit-job-and-emitter` | — |
+| R-663 | The printed report SHALL carry a provenance line naming the | `docs/cases/BL-066-audit-job-and-emitter` | — |
+| R-664 | SKILL.md's Audit section SHALL instruct the executing model | `docs/cases/BL-066-audit-job-and-emitter` | — |
+| R-665 | WHILE git is absent or a check cannot execute, the engine | `docs/cases/BL-066-audit-job-and-emitter` | — |
+| R-666 | Every engine read/write SHALL pass `encoding="utf-8"` | `docs/cases/BL-066-audit-job-and-emitter` | — |
+| R-667 | The zero-writes contract SHALL hold and be verified: the | `docs/cases/BL-066-audit-job-and-emitter` | — |
+| R-668 | Every new corpus assert SHALL be shown red against the v22 | `docs/cases/BL-066-audit-job-and-emitter` | — |
+| R-669 | WHILE inputs are identical, the printed report SHALL be | `docs/cases/BL-066-audit-job-and-emitter` | — |
+| R-701 | WHEN a Bash command invokes git or gh via a Windows-style | `docs/cases/BL-070-portability-patch-set` | — |
+| R-702 | The hooks.json command lines SHALL resolve the interpreter | `docs/cases/BL-070-portability-patch-set` | — |
+| R-703 | The two link scripts SHALL be Python (`tools/link_skills.py`, | `docs/cases/BL-070-portability-patch-set` | — |
+| R-704 | WHILE running on Windows (`os.name == "nt"`), check_engine's | `docs/cases/BL-070-portability-patch-set` | — |
+| R-705 | WHEN `ps` is absent or fails, the dashboard SHALL treat the | `docs/cases/BL-070-portability-patch-set` | — |
+| R-706 | `check_opencode_plugin.mjs` SHALL assert node ≥ 22.6 before | `docs/cases/BL-070-portability-patch-set` | — |
+| R-707 | Every changed behavior with an existing harness SHALL show | `docs/cases/BL-070-portability-patch-set` | — |
 
 ## Uncovered — requirements no test carries
 
@@ -167,3 +193,29 @@
 - R-647 — WHILE the working directory is not inside a legislated repo (`docs/cases/BL-064-git-conduct-guard`)
 - R-648 — The opencode plugin SHALL mirror R-641–R-645 for its bash (`docs/cases/BL-064-git-conduct-guard`)
 - R-649 — Every new check in the two harnesses SHALL be shown failing (`docs/cases/BL-064-git-conduct-guard`)
+- R-651 — WHEN a case spec under `docs/cases/*/spec.md` lacks a (`docs/cases/BL-065-case-shape-lints`)
+- R-652 — WHEN a spec of type bugfix lacks current/expected/unchanged (`docs/cases/BL-065-case-shape-lints`)
+- R-653 — WHEN a spec of tier ≥ 1 lacks an in-scope/out-of-scope (`docs/cases/BL-065-case-shape-lints`)
+- R-654 — WHEN a requirement bullet defines an `R-NNN` id whose line (`docs/cases/BL-065-case-shape-lints`)
+- R-655 — WHEN a spec of tier ≥ 1 lacks a `## Clarifications` (`docs/cases/BL-065-case-shape-lints`)
+- R-656 — WHEN a file under `docs/adr/` breaks the ADR shape — (`docs/cases/BL-065-case-shape-lints`)
+- R-657 — WHEN a file under `docs/journal/` (except `README.md`) is (`docs/cases/BL-065-case-shape-lints`)
+- R-658 — WHEN `CHANGELOG.md` lacks the `## [Unreleased]` heading, (`docs/cases/BL-065-case-shape-lints`)
+- R-659 — WHEN an OKF concept document's front-matter `status` is (`docs/cases/BL-065-case-shape-lints`)
+- R-660 — `core/sdd.md`'s sentence naming the mechanical passes SHALL (`docs/cases/BL-065-case-shape-lints`)
+- R-661 — WHEN `python3 docs/ai/engine.py audit` runs from a repo (`docs/cases/BL-066-audit-job-and-emitter`)
+- R-662 — WHERE a model-findings file is passed (`docs/cases/BL-066-audit-job-and-emitter`)
+- R-663 — The printed report SHALL carry a provenance line naming the (`docs/cases/BL-066-audit-job-and-emitter`)
+- R-664 — SKILL.md's Audit section SHALL instruct the executing model (`docs/cases/BL-066-audit-job-and-emitter`)
+- R-665 — WHILE git is absent or a check cannot execute, the engine (`docs/cases/BL-066-audit-job-and-emitter`)
+- R-666 — Every engine read/write SHALL pass `encoding="utf-8"` (`docs/cases/BL-066-audit-job-and-emitter`)
+- R-667 — The zero-writes contract SHALL hold and be verified: the (`docs/cases/BL-066-audit-job-and-emitter`)
+- R-668 — Every new corpus assert SHALL be shown red against the v22 (`docs/cases/BL-066-audit-job-and-emitter`)
+- R-669 — WHILE inputs are identical, the printed report SHALL be (`docs/cases/BL-066-audit-job-and-emitter`)
+- R-701 — WHEN a Bash command invokes git or gh via a Windows-style (`docs/cases/BL-070-portability-patch-set`)
+- R-702 — The hooks.json command lines SHALL resolve the interpreter (`docs/cases/BL-070-portability-patch-set`)
+- R-703 — The two link scripts SHALL be Python (`tools/link_skills.py`, (`docs/cases/BL-070-portability-patch-set`)
+- R-704 — WHILE running on Windows (`os.name == "nt"`), check_engine's (`docs/cases/BL-070-portability-patch-set`)
+- R-705 — WHEN `ps` is absent or fails, the dashboard SHALL treat the (`docs/cases/BL-070-portability-patch-set`)
+- R-706 — `check_opencode_plugin.mjs` SHALL assert node ≥ 22.6 before (`docs/cases/BL-070-portability-patch-set`)
+- R-707 — Every changed behavior with an existing harness SHALL show (`docs/cases/BL-070-portability-patch-set`)

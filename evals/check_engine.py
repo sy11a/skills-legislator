@@ -213,6 +213,47 @@ check(code == 0 and out == "",
       "a directory anchor's history (the union of everything beneath it) never produces debt",
       f"exit={code} out={out!r}")
 
+
+print("== v23 R-665: okf-debt without git fails loud, never clean ==")
+root = make_repo(
+    {"mod.md": "---\ntype: Concept\nstatus: implemented\n---\n\nDescribes `src/mod.py`.\n"},
+    {"src/mod.py": "x = 1\n"})
+git(root, "init", "-q")
+git(root, "add", "docs/okf/mod.md", date="2026-06-01T00:00:00Z")
+git(root, "commit", "-q", "-m", "doc", "docs/okf/mod.md", date="2026-06-01T00:00:00Z")
+git(root, "add", "src/mod.py", date="2026-08-25T00:00:00Z")
+git(root, "commit", "-q", "-m", "src", "src/mod.py", date="2026-08-25T00:00:00Z")
+code, out = run(root, "okf-debt")
+check(code == 1 and "okf-sync-debt" in out,
+      "okf_debt_git_absent (control): with git the 85-day debt is a finding",
+      f"exit={code} out={out!r}")
+with tempfile.TemporaryDirectory() as shim:
+    for tool in ("sh",):
+        real = shutil.which(tool)
+        if real:
+            os.symlink(real, Path(shim) / tool)
+    os.symlink(sys.executable, Path(shim) / "python3")
+    r = subprocess.run([sys.executable, "docs/ai/engine.py", "okf-debt"],
+                       cwd=root, capture_output=True, text=True,
+                       env={"PATH": shim})
+    check(r.returncode not in (0, 1, 2) and "git" in r.stderr.lower(),
+          "okf_debt_git_absent: without git the job exits as a check failure, never clean",
+          f"exit={r.returncode} stderr={r.stderr!r} stdout={r.stdout!r}")
+    check(r.stdout == "",
+          "okf_debt_git_absent (stdout control): no findings text a stdout-reader could mistake",
+          f"stdout={r.stdout!r}")
+
+print("== v23 R-665 boundary: no anchored docs needs no git ==")
+root = make_repo({}, {"src/a.py": "x\n"})
+with tempfile.TemporaryDirectory() as shim:
+    os.symlink(sys.executable, Path(shim) / "python3")
+    r = subprocess.run([sys.executable, "docs/ai/engine.py", "okf-debt"],
+                       cwd=root, capture_output=True, text=True,
+                       env={"PATH": shim})
+    check(r.returncode == 0,
+          "okf_debt_git_absent (boundary): nothing to measure is clean even without git",
+          f"exit={r.returncode} stderr={r.stderr!r}")
+
 print("== BL-051 item 1: a status: removed document is outside the anchored class ==")
 REMOVED = ("---\ntype: Concept\nstatus: removed\n---\n\n"
            "# Payments\n\nThis concept was removed. It named `src/App/Gone.cs`.\n")
@@ -316,6 +357,7 @@ def make_case_repo() -> Path:
     case.mkdir(parents=True)
     (case / "spec.md").write_text(
         "# BL-001 — widget flow\n\n"
+        "**Tier: 0 (direct).** fixture\n\n**Spec type: exploration.** fixture\n\n"
         "Prose may quote a template token like `{{PROJECT_NAME}}` safely.\n\n"
         "### R-001 — widgets persist\n\nWHEN a widget is saved THEN it SHALL persist.\n\n"
         "### R-002 — widgets list\n\nWHEN listed THEN widgets SHALL appear.\n\n"
@@ -362,6 +404,262 @@ plan.write_text("# plan\n\n1. store, per R-001\n2. list, per R-002\n3. delete, p
 (root / "docs" / "cases" / "BL-001-widget-flow" / "notes.md").unlink()
 code, out = run(root, "sdd-lint")
 check(code == 0 and out == "", "sdd_lint_clean_exit_0", f"exit={code} out={out!r}")
+
+
+# =====================================================================
+# v23 BL-065: the case-shape lints (R-651..R-659) — red-first pairs
+# =====================================================================
+
+def case_repo(spec: str | None = None, name: str = "BL-900-test-case",
+              extra: dict[str, str] | None = None) -> Path:
+    files = dict(extra or {})
+    if spec is not None:
+        files[f"docs/cases/{name}/spec.md"] = spec
+    return make_repo({}, files)
+
+TIER1_HEAD = "# BL-900 — test\n\n**Tier: 1 (light).** x\n\n**Spec type: feature.** y\n\n"
+BOUNDARY = "## Boundary\n\n**In:** a thing.\n\n**Out:** another thing (out of scope).\n\n"
+HURT = "## The hurting case\n\nGIVEN a repo, WHEN it runs, THEN it works.\n\n"
+CLAR = "## Clarifications\n\n- **Q: x?** -> y.\n\n"
+REQ_OK = "## Requirements\n\n- **R-901** — WHEN x happens the tool SHALL do y.\n\n"
+GOOD_SPEC = TIER1_HEAD + REQ_OK + BOUNDARY + HURT + CLAR
+
+print("== R-651: tier and spec type declared ==")
+code, out = run(case_repo(GOOD_SPEC), "sdd-lint")
+check(code == 0, "lint_tier_and_type (control): a headered spec is silent", f"exit={code} out={out!r}")
+code, out = run(case_repo(GOOD_SPEC.replace("**Tier: 1 (light).** x\n\n", "")), "sdd-lint")
+check(code == 1 and "tier" in out.lower(), "lint_tier_required: missing tier is a finding", f"exit={code} out={out!r}")
+code, out = run(case_repo(GOOD_SPEC.replace("**Spec type: feature.** y\n\n", "")), "sdd-lint")
+check(code == 1 and "spec type" in out.lower(), "lint_type_required: missing spec type is a finding", f"exit={code} out={out!r}")
+
+print("== R-651 boundary: a case with no spec at all is lawful (tier 0) ==")
+code, out = run(case_repo(None, extra={"docs/cases/BL-901-direct/summary.md": "# done\n"}), "sdd-lint")
+check(code == 0, "lint_specless_case_clean: tier-0 direct case stays silent", f"exit={code} out={out!r}")
+
+print("== R-652: bugfix spec states current/expected/unchanged ==")
+bugfix = GOOD_SPEC.replace("**Spec type: feature.**", "**Spec type: bugfix.**")
+bugfix_full = bugfix + "## Behavior\n\nCurrent behavior: a. Expected behavior: b. Unchanged: c.\n"
+code, out = run(case_repo(bugfix_full), "sdd-lint")
+check(code == 0, "lint_bugfix (control): current/expected/unchanged present is silent", f"exit={code} out={out!r}")
+code, out = run(case_repo(bugfix), "sdd-lint")
+check(code == 1 and "unchanged" in out.lower(), "lint_bugfix_sections: missing unchanged statement is a finding", f"exit={code} out={out!r}")
+
+print("== R-653: boundary and hurting case for tier >= 1 ==")
+code, out = run(case_repo(TIER1_HEAD + REQ_OK + HURT + CLAR), "sdd-lint")
+check(code == 1 and "boundary" in out.lower(), "lint_boundary_required: missing boundary is a finding", f"exit={code} out={out!r}")
+code, out = run(case_repo(TIER1_HEAD + REQ_OK + BOUNDARY + CLAR), "sdd-lint")
+check(code == 1 and ("hurting" in out.lower() or "GIVEN" in out), "lint_hurting_case_required: missing GIVEN/WHEN/THEN is a finding", f"exit={code} out={out!r}")
+
+print("== R-654: one SHALL per requirement line ==")
+two = GOOD_SPEC.replace("the tool SHALL do y.", "the tool SHALL do y and SHALL do z.")
+code, out = run(case_repo(two), "sdd-lint")
+check(code == 1 and "SHALL" in out, "lint_ears_two_shalls: two SHALLs on one R-line is a finding", f"exit={code} out={out!r}")
+zero = GOOD_SPEC.replace("the tool SHALL do y.", "the tool does y.")
+code, out = run(case_repo(zero), "sdd-lint")
+check(code == 1 and "SHALL" in out, "lint_ears_no_shall: an R-line with no SHALL is a finding", f"exit={code} out={out!r}")
+quoted = GOOD_SPEC.replace("the tool SHALL do y.", "the tool SHALL do y (never write `SHALL SHALL` bare).")
+code, out = run(case_repo(quoted), "sdd-lint")
+check(code == 0, "lint_ears_quoted_shall (control): backticked SHALL is quotation", f"exit={code} out={out!r}")
+
+print("== R-655: Clarifications required for tier >= 1 ==")
+code, out = run(case_repo(TIER1_HEAD + REQ_OK + BOUNDARY + HURT), "sdd-lint")
+check(code == 1 and "clarification" in out.lower(), "lint_clarifications_required: missing session is a finding", f"exit={code} out={out!r}")
+
+print("== R-656: ADR shape ==")
+ADR_OK = "# 0001. Record decisions\n\n## Status\n\naccepted\n\n## Context\n\nx\n\n## Decision\n\ny\n\n## Consequences\n\nz\n"
+code, out = run(case_repo(GOOD_SPEC, extra={"docs/adr/0001-record.md": ADR_OK, "docs/adr/template.md": "{{TITLE}} skeleton\n"}), "sdd-lint")
+check(code == 0, "lint_adr (control): well-shaped ADR + template are silent", f"exit={code} out={out!r}")
+code, out = run(case_repo(GOOD_SPEC, extra={"docs/adr/0001-record.md": ADR_OK, "docs/adr/0003-gap.md": ADR_OK.replace("0001.", "0003.")}), "sdd-lint")
+check(code == 1 and "sequence" in out.lower(), "lint_adr_sequence_gap: 0002 missing is a finding", f"exit={code} out={out!r}")
+bad_status = ADR_OK.replace("accepted", "done-ish")
+code, out = run(case_repo(GOOD_SPEC, extra={"docs/adr/0001-record.md": bad_status}), "sdd-lint")
+check(code == 1 and "status" in out.lower(), "lint_adr_status_closed_set: unknown status is a finding", f"exit={code} out={out!r}")
+no_sect = ADR_OK.replace("## Consequences\n\nz\n", "")
+code, out = run(case_repo(GOOD_SPEC, extra={"docs/adr/0001-record.md": no_sect}), "sdd-lint")
+check(code == 1 and "consequences" in out.lower(), "lint_adr_missing_section: absent Consequences is a finding", f"exit={code} out={out!r}")
+
+print("== R-657: journal day-file names ==")
+code, out = run(case_repo(GOOD_SPEC, extra={"docs/journal/2026-08-26.md": "# day\n", "docs/journal/README.md": "# how\n"}), "sdd-lint")
+check(code == 0, "lint_journal (control): dated file + README are silent", f"exit={code} out={out!r}")
+code, out = run(case_repo(GOOD_SPEC, extra={"docs/journal/notes.md": "# stray\n"}), "sdd-lint")
+check(code == 1 and "journal" in out.lower(), "lint_journal_filename: a stray name is a finding", f"exit={code} out={out!r}")
+
+print("== R-658: CHANGELOG carries [Unreleased] ==")
+code, out = run(case_repo(GOOD_SPEC, extra={"CHANGELOG.md": "# Changelog\n\n## [Unreleased]\n"}), "sdd-lint")
+check(code == 0, "lint_changelog (control): Unreleased present is silent", f"exit={code} out={out!r}")
+code, out = run(case_repo(GOOD_SPEC, extra={"CHANGELOG.md": "# Changelog\n\nstuff\n"}), "sdd-lint")
+check(code == 1 and "unreleased" in out.lower(), "lint_changelog_unreleased: missing heading is a finding", f"exit={code} out={out!r}")
+
+print("== R-659: OKF front-matter status closed set ==")
+okf_ok = "---\ntype: Concept\nstatus: implemented\n---\n\nx\n"
+code, out = run(make_repo({"widgets.md": okf_ok}, {f"docs/cases/BL-900-t/spec.md": GOOD_SPEC}), "sdd-lint")
+check(code == 0, "lint_okf_status (control): implemented is silent", f"exit={code} out={out!r}")
+okf_bad = okf_ok.replace("implemented", "shipped")
+code, out = run(make_repo({"widgets.md": okf_bad}, {f"docs/cases/BL-900-t/spec.md": GOOD_SPEC}), "sdd-lint")
+check(code == 1 and "status" in out.lower(), "lint_okf_status_closed_set: 'shipped' is a finding", f"exit={code} out={out!r}")
+gloss = "---\ntype: System\nstatus: whatever\n---\n\nterms\n"
+code, out = run(make_repo({"glossary.md": gloss}, {f"docs/cases/BL-900-t/spec.md": GOOD_SPEC}), "sdd-lint")
+check(code == 0, "lint_okf_status_human_exempt: glossary.md is never linted", f"exit={code} out={out!r}")
+
+
+print("== v23 defect: a QUOTED converge marker must not converge the case ==")
+quoted = TIER1_HEAD + REQ_OK + BOUNDARY + HURT + CLAR + \
+    'Note: the "\u2705 Converged" close marker binds a closing act.\n'
+code, out = run(case_repo(quoted.replace(CLAR, "")), "sdd-lint")
+check(code == 1 and "clarification" in out.lower(),
+      "lint_quoted_converge_marker_not_a_closure: an inline mention does not exempt the case",
+      f"exit={code} out={out!r}")
+code, out = run(case_repo(quoted + "\n\u2705 Converged\n"), "sdd-lint")
+check(code == 0,
+      "lint_standalone_converge_marker_closes (control): the standalone line still exempts",
+      f"exit={code} out={out!r}")
+
+print("== BL-065: a converged case is skipped by every case lint ==")
+converged = TIER1_HEAD.replace("**Tier: 1 (light).** x\n\n", "") + "done\n\n\u2705 Converged\n"
+code, out = run(case_repo(converged), "sdd-lint")
+check(code == 0, "lint_converged_case_exempt: history is never re-linted", f"exit={code} out={out!r}")
+
+
+# =====================================================================
+# v23 BL-066: the engine audit job + emitter (R-661..R-669)
+# =====================================================================
+
+def audit_repo(files: dict[str, str], manifest: str = '{"legislatorVersion": 23, "stacks": [], "keep": [], "ownedFiles": []}') -> Path:
+    root = Path(tempfile.mkdtemp(prefix="audit-eval-"))
+    (root / "docs" / "ai").mkdir(parents=True)
+    if manifest is not None:
+        (root / "docs" / "ai" / "manifest.json").write_text(manifest)
+    shutil.copy2(ENGINE_SRC, root / "docs" / "ai" / "engine.py")
+    (root / "AGENTS.md").write_text("# Repo\n\n@docs/okf/index.md\n")
+    (root / "docs" / "okf").mkdir(parents=True)
+    (root / "docs" / "okf" / "index.md").write_text("# OKF\n\nSee `docs/okf/codebase-map.md`.\n")
+    (root / "docs" / "okf" / "codebase-map.md").write_text("# Map\n\n| Directory | What |\n|---|---|\n| `src/` | code |\n| `docs/` | docs |\n")
+    (root / "src").mkdir()
+    (root / "src" / "a.py").write_text("x = 1\n")
+    for rel, text in files.items():
+        f = root / rel
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.write_text(text)
+    return root
+
+
+def audit(root: Path, *extra: str) -> tuple[int, str, str]:
+    r = subprocess.run([sys.executable, "docs/ai/engine.py", "audit",
+                        "--skill", str(REPO / "skill"), *extra],
+                       cwd=root, capture_output=True, text=True)
+    return r.returncode, r.stdout, r.stderr
+
+
+print("== R-661: a clean repo prints a clean report, exit 0 ==")
+root = audit_repo({})
+code, out, err = audit(root)
+check(code == 0 and "# AI-Layer Audit" in out and "No findings." in out,
+      "audit_clean_repo_clean_report", f"exit={code} out={out[:200]!r} err={err[:200]!r}")
+check("Clean checks:" in out, "audit_clean_checks_line_present", f"out={out[-300:]!r}")
+
+print("== R-663: the emitter stamp is printed ==")
+check("engine.py audit" in out and "constitution v" in out,
+      "audit_report_carries_engine_stamp", f"out={out[-300:]!r}")
+
+print("== R-661: planted defects are found with their pinned slugs ==")
+root = audit_repo({
+    "AGENTS.md": "# Repo\n\n@docs/ai/rules/core/ghost-rule.md\n@docs/okf/index.md\n",
+    "docs/okf/overview-draft.md": "# Draft\n\n{{PROJECT_OVERVIEW}}\n\nSee `docs/okf/index.md`.\n",
+    "docs/okf/orphan-notes.md": "# Orphan\n",
+    ".cursorrules": "Always write tests first.\n",
+})
+code, out, err = audit(root)
+check(code == 1, "audit_defects_exit_1", f"exit={code} err={err[:200]!r}")
+for slug, needle in [("imports-resolve", "ghost-rule.md"),
+                     ("unresolved-placeholders", "{{PROJECT_OVERVIEW}}"),
+                     ("orphan-docs", "orphan-notes.md"),
+                     ("foreign-structures", ".cursorrules")]:
+    check(f"[{slug}]" in out and needle in out,
+          f"audit_finds_{slug}", f"out={out[:600]!r}")
+check("## Critical" in out and "## Warning" in out,
+      "audit_severity_sections_present", f"out={out[:400]!r}")
+
+print("== R-669: byte-stable across runs ==")
+code2, out2, _ = audit(root)
+check(out == out2, "audit_report_byte_stable", "two runs differ")
+
+print("== R-667: the audit job writes nothing ==")
+before = sorted(str(p.relative_to(root)) + str(p.stat().st_size)
+                for p in root.rglob("*") if p.is_file())
+audit(root)
+after = sorted(str(p.relative_to(root)) + str(p.stat().st_size)
+               for p in root.rglob("*") if p.is_file())
+check(before == after, "engine_audit_writes_nothing", "tree changed")
+
+print("== R-662: model findings merge into their sections ==")
+mf = root / "mf.json"
+mf.write_text('{"findings": [{"check": "project-rules", "severity": "Warning", '
+              '"line": "- [project-rules] .claude/rules/x.md: contradicts core/sdd.md -> align it"}], '
+              '"candidates": ["- \\"Always deploy on Fridays.\\" - AGENTS.md"]}')
+code, out, err = audit(root, "--model-findings", str(mf))
+warn = out.split("## Warning", 1)[1].split("##", 1)[0] if "## Warning" in out else ""
+check("[project-rules]" in warn, "model_findings_in_pinned_sections", f"warn={warn!r} err={err[:200]!r}")
+check("## Constitution candidates" in out and "Always deploy on Fridays" in out,
+      "model_candidates_appended", f"out={out[-500:]!r}")
+
+print("== R-662: a malformed model-findings file is a loud exit ==")
+bad = root / "bad.json"
+bad.write_text("{nope")
+code, out, err = audit(root, "--model-findings", str(bad))
+check(code not in (0, 1, 2) and out == "",
+      "audit_malformed_model_findings_fails_loud", f"exit={code} out={out[:100]!r}")
+
+print("== R-665: audit without git fails loud ==")
+with tempfile.TemporaryDirectory() as shim:
+    os.symlink(sys.executable, Path(shim) / "python3")
+    r = subprocess.run([sys.executable, "docs/ai/engine.py", "audit",
+                        "--skill", str(REPO / "skill")],
+                       cwd=root, capture_output=True, text=True, env={"PATH": shim})
+    check(r.returncode not in (0, 1, 2) and "git" in r.stderr.lower(),
+          "engine_audit_fails_loud_without_git",
+          f"exit={r.returncode} stderr={r.stderr[:200]!r}")
+
+print("== R-661: staleness and the constitution header ==")
+root = audit_repo({}, manifest='{"legislatorVersion": 21, "stacks": [], "keep": [], "ownedFiles": []}')
+code, out, err = audit(root)
+check("(skill source: v23) — behind" in out, "audit_constitution_header_behind", f"out={out[:300]!r}")
+check("[staleness]" in out and "legislatorVersion 21" in out,
+      "audit_finds_staleness", f"out={out[:600]!r}")
+
+print("== R-661: keep-list integrity and the no-keep-key Info ==")
+root = audit_repo({}, manifest='{"legislatorVersion": 23, "stacks": [], "ownedFiles": []}')
+code, out, err = audit(root)
+check("[keep-list]" in out and "no keep key" in out,
+      "audit_keep_key_missing_info", f"out={out[:600]!r}")
+root = audit_repo({}, manifest='{"legislatorVersion": 23, "stacks": [], "keep": [{"path": "docs/notes/gone.md", "reason": "x"}], "ownedFiles": []}')
+code, out, err = audit(root)
+check("[keep-list]" in out and "gone.md" in out and "missing from disk" in out,
+      "audit_keep_path_missing", f"out={out[:600]!r}")
+
+print("== R-661: codebase-map freshness both directions ==")
+root = audit_repo({"docs/okf/codebase-map.md": "# Map\n\n| Directory | What |\n|---|---|\n| `legacy/` | gone |\n"})
+code, out, err = audit(root)
+check("[codebase-map]" in out and "legacy/" in out, "audit_map_stale_row", f"out={out[:700]!r}")
+check("src/" in out.split("[codebase-map]", 1)[1] if out.count("[codebase-map]") >= 1 else False,
+      "audit_map_missing_row", f"out={out[:700]!r}")
+
+
+print("== v23 defect fixes: check 14 sees backticked names; journal dates from prefix+content ==")
+root = audit_repo({".claude/rules/skills.md": "# Skills\n\n- **implement:** `made-up-skill-zz`\n"})
+code, out, err = audit(root)
+check("[skill-bindings]" in out and "made-up-skill-zz" in out,
+      "audit_check14_sees_backticked_names", f"out={out[:500]!r}")
+import subprocess as _sp
+root = audit_repo({"docs/journal/2026-01-15-setup.md": "# 2026-01-15 — setup\n",
+                   "docs/journal/README.md": "# j\n"})
+_sp.run(["git", "init", "-q"], cwd=root, check=True)
+_sp.run(["git", "-c", "user.email=t@t", "-c", "user.name=t", "add", "-A"], cwd=root, check=True)
+_sp.run(["git", "-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "x"],
+        cwd=root, check=True, env={**os.environ,
+        "GIT_AUTHOR_DATE": "2026-07-01T00:00:00Z", "GIT_COMMITTER_DATE": "2026-07-01T00:00:00Z"})
+code, out, err = audit(root)
+check("newest entry is 2026-01-15" in out,
+      "audit_journal_date_from_prefixed_filename", f"out={out[:800]!r} err={err[:200]!r}")
 
 print("== BL-043 baseline: rows for covered, an explicit uncovered list ==")
 root = make_case_repo()
@@ -416,6 +714,7 @@ case = root / "docs" / "cases" / "BL-002-forms"
 case.mkdir(parents=True)
 (case / "spec.md").write_text(
     "# BL-002 — forms\n\n"
+    "**Tier: 0 (direct).** fixture\n\n**Spec type: exploration.** fixture\n\n"
     "### R-001 — heading form\n\nWHEN a THEN b SHALL c.\n\n"
     "- **R-002** — bullet form: the store SHALL persist `docs/x.md` rows.\n\n"
     "R-003 — bare form SHALL hold.\n")
@@ -440,7 +739,9 @@ for name, spec, plan in (
          "# plan\n\n1. fix the sibling too, per R-001\n")):
     d = root / "docs" / "cases" / name
     d.mkdir(parents=True)
-    (d / "spec.md").write_text(f"# {name}\n\n{spec}")
+    (d / "spec.md").write_text(
+        f"# {name}\n\n**Tier: 0 (direct).** fixture\n\n"
+        f"**Spec type: exploration.** fixture\n\n{spec}")
     if plan:
         (d / "plan.md").write_text(plan)
 code, out = run(root, "sdd-lint")
