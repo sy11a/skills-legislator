@@ -1073,7 +1073,11 @@ def engine_report_lines(g: "Grader", repo: Path) -> list[str] | None:
          "--root", str(repo), "--skill", str(SKILL), "--record", str(rec)],
         capture_output=True, text=True)
     if r.returncode != 0:
-        raise RuntimeError(f"engine report re-run failed ({r.returncode}): {r.stderr[:300]}")
+        # A re-print failure is a FAILED verdict with the engine's reason, never
+        # a crash: under a mutation that corrupts the manifest (the
+        # manifest_valid_json kill) the whole pass must keep going (found by
+        # the v24 mutation pass, 2026-08-29).
+        return [f"<engine report re-run failed ({r.returncode}): {r.stderr.strip()[:200]}>"]
     out, keep = [], False
     for line in r.stdout.splitlines():
         if line.startswith("## "):

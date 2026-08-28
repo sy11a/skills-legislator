@@ -226,3 +226,33 @@ keep entry and the refusal, and the report is the engine's print — every
 most: a report that *looks* engine-printed but was hand-composed, or a
 run record left inside the repo turning idempotency red — the stamp, the
 re-print match and R-752 exist to make both unfakeable-by-accident.
+
+## Converge — 2026-08-29
+
+Judged against R-751–R-772, the boundary and the eval-design table.
+R-751/R-752: the record's shape and outside-the-repo home proven by units
+and by idempotency (zero diff ×3 with the record in `/tmp`). R-753:
+`detect` per mode, the legacy `profiles` read, the reconstruction edge
+case, zero writes. R-754–R-759, R-771: `apply`'s copies, ownedFiles,
+deletions with emptied-directory cleanup, every keep rule and refusal
+reason, the byte-pinned manifest (compared as a whole string), the file
+model with `git mv`, the both-real stop (exit 4, tree untouched), the
+declared footprint — all unit-proven; the live corpus exercised every
+path (25/25 upgrade incl. the owned-path keep refusal). R-760/R-761:
+`verify`'s one re-copy, missing-artifact naming, post snapshot.
+R-762–R-767: the skeleton, pinned lines, import deltas and scaffold
+wiring, Keep-list gating, candidates and review merge, Health from checks
+1–6, the stamp last, byte-stability, the malformed-findings loud exit.
+R-768: SKILL.md rewired; `check_static` and the grader's derivation
+selftest (16/16) prove every parsed clause survived. R-769: the scaffold
+report probe is green in the corpus. R-770/R-772: 37 engine units red
+first; the corpus asserts' red-first record is in `benchmarks/v24.md`,
+including the two stated as mutation-evidenced. Benchmark: 214/214,
+idempotency ×3, mutation 214/214 killed, floor sonnet. Member #0
+delivered by `engine apply` and byte-verified (`.gitattributes` scaffolded
+where `verify` found it missing). Gaps: none (missing / partial /
+contradicts / unrequested: none). Residual, stated: `_pid_alive`-class
+Windows paths in the engine (`git mv` fallback to `os.replace`) are
+unexecuted on this machine.
+
+✅ Converged
