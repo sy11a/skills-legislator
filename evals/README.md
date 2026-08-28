@@ -220,6 +220,19 @@ line — liveness is a pid probe, never an age. `grade.py` and the
 dashboard take no lock. A full run's invocation-start cleanup removes only
 the records of scenarios it will run (`--skip-smoke` leaves `upgrade`'s).
 
+## The engine-printed reports (v23 audit, v24 Step 7)
+
+Since v24 the Step-7 report of every scaffold, migration and upgrade run is
+the engine's print from the **run record** — the fact file `engine apply`
+writes outside the repo (`<tempdir>/legislator-runs/<root>-<sha1>.json`) and
+`verify`/`report` read. The grader re-prints from that record
+(`report_mechanical_lines_match_engine`, upgrade) after snapshotting it to
+`outputs/run-record.json` on first grade, so the idempotency stage's second
+run cannot rewrite the evidence; the scaffold report is a graded artifact
+(`outputs/scaffold-report.md`) for the first time. Model slots — constitution
+candidates and derivable-by-model review lines — travel through the Step-7
+model-findings file; free prose has no slot (BL-049).
+
 ## Run profiles — two engines, one contract
 
 The stages, the prompts, the fixtures and every assertion are

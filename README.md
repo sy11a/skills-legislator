@@ -59,8 +59,10 @@ docs/backlog.md  CHANGELOG.md
 docs/superpowers/{specs,plans}/
 ```
 
-The split is the whole design: **owned** files (`docs/ai/rules/**`) are
-overwritten on every run so all your repos share one versioned constitution;
+The split is the whole design: **owned** files (`docs/ai/rules/**`, the
+engine, `opencode.json`) are written by the engine's `apply` job on every run
+(since v24 — the model invokes, the engine copies, deletes, regenerates the
+manifest and prints the report) so all your repos share one versioned constitution;
 **project-owned** files (everything else) are created once and never touched
 again. The skill never commits — review the diff and commit it yourself.
 

@@ -8,6 +8,12 @@ timestamp: 2026-08-28T00:00:00Z
 
 # OKF Bundle Changelog
 
+## 2026-08-28 — BL-075: edition v24, the engine writes the owned layer
+
+The glossary gains `run record` and `apply job`, the latter linking
+ADR-0006. No concept document changed: the engine grew four jobs in
+place, and the codebase map's rows still hold.
+
 ## 2026-08-28 — BL-073: the eval workspace lock
 
 The glossary gains `workspace lock`. No concept document changed: the
