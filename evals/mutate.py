@@ -39,8 +39,10 @@ from pathlib import Path
 EVALS = Path(__file__).resolve().parent
 
 sys.path.insert(0, str(EVALS))
+sys.path.insert(0, str(EVALS.parent / "tools"))
 import grade as grade_mod                              # noqa: E402
 from mutations import mutations_for                    # noqa: E402
+from proc import acquire_lock, release_lock            # noqa: E402
 
 SCENARIO_DIRS = grade_mod.SCENARIO_DIRS
 CORPUS = ["fresh-scaffold-dotnet", "legacy-migration",
@@ -238,7 +240,17 @@ def main() -> None:
         sys.exit(__doc__)
     ws = Path(sys.argv[1]).resolve()
     names = sys.argv[2:] or CORPUS
-    sys.exit(run_pass(ws, names))
+    # BL-073: the pass rewrites fixtures in place and re-grades — a runner
+    # moving the substrate underneath it loses reverted bytes silently.
+    ok, note = acquire_lock(ws, "mutate", sys.argv[1:])
+    if not ok:
+        sys.exit(note)
+    if note:
+        print(note)
+    try:
+        sys.exit(run_pass(ws, names))
+    finally:
+        release_lock(ws)
 
 
 if __name__ == "__main__":

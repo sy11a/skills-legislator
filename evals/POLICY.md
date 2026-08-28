@@ -155,7 +155,10 @@ asserts derive their mutations from the same fixture_meta that names them —
 is red — the obligation covers every future assert by construction. The
 cadence: **the full pass is mandatory in every edition cycle — after the
 green corpus, before `evals/benchmarks/v<N>.md` is written — on the
-benchmark run's own workspace**, and the benchmark file records the summary
+benchmark run's own workspace, after every agent has finished** — the
+pass and the runner share one workspace lock (BL-073), so a pass started
+against a live run refuses rather than measuring a moving substrate — and
+the benchmark file records the summary
 (killed / survived / uncovered / duplicate groups). Survivors and duplicates
 are the pruning candidates; deletion itself is a separate, owner-reviewed
 step (the D4 half), never part of the pass. Three operational rules the

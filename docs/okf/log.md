@@ -3,10 +3,16 @@ type: Changelog
 title: OKF Bundle Changelog
 description: Chronological record of significant changes to the OKF knowledge bundle.
 tags: [changelog, okf]
-timestamp: 2026-08-24T00:00:00Z
+timestamp: 2026-08-28T00:00:00Z
 ---
 
 # OKF Bundle Changelog
+
+## 2026-08-28 — BL-073: the eval workspace lock
+
+The glossary gains `workspace lock`. No concept document changed: the
+map's `tools/` row names no filenames, and the harness gained a
+primitive in place (`tools/proc.py`), not a new surface.
 
 ## 2026-08-28 — BL-048: the per-job model floor
 

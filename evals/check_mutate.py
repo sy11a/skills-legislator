@@ -88,6 +88,125 @@ m3 = Mutation("remove-line", "report.md", "marker Y", fn=lambda ws, r: None)
 check(m1.key() == m2.key(), "same_operation_same_key")
 check(m1.key() != m3.key(), "different_args_different_key")
 
+REPO = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO / "tools"))
+try:
+    from proc import acquire_lock, release_lock, LOCK_NAME   # noqa: E402
+    HAVE_LOCK = True
+except ImportError:
+    HAVE_LOCK = False
+
+
+def _held_by_live_pid(ws: Path, instrument: str = "evals-bg") -> subprocess.Popen:
+    """Plant a lock whose holder is a live throwaway process."""
+    holder = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
+    import json
+    (ws / ".lock").write_text(json.dumps({
+        "instrument": instrument, "pid": holder.pid,
+        "started": "2026-08-28T00:00:00", "argv": ["x"]}) + "\n")
+    return holder
+
+
+def _dead_pid() -> int:
+    p = subprocess.Popen([sys.executable, "-c", "pass"])
+    p.wait()
+    return p.pid
+
+
+print("== workspace lock primitive (R-731, R-732, R-733) ==")
+check(HAVE_LOCK, "proc.py_exports_acquire_lock_release_lock_LOCK_NAME")
+if HAVE_LOCK:
+    with tempfile.TemporaryDirectory() as td:
+        ws = Path(td)
+        ok, msg = acquire_lock(ws, "test-a", ["a"])
+        check(ok and (ws / LOCK_NAME).exists(), "first_acquire_creates_lock", msg)
+        import json
+        rec = json.loads((ws / LOCK_NAME).read_text())
+        check(rec.get("instrument") == "test-a" and rec.get("pid") == __import__("os").getpid()
+              and rec.get("started") and rec.get("argv") == ["a"],
+              "lock_records_instrument_pid_started_argv", str(rec))
+        release_lock(ws)
+        check(not (ws / LOCK_NAME).exists(), "release_removes_lock")
+
+        holder = _held_by_live_pid(ws, "evals-bg")
+        try:
+            ok, msg = acquire_lock(ws, "mutate", ["m"])
+            check(not ok, "live_holder_refuses_second_instrument")
+            check("evals-bg" in msg and str(holder.pid) in msg and "2026-08-28" in msg,
+                  "refusal_names_holder_instrument_pid_started", msg)
+            still = json.loads((ws / LOCK_NAME).read_text())
+            check(still.get("pid") == holder.pid, "refusal_leaves_holder_lock_intact")
+        finally:
+            holder.kill(); holder.wait()
+
+        dead = _dead_pid()
+        (ws / LOCK_NAME).write_text(json.dumps({
+            "instrument": "evals-bg", "pid": dead, "started": "t0", "argv": []}) + "\n")
+        ok, msg = acquire_lock(ws, "mutate", ["m"])
+        check(ok, "dead_holder_is_taken_over", msg)
+        check("stale" in msg.lower() and str(dead) in msg,
+              "takeover_is_loud_and_names_the_dead_holder", msg)
+        check(json.loads((ws / LOCK_NAME).read_text()).get("instrument") == "mutate",
+              "takeover_rewrites_lock_to_new_holder")
+        release_lock(ws)
+
+print("== mutate.py refuses a locked workspace before writing (R-732, R-735) ==")
+with tempfile.TemporaryDirectory() as td:
+    ws = Path(td)
+    holder = _held_by_live_pid(ws, "evals-bg")
+    try:
+        r = subprocess.run([sys.executable, str(REPO / "evals" / "mutate.py"), td,
+                            "upgrade"], capture_output=True, text=True)
+    finally:
+        holder.kill(); holder.wait()
+    out = r.stdout + r.stderr
+    check(r.returncode != 0, "mutate_exits_nonzero_when_locked", f"rc={r.returncode}")
+    check("evals-bg" in out and str(holder.pid) in out,
+          "mutate_refusal_names_holder", out[-200:])
+    check(sorted(p.name for p in ws.iterdir()) == [".lock"],
+          "mutate_wrote_nothing_while_locked", str(sorted(p.name for p in ws.iterdir())))
+
+print("== evals-bg.sh refuses a locked workspace before writing (R-732, R-734) ==")
+import shutil
+if shutil.which("bash") is None:
+    print("  SKIPPED — bash not on PATH (runner is bash; nothing to drive)")
+else:
+    env = {**__import__("os").environ, "NO_BROWSER": "1"}
+    with tempfile.TemporaryDirectory() as td:
+        ws = Path(td)
+        holder = _held_by_live_pid(ws, "mutate")
+        try:
+            r = subprocess.run(["bash", str(REPO / "tools" / "evals-bg.sh"), td],
+                               capture_output=True, text=True, env=env)
+        finally:
+            holder.kill(); holder.wait()
+        out = r.stdout + r.stderr
+        check(r.returncode != 0, "runner_exits_nonzero_when_locked", f"rc={r.returncode}")
+        check("mutate" in out and str(holder.pid) in out,
+              "runner_refusal_names_holder", out[-200:])
+        check(sorted(p.name for p in ws.iterdir()) == [".lock"],
+              "runner_wrote_nothing_while_locked",
+              str(sorted(p.name for p in ws.iterdir())))
+
+    print("== evals-bg.sh releases the lock on a failed exit path (R-734) ==")
+    print("== and wipes only the scenarios it will run (R-736) ==")
+    with tempfile.TemporaryDirectory() as td:
+        ws = Path(td)
+        for sc in ("upgrade", "restructure"):
+            (ws / sc / "outputs").mkdir(parents=True)
+            (ws / sc / "outputs" / "grading.json").write_text("{}")
+        # not materialized: the run dies at the stage-1 workspace gate,
+        # which is AFTER the invocation-start cleanup — the cleanup's
+        # footprint is observable without running an agent
+        r = subprocess.run(["bash", str(REPO / "tools" / "evals-bg.sh"), td,
+                            "--skip-smoke"], capture_output=True, text=True, env=env)
+        check(r.returncode != 0, "unmaterialized_ws_still_fails_the_gate")
+        check(not (ws / ".lock").exists(), "lock_released_after_gate_failure")
+        check((ws / "upgrade" / "outputs" / "grading.json").exists(),
+              "skip_smoke_leaves_upgrade_grading_in_place")
+        check(not (ws / "restructure" / "outputs" / "grading.json").exists(),
+              "scenario_this_run_touches_is_wiped")
+
 if failures:
     print(f"\n{len(failures)} check(s) FAILED")
     sys.exit(1)
