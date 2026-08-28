@@ -8,6 +8,12 @@ timestamp: 2026-08-24T00:00:00Z
 
 # OKF Bundle Changelog
 
+## 2026-08-28 — BL-048: the per-job model floor
+
+The glossary gains `per-job model floor`. No concept document changed:
+the probe and its results are lifecycle artifacts in the case home, and
+no code changed.
+
 ## 2026-08-27 — edition v23: the audit engine and the case-shape lints
 
 The glossary gains `audit job` and `model-findings channel`. The map's

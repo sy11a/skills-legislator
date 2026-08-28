@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- The per-job model floor probe (BL-048, spike): the constitution-candidate
+  test stays at the sonnet floor (3B locals collapse to constant answers,
+  haiku 12/15); glossary term extraction is the one job every candidate
+  did at 100% — filed as BL-074 for measurement at scale. Reproducible
+  probe in `docs/cases/BL-048-per-job-model-floor/probe/`.
 - **Edition v23** (BL-065 + BL-066 + the BL-070/BL-069 riders): the engine
   `audit` job executes all fifteen mechanical audit checks and prints the
   report (the model supplies checks 11/12 and candidates via the

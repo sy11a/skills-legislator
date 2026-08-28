@@ -96,7 +96,7 @@ Gate 0/1 — that ordering is what makes the parallelism safe.
 - **Spikes (raised 2026-08-23, toward the framework goal):** BL-047 (the
   decision inventory — **DONE 2026-08-26**, answer in its case file; fed
   BL-064–BL-067), BL-048 (per-job model
-  floor), BL-049 (report derivability), BL-052 (does the constitution load
+  floor — **DONE 2026-08-28**), BL-049 (report derivability — **DONE 2026-08-26**), BL-052 (does the constitution load
   at all outside Claude Code and opencode), and **BL-054** (raised
   2026-08-24: full interchangeability of the two engine profiles as a design
   invariant — the axes BL-044 and BL-052 do not cover), **BL-068**
@@ -1876,7 +1876,7 @@ The law states the classes; the evals prove the loading. Static checks prove the
 
 ## BL-048 — Spike: per-job model floor — can a small local model take the classification work?
 
-**Status: SPIKE PROPOSED 2026-08-23** — exploration, time-boxed, no `skill/` change, no VERSION, no benchmark.
+**Status: DONE 2026-08-28** — exploration, executed as `docs/cases/BL-048-per-job-model-floor/` (tier 1; clarified candidates: `qwen2.5:3b`, `llama3.2:3b`, `haiku`). No `skill/` change, no VERSION, no benchmark. Deliverable: `floor.md` + the reproducible probe (`probe/`).
 
 **The question:** is there any job in this pipeline where a small local model matches the current floor's quality — or is `sonnet` the floor because every job needs judgement?
 
@@ -1885,6 +1885,8 @@ The law states the classes; the evals prove the loading. Static checks prove the
 **What the answer decides:** whether "model floor" becomes a per-job property instead of a per-edition one. If it does, the cheap jobs move off the paid model and the corpus gets cheaper to run, which is what makes a larger corpus affordable. If it does not, the answer is worth having in writing so nobody re-opens it.
 
 **Stop condition:** the measured table is the deliverable. No routing is wired, no rule changes; a positive result becomes its own case.
+
+**The answer (2026-08-28):** **Job A (the constitution-candidate test) — no.** On a 15-statement set with grader-provenance labels (6 candidates / 9 not), both 3B locals collapse to a constant answer — `qwen2.5:3b` 9/15 always-NOT, `llama3.2:3b` 7/15 nearly-always-CANDIDATE (it proposed the marker-suppressed line as fleet law) — and `haiku` reaches 12/15: three wrong *proposed laws* per fifteen statements. Sonnet stays the floor; the per-job idea does not apply to the judgement jobs BL-047 marked (c). **Job B (glossary term extraction) — a qualified yes:** all three, including both locals, at 100% recall / 0 extras in under a second — but on two terms from one text; filed as **BL-074** for measurement at scale before any routing. The economics conclusion: the corpus gets cheaper by moving asserts off models (BL-049/BL-066 did 38 already), not by swapping models.
 
 ## BL-049 — Spike: how much of the Step 7 report is machine-derivable?
 
@@ -2618,6 +2620,12 @@ still `measured`.
 ## BL-073 — The eval workspace needs a lock: one instrument at a time
 
 **Status: PROPOSED 2026-08-27** — harness hardening, sized from the v23 cycle's two operator-induced incidents (`evals/benchmarks/v23.md`, harness chronicle): a second runner invocation wipes every scenario's `grading.json` (including untouched scenarios), and a mutation pass racing a runner invocation broke the Reverter's substrate mid-pass, silently losing one reverted line. Fix shape: a workspace lockfile taken by `evals-bg.sh` and `mutate.py` alike — the second instrument fails loud instead of corrupting shared state; plus the invocation-start cleanup narrowing to the scenarios the invocation will touch. S–M, no VERSION, no benchmark.
+
+## BL-074 — Glossary extraction at scale: is the one small-model job real?
+
+**Status: PROPOSED 2026-08-28** — the positive half of BL-048, sized to be measured before anything is routed. BL-048 found every candidate model — two 3B locals included — extracting the migration fixture's glossary terms at 100% recall with zero extras in under a second; the evidence is two terms from one text.
+
+**The probe:** a labelled extraction set an order of magnitude larger — every fixture's domain notes, this repository's own glossary history (rows and the source sections they were carved from), and the fleet's `docs/okf/glossary.md` files as labels; precision and recall per model; the `{{GLOSSARY_TABLE}}` derivation rule as the prompt. **What it decides:** whether `{{GLOSSARY_TABLE}}` seeding becomes an engine-invoked local extractor with model review (the first per-job floor), or whether small models only look good on bolded-noun fixtures. Stop: the table; routing is its own case, gated on the numbers and on BL-069's dependency policy (a local model runtime is a new `best-effort` dependency with a declared absence behavior).
 
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
 

@@ -1,0 +1,39 @@
+{
+  "job_a": [
+    {"id": 1, "label": "CANDIDATE", "provenance": "rotted report_markers: 'dry-run mode before a real import' in ## Constitution candidates (graded 48/48)",
+     "prev": "", "text": "Always run data imports in dry-run mode before a real import."},
+    {"id": 2, "label": "CANDIDATE", "provenance": "rotted report_markers: 'must be reversible' in candidates (graded)",
+     "prev": "", "text": "Every database migration must be reversible; write the Down() step before merging."},
+    {"id": 3, "label": "CANDIDATE", "provenance": "legacy-migration assert harvest_lists_decimal_money_rule",
+     "prev": "", "text": "Money values are always `decimal`, never `double` or `float`."},
+    {"id": 4, "label": "CANDIDATE", "provenance": "listed in every lawful migration report's candidates (v22, v23 runs)",
+     "prev": "", "text": "Controllers must not contain business logic; put it in `Services/`."},
+    {"id": 5, "label": "CANDIDATE", "provenance": "listed in every lawful migration report's candidates",
+     "prev": "", "text": "All database access goes through repository interfaces in `Data/Repositories` — never call `DbContext` directly from a controller."},
+    {"id": 6, "label": "CANDIDATE", "provenance": "listed in lawful migration reports' candidates (v22/v23 runs)",
+     "prev": "", "text": "Run `dotnet format` before committing."},
+    {"id": 7, "label": "NOT", "provenance": "suppression marker; absent_markers forbids it anywhere in the report",
+     "prev": "<!-- legislator: not-law -->", "text": "Never delete rows from the invoices table; archive them instead."},
+    {"id": 8, "label": "NOT", "provenance": "candidate_absent_markers: 'never call wkhtmltopdf directly' (names a project service — instance)",
+     "prev": "", "text": "Invoice PDFs are rendered only through the PdfRenderer service; never call wkhtmltopdf directly."},
+    {"id": 9, "label": "NOT", "provenance": "candidate_absent_markers: 'billing period' (domain fact, glossary material)",
+     "prev": "", "text": "A billing period in LegacyBilling always runs from the 1st to the last day of the calendar month."},
+    {"id": 10, "label": "NOT", "provenance": "candidate_absent_markers: 'named in past tense' (domain naming convention, glossary/project rule)",
+     "prev": "", "text": "Domain events are named in past tense (InvoiceSettled, never SettleInvoice)."},
+    {"id": 11, "label": "NOT", "provenance": "contradicts core/dev-journal.md — covered by that rule, decision-gate material (check-11 assert)",
+     "prev": "", "text": "Dev journal entries are optional; skip them for small changes."},
+    {"id": 12, "label": "NOT", "provenance": "assert harvest_excludes_instance_convention (project branch pattern)",
+     "prev": "", "text": "Use `bl/NNN-short-description` for branches tied to a backlog item, `hf/short-description` for hotfixes."},
+    {"id": 13, "label": "NOT", "provenance": "instance data (environment/file specifics); never in any lawful report's candidates",
+     "prev": "", "text": "The staging environment connection string lives in `appsettings.Staging.json` (gitignored) — ask a teammate for a copy."},
+    {"id": 14, "label": "NOT", "provenance": "description, not law; absent from every lawful report's candidates (the scan is exhaustive per source)",
+     "prev": "", "text": "LegacyBilling processes archived invoices."},
+    {"id": 15, "label": "NOT", "provenance": "template wiring text (Boundaries default) — the scan skips wiring; absent from every lawful report",
+     "prev": "", "text": "Generated build output only (`bin/`, `obj/`, `node_modules/`) — do not edit generated files."}
+  ],
+  "job_b": {
+    "provenance": "legacy-migration graders: glossary seeded with exactly these terms, carved from Domain notes",
+    "expected_terms": ["invoice", "dunning run"],
+    "text": "## Domain notes\n\n- An **invoice** is issued once per billing period and settled by a payment webhook from the PSP.\n- A **dunning run** means retrying failed invoice payments on a schedule before escalating to a human.\n"
+  }
+}
