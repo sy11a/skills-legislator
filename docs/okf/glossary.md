@@ -3,7 +3,7 @@ type: System
 title: Legislator — Domain Glossary
 description: Domain terms mapped to their meaning in this codebase.
 tags: [system, glossary, domain]
-timestamp: 2026-08-24T00:00:00Z
+timestamp: 2026-08-28T00:00:00Z
 status: implemented
 ---
 
@@ -76,4 +76,5 @@ serve: `docs/philosophy.md`.
 | model-findings channel | The JSON file the model writes during audit — semantic findings, escalations, candidates, the zero-writes attestation — merged by the engine into the printed report's pinned sections. | coin | SKILL.md Audit section (v23); BL-066 |
 | report emitter | The engine printing a report's skeleton and fact-derived lines from the run's own record, leaving the model pinned slots (candidates, contradictions, dispositions) and no free prose. Sized by BL-049: 86% of live report lines are emitter-printable; 42 of 56 report asserts stop measuring the model. | coin | `docs/cases/BL-049-report-derivability/derivability.md` (BL-049) |
 | dependency register | BL-069's classification of every external tool the system invokes: class (hard / best-effort / operator-side), declaration home, and measured absence behavior (fail-open / fail-loud / crash / silent false green — the forbidden class). Gate 1 of the ADR-0005 binary-arm path. | coin | `docs/cases/BL-069-dependency-register/register.md` (BL-069) |
+| workspace lock | `<ws>/.lock` (BL-073): one instrument writes an eval workspace at a time. Taken create-exclusively by the runner and the mutation pass for their lifetime, records instrument/pid/start/argv; a live holder is a loud refusal, a dead holder (pid probe, never age) is taken over with one printed line. | coin | `tools/proc.py` `acquire_lock`; `docs/cases/BL-073-eval-workspace-lock/` (BL-073) |
 | decision inventory | BL-047's classification of every normative clause of the law and every SKILL.md decision point into three buckets: (a) enforced by a deterministic arm, (b) enforceable by a nameable check that does not exist yet, (c) genuinely needs interpretation. The ranked (b) list is the engine's growth order. | coin | `docs/cases/BL-047-decision-inventory/inventory.md` (BL-047) |

@@ -77,6 +77,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- The eval workspace takes a lock (BL-073): `tools/evals-bg.sh` and
+  `evals/mutate.py` refuse to run alongside a live instrument, naming the
+  holder before writing anything; a dead holder's lock is taken over with
+  one loud line. A full run's invocation-start cleanup removes only the
+  records of scenarios it will run (`--skip-smoke` no longer wipes
+  `upgrade`'s grading). Both v23 harness incidents are now impossible by
+  construction (`evals/check_mutate.py`, 20 new checks, shown red first).
 - `tools/fleet.sh status` names member #0 explicitly — delivered as a
   release step, never swept (ADR-0004); the line is informative and outside
   the exit contract. `tools/evals-bg.sh` stage 1 reclaims provably-unowned

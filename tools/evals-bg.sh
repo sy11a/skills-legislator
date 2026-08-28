@@ -36,6 +36,7 @@
 # KBO_EVALS_NO_BROWSER same as NO_BROWSER.
 set -u
 WS="${1:?usage: evals-bg.sh <workspace> [--skip-smoke|--only SCEN..]}"
+ORIG_ARGS=("$@")
 shift || true
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
@@ -85,66 +86,19 @@ esac
 mkdir -p "$WS"
 TL="$WS/orchestrate.log"
 
-# --- run provenance (A1/A3): every result knows its run -------------------
-RUN_ID="$(date +%Y%m%d-%H%M)"
-NEW_RUN=1
-if [ ${#ONLY[@]} -gt 0 ] || [ ${#IDEM[@]} -gt 0 ]; then
-  # targeted retest: the SAME run keeps its id; other scenarios untouched
-  NEW_RUN=0
-  [ -s "$WS/run.json" ] || RUN_ID="orphan-$(date +%Y%m%d-%H%M)"
+# ---- the workspace lock (BL-073): one instrument at a time ---------------
+# Taken before the first workspace write and held until exit. A second
+# runner invocation used to wipe every scenario's grading.json and then
+# stall-sweep the first invocation's agents; a mutation pass racing a runner
+# lost a reverted fixture line silently. A live holder is a refusal; a dead
+# one (kill -9, reboot) is taken over with one line — proc.py decides.
+if ! lock_note=$(python3 "$REPO/tools/proc.py" lock "$WS" evals-bg $$ "$0" ${ORIG_ARGS[@]+"${ORIG_ARGS[@]}"}); then
+  exit 1     # the holder is named on stderr; nothing under $WS was written
 fi
-python3 - "$WS" "$RUN_ID" "$MODEL" "$REPO" "$RUNNER" <<'PYEOF'
-import json, subprocess, sys, pathlib
-ws, run_id, model, repo, runner = sys.argv[1:6]
-f = pathlib.Path(ws) / "run.json"
-prev = {}
-try:
-    prev = json.loads(f.read_text())
-except Exception:
-    pass
-head = subprocess.run(["git", "-C", repo, "rev-parse", "--short", "HEAD"],
-                      capture_output=True, text=True).stdout.strip()
-entry = {"run_id": run_id, "started": run_id, "runner": runner,
-         "model": model, "law_commit": head}
-runs = prev.get("runs", [])
-if run_id not in [r["run_id"] for r in runs]:
-    runs.append(entry)
-f.write_text(json.dumps({"current": entry, "runs": runs}, indent=1) + "\n")
-PYEOF
-
-if [ $NEW_RUN -eq 1 ]; then
-  # a fresh full run: every scenario starts as not-started; grades from
-  # prior runs stay on disk as history but stop posing as current
-  echo '{"order": [], "statuses": {}}' > "$WS/queue.json"
-  rm -f "$WS"/*/outputs/grading.json "$WS"/*/outputs/grading_idempotency.json \
-        "$WS"/*/outputs/grade.txt 2>/dev/null
-  : > "$TL"
-else
-  # targeted retest: reset only the targeted scenario's queue row
-  python3 - "$WS" "${ONLY[@]}" <<'PYEOF'
-import json, sys, pathlib
-ws = pathlib.Path(sys.argv[1])
-f = ws / "queue.json"
-try: q = json.loads(f.read_text())
-except Exception: q = {"order": [], "statuses": {}}
-# queued, NOT running: run_scenario flips each row to running when it
-# actually starts. Marking the whole batch running up front made every
-# waiting scenario look live, so the dashboard measured its (stale) log age
-# and cried stall — while showing the PREVIOUS run's output underneath
-# (found 2026-08-22).
-for sc in sys.argv[2:]:
-    q["statuses"][sc] = "queued"
-    if sc not in q["order"]: q["order"].append(sc)
-f.write_text(json.dumps(q, indent=1) + "\n")
-for sc in sys.argv[2:]:
-    outputs = ws / sc / "outputs"
-    for junk in ("grading.json", "grade.txt"):
-        (outputs / junk).unlink(missing_ok=True)
-    # a queued scenario must show nothing, never the last run's errors
-    for log in ("run.log", "run.jsonl"):
-        if (outputs / log).exists(): (outputs / log).write_text("")
-PYEOF
-fi
+trap 'python3 "$REPO/tools/proc.py" unlock "$WS"' EXIT
+trap 'exit 143' TERM
+trap 'exit 130' INT
+[ -z "$lock_note" ] || echo "$lock_note" >&2    # a stale lock taken over — say so
 
 # ---- prompts: evals.json is the single source (no runner-side dups) ----
 prompt_of() { python3 -c "
@@ -444,9 +398,10 @@ scenario_dirs() { # -> the dir names THIS invocation will touch, one per line
     # stages 2-4: every scenario in evals.json except idempotency, which is a
     # second pass over other scenarios and owns no directory of its own
     python3 -c "
-import json
+import json, sys
+skip = {'idempotency'} | ({'upgrade'} if sys.argv[1] == '1' else set())
 d=json.load(open('$REPO/evals/evals.json'))
-print('\n'.join(e['name'] for e in d['evals'] if e['name'] != 'idempotency'))"
+print('\n'.join(e['name'] for e in d['evals'] if e['name'] not in skip))" "$SKIP_SMOKE"
   fi | while read -r n; do [ -n "$n" ] && DIR_OF "$n"; done
 }
 
@@ -474,9 +429,76 @@ require_workspace() {
   return 1
 }
 
+# --- run provenance (A1/A3): every result knows its run -------------------
+RUN_ID="$(date +%Y%m%d-%H%M)"
+NEW_RUN=1
+if [ ${#ONLY[@]} -gt 0 ] || [ ${#IDEM[@]} -gt 0 ]; then
+  # targeted retest: the SAME run keeps its id; other scenarios untouched
+  NEW_RUN=0
+  [ -s "$WS/run.json" ] || RUN_ID="orphan-$(date +%Y%m%d-%H%M)"
+fi
+python3 - "$WS" "$RUN_ID" "$MODEL" "$REPO" "$RUNNER" <<'PYEOF'
+import json, subprocess, sys, pathlib
+ws, run_id, model, repo, runner = sys.argv[1:6]
+f = pathlib.Path(ws) / "run.json"
+prev = {}
+try:
+    prev = json.loads(f.read_text())
+except Exception:
+    pass
+head = subprocess.run(["git", "-C", repo, "rev-parse", "--short", "HEAD"],
+                      capture_output=True, text=True).stdout.strip()
+entry = {"run_id": run_id, "started": run_id, "runner": runner,
+         "model": model, "law_commit": head}
+runs = prev.get("runs", [])
+if run_id not in [r["run_id"] for r in runs]:
+    runs.append(entry)
+f.write_text(json.dumps({"current": entry, "runs": runs}, indent=1) + "\n")
+PYEOF
+
+if [ $NEW_RUN -eq 1 ]; then
+  # a fresh full run: every scenario starts as not-started; grades from
+  # prior runs stay on disk as history but stop posing as current
+  echo '{"order": [], "statuses": {}}' > "$WS/queue.json"
+  # only the scenarios THIS invocation will run (R-736): a --skip-smoke run
+  # leaves upgrade's records exactly where the last run left them
+  while read -r sc; do
+    [ -n "$sc" ] || continue
+    rm -f "$WS/$sc/outputs/grading.json" "$WS/$sc/outputs/grading_idempotency.json" \
+          "$WS/$sc/outputs/grade.txt" 2>/dev/null
+  done < <(scenario_dirs)
+  : > "$TL"
+else
+  # targeted retest: reset only the targeted scenario's queue row
+  python3 - "$WS" "${ONLY[@]}" <<'PYEOF'
+import json, sys, pathlib
+ws = pathlib.Path(sys.argv[1])
+f = ws / "queue.json"
+try: q = json.loads(f.read_text())
+except Exception: q = {"order": [], "statuses": {}}
+# queued, NOT running: run_scenario flips each row to running when it
+# actually starts. Marking the whole batch running up front made every
+# waiting scenario look live, so the dashboard measured its (stale) log age
+# and cried stall — while showing the PREVIOUS run's output underneath
+# (found 2026-08-22).
+for sc in sys.argv[2:]:
+    q["statuses"][sc] = "queued"
+    if sc not in q["order"]: q["order"].append(sc)
+f.write_text(json.dumps(q, indent=1) + "\n")
+for sc in sys.argv[2:]:
+    outputs = ws / sc / "outputs"
+    for junk in ("grading.json", "grade.txt"):
+        (outputs / junk).unlink(missing_ok=True)
+    # a queued scenario must show nothing, never the last run's errors
+    for log in ("run.log", "run.jsonl"):
+        if (outputs / log).exists(): (outputs / log).write_text("")
+PYEOF
+fi
+
 # ============================= STAGES =============================
 
 status "profile: runner=$RUNNER model=$MODEL (run $RUN_ID)"
+[ -z "$lock_note" ] || status "$lock_note"
 status "=== stage 1: workspace precondition ==="
 require_workspace || exit 1
 status "workspace green"

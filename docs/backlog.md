@@ -2619,7 +2619,9 @@ still `measured`.
 
 ## BL-073 — The eval workspace needs a lock: one instrument at a time
 
-**Status: PROPOSED 2026-08-27** — harness hardening, sized from the v23 cycle's two operator-induced incidents (`evals/benchmarks/v23.md`, harness chronicle): a second runner invocation wipes every scenario's `grading.json` (including untouched scenarios), and a mutation pass racing a runner invocation broke the Reverter's substrate mid-pass, silently losing one reverted line. Fix shape: a workspace lockfile taken by `evals-bg.sh` and `mutate.py` alike — the second instrument fails loud instead of corrupting shared state; plus the invocation-start cleanup narrowing to the scenarios the invocation will touch. S–M, no VERSION, no benchmark.
+**Status: DONE 2026-08-28** — shipped as `docs/cases/BL-073-eval-workspace-lock/` (tier 1, bugfix, R-731–R-737). `tools/proc.py` gains the lock primitive (`lock`/`unlock`, create-exclusive, pid-liveness stale detection); the runner takes it before its first write and releases on every exit path (EXIT/TERM/INT traps), `mutate.py` around the whole pass; a live holder is a loud refusal naming instrument/pid/start, a dead holder is taken over with one line (clarified: automatic, never silent). Cleanup narrowed to the scenarios the invocation runs. 20 red-first checks in `evals/check_mutate.py`. Out by clarify: `grade.py` stays lock-free.
+
+Originally: harness hardening, sized from the v23 cycle's two operator-induced incidents (`evals/benchmarks/v23.md`, harness chronicle): a second runner invocation wipes every scenario's `grading.json` (including untouched scenarios), and a mutation pass racing a runner invocation broke the Reverter's substrate mid-pass, silently losing one reverted line. Fix shape: a workspace lockfile taken by `evals-bg.sh` and `mutate.py` alike — the second instrument fails loud instead of corrupting shared state; plus the invocation-start cleanup narrowing to the scenarios the invocation will touch. S–M, no VERSION, no benchmark.
 
 ## BL-074 — Glossary extraction at scale: is the one small-model job real?
 

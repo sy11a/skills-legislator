@@ -211,6 +211,15 @@ after every scenario, desktop notifications (`notify-send`) on scenario
 and run boundaries, and `queue.json` + `status.md` as the machine-readable
 contract — the interactive session polls a file, never a process.
 
+**One instrument at a time (BL-073).** The runner and `mutate.py` both
+take `<ws>/.lock` for their whole lifetime; a second instrument against a
+live workspace refuses before writing a byte, naming the holder
+(`workspace locked by evals-bg (pid N, started T)`). A lock whose holder
+pid is dead (a `kill -9`, a reboot) is stale and taken over with one loud
+line — liveness is a pid probe, never an age. `grade.py` and the
+dashboard take no lock. A full run's invocation-start cleanup removes only
+the records of scenarios it will run (`--skip-smoke` leaves `upgrade`'s).
+
 ## Run profiles — two engines, one contract
 
 The stages, the prompts, the fixtures and every assertion are
