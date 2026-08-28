@@ -1,0 +1,425 @@
+{
+ "haiku": {
+  "job_a": [
+   {
+    "id": 1,
+    "label": "CANDIDATE",
+    "got": "CANDIDATE",
+    "ok": true,
+    "secs": 11.0,
+    "raw": "CANDIDATE"
+   },
+   {
+    "id": 2,
+    "label": "CANDIDATE",
+    "got": "CANDIDATE",
+    "ok": true,
+    "secs": 8.0,
+    "raw": "CANDIDATE"
+   },
+   {
+    "id": 3,
+    "label": "CANDIDATE",
+    "got": "CANDIDATE",
+    "ok": true,
+    "secs": 7.3,
+    "raw": "CANDIDATE"
+   },
+   {
+    "id": 4,
+    "label": "CANDIDATE",
+    "got": "NOT",
+    "ok": false,
+    "secs": 8.8,
+    "raw": "NOT\n\nThe statement fails Test 3 (generalizability). The specific directory path `Services/` is concrete project-instance"
+   },
+   {
+    "id": 5,
+    "label": "CANDIDATE",
+    "got": "NOT",
+    "ok": false,
+    "secs": 8.9,
+    "raw": "NOT\n\nThe statement references a concrete project path (`Data/Repositories`) and controller-specific architecture, which "
+   },
+   {
+    "id": 6,
+    "label": "CANDIDATE",
+    "got": "CANDIDATE",
+    "ok": true,
+    "secs": 25.9,
+    "raw": "CANDIDATE"
+   },
+   {
+    "id": 7,
+    "label": "NOT",
+    "got": "NOT",
+    "ok": true,
+    "secs": 4.4,
+    "raw": "NOT"
+   },
+   {
+    "id": 8,
+    "label": "NOT",
+    "got": "NOT",
+    "ok": true,
+    "secs": 8.4,
+    "raw": "NOT\n\nThe statement fails the generalizability test. It references concrete project-instance data: \"Invoice PDFs\" (domain"
+   },
+   {
+    "id": 9,
+    "label": "NOT",
+    "got": "NOT",
+    "ok": true,
+    "secs": 9.8,
+    "raw": "NOT\n\nThe statement names a specific project service (\"LegacyBilling\"), making it project-instance data rather than a gen"
+   },
+   {
+    "id": 10,
+    "label": "NOT",
+    "got": "CANDIDATE",
+    "ok": false,
+    "secs": 7.1,
+    "raw": "CANDIDATE"
+   },
+   {
+    "id": 11,
+    "label": "NOT",
+    "got": "NOT",
+    "ok": true,
+    "secs": 10.6,
+    "raw": "NOT\n\n**Reasoning:** The statement directly contradicts existing fleet law. The current law requires \"dev-journal entries"
+   },
+   {
+    "id": 12,
+    "label": "NOT",
+    "got": "NOT",
+    "ok": true,
+    "secs": 14.6,
+    "raw": "NOT\n\nThe statement describes a specific branch naming pattern (`bl/NNN-` and `hf/`) that is this project's own branching"
+   },
+   {
+    "id": 13,
+    "label": "NOT",
+    "got": "NOT",
+    "ok": true,
+    "secs": 9.1,
+    "raw": "NOT"
+   },
+   {
+    "id": 14,
+    "label": "NOT",
+    "got": "NOT",
+    "ok": true,
+    "secs": 6.3,
+    "raw": "NOT"
+   },
+   {
+    "id": 15,
+    "label": "NOT",
+    "got": "NOT",
+    "ok": true,
+    "secs": 9.5,
+    "raw": "NOT\n\nThe statement fails the generalizability test. While the principle (don't edit generated files) is sound, it refere"
+   }
+  ],
+  "job_a_accuracy": 0.8,
+  "job_b": {
+   "terms_returned": [
+    "invoice",
+    "billing period",
+    "payment webhook",
+    "psp",
+    "dunning",
+    "dunning run"
+   ],
+   "expected": [
+    "dunning run",
+    "invoice"
+   ],
+   "recall": 1.0,
+   "extras": [
+    "billing period",
+    "payment webhook",
+    "psp",
+    "dunning"
+   ],
+   "secs": 18.1
+  }
+ },
+ "llama3.2:3b": {
+  "job_a": [
+   {
+    "id": 1,
+    "label": "CANDIDATE",
+    "got": "CANDIDATE",
+    "ok": true,
+    "secs": 7.8,
+    "raw": "CANDIDATE"
+   },
+   {
+    "id": 2,
+    "label": "CANDIDATE",
+    "got": "CANDIDATE",
+    "ok": true,
+    "secs": 0.6,
+    "raw": "CANDIDATE"
+   },
+   {
+    "id": 3,
+    "label": "CANDIDATE",
+    "got": "CANDIDATE",
+    "ok": true,
+    "secs": 0.8,
+    "raw": "CANDIDATE"
+   },
+   {
+    "id": 4,
+    "label": "CANDIDATE",
+    "got": "NOT",
+    "ok": false,
+    "secs": 0.5,
+    "raw": "NOT"
+   },
+   {
+    "id": 5,
+    "label": "CANDIDATE",
+    "got": "CANDIDATE",
+    "ok": true,
+    "secs": 0.6,
+    "raw": "CANDIDATE"
+   },
+   {
+    "id": 6,
+    "label": "CANDIDATE",
+    "got": "CANDIDATE",
+    "ok": true,
+    "secs": 0.5,
+    "raw": "CANDIDATE"
+   },
+   {
+    "id": 7,
+    "label": "NOT",
+    "got": "CANDIDATE",
+    "ok": false,
+    "secs": 0.8,
+    "raw": "CANDIDATE"
+   },
+   {
+    "id": 8,
+    "label": "NOT",
+    "got": "CANDIDATE",
+    "ok": false,
+    "secs": 1.3,
+    "raw": "CANDIDATE"
+   },
+   {
+    "id": 9,
+    "label": "NOT",
+    "got": "CANDIDATE",
+    "ok": false,
+    "secs": 0.6,
+    "raw": "CANDIDATE"
+   },
+   {
+    "id": 10,
+    "label": "NOT",
+    "got": "CANDIDATE",
+    "ok": false,
+    "secs": 1.2,
+    "raw": "CANDIDATE"
+   },
+   {
+    "id": 11,
+    "label": "NOT",
+    "got": "NOT",
+    "ok": true,
+    "secs": 0.5,
+    "raw": "NOT"
+   },
+   {
+    "id": 12,
+    "label": "NOT",
+    "got": "CANDIDATE",
+    "ok": false,
+    "secs": 0.5,
+    "raw": "CANDIDATE"
+   },
+   {
+    "id": 13,
+    "label": "NOT",
+    "got": "NOT",
+    "ok": true,
+    "secs": 0.5,
+    "raw": "NOT"
+   },
+   {
+    "id": 14,
+    "label": "NOT",
+    "got": "CANDIDATE",
+    "ok": false,
+    "secs": 0.5,
+    "raw": "CANDIDATE"
+   },
+   {
+    "id": 15,
+    "label": "NOT",
+    "got": "CANDIDATE",
+    "ok": false,
+    "secs": 0.5,
+    "raw": "CANDIDATE"
+   }
+  ],
+  "job_a_accuracy": 0.4666666666666667,
+  "job_b": {
+   "terms_returned": [
+    "invoice",
+    "dunning run"
+   ],
+   "expected": [
+    "dunning run",
+    "invoice"
+   ],
+   "recall": 1.0,
+   "extras": [],
+   "secs": 0.6
+  }
+ },
+ "qwen2.5:3b": {
+  "job_a": [
+   {
+    "id": 1,
+    "label": "CANDIDATE",
+    "got": "NOT",
+    "ok": false,
+    "secs": 1.1,
+    "raw": "NOT"
+   },
+   {
+    "id": 2,
+    "label": "CANDIDATE",
+    "got": "NOT",
+    "ok": false,
+    "secs": 0.6,
+    "raw": "NOT"
+   },
+   {
+    "id": 3,
+    "label": "CANDIDATE",
+    "got": "NOT",
+    "ok": false,
+    "secs": 0.6,
+    "raw": "NOT"
+   },
+   {
+    "id": 4,
+    "label": "CANDIDATE",
+    "got": "NOT",
+    "ok": false,
+    "secs": 0.5,
+    "raw": "NOT"
+   },
+   {
+    "id": 5,
+    "label": "CANDIDATE",
+    "got": "NOT",
+    "ok": false,
+    "secs": 0.6,
+    "raw": "NOT"
+   },
+   {
+    "id": 6,
+    "label": "CANDIDATE",
+    "got": "NOT",
+    "ok": false,
+    "secs": 0.5,
+    "raw": "NOT"
+   },
+   {
+    "id": 7,
+    "label": "NOT",
+    "got": "NOT",
+    "ok": true,
+    "secs": 0.6,
+    "raw": "NOT"
+   },
+   {
+    "id": 8,
+    "label": "NOT",
+    "got": "NOT",
+    "ok": true,
+    "secs": 0.6,
+    "raw": "NOT"
+   },
+   {
+    "id": 9,
+    "label": "NOT",
+    "got": "NOT",
+    "ok": true,
+    "secs": 0.6,
+    "raw": "NOT"
+   },
+   {
+    "id": 10,
+    "label": "NOT",
+    "got": "NOT",
+    "ok": true,
+    "secs": 0.6,
+    "raw": "NOT"
+   },
+   {
+    "id": 11,
+    "label": "NOT",
+    "got": "NOT",
+    "ok": true,
+    "secs": 0.5,
+    "raw": "NOT"
+   },
+   {
+    "id": 12,
+    "label": "NOT",
+    "got": "NOT",
+    "ok": true,
+    "secs": 0.6,
+    "raw": "NOT"
+   },
+   {
+    "id": 13,
+    "label": "NOT",
+    "got": "NOT",
+    "ok": true,
+    "secs": 0.6,
+    "raw": "NOT"
+   },
+   {
+    "id": 14,
+    "label": "NOT",
+    "got": "NOT",
+    "ok": true,
+    "secs": 0.5,
+    "raw": "NOT"
+   },
+   {
+    "id": 15,
+    "label": "NOT",
+    "got": "NOT",
+    "ok": true,
+    "secs": 0.6,
+    "raw": "NOT"
+   }
+  ],
+  "job_a_accuracy": 0.6,
+  "job_b": {
+   "terms_returned": [
+    "invoice",
+    "dunning run"
+   ],
+   "expected": [
+    "dunning run",
+    "invoice"
+   ],
+   "recall": 1.0,
+   "extras": [],
+   "secs": 1.0
+  }
+ }
+}
