@@ -7,9 +7,9 @@ Reads the tool call's file path, walks up the directory tree looking for
 docs/ai/manifest.json (the "is this a legislated repo?" test), and — if
 found — blocks (exit 2) when the file lies under that repo's
 docs/ai/rules/** OR is `docs/ai/engine.py` OR is the repo-root owned wiring file `opencode.json`.
-docs/ai/manifest.json itself is deliberately NOT guarded: SKILL.md Step 3.7
-rewrites it with the Write tool on every run, and that rewrite already heals
-hand-edits; guarding it would block legislator's own runs. See
+docs/ai/manifest.json itself is deliberately NOT guarded: the engine's apply
+job (SKILL.md Step 3.7) regenerates it on every run, and that rewrite already
+heals hand-edits; guarding it adds nothing the regeneration does not. See
 docs/superpowers/specs/2026-07-09-hooks-plugin-design.md.
 
 Contract: reads one JSON object from stdin (the Claude Code hook payload).

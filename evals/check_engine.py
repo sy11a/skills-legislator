@@ -524,7 +524,10 @@ check(code == 0, "lint_converged_case_exempt: history is never re-linted", f"exi
 # v23 BL-066: the engine audit job + emitter (R-661..R-669)
 # =====================================================================
 
-def audit_repo(files: dict[str, str], manifest: str = '{"legislatorVersion": 23, "stacks": [], "keep": [], "ownedFiles": []}') -> Path:
+SKILL_VERSION = (REPO / "skill" / "VERSION").read_text().strip()
+
+
+def audit_repo(files: dict[str, str], manifest: str = '{"legislatorVersion": ' + SKILL_VERSION + ', "stacks": [], "keep": [], "ownedFiles": []}') -> Path:
     root = Path(tempfile.mkdtemp(prefix="audit-eval-"))
     (root / "docs" / "ai").mkdir(parents=True)
     if manifest is not None:
@@ -622,16 +625,16 @@ with tempfile.TemporaryDirectory() as shim:
 print("== R-661: staleness and the constitution header ==")
 root = audit_repo({}, manifest='{"legislatorVersion": 21, "stacks": [], "keep": [], "ownedFiles": []}')
 code, out, err = audit(root)
-check("(skill source: v23) — behind" in out, "audit_constitution_header_behind", f"out={out[:300]!r}")
+check(f"(skill source: v{SKILL_VERSION}) — behind" in out, "audit_constitution_header_behind", f"out={out[:300]!r}")
 check("[staleness]" in out and "legislatorVersion 21" in out,
       "audit_finds_staleness", f"out={out[:600]!r}")
 
 print("== R-661: keep-list integrity and the no-keep-key Info ==")
-root = audit_repo({}, manifest='{"legislatorVersion": 23, "stacks": [], "ownedFiles": []}')
+root = audit_repo({}, manifest='{"legislatorVersion": ' + SKILL_VERSION + ', "stacks": [], "ownedFiles": []}')
 code, out, err = audit(root)
 check("[keep-list]" in out and "no keep key" in out,
       "audit_keep_key_missing_info", f"out={out[:600]!r}")
-root = audit_repo({}, manifest='{"legislatorVersion": 23, "stacks": [], "keep": [{"path": "docs/notes/gone.md", "reason": "x"}], "ownedFiles": []}')
+root = audit_repo({}, manifest='{"legislatorVersion": ' + SKILL_VERSION + ', "stacks": [], "keep": [{"path": "docs/notes/gone.md", "reason": "x"}], "ownedFiles": []}')
 code, out, err = audit(root)
 check("[keep-list]" in out and "gone.md" in out and "missing from disk" in out,
       "audit_keep_path_missing", f"out={out[:600]!r}")
@@ -757,6 +760,305 @@ code, out = run(root, "sdd-lint")
 check(code == 0 and out == "",
       "sdd_lint_converged_case_skipped: completed lifecycle artifacts are never re-judged",
       f"exit={code} out={out!r}")
+
+
+# =====================================================================
+# v24 BL-075: detect / apply / verify / report and the run record
+# (R-751..R-772). Shown red against the v23 engine: unknown job, exit 2.
+# =====================================================================
+import hashlib as _hashlib
+import json as _json
+import re as _re
+
+SKILL_DIR = REPO / "skill"
+
+
+def eng(root: Path, *args: str, env: dict | None = None) -> tuple[int, str, str]:
+    """Run the SKILL SOURCE engine against `root` (the fresh-scaffold shape:
+    no docs/ai/engine.py exists yet, so --root is the contract)."""
+    r = subprocess.run([sys.executable, str(ENGINE_SRC), *args, "--root", str(root)],
+                       cwd=root, capture_output=True, text=True, env=env)
+    return r.returncode, r.stdout, r.stderr
+
+
+def step4_targets() -> list[str]:
+    text = (SKILL_DIR / "SKILL.md").read_text()
+    step4 = text.split("## Step 4", 1)[1].split("## Step 5", 1)[0]
+    out = []
+    for m in _re.finditer(r"^\| `([^`]+)` \| ([^|]+) \|", step4, _re.M):
+        if not m.group(2).strip().startswith("(empty"):
+            out.append(m.group(1))
+    return sorted(out)
+
+
+def git_repo(files: dict[str, str]) -> Path:
+    root = Path(tempfile.mkdtemp(prefix="apply-eval-"))
+    subprocess.run(["git", "-C", str(root), "init", "-q"], check=True)
+    for rel, text in files.items():
+        f = root / rel
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.write_text(text)
+    subprocess.run(["git", "-C", str(root), "add", "-A"], check=True)
+    subprocess.run(["git", "-C", str(root), "-c", "user.email=t@t", "-c", "user.name=t",
+                    "commit", "-qm", "seed", "--allow-empty"], check=True)
+    return root
+
+
+def scaffold_all(root: Path) -> None:
+    """Every Step-4 file target present (content irrelevant to these tests)."""
+    for t in step4_targets():
+        if t in ("AGENTS.md", "CLAUDE.md"):
+            continue
+        f = root / t
+        f.parent.mkdir(parents=True, exist_ok=True)
+        if not f.exists():
+            f.write_text("# x\n")
+
+
+def record_path(root: Path) -> Path:
+    digest = _hashlib.sha1(str(root.resolve()).encode()).hexdigest()[:8]
+    return Path(tempfile.gettempdir()) / "legislator-runs" / f"{root.name}-{digest}.json"
+
+
+def tree(root: Path) -> set[str]:
+    return {str(p.relative_to(root)) for p in root.rglob("*")
+            if (p.is_file() or p.is_symlink()) and ".git" not in p.parts}
+
+
+CORE_RULES = sorted(p.name for p in (SKILL_DIR / "assets/rules/core").glob("*.md"))
+VERSION = (SKILL_DIR / "VERSION").read_text().strip()
+
+print("== R-753: detect — the three modes and the edge case, zero writes ==")
+root = git_repo({"README.md": "hi\n"})
+code, out, err = eng(root, "detect", "--skill", str(SKILL_DIR))
+d = _json.loads(out) if code == 0 and out.strip().startswith("{") else {}
+check(code == 0 and d.get("mode") == "fresh" and d.get("entry") is None,
+      "detect_fresh", f"exit={code} out={out[:200]!r} err={err[:200]!r}")
+root = git_repo({"AGENTS.md": "# P\n"})
+code, out, err = eng(root, "detect", "--skill", str(SKILL_DIR))
+d = _json.loads(out) if code == 0 else {}
+check(d.get("mode") == "migration" and d.get("entry") == "AGENTS.md",
+      "detect_migration_agents", f"out={out[:200]!r}")
+root = git_repo({"CLAUDE.md": "# P\n", "Foo.csproj": "<Project/>\n"})
+code, out, err = eng(root, "detect", "--skill", str(SKILL_DIR))
+d = _json.loads(out) if code == 0 else {}
+check(d.get("mode") == "migration" and d.get("entry") == "CLAUDE.md"
+      and "dotnet" in d.get("stacks", {}).get("candidates", []),
+      "detect_migration_claude_and_stack_candidate", f"out={out[:300]!r}")
+root = git_repo({"AGENTS.md": "# P\n",
+                 "docs/ai/manifest.json": '{"legislatorVersion": 23, "profiles": ["dotnet"], "ownedFiles": ["docs/ai/rules/core/okf.md"]}'})
+code, out, err = eng(root, "detect", "--skill", str(SKILL_DIR))
+d = _json.loads(out) if code == 0 else {}
+check(d.get("mode") == "upgrade" and d.get("stacks", {}).get("subscribed") == ["dotnet"]
+      and d.get("ownedFilesOld") == ["docs/ai/rules/core/okf.md"] and not d.get("reconstructed"),
+      "detect_upgrade_reads_legacy_profiles", f"out={out[:300]!r}")
+root = git_repo({"AGENTS.md": "# P\n\n@docs/ai/rules/core/okf.md\n",
+                 "docs/ai/rules/core/okf.md": "x\n", "docs/ai/rules/stacks/dotnet/a.md": "x\n",
+                 "opencode.json": "{}\n"})
+before = tree(root)
+code, out, err = eng(root, "detect", "--skill", str(SKILL_DIR))
+d = _json.loads(out) if code == 0 else {}
+check(d.get("mode") == "upgrade" and d.get("reconstructed") is True
+      and d.get("stacks", {}).get("subscribed") == ["dotnet"]
+      and sorted(d.get("ownedFilesOld", [])) == ["docs/ai/rules/core/okf.md", "docs/ai/rules/stacks/dotnet/a.md", "opencode.json"],
+      "detect_edge_case_reconstructs_from_disk", f"out={out[:300]!r}")
+check(tree(root) == before, "detect_writes_nothing")
+
+print("== R-754/R-757/R-751/R-752: apply — copies, ownedFiles, the pinned manifest, the record ==")
+root = git_repo({"README.md": "hi\n"})
+rec = record_path(root)
+rec.unlink(missing_ok=True)
+code, out, err = eng(root, "apply", "--skill", str(SKILL_DIR), "--stacks", "dotnet")
+check(code == 0, "apply_fresh_exit_0", f"exit={code} err={err[:300]!r}")
+def _same(a: Path, b: Path) -> bool:
+    return a.is_file() and a.read_bytes() == b.read_bytes()
+owned_ok = all(_same(root / "docs/ai/rules/core" / n, SKILL_DIR / "assets/rules/core" / n) for n in CORE_RULES)
+check(owned_ok and _same(root / "docs/ai/engine.py", ENGINE_SRC)
+      and _same(root / "opencode.json", SKILL_DIR / "assets/templates/opencode.json.tpl")
+      and (root / "docs/ai/rules/stacks/dotnet").is_dir(),
+      "apply_copies_owned_set_byte_for_byte")
+expected_owned = sorted(["docs/ai/engine.py", "opencode.json"]
+                        + [f"docs/ai/rules/core/{n}" for n in CORE_RULES]
+                        + [f"docs/ai/rules/stacks/dotnet/{p.name}" for p in (SKILL_DIR / "assets/rules/stacks/dotnet").glob("*.md")])
+expected_manifest = ('{\n  "legislatorVersion": ' + VERSION + ',\n  "stacks": ["dotnet"],\n  "keep": [],\n  "ownedFiles": [\n'
+                     + ",\n".join(f'    "{o}"' for o in expected_owned) + "\n  ]\n}\n")
+mani = (root / "docs/ai/manifest.json").read_text() if (root / "docs/ai/manifest.json").exists() else ""
+check(mani == expected_manifest, "apply_manifest_pinned_serialization", f"got={mani[:200]!r}")
+check(rec.exists(), "apply_writes_record_at_derived_tempdir_path", str(rec))
+r1 = _json.loads(rec.read_text()) if rec.exists() else {}
+check(r1.get("mode") == "fresh" and str(r1.get("version")) == VERSION and r1.get("stacks") == ["dotnet"]
+      and sorted(r1.get("owned", {}).get("created", [])) == expected_owned
+      and "pre" in r1 and "step4" in r1["pre"] and "imports" in r1["pre"],
+      "record_carries_mode_version_events_and_pre_snapshot", str(r1)[:300])
+check(not any("legislator-runs" in t or t.endswith(".json") and "run" in t for t in tree(root) - {"docs/ai/manifest.json", "opencode.json"}),
+      "record_lives_outside_the_repo")
+code2, _, _ = eng(root, "apply", "--skill", str(SKILL_DIR), "--stacks", "dotnet")
+r2 = _json.loads(rec.read_text()) if rec.exists() else {"owned": {}}
+check(code2 == 0 and rec.exists() and (root / "docs/ai/manifest.json").read_text() == expected_manifest
+      and r2["owned"].get("created") == [] and r2["owned"].get("overwritten") == []
+      and sorted(r2["owned"].get("unchanged", [])) == expected_owned,
+      "apply_second_run_byte_stable_and_records_unchanged", str(r2.get("owned"))[:300])
+
+print("== R-755: deletions and empty stack directories ==")
+root = git_repo({"AGENTS.md": "# P\n", "docs/ai/rules/core/retired.md": "old\n",
+                 "docs/ai/rules/stacks/aurelia/x.md": "old\n",
+                 "docs/ai/manifest.json": '{"legislatorVersion": 23, "stacks": ["dotnet", "aurelia"], "keep": [], "ownedFiles": ["docs/ai/rules/core/retired.md", "docs/ai/rules/stacks/aurelia/x.md"]}'})
+code, out, err = eng(root, "apply", "--skill", str(SKILL_DIR), "--stacks", "dotnet")
+r = _json.loads(record_path(root).read_text()) if record_path(root).exists() else {}
+check(code == 0 and not (root / "docs/ai/rules/core/retired.md").exists()
+      and not (root / "docs/ai/rules/stacks/aurelia").exists()
+      and sorted(r.get("owned", {}).get("deleted", [])) == ["docs/ai/rules/core/retired.md", "docs/ai/rules/stacks/aurelia/x.md"],
+      "apply_deletes_retired_and_removes_emptied_stack_dir", f"exit={code} err={err[:200]!r} rec={str(r.get('owned'))[:200]}")
+
+print("== R-756: the keep rules — carry, add, refuse, dedupe, remove ==")
+root = git_repo({"AGENTS.md": "# P\n", "docs/notes/a.md": "a\n", "docs/notes/b.md": "b\n", "docs/ai/baseline.md": "gen\n",
+                 "docs/ai/manifest.json": '{"legislatorVersion": 23, "stacks": [], "keep": [{"path": "docs/notes/b.md", "reason": "old"}], "ownedFiles": []}'})
+code, out, err = eng(root, "apply", "--skill", str(SKILL_DIR), "--stacks", "",
+                     "--keep-add", "docs/notes/a.md::hand-tuned", "--keep-add", "docs/ai/rules/core/okf.md::x",
+                     "--keep-add", "docs/nope.md::x", "--keep-add", "docs/ai/baseline.md::x",
+                     "--keep-add", "docs/notes/b.md::new reason")
+mani = _json.loads((root / "docs/ai/manifest.json").read_text()) if code == 0 else {}
+r = _json.loads(record_path(root).read_text()) if record_path(root).exists() else {}
+check(code == 0 and mani.get("keep") == [{"path": "docs/notes/a.md", "reason": "hand-tuned"}, {"path": "docs/notes/b.md", "reason": "new reason"}],
+      "keep_add_and_dedupe_by_path", f"exit={code} keep={mani.get('keep')} err={err[:200]!r}")
+refused = {x["path"]: x["reason"] for x in r.get("keep", {}).get("refused", [])}
+check(set(refused) == {"docs/ai/rules/core/okf.md", "docs/nope.md", "docs/ai/baseline.md"}
+      and "owned" in refused["docs/ai/rules/core/okf.md"] and "exist" in refused["docs/nope.md"],
+      "keep_refusals_recorded_with_reasons", str(refused))
+mtext = (root / "docs/ai/manifest.json").read_text()
+check('  "keep": [\n    {"path": "docs/notes/a.md", "reason": "hand-tuned"},\n    {"path": "docs/notes/b.md", "reason": "new reason"}\n  ],' in mtext,
+      "keep_pinned_one_entry_per_line", mtext[:300])
+code, out, err = eng(root, "apply", "--skill", str(SKILL_DIR), "--stacks", "", "--keep-remove", "docs/notes/b.md")
+mani = _json.loads((root / "docs/ai/manifest.json").read_text()) if code == 0 else {}
+check(mani.get("keep") == [{"path": "docs/notes/a.md", "reason": "hand-tuned"}], "keep_remove_only_on_request", str(mani.get("keep")))
+
+print("== R-758/R-771: the v14 file model ==")
+root = git_repo({"CLAUDE.md": "# Real\n"})
+code, out, err = eng(root, "apply", "--skill", str(SKILL_DIR), "--stacks", "")
+check(code == 0 and (root / "AGENTS.md").is_file() and not (root / "AGENTS.md").is_symlink()
+      and (root / "AGENTS.md").read_text() == "# Real\n" and (root / "CLAUDE.md").is_symlink()
+      and os.readlink(root / "CLAUDE.md") == "AGENTS.md",
+      "file_model_renames_real_claude_and_links", f"exit={code} err={err[:200]!r}")
+tracked = subprocess.run(["git", "-C", str(root), "ls-files", "AGENTS.md"], capture_output=True, text=True).stdout.strip()
+check(tracked == "AGENTS.md", "file_model_rename_is_git_mv_when_tracked", tracked)
+root = git_repo({"AGENTS.md": "# A\n"})
+eng(root, "apply", "--skill", str(SKILL_DIR), "--stacks", "")
+check((root / "CLAUDE.md").is_symlink(), "file_model_links_when_only_agents_exists")
+root = git_repo({"AGENTS.md": "# A\n", "CLAUDE.md": "# C\n"})
+before = tree(root)
+code, out, err = eng(root, "apply", "--skill", str(SKILL_DIR), "--stacks", "")
+check(code not in (0, 1) and "AGENTS.md" in err and "CLAUDE.md" in err and tree(root) == before,
+      "both_real_entry_documents_is_a_loud_stop_with_zero_writes", f"exit={code} err={err[:200]!r}")
+
+print("== R-759: apply writes nothing but the owned set, the manifest and the wiring ==")
+root = git_repo({"AGENTS.md": "# A\n", "README.md": "r\n", "docs/notes/a.md": "a\n"})
+before = tree(root)
+eng(root, "apply", "--skill", str(SKILL_DIR), "--stacks", "dotnet")
+extra = tree(root) - before - set(expected_owned) - {"docs/ai/manifest.json", "CLAUDE.md"}
+check(not extra, "apply_footprint_is_exactly_the_declared_set", str(sorted(extra))[:300])
+
+print("== R-760/R-761: verify — diverged file re-copied once, missing artifacts named, post snapshot ==")
+root = git_repo({"AGENTS.md": "# A\n"})
+eng(root, "apply", "--skill", str(SKILL_DIR), "--stacks", "")
+scaffold_all(root)
+(root / "docs/ai/rules/core").mkdir(parents=True, exist_ok=True)
+(root / "docs/ai/rules/core/okf.md").write_text("corrupted\n")
+code, out, err = eng(root, "verify", "--skill", str(SKILL_DIR))
+check(code == 0 and (root / "docs/ai/rules/core/okf.md").read_bytes() == (SKILL_DIR / "assets/rules/core/okf.md").read_bytes(),
+      "verify_recopies_a_diverged_owned_file_once_and_is_clean", f"exit={code} out={out[:200]!r} err={err[:200]!r}")
+(root / "docs/cases/README.md").unlink(missing_ok=True)
+code, out, err = eng(root, "verify", "--skill", str(SKILL_DIR))
+check(code == 1 and "docs/cases/README.md" in out, "verify_names_a_missing_step4_artifact", f"exit={code} out={out[:200]!r}")
+r = _json.loads(record_path(root).read_text()) if record_path(root).exists() else {}
+check(r.get("post", {}).get("step4", {}).get("docs/cases/README.md") is False
+      and r["post"].get("verify", {}).get("clean") is False,
+      "verify_appends_post_snapshot_to_record", str(r.get("post"))[:300])
+
+print("== R-762/R-763/R-765/R-766/R-767: report — skeleton, deltas, Health, Keep gating, stamp, stability ==")
+root = git_repo({"README.md": "r\n"})
+eng(root, "apply", "--skill", str(SKILL_DIR), "--stacks", "")
+scaffold_all(root)
+(root / "AGENTS.md").write_text("# P\n\n" + "\n".join(f"@docs/ai/rules/core/{n}" for n in CORE_RULES) + "\n@docs/okf/codebase-map.md\n\n## Boundaries\n\nnone\n")
+eng(root, "verify", "--skill", str(SKILL_DIR))
+code, out, err = eng(root, "report", "--skill", str(SKILL_DIR))
+check(code == 0 and out.startswith("# Legislator Scaffold — "), "report_scaffold_title", f"exit={code} out={out[:120]!r} err={err[:200]!r}")
+heads = [l for l in out.splitlines() if l.startswith("## ")]
+check(heads == ["## Created", "## Overwritten", "## Deleted", "## Needs your review"],
+      "report_scaffold_sections_pinned_order_no_health_no_keep", str(heads))
+created = out.split("## Created", 1)[1].split("## Overwritten", 1)[0] if "## Created" in out else ""
+check(f"- `docs/ai/rules/core/okf.md`" in created and "- `docs/cases/README.md`" in created,
+      "report_created_lists_owned_files_and_step4_artifacts_from_snapshots", out[:600])
+check(bool(out.strip()) and out.rstrip("\n").splitlines()[-1] == f"Emitted by docs/ai/engine.py report — constitution v{VERSION}.",
+      "report_stamp_is_last_line", out[-200:])
+code2, out2, _ = eng(root, "report", "--skill", str(SKILL_DIR))
+check(out == out2, "report_byte_stable")
+
+root = git_repo({"AGENTS.md": "# P\n\n@docs/ai/rules/core/okf.md\n@docs/ai/rules/core/ghost.md\n", "docs/notes/a.md": "a\n",
+                 "docs/ai/rules/core/okf.md": "stale\n",
+                 "docs/ai/manifest.json": '{"legislatorVersion": 23, "stacks": [], "keep": [], "ownedFiles": ["docs/ai/rules/core/okf.md"]}'})
+eng(root, "apply", "--skill", str(SKILL_DIR), "--stacks", "", "--keep-add", "docs/notes/a.md::notes", "--keep-add", "docs/ai/engine.py::x")
+scaffold_all(root)
+eng(root, "verify", "--skill", str(SKILL_DIR))
+code, out, err = eng(root, "report", "--skill", str(SKILL_DIR))
+check(out.startswith("# Legislator Upgrade — "), "report_upgrade_title", out[:100])
+heads = [l for l in out.splitlines() if l.startswith("## ")]
+check(heads == ["## Created", "## Overwritten", "## Deleted", "## Needs your review", "## Keep list", "## Health"],
+      "report_upgrade_sections_with_keep_and_health", str(heads))
+def _sec(text, a, b):
+    return text.split(a, 1)[1].split(b, 1)[0] if a in text and b in text.split(a, 1)[1] else ""
+over = _sec(out, "## Overwritten", "## Deleted")
+check("- `docs/ai/rules/core/okf.md`" in over, "report_overwritten_lists_changed_owned_file", over[:300])
+review = _sec(out, "## Needs your review", "## Keep list")
+check("@docs/ai/rules/core/sdd.md" in review and "remove" in review and "@docs/ai/rules/core/ghost.md" in review
+      and "@docs/okf/codebase-map.md" in review and "## Boundaries" in review and "docs/okf/glossary.md" in review,
+      "report_review_carries_import_deltas_and_scaffold_wiring", review[:500])
+keep = _sec(out, "## Keep list", "## Health")
+check("docs/notes/a.md" in keep and "docs/ai/engine.py" in keep and "owned" in keep,
+      "report_keep_list_added_and_refused", keep[:300])
+health = out.split("## Health", 1)[1] if "## Health" in out else ""
+check("[imports-resolve]" in health and "ghost.md" in health, "report_health_runs_audit_checks_1_to_6", health[:300])
+root2 = git_repo({"AGENTS.md": "# P\n\n" + "\n".join(f"@docs/ai/rules/core/{n}" for n in CORE_RULES) + "\n@docs/okf/codebase-map.md\n\n## Boundaries\n\nx\n\n- Domain glossary: `docs/okf/glossary.md`\n",
+                  "docs/ai/manifest.json": '{"legislatorVersion": 23, "stacks": [], "keep": [], "ownedFiles": []}'})
+eng(root2, "apply", "--skill", str(SKILL_DIR), "--stacks", "")
+scaffold_all(root2)
+(root2 / "docs/okf/index.md").write_text("# OKF\n\nSee `docs/okf/codebase-map.md`.\n")
+(root2 / "docs/okf/codebase-map.md").write_text("# Map\n\n| Directory | What |\n|---|---|\n| `docs/` | docs |\n")
+eng(root2, "verify", "--skill", str(SKILL_DIR))
+code, out, err = eng(root2, "report", "--skill", str(SKILL_DIR))
+check("Health: clean" in out and "## Keep list" not in out, "report_health_clean_and_no_keep_section_without_delta", out[-300:])
+
+print("== R-762 defect (2026-08-28 manual run): a renamed entry document is not also 'scaffolded' ==")
+root4 = git_repo({"CLAUDE.md": "# Real\n", "docs/ai/manifest.json": '{"legislatorVersion": 23, "stacks": [], "keep": [], "ownedFiles": []}'})
+eng(root4, "apply", "--skill", str(SKILL_DIR), "--stacks", "")
+scaffold_all(root4)
+eng(root4, "verify", "--skill", str(SKILL_DIR))
+code, out, err = eng(root4, "report", "--skill", str(SKILL_DIR))
+created4 = _sec(out, "## Created", "## Overwritten")
+check(created4.count("- `AGENTS.md`") == 1 and "renamed from CLAUDE.md" in created4
+      and created4.count("- `CLAUDE.md`") == 1,
+      "report_entry_document_listed_once_by_its_file_model_event", created4[:400])
+
+print("== R-764: the Step-7 model-findings channel ==")
+mf = root2 / "mf.json"
+mf.write_text('{"candidates": ["- \\"Always deploy on Fridays.\\" — AGENTS.md"], "review": ["- remove `docs/superpowers/` from .gitignore"]}')
+code, out, err = eng(root2, "report", "--skill", str(SKILL_DIR), "--model-findings", str(mf))
+heads = [l for l in out.splitlines() if l.startswith("## ")]
+check(heads == ["## Created", "## Overwritten", "## Deleted", "## Needs your review", "## Constitution candidates", "## Health"]
+      and "Always deploy on Fridays" in _sec(out, "## Constitution candidates", "## Health")
+      and ".gitignore" in _sec(out, "## Needs your review", "## Constitution"),
+      "report_merges_candidates_and_review_lines_into_pinned_sections", str(heads) + out[:200])
+mf.write_text('{"candidates": "nope"}')
+code, out, err = eng(root2, "report", "--skill", str(SKILL_DIR), "--model-findings", str(mf))
+check(code not in (0, 1) and err.strip(), "report_malformed_findings_is_a_loud_exit", f"exit={code}")
+mf.write_text('{"candidates": ["- x"]}')
+code, out, err = eng(root, "report", "--skill", str(SKILL_DIR), "--model-findings", str(mf))
+_ = out
+root3 = git_repo({"README.md": "r\n"})
+eng(root3, "apply", "--skill", str(SKILL_DIR), "--stacks", "")
+scaffold_all(root3); (root3 / "AGENTS.md").write_text("# P\n")
+eng(root3, "verify", "--skill", str(SKILL_DIR))
+code, out, err = eng(root3, "report", "--skill", str(SKILL_DIR), "--model-findings", str(mf))
+check("## Constitution candidates" not in out, "report_scaffold_never_prints_candidates", out[-300:])
 
 if failures:
     print(f"\n{len(failures)} check(s) FAILED")

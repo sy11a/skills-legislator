@@ -5,19 +5,28 @@ Delivered by the Legislator as an owned file (`docs/ai/engine.py`). Never
 hand-edit it: change the skill source and re-run /legislator.
 
 Jobs — the check jobs write nothing; `baseline` writes exactly its
-declared target and nothing else (ADR-0003):
+declared target; `apply` writes the owned layer and its run record;
+nothing else, under any sentence (ADR-0003, ADR-0006):
   anchors    every path or symbol an anchored OKF document backticks resolves
   okf-debt   anchored documents whose sources moved on without them
   sdd-lint   case practice: dangling per-R-NNN references, uncovered
              requirements in planned cases, unresolved placeholders
   baseline   writes docs/ai/baseline.md — the R-NNN <-> annotated-tests
              register, regenerated from the case specs and the test tree
+  audit      the mechanical audit checks, printed as the pinned report
+  detect     Step 1: mode, entry document, stacks, old ownedFiles — as JSON
+  apply      Step 3: the owned set, deletions, keep list, manifest, the v14
+             file model — and the run record (outside the repo)
+  verify     Step 6: byte-verify every owned file (one re-copy), Step 4
+             presence; appends the post snapshot to the record
+  report     Step 7: the report printed from the run record
 
-Usage: python3 docs/ai/engine.py <job>
+Usage: python3 docs/ai/engine.py <job> [--skill <path> --root <repo> ...]
 Exit:  0 clean, 1 findings printed to stdout, 2 usage error,
        3 the engine itself failed — stdout is NOT a verdict. A caller that
        reads stdout lines only would take a crash for a clean check, so the
-       failure has to reach the exit code.
+       failure has to reach the exit code. `apply` exits 4 on a decision-gate
+       stop (two real entry documents), having written nothing.
 
 The law this executes: `docs/ai/rules/core/okf.md` (link hardness, the
 closed anchor definition) for the anchor jobs, and `docs/ai/rules/core/sdd.md`
@@ -1039,47 +1048,539 @@ def job_audit(skill: Path, model_findings: Path | None) -> tuple[str, bool]:
     lines.append(f"Emitted by docs/ai/engine.py audit — constitution v{version}.")
     return "\n".join(lines) + "\n", any_findings
 
+
+# ---------------------------------------------------------------------------
+# v24 (BL-075): detect / apply / verify / report — the run record.
+# `detect` and `report` write nothing but stdout; `verify` writes at most a
+# single re-copy of a diverged owned file; `apply` writes exactly the owned
+# set, the manifest, the v14 file-model wiring and its run record, which
+# lives OUTSIDE the repository (ADR-0006). The Step-7 report is printed from
+# the record; the model fills only the pinned slots through --model-findings.
+
+import hashlib
+
+STEP4_ROW = re.compile(r"^\| `([^`]+)` \| ([^|]+) \|", re.M)
+GENERATED_CLASS = {"docs/ai/baseline.md"}   # never keepable (core/artifact-lifecycle.md)
+HEALTH_CHECKS = ["imports-resolve", "unresolved-placeholders", "owned-integrity",
+                 "staleness", "okf-index-links", "codebase-map"]   # audit checks 1-6
+
+
+def _skill_version(skill: Path) -> str:
+    return (skill / "VERSION").read_text(encoding="utf-8").strip()
+
+
+def _owned_sources(skill: Path, stacks: list[str]) -> dict[str, Path]:
+    """repo-relative owned path -> its skill source (Step 3.1-3.2, 3.4)."""
+    out: dict[str, Path] = {}
+    for src in sorted((skill / "assets" / "rules" / "core").glob("*")):
+        if src.is_file():
+            out[f"docs/ai/rules/core/{src.name}"] = src
+    for st in stacks:
+        d = skill / "assets" / "rules" / "stacks" / st
+        for src in sorted(d.glob("*")):
+            if src.is_file():
+                out[f"docs/ai/rules/stacks/{st}/{src.name}"] = src
+    out["opencode.json"] = skill / "assets" / "templates" / "opencode.json.tpl"
+    out["docs/ai/engine.py"] = skill / "assets" / "engine" / "engine.py"
+    return out
+
+
+def _step4_targets(skill: Path) -> list[str]:
+    """File targets of SKILL.md Step 4's table — the grader's derivation."""
+    text = (skill / "SKILL.md").read_text(encoding="utf-8")
+    step4 = text.split("## Step 4", 1)[1].split("## Step 5", 1)[0]
+    return sorted(m.group(1) for m in STEP4_ROW.finditer(step4)
+                  if not m.group(2).strip().startswith("(empty"))
+
+
+def _entry_imports() -> list[str]:
+    entry = _entry_doc()
+    if not entry:
+        return []
+    return [m.group(1) for m in IMPORT_LINE.finditer(_read(entry))]
+
+
+def _read_manifest() -> dict | None:
+    mp = ROOT / "docs" / "ai" / "manifest.json"
+    if not mp.is_file():
+        return None
+    try:
+        return json.loads(_read(mp))
+    except ValueError as exc:
+        raise RuntimeError(f"docs/ai/manifest.json does not parse: {exc}") from exc
+
+
+def _stack_candidates() -> list[str]:
+    out = []
+    if any(ROOT.rglob(pat) for pat in ("*.slnx", "*.sln", "*.csproj")) and \
+            any(True for pat in ("*.slnx", "*.sln", "*.csproj") for _ in ROOT.rglob(pat)):
+        out.append("dotnet")
+    pkg = ROOT / "package.json"
+    aurelia = (ROOT / "aurelia_project" / "aurelia.json").is_file()
+    if pkg.is_file():
+        try:
+            data = json.loads(_read(pkg))
+            deps = {**data.get("dependencies", {}), **data.get("devDependencies", {})}
+            aurelia = aurelia or any(k == "aurelia" or k.startswith("aurelia-") for k in deps)
+        except ValueError:
+            pass
+    if aurelia:
+        out.append("aurelia")
+    return out
+
+
+def job_detect(skill: Path) -> dict:
+    """Step 1's decision tree + Step 2's signals, as data. Writes nothing."""
+    manifest = _read_manifest()
+    agents = ROOT / "AGENTS.md"
+    claude = ROOT / "CLAUDE.md"
+    entry = "AGENTS.md" if agents.is_file() else (
+        "CLAUDE.md" if claude.is_file() and not claude.is_symlink() else None)
+    reconstructed = False
+    if manifest is not None:
+        mode = "upgrade"
+        subscribed = list(manifest.get("stacks", manifest.get("profiles", [])) or [])
+        owned_old = list(manifest.get("ownedFiles", []) or [])
+    else:
+        already = entry is not None and "@docs/ai/rules/core/okf.md" in _read(ROOT / entry)
+        if already:
+            mode, reconstructed = "upgrade", True
+            rules = ROOT / "docs" / "ai" / "rules"
+            owned_old = sorted(p.relative_to(ROOT).as_posix()
+                               for p in rules.rglob("*") if p.is_file()) if rules.is_dir() else []
+            if (ROOT / "opencode.json").is_file():
+                owned_old.append("opencode.json")
+            if (ROOT / "docs" / "ai" / "engine.py").is_file():
+                owned_old.append("docs/ai/engine.py")
+            owned_old = sorted(owned_old)
+            subscribed = sorted(d.name for d in (rules / "stacks").iterdir()
+                                if d.is_dir()) if (rules / "stacks").is_dir() else []
+        elif entry is not None:
+            mode, subscribed, owned_old = "migration", [], []
+        else:
+            mode, subscribed, owned_old = "fresh", [], []
+    return {"mode": mode, "entry": entry, "reconstructed": reconstructed,
+            "manifest": manifest,
+            "stacks": {"subscribed": subscribed, "candidates": _stack_candidates()},
+            "ownedFilesOld": owned_old, "version": _skill_version(skill)}
+
+
+def _record_path(explicit: Path | None) -> Path:
+    if explicit:
+        return explicit
+    digest = hashlib.sha1(str(ROOT).encode("utf-8")).hexdigest()[:8]
+    return Path(tempfile.gettempdir()) / "legislator-runs" / f"{ROOT.name}-{digest}.json"
+
+
+def _write_record(path: Path, rec: dict) -> None:
+    if path.resolve().is_relative_to(ROOT):
+        raise RuntimeError(f"the run record must live outside the repository: {path}")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=str(path.parent), prefix=".rec-")
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
+        f.write(json.dumps(rec, indent=1, sort_keys=True) + "\n")
+    os.replace(tmp, path)
+
+
+def _load_record(path: Path) -> dict:
+    if not path.is_file():
+        raise RuntimeError(f"no run record at {path} — run `apply` first")
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except ValueError as exc:
+        raise RuntimeError(f"run record malformed ({path}): {exc}") from exc
+
+
+def _manifest_text(version: int, stacks: list[str], keep: list[dict],
+                   owned: list[str]) -> str:
+    """Step 3.7's pinned serialization — byte-stable by construction."""
+    lines = ["{", f'  "legislatorVersion": {version},',
+             '  "stacks": ' + json.dumps(list(stacks)) + ",",]
+    if keep:
+        lines.append('  "keep": [')
+        rows = [json.dumps({"path": k["path"], "reason": k["reason"]})
+                for k in sorted(keep, key=lambda k: k["path"])]
+        lines.append(",\n".join("    " + r for r in rows))
+        lines.append("  ],")
+    else:
+        lines.append('  "keep": [],')
+    lines.append('  "ownedFiles": [')
+    lines.append(",\n".join(f'    "{o}"' for o in sorted(owned)))
+    lines.append("  ]")
+    lines.append("}")
+    return "\n".join(lines) + "\n"
+
+
+def _step4_snapshot(skill: Path) -> dict[str, bool]:
+    return {t: (ROOT / t).exists() for t in _step4_targets(skill)}
+
+
+class ApplyStop(Exception):
+    """A decision-gate stop inside apply: nothing was written."""
+
+
+def job_apply(skill: Path, stacks: list[str], keep_add: list[tuple[str, str]],
+              keep_remove: list[str], record: Path) -> dict:
+    """Step 3 whole. Returns the run record it wrote."""
+    det = job_detect(skill)
+    version = int(det["version"])
+    agents, claude = ROOT / "AGENTS.md", ROOT / "CLAUDE.md"
+    if agents.is_file() and claude.is_file() and not claude.is_symlink():
+        raise ApplyStop("two canonical candidates: a real AGENTS.md and a real "
+                        "CLAUDE.md both exist — ask the owner which is canonical "
+                        "before anything is written (decision gate)")
+    old_manifest = det["manifest"] or {}
+    old_owned = list(det["ownedFilesOld"])
+    pre = {"step4": _step4_snapshot(skill), "imports": _entry_imports(),
+           "entry": det["entry"]}
+
+    # 3.1-3.2, 3.4 — the copies and the new ownedFiles
+    sources = _owned_sources(skill, stacks)
+    created, overwritten, unchanged = [], [], []
+    for rel, src in sources.items():
+        dst = ROOT / rel
+        data = src.read_bytes()
+        if not dst.exists():
+            created.append(rel)
+        elif dst.read_bytes() != data:
+            overwritten.append(rel)
+        else:
+            unchanged.append(rel)
+            continue
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        dst.write_bytes(data)
+    new_owned = sorted(sources)
+
+    # 3.5 — deletions + emptied stack directories
+    deleted = []
+    for rel in sorted(old_owned):
+        if rel in sources:
+            continue
+        p = ROOT / rel
+        if p.is_file():
+            p.unlink()
+            deleted.append(rel)
+            parent = p.parent
+            if parent.parent == ROOT / "docs" / "ai" / "rules" / "stacks" and \
+                    parent.is_dir() and not any(parent.iterdir()):
+                parent.rmdir()
+
+    # 3.6 — the keep list
+    keep = [dict(k) for k in (old_manifest.get("keep") or []) if isinstance(k, dict)]
+    added, removed, refused = [], [], []
+    for path, reason in keep_add:
+        if path in new_owned:
+            refused.append({"path": path, "reason": "the path is an owned file "
+                            "(machine-managed, replaced every run — not keepable)"})
+        elif path in GENERATED_CLASS:
+            refused.append({"path": path, "reason": "the path is a generated "
+                            "artifact (rewritten wholesale by the engine — "
+                            "a keep promise on it is unkeepable)"})
+        elif not (ROOT / path).exists():
+            refused.append({"path": path, "reason": "the path does not exist in the repo"})
+        else:
+            keep = [k for k in keep if k.get("path") != path]
+            keep.append({"path": path, "reason": reason})
+            added.append({"path": path, "reason": reason})
+    for path in keep_remove:
+        before = len(keep)
+        keep = [k for k in keep if k.get("path") != path]
+        if len(keep) != before:
+            removed.append({"path": path})
+    keep = sorted(keep, key=lambda k: k["path"])
+
+    # 3.7 — the manifest
+    mp = ROOT / "docs" / "ai" / "manifest.json"
+    text = _manifest_text(version, stacks, keep, new_owned)
+    existed = mp.is_file()
+    changed = (not existed) or mp.read_bytes() != text.encode("utf-8")
+    if changed:
+        mp.parent.mkdir(parents=True, exist_ok=True)
+        mp.write_text(text, encoding="utf-8")
+
+    # the v14 file model
+    file_model = []
+    if claude.is_file() and not claude.is_symlink() and not agents.exists():
+        tracked = _git_out(["ls-files", "--error-unmatch", "CLAUDE.md"]) is not None
+        if tracked and _git_out(["mv", "CLAUDE.md", "AGENTS.md"]) is not None:
+            pass
+        else:
+            os.replace(claude, agents)
+        file_model.append("renamed CLAUDE.md -> AGENTS.md")
+    if agents.is_file():
+        if claude.is_symlink():
+            if os.readlink(claude) != "AGENTS.md":
+                claude.unlink()
+                claude.symlink_to("AGENTS.md")
+                file_model.append("relinked CLAUDE.md -> AGENTS.md")
+        elif not claude.exists():
+            claude.symlink_to("AGENTS.md")
+            file_model.append("linked CLAUDE.md -> AGENTS.md")
+
+    rec = {"mode": det["mode"], "reconstructed": det["reconstructed"],
+           "version": version,
+           "version_old": old_manifest.get("legislatorVersion"),
+           "stacks": list(stacks), "root": str(ROOT), "entry": det["entry"],
+           "owned": {"created": created, "overwritten": overwritten,
+                     "unchanged": unchanged, "deleted": deleted},
+           "manifest": {"written": changed, "existed": existed},
+           "keep": {"added": added, "removed": removed, "refused": refused,
+                    "final": keep},
+           "file_model": file_model, "pre": pre}
+    _write_record(record, rec)
+    return rec
+
+
+def job_verify(skill: Path, record: Path) -> list[str]:
+    """Step 6: byte-verify with one re-copy; Step 4 presence. Appends the
+    post snapshot to the record. Returns the residual failure lines."""
+    failures = []
+    manifest = _read_manifest() or {}
+    stacks = list(manifest.get("stacks", []) or [])
+    sources = _owned_sources(skill, stacks)
+    recopied = []
+    for rel in manifest.get("ownedFiles", []) or []:
+        src = sources.get(rel)
+        dst = ROOT / rel
+        if src is None:
+            failures.append(f"{rel}: in ownedFiles but no skill source "
+                            f"delivers it → re-run apply")
+            continue
+        if not dst.is_file() or dst.read_bytes() != src.read_bytes():
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            dst.write_bytes(src.read_bytes())
+            recopied.append(rel)
+            if dst.read_bytes() != src.read_bytes():
+                failures.append(f"{rel}: still diverges from the skill source "
+                                f"after a re-copy → stop and report")
+    post_step4 = _step4_snapshot(skill)
+    for t, present in post_step4.items():
+        if not present:
+            failures.append(f"{t}: Step 4 artifact missing → scaffold it")
+    if record.is_file():
+        rec = _load_record(record)
+        rec["post"] = {"step4": post_step4, "recopied": recopied,
+                       "verify": {"clean": not failures, "failures": failures}}
+        _write_record(record, rec)
+    return failures
+
+
+def load_report_findings(path: Path) -> dict:
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise RuntimeError(
+            f"model-findings file unreadable or malformed ({path}): {exc}") from exc
+    ok = isinstance(data, dict) and all(
+        isinstance(data.get(k, []), list) and all(isinstance(x, str) for x in data.get(k, []))
+        for k in ("candidates", "review"))
+    if not ok:
+        raise RuntimeError(f"model-findings file has the wrong shape ({path}): "
+                           f"expected {{candidates: [str], review: [str]}}")
+    return data
+
+
+def job_report(skill: Path, record: Path, model_findings: Path | None) -> str:
+    """Step 7 from the run record. Writes nothing."""
+    rec = _load_record(record)
+    model = load_report_findings(model_findings) if model_findings else {}
+    version = rec["version"]
+    mode = rec["mode"]
+    title_mode = {"fresh": "Scaffold", "migration": "Migration", "upgrade": "Upgrade"}[mode]
+    owned = rec["owned"]
+    pre4 = rec.get("pre", {}).get("step4", {})
+    post4 = rec.get("post", {}).get("step4") or _step4_snapshot(skill)
+
+    def item(path: str, why: str) -> str:
+        return f"- `{path}` — {why}"
+
+    created = [item(p, f"owned, delivered at v{version}") for p in sorted(owned["created"])]
+    if rec["manifest"]["written"] and not rec["manifest"]["existed"]:
+        created.append(item("docs/ai/manifest.json", "manifest, generated"))
+    for ev in rec.get("file_model", []):
+        if ev.startswith("renamed"):
+            created.append(item("AGENTS.md", "v14 file model: renamed from CLAUDE.md, content byte-identical"))
+        elif ev.startswith(("linked", "relinked")):
+            created.append(item("CLAUDE.md", "v14 file model: symlink → AGENTS.md"))
+    events = " ".join(rec.get("file_model", []))
+    explained = set()
+    if "renamed" in events:
+        explained.add("AGENTS.md")       # present now because it was renamed, not scaffolded
+    if "linked" in events:
+        explained.add("CLAUDE.md")
+    scaffolded = sorted(t for t, now in post4.items()
+                        if now and not pre4.get(t, False) and t not in explained)
+    created += [item(t, "scaffolded from its template (Step 4)") for t in scaffolded]
+    overwritten = [item(p, f"owned, refreshed at v{version}") for p in sorted(owned["overwritten"])]
+    if rec["manifest"]["written"] and rec["manifest"]["existed"]:
+        overwritten.append(item("docs/ai/manifest.json", "manifest, regenerated"))
+    deleted = [item(p, "owned, left the constitution or a de-selected stack")
+               for p in sorted(owned["deleted"])]
+
+    # Needs your review — import deltas and scaffold wiring (propose-only)
+    review = []
+    entry = _entry_doc()
+    entry_text = _read(entry) if entry else ""
+    entry_name = entry.name if entry else "AGENTS.md"
+    imports_now = [m.group(1) for m in IMPORT_LINE.finditer(entry_text)]
+    manifest = _read_manifest() or {}
+    owned_rules = [o for o in manifest.get("ownedFiles", []) if o.startswith("docs/ai/rules/")]
+    for rule in owned_rules:
+        if rule not in imports_now:
+            review.append(f"- add to `{entry_name}`: `@{rule}`")
+    for imp in imports_now:
+        if imp.startswith("docs/ai/rules/") and imp not in owned_rules:
+            review.append(f"- remove from `{entry_name}`: `@{imp}` (no longer owned)")
+    if entry and pre4:
+        if "docs/okf/codebase-map.md" in scaffolded and "@docs/okf/codebase-map.md" not in imports_now:
+            review.append(f"- add to `{entry_name}`: `@docs/okf/codebase-map.md`")
+        if scaffolded and "## Boundaries" not in entry_text:
+            review.append(f"- add to `{entry_name}`: a `## Boundaries` section")
+        if "docs/okf/glossary.md" in scaffolded and "docs/okf/glossary.md" not in entry_text:
+            review.append(f"- add to `{entry_name}`: the glossary pointer line "
+                          f"`- Domain glossary: \\`docs/okf/glossary.md\\` — check it "
+                          f"when a term is unclear; add terms as they emerge`")
+    review += [l.rstrip() for l in model.get("review", [])]
+
+    keep = rec.get("keep", {})
+    keep_lines = [f"- added: `{k['path']}` — {k['reason']}" for k in keep.get("added", [])]
+    keep_lines += [f"- removed: `{k['path']}`" for k in keep.get("removed", [])]
+    keep_lines += [f"- refused: `{k['path']}` — {k['reason']}" for k in keep.get("refused", [])]
+
+    lines = [f"# Legislator {title_mode} — {ROOT.name}, {datetime.now().date().isoformat()}", ""]
+    old_v = rec.get("version_old")
+    span = f"v{old_v} → v{version}" if old_v is not None and str(old_v) != str(version) else f"v{version}"
+    lines += [f"Constitution: {span}; stacks: {json.dumps(rec['stacks'])}", ""]
+    for head, body in (("Created", created), ("Overwritten", overwritten),
+                       ("Deleted", deleted), ("Needs your review", review)):
+        lines.append(f"## {head}")
+        lines += body or ["- none"]
+        lines.append("")
+    if keep_lines:
+        lines += ["## Keep list", *keep_lines, ""]
+    cands = model.get("candidates", [])
+    if cands and mode != "fresh":
+        lines += ["## Constitution candidates", *[c.rstrip() for c in cands], ""]
+    if mode == "upgrade":
+        res = audit_checks(skill)
+        order = {slug: i for i, slug in enumerate(AUDIT_ORDER)}
+        found = [(slug, text) for sev in SEVERITIES for slug, text in res.findings[sev]
+                 if slug in HEALTH_CHECKS]
+        lines.append("## Health")
+        if found:
+            lines += [f"- [{slug}] {text}" for slug, text in
+                      sorted(found, key=lambda x: (order[x[0]], x[1]))]
+        else:
+            lines.append("Health: clean")
+        lines.append("")
+    lines.append(f"Emitted by docs/ai/engine.py report — constitution v{version}.")
+    return "\n".join(lines) + "\n"
+
+
+RUN_JOBS = ("detect", "apply", "verify", "report", "audit")
+
+
+def _run_job(argv: list[str]) -> int:
+    """The --skill/--root family: audit (v23) and the v24 run jobs."""
+    job, args = argv[1], argv[2:]
+    skill: Path | None = None
+    root: Path | None = None
+    model_findings: Path | None = None
+    record: Path | None = None
+    stacks: list[str] | None = None
+    keep_add: list[tuple[str, str]] = []
+    keep_remove: list[str] = []
+    usage = (f"usage: python3 engine.py {job} --skill <skill-path> [--root <repo>]"
+             + {"audit": " [--model-findings <json>]",
+                "apply": " --stacks <a,b> [--keep-add <path>::<reason>]* "
+                         "[--keep-remove <path>]* [--record <file>]",
+                "verify": " [--record <file>]",
+                "report": " [--record <file>] [--model-findings <json>]",
+                "detect": ""}[job])
+    while args:
+        flag = args.pop(0)
+        if flag == "--skill" and args:
+            skill = Path(args.pop(0))
+        elif flag == "--root" and args:
+            root = Path(args.pop(0))
+        elif flag == "--model-findings" and args and job in ("audit", "report"):
+            model_findings = Path(args.pop(0))
+        elif flag == "--record" and args and job in ("apply", "verify", "report"):
+            record = Path(args.pop(0))
+        elif flag == "--stacks" and args and job == "apply":
+            stacks = [s for s in args.pop(0).split(",") if s.strip()]
+        elif flag == "--keep-add" and args and job == "apply":
+            spec = args.pop(0)
+            if "::" not in spec:
+                print(usage, file=sys.stderr)
+                return 2
+            path, reason = spec.split("::", 1)
+            keep_add.append((path.strip(), reason.strip()))
+        elif flag == "--keep-remove" and args and job == "apply":
+            keep_remove.append(args.pop(0).strip())
+        else:
+            print(usage, file=sys.stderr)
+            return 2
+    if skill is None or not skill.is_dir():
+        print(f"{job} requires --skill <skill-path> (the legislator package root)",
+              file=sys.stderr)
+        return 2
+    if job == "apply" and stacks is None:
+        print(usage, file=sys.stderr)
+        return 2
+    global ROOT, OKF, CASES
+    ROOT = (root or Path.cwd()).resolve()
+    OKF = ROOT / "docs" / "okf"
+    CASES = ROOT / "docs" / "cases"
+    try:
+        if job == "audit":
+            report, any_findings = job_audit(skill, model_findings)
+            print(report, end="")
+            return 1 if any_findings else 0
+        if job == "detect":
+            print(json.dumps(job_detect(skill), indent=1, sort_keys=True))
+            return 0
+        rec_path = _record_path(record)
+        if job == "apply":
+            rec = job_apply(skill, stacks or [], keep_add, keep_remove, rec_path)
+            o = rec["owned"]
+            print(f"apply: {rec['mode']} mode, constitution v{rec['version']}, "
+                  f"stacks {json.dumps(rec['stacks'])}")
+            print(f"  owned: {len(o['created'])} created, {len(o['overwritten'])} "
+                  f"overwritten, {len(o['unchanged'])} unchanged, {len(o['deleted'])} deleted")
+            k = rec["keep"]
+            print(f"  keep: {len(k['added'])} added, {len(k['removed'])} removed, "
+                  f"{len(k['refused'])} refused")
+            for ev in rec["file_model"]:
+                print(f"  file model: {ev}")
+            print(f"run record: {rec_path}")
+            return 0
+        if job == "verify":
+            failures = job_verify(skill, rec_path)
+            for f in failures:
+                print(f)
+            return 1 if failures else 0
+        if job == "report":
+            print(job_report(skill, rec_path, model_findings), end="")
+            return 0
+    except ApplyStop as exc:
+        print(f"apply stopped: {exc}", file=sys.stderr)
+        return 4
+    except Exception as exc:               # noqa: BLE001 — deliberate
+        print(f"engine failed: {type(exc).__name__}: {exc}", file=sys.stderr)
+        return 3
+    return 2
+
 JOBS = {"anchors": job_anchors, "okf-debt": job_okf_debt,
         "sdd-lint": job_sdd_lint, "baseline": job_baseline}
 
 
 def main(argv: list[str]) -> int:
-    if len(argv) >= 2 and argv[1] == "audit":
-        args = argv[2:]
-        skill: Path | None = None
-        model_findings: Path | None = None
-        root: Path | None = None
-        while args:
-            flag = args.pop(0)
-            if flag == "--skill" and args:
-                skill = Path(args.pop(0))
-            elif flag == "--model-findings" and args:
-                model_findings = Path(args.pop(0))
-            elif flag == "--root" and args:
-                root = Path(args.pop(0))
-            else:
-                print("usage: python3 engine.py audit --skill <skill-path> "
-                      "[--model-findings <json>] [--root <repo>]",
-                      file=sys.stderr)
-                return 2
-        if skill is None or not skill.is_dir():
-            print("audit requires --skill <skill-path> (the legislator "
-                  "package root)", file=sys.stderr)
-            return 2
-        global ROOT, OKF, CASES
-        ROOT = (root or Path.cwd()).resolve()
-        OKF = ROOT / "docs" / "okf"
-        CASES = ROOT / "docs" / "cases"
-        try:
-            report, any_findings = job_audit(skill, model_findings)
-        except Exception as exc:               # noqa: BLE001 — deliberate
-            print(f"engine failed: {type(exc).__name__}: {exc}", file=sys.stderr)
-            return 3
-        print(report, end="")
-        return 1 if any_findings else 0
+    if len(argv) >= 2 and argv[1] in RUN_JOBS:
+        return _run_job(argv)
     if len(argv) != 2 or argv[1] not in JOBS:
         print(f"usage: python3 {Path(__file__).name} "
-              f"{{{'|'.join(sorted(JOBS) + ['audit'])}}}", file=sys.stderr)
+              f"{{{'|'.join(sorted(JOBS) + list(RUN_JOBS))}}}", file=sys.stderr)
         return 2
     try:
         findings = JOBS[argv[1]]()

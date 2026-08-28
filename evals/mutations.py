@@ -27,6 +27,7 @@ from pathlib import Path
 SKILL = Path(__file__).resolve().parent.parent / "skill"
 
 REPORT = {
+    "fresh-scaffold-dotnet": ("fresh-scaffold-dotnet", "scaffold-report.md"),
     "audit": ("rotted-layer", "audit-report.md"),
     "audit-engine-absent": ("audit-engine-absent", "audit-report.md"),
     "legacy-migration": ("legacy-migration", "migration-report.md"),
@@ -328,6 +329,12 @@ def mutations_for(ws: Path, scenario: str) -> dict[str, Mutation]:
                               fn=lambda ws_, rev, p=rp: _delete(rev, p),
                               probe=True)
 
+    def stamp_strip() -> None:
+        muts["report_carries_engine_stamp"] = Mutation(
+            "remove-lines", REPORT[scenario][1], "Emitted by docs/ai/engine.py report",
+            fn=lambda ws_, rev, p=rp: _edit(
+                rev, p, lambda t: _drop_lines(t, "Emitted by docs/ai/engine.py report")))
+
     def zero_writes() -> None:
         muts["zero_writes"] = Mutation(
             "create-untracked", "mutation-litter.txt",
@@ -364,6 +371,9 @@ def mutations_for(ws: Path, scenario: str) -> dict[str, Mutation]:
         muts["mode_respects_authority"] = Mutation(
             "commit-then-edit-scaffolded", "docs/cases/README.md",
             fn=scaffold_authority)
+        # v24 BL-075 (R-769): the scaffold report is a persisted artifact
+        probe_report("scaffold_report_saved")
+        stamp_strip()
 
     elif scenario in ("legacy-migration", "legacy-migration-agents-first"):
         muts |= _common(repo, mani) | _scaffold(repo)
@@ -380,6 +390,7 @@ def mutations_for(ws: Path, scenario: str) -> dict[str, Mutation]:
                 _edit(rev, r / "docs/cases/README.md", lambda t: t + "\nmut\n")))
         if scenario == "legacy-migration":
             probe_report("step7_report_saved")
+            stamp_strip()
             cand = "Money values are always"
             muts["harvest_lists_decimal_money_rule"] = Mutation(
                 "remove-lines", REPORT[scenario][1], cand,
@@ -411,6 +422,7 @@ def mutations_for(ws: Path, scenario: str) -> dict[str, Mutation]:
                         rev, r, n))
         else:
             probe_report("migration_report_saved")
+            stamp_strip()
             muts["agents_md_content_preserved"] = Mutation(
                 "drop-line", "AGENTS.md", "bl/NNN-short-description",
                 fn=lambda ws_, rev, p=repo / "AGENTS.md": _edit(
@@ -432,6 +444,7 @@ def mutations_for(ws: Path, scenario: str) -> dict[str, Mutation]:
                 rev, p, lambda t: t + "\nviolation\n"))
         if scenario == "upgrade":
             probe_report("step7_report_saved")
+            stamp_strip()
             core = meta["withheld_core_rule"]
             stack = meta["withheld_stack_rule"]
             muts["newly_added_rule_present"] = Mutation(
@@ -458,12 +471,26 @@ def mutations_for(ws: Path, scenario: str) -> dict[str, Mutation]:
                 "delete", "docs/cases/README.md",
                 fn=lambda ws_, rev,
                 p=repo / "docs/cases/README.md": _delete(rev, p))
+            # v24 BL-075: the report is the engine's print
+            muts["report_created_lists_new_rules"] = Mutation(
+                "remove-lines", REPORT[scenario][1], f"`docs/ai/rules/core/{core}` —",
+                fn=lambda ws_, rev, p=rp, n=f"`docs/ai/rules/core/{core}` —": _edit(
+                    rev, p, lambda t: _drop_lines(t, n)))
+            muts["report_deleted_lists_retired_rule"] = Mutation(
+                "remove-lines", REPORT[scenario][1], f"`docs/ai/rules/core/{meta['retired_rule']}`",
+                fn=lambda ws_, rev, p=rp, n=f"`docs/ai/rules/core/{meta['retired_rule']}`": _edit(
+                    rev, p, lambda t: _drop_lines(t, n)))
+            muts["report_mechanical_lines_match_engine"] = Mutation(
+                "corrupt-line", REPORT[scenario][1], "manifest, regenerated",
+                fn=lambda ws_, rev, p=rp: _edit(
+                    rev, p, lambda t: t.replace("manifest, regenerated", "manifest regenerated", 1)))
             muts["keep_refusal_for_owned_path"] = Mutation(
                 "remove-lines", REPORT[scenario][1], "okf.md",
                 fn=lambda ws_, rev, p=rp: _edit(
                     rev, p, lambda t: _drop_lines(t, "okf.md")))
         else:
             probe_report("upgrade_report_saved")
+            stamp_strip()
             dropped = meta["dropped_stack_files"][0]
             muts["dropped_stack_files_deleted"] = Mutation(
                 "recreate-dropped", dropped,
