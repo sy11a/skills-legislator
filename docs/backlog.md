@@ -79,7 +79,7 @@ the core is proven. Everything below is ordered by dependency.
    of path literals, `@import` expansion in the adapters. Tracked here as
    **BL-080**; a generated registry lands on an unpatched fleet-obs and
    takes it down.
-2. **Edition v25 — BL-082 + BL-077**: step zero is the substrate
+2. **Edition v25 — BL-082 + BL-077** *(BL-082 parked 2026-08-29: the owner executes it with the dev-flow approach; agents do not start it)*: step zero is the substrate
    (BL-082, absorbing BL-072): the `src/` solution, the engine port as
    pilot red-first against `check_engine.py`, the hooks port, the options
    model with its four layers and `config show`, the machine install and
@@ -2732,7 +2732,7 @@ Originally: harness hardening, sized from the v23 cycle's two operator-induced i
 
 ## BL-082 — The deterministic substrate becomes .NET (edition v25, with BL-077)
 
-**Status: OPEN 2026-08-29 — spec, research and plan written (14 tasks, all [D]), awaiting execution** — branch `bl/082-dotnet-deterministic-substrate`, case `docs/cases/BL-082-dotnet-deterministic-substrate/` (tier 2, feature, R-8201–R-8217, ADR-0008). Behavioral: `skill/` law text changes command names, VERSION 25 (shared with BL-077), full e2e; plus the first `src/` and `tests/` trees and their CI.
+**Status: PARKED 2026-08-29 by the owner — spec, research and plan written (14 tasks, all [D]); execution waits for the owner's dev-flow approach.** The owner will pick the plan up together with the dev-flow tool, for two stated reasons: to road-test dev-flow on a real case, and to keep ownership of the codebase — the first compiled code in this repository is written under the owner's own flow, not by an agent running the plan unattended. Nothing under `src/` or `tests/` is created until then; no session starts task 1 on its own. Branch `bl/082-dotnet-deterministic-substrate`, case `docs/cases/BL-082-dotnet-deterministic-substrate/` (tier 2, feature, R-8201–R-8217, ADR-0008). Behavioral: `skill/` law text changes command names, VERSION 25 (shared with BL-077), full e2e; plus the first `src/` and `tests/` trees and their CI.
 
 **What:** BL-072 pulled forward to step zero of v25. One solution under `src/` — `Legislator.Core` (file model, registry, options, provenance), `Legislator.Engine` (the jobs), `Legislator.Hooks` (the four Claude Code hooks as commands), `Legislator.Cli` (`legislator <job>`, `legislator hook <name>`, `legislator config show`, NativeAOT per RID) — with xUnit v3 tests on Microsoft.Testing.Platform and build discipline declared once in `Directory.Build.props` (nullable, warnings as errors, analyzers, style in build). Every v24 engine job and hook is ported red-first: each `check_engine.py` / `check_hooks.py` assertion gets a named .NET twin, the Python job is removed and the law renamed in the same edition its twin reaches parity. The options model is the only home of defaults for every path, name, threshold, cadence and version floor; layers defaults → `~/.config/legislator/legislator.yaml` → `<instance>/legislator.yaml` → `LEGISLATOR_*`, schema-validated, loud on unknown keys, provenance printed. Core takes file system, clock and environment by injection. Machine install with version + release checksum audited (ADR-0005). Project law `.claude/rules/dotnet-substrate.md`. Every PR to `src/`/`tests/` is a code-review session with the owner.
 
