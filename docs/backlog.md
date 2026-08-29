@@ -60,14 +60,18 @@ file-disjoint from all of it. Background agents can't pause to ask questions,
 so anything dispatched to Track B must have its design fully settled at
 Gate 0/1 — that ordering is what makes the parallelism safe.
 
-## Agreed order after v24 (2026-08-29) — the outer-only pivot
+## Agreed order after v24 (revised 2026-08-29 evening) — the outer-only pivot on a .NET substrate
 
 Settled with the owner in the 2026-08-29 brainstorm (ADR-0007; case
 `docs/cases/BL-077-outer-only-control-directory/`). The legislator becomes
 the installer of a developer-experience framework — legislator (laws),
 kbl (the knowledge fund), fleet-obs (practice observability), a dev-flow
 tool — whose shared property is that **no AI-layer file is ever committed
-into a code repository**. Everything below is ordered by dependency.
+into a code repository**. Revised the same evening (ADR-0008, case
+`docs/cases/BL-082-dotnet-deterministic-substrate/`): every deterministic
+surface, present and future, is built on .NET; Python is prototype-only;
+environment and placement are configuration; an MCP host follows once
+the core is proven. Everything below is ordered by dependency.
 
 1. **fleet-obs prerequisites (its repo, parallel with v25, must merge
    first)** — registry from an external source without crashing on
@@ -75,23 +79,33 @@ into a code repository**. Everything below is ordered by dependency.
    of path literals, `@import` expansion in the adapters. Tracked here as
    **BL-080**; a generated registry lands on an unpatched fleet-obs and
    takes it down.
-2. **Edition v25 — BL-077**: the machine registry, the instance
-   repository, link/stub/restore + sentinel, the two-root engine, the
-   registry predicate in all four arms, fleet enumeration, D/A step
-   classes, paired MRs, member #0 migrated by hand, the corpus re-cut,
-   three spikes. Absorbs BL-027, BL-044, BL-045, BL-052, BL-071.
-3. **Edition v26 — BL-078 + BL-076**: inner→outer migration with rule
-   reconciliation (operator decides, the installer drives), the
-   restructure emitter and the fidelity job re-targeted to the control
-   tree; the fleet sweep happens here, not after v25.
-4. **Edition v27 — BL-079**: sub-group layering inside an instance —
+2. **Edition v25 — BL-082 + BL-077**: step zero is the substrate
+   (BL-082, absorbing BL-072): the `src/` solution, the engine port as
+   pilot red-first against `check_engine.py`, the hooks port, the options
+   model with its four layers and `config show`, the machine install and
+   version/checksum audit. On it, BL-077's content written in .NET: the
+   machine registry, the instance repository, link/stub/restore +
+   sentinel, the two-root engine, the registry predicate in all four
+   arms, fleet enumeration, D/A step classes, paired MRs, member #0
+   migrated by hand, the corpus re-cut, three spikes. Absorbs BL-027,
+   BL-044, BL-045, BL-052, BL-071, BL-072.
+3. **Edition v26 — BL-083 + BL-078 + BL-076**: the configuration layer
+   complete (every path the registry and the arms read moved into the
+   options model), inner→outer migration with rule reconciliation
+   (operator decides, the installer drives), the restructure emitter and
+   the fidelity job re-targeted to the control tree; the fleet sweep
+   happens here, not after v25.
+4. **Edition v27 — BL-084 + BL-079**: the MCP host over the proven core
+   (gates: Core+Engine coverage ≥ 90 %, `check_engine.py` parity, Python
+   engine gone from law), and sub-group layering inside an instance —
    inheritance, stack tags as orthogonal selectors, per-node skills/MCP
    scoping — and the kbl module contract's first real member.
 5. **After v27, in this order:** BL-067 (analyzer binding — unblocked by
    config-is-code), BL-046 (context-scope law — the eager-import loss of
-   v25 is its strongest motivation), BL-072 + the `legislator` CLI with
-   shell-init (M3 env-attach; carrier of BL-008's distribution question),
-   BL-081 (semver and version sync across the four tools).
+   v25 is its strongest motivation), the `legislator` CLI shell-init
+   (M3 env-attach; carrier of BL-008's distribution question — the CLI
+   itself exists from v25), BL-081 (semver and version sync across the
+   four tools).
 6. **Off the edition track, unchanged:** BL-031 (backlog split — do it
    *after* BL-078 moves the file), BL-039, BL-040 (more urgent: instance
    repositories of work projects carry employer names by construction —
@@ -2652,7 +2666,7 @@ still `measured`.
 
 ## BL-072 — The machine-installed binary arm (ADR-0005 phase 2)
 
-**Status: PROPOSED 2026-08-26 — strengthened 2026-08-29 by ADR-0007:** a singleton machine-installed legislator owning `~/.config/legislator/instances.yaml`, installing modules and running upgrade with no agent *is* this arm's shape; nothing is delivered into a code repository any more, so per-repo byte-verification of an executable stops being the constraint; the BL-071 gate is void (decided by construction); the arm is the natural carrier of the `legislator` CLI + shell-init that turns the stub into an env-attach projection (BL-077 research §2, M3). Originally — the design-and-migration case for ADR-0005's end state: one .NET binary (NativeAOT per platform) carrying the engine jobs, the Claude Code hooks and the operator tools; machine-installed and versioned like the hooks plugin; edition pins the tool version, audit verifies version + release checksum; the law stays delivered text; the opencode guard stays TS (accepted exception).
+**Status: ABSORBED 2026-08-29 into BL-082 (ADR-0008) — the substrate moves at v25, not after v27; this entry is history.** Previously: PROPOSED 2026-08-26 — strengthened 2026-08-29 by ADR-0007: a singleton machine-installed legislator owning `~/.config/legislator/instances.yaml`, installing modules and running upgrade with no agent *is* this arm's shape; nothing is delivered into a code repository any more, so per-repo byte-verification of an executable stops being the constraint; the BL-071 gate is void (decided by construction); the arm is the natural carrier of the `legislator` CLI + shell-init that turns the stub into an env-attach projection (BL-077 research §2, M3). Originally — the design-and-migration case for ADR-0005's end state: one .NET binary (NativeAOT per platform) carrying the engine jobs, the Claude Code hooks and the operator tools; machine-installed and versioned like the hooks plugin; edition pins the tool version, audit verifies version + release checksum; the law stays delivered text; the opencode guard stays TS (accepted exception).
 
 **Gates, in order:** BL-069's dependency register (what the binary replaces and what it may depend on), BL-070 complete (the behavior contract it must reproduce, measured), BL-071 decided (the file model it must serve). **Design first:** distribution channel and install/update flow, checksum recording at tag time, reproducibility story, the audit-check split (text byte-diff vs arm version+checksum), migration order (engine as pilot → hooks → operator tools), each step red-first under `evals/POLICY.md`. Implementation is L+, multi-edition, and starts only when the owner picks this case up explicitly.
 
@@ -2678,7 +2692,7 @@ Originally: harness hardening, sized from the v23 cycle's two operator-induced i
 
 ## BL-077 — Outer-only placement: the AI layer leaves the code repository (edition v25)
 
-**Status: OPEN 2026-08-29 — spec written, awaiting plan** — branch `bl/077-outer-only-control-directory`, case `docs/cases/BL-077-outer-only-control-directory/` (tier 2, feature, R-7701–R-7726, ADR-0007). Behavioral: `skill/` changes, VERSION 25, full e2e on a re-cut corpus.
+**Status: OPEN 2026-08-29 — spec written, awaiting plan; built on the .NET substrate of BL-082 (ADR-0008), same edition, same branch `bl/082-dotnet-deterministic-substrate`** — case `docs/cases/BL-077-outer-only-control-directory/` (tier 2, feature, R-7701–R-7726, ADR-0007). Behavioral: `skill/` changes, VERSION 25, full e2e on a re-cut corpus.
 
 **What:** inner mode is retired. A project's whole AI layer — owned rules, engine, manifest, OKF, cases, ADRs, journal, project law, entry documents — lives in an external *control directory*: one git repository per **instance** (a group of projects sharing rules; work vs. pet is the first split), projects as subtrees whose layout equals the v24 inner tree (so migration is a move and fleet-obs's path literals keep matching), a light group node. The code repository keeps zero tracked AI files: `legislator link` renders a two-file untracked stub (`CLAUDE.md` with one absolute `@import`, `opencode.json` with absolute `instructions`) excluded via `.git/info/exclude`; the global hooks/plugin act as sentinel — restore a missing stub and say so, stay silent outside the registry, emit `context.loaded` for the import chain. The single truth is the machine registry `~/.config/legislator/instances.yaml` (generated, legislator-written; instances → projects → `clones[]`); fail loud when a clone is unregistered, fail open with one warning when the registry is absent. The engine gains a two-root model (`--control`, `--code`): path-anchors route by first segment, symbols in code only, `okf-debt` reads two git histories; `audit` gains the `unmigrated` check; `sdd-lint` requires a `[D]`/`[A]` class on every plan task (A must say why determinism is impossible). `fleet.sh` enumerates instances — upgrade runs with no agent. Law text: paired MRs (instance half first), two-root anchors, Horizon and ontology rewritten. Member #0 migrates by hand as the proof. Doctrine: **config is code** (build configuration goes through the code repo's MR; native analyzers before agents) and **default deterministic**.
 
@@ -2715,6 +2729,30 @@ Originally: harness hardening, sized from the v23 cycle's two operator-induced i
 ## BL-081 — Semver and version sync across the four tools
 
 **Status: PROPOSED 2026-08-29 — deferred, after v27.** The integer edition is bonded to `check_static.py`, fleet-obs's `ConstitutionFleet` (bare integer or exception) and the `vNN` tags; moving to semver and synchronising legislator / kbl / fleet-obs / dev-flow versions is its own case with its own compatibility matrix. Recorded now so the pivot's version policy is a known deferral, not an omission.
+
+## BL-082 — The deterministic substrate becomes .NET (edition v25, with BL-077)
+
+**Status: OPEN 2026-08-29 — spec and research written, awaiting plan** — branch `bl/082-dotnet-deterministic-substrate`, case `docs/cases/BL-082-dotnet-deterministic-substrate/` (tier 2, feature, R-8201–R-8217, ADR-0008). Behavioral: `skill/` law text changes command names, VERSION 25 (shared with BL-077), full e2e; plus the first `src/` and `tests/` trees and their CI.
+
+**What:** BL-072 pulled forward to step zero of v25. One solution under `src/` — `Legislator.Core` (file model, registry, options, provenance), `Legislator.Engine` (the jobs), `Legislator.Hooks` (the four Claude Code hooks as commands), `Legislator.Cli` (`legislator <job>`, `legislator hook <name>`, `legislator config show`, NativeAOT per RID) — with xUnit v3 tests on Microsoft.Testing.Platform and build discipline declared once in `Directory.Build.props` (nullable, warnings as errors, analyzers, style in build). Every v24 engine job and hook is ported red-first: each `check_engine.py` / `check_hooks.py` assertion gets a named .NET twin, the Python job is removed and the law renamed in the same edition its twin reaches parity. The options model is the only home of defaults for every path, name, threshold, cadence and version floor; layers defaults → `~/.config/legislator/legislator.yaml` → `<instance>/legislator.yaml` → `LEGISLATOR_*`, schema-validated, loud on unknown keys, provenance printed. Core takes file system, clock and environment by injection. Machine install with version + release checksum audited (ADR-0005). Project law `.claude/rules/dotnet-substrate.md`. Every PR to `src/`/`tests/` is a code-review session with the owner.
+
+**Why:** the owner's 2026-08-29 requirement — all determinism, present and future, on .NET, to product standard; Python stays for prototypes only. v25 is the largest deterministic build the system has had; writing it on Python means writing it twice. Full reasoning: the case's `research.md`, ADR-0008.
+
+**Done when:** `legislator <job>` reproduces every v24 job byte-for-byte on the eval fixtures, `check_engine.py`/`check_hooks.py` report full parity and their Python subjects are gone, the law names one command per job, the benchmark is at 100 % with idempotency ×3, and the static check reports literals outside the options model and statics inside the core.
+
+## BL-083 — The configuration layer, complete (edition v26)
+
+**Status: PROPOSED 2026-08-29 — v26, with BL-078 + BL-076 (ADR-0008 §4).** v25 ships the options model and its layers; v26 finishes the move: every path the machine registry, the instance repository, the stub renderer, the sentinel and the four arms read becomes an option (cases/journal/OKF directory names, stub file names, `.git/info/exclude` wiring, hook names, the arms list, cadence and thresholds for `okf-debt` and audit, dependency version floors), each with its default in the model and nowhere else; the static-check finding for a literal outside the model is extended to cover `skill/assets/templates/**` tokens that the renderer fills from options. Adds `legislator config validate` (all layers, no side effects) and the instance-level file's schema to the instance template (R-7704). Sub-group overrides (v27, BL-079) become one more layer in this chain, which is why it lands before them. S–M on top of v25; VERSION 26 shared.
+
+**Done when:** grep for a path or name literal in `src/` outside the options model and its tests returns nothing; every option prints a provenance line; the fleet sweep of v26 runs with a machine file overriding at least one directory name on one machine and every arm honours it.
+
+## BL-084 — The MCP host: the agent calls the core, not a script (edition v27)
+
+**Status: PROPOSED 2026-08-29 — v27, with BL-079; gated (ADR-0008 §2).** `Legislator.Mcp`, a stdio MCP server in the same solution, whose tools are exactly the engine's jobs (`anchors`, `okf-debt`, `sdd-lint`, `baseline`, `audit`, `detect`, `apply`, `verify`, `report`, `config show`) — one method each, no logic of its own; registered globally per machine by the installer (the same channel as the hooks), scoped per instance/sub-group by BL-079's per-node MCP list. Law text: the verification rung and the audit checks name the MCP tool as the sanctioned way for an agent to run a job, with the CLI as the human's way; an agent invoking the binary through Bash is a conduct-guard warning, not a block. **Gates, all measured before the case opens:** Core+Engine line coverage ≥ 90 % in CI; every `check_engine.py` assertion twinned; `python3 docs/ai/engine.py` absent from every law file; the edition adds an eval scenario where the agent runs `anchors` through MCP and never through Bash. M; VERSION 27 shared.
+
+**Why:** the failure mode the owner named — a Python file edited on the fly by the agent that runs it — is closed only when what the agent calls has no editable logic and is tested to product standard. MCP is the surface; the gates are the proof.
+
+**Done when:** the MCP scenario passes at 100 %, the same jobs produce byte-identical output through MCP and CLI on the fixtures, and the tool list is generated from the engine's job registry (adding a job adds a tool with no MCP code).
 
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
 

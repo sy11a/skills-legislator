@@ -8,6 +8,15 @@ timestamp: 2026-08-29T00:00:00Z
 
 # OKF Bundle Changelog
 
+## 2026-08-29 — BL-082: the deterministic substrate becomes .NET
+
+The glossary gains `deterministic substrate`, `host (substrate)`,
+`options model`, `configuration layer`, `provenance (config)` and
+`parity ruler`, linking ADR-0008. The codebase map does not change yet:
+`src/` and `tests/` exist only in the spec — the map's rows for them
+land with the v25 implementation, when `anchors` can resolve them. The
+tech-stack line in `index.md` is likewise deferred to that commit.
+
 ## 2026-08-29 — BL-077: the outer-only pivot is decided and specified
 
 The glossary gains `control directory`, `instance`, `machine registry`,

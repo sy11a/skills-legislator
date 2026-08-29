@@ -8,6 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- **The deterministic substrate becomes .NET from v25** (ADR-0008, BL-082):
+  BL-072 is pulled forward to step zero of edition v25 — one `src/`
+  solution (Core, Engine, Hooks, CLI), the engine and hooks ported
+  red-first against the Python checks, an options model with four
+  configuration layers and `config show` provenance; Python becomes
+  prototype-only; the MCP host (BL-084, v27) and the complete
+  configuration layer (BL-083, v26) are queued behind it. Project law
+  `.claude/rules/dotnet-substrate.md`. Docs only — no `skill/` change in
+  this commit.
+
 - **The outer-only pivot is decided and specified** (ADR-0007, BL-077):
   from edition v25 the AI layer leaves the code repository for an external
   control directory; the backlog is re-prioritised around it (v25 BL-077 →
