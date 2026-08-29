@@ -194,6 +194,7 @@ msg_block() { # <dir>
   out="$WS/$sc/outputs"
   case "$sc" in
     legacy-migration|legacy-migration-agents-first|upgrade|upgrade-drop-stack) report="Write your full Step 7 report (all sections, including Health and any Constitution candidates) to $out/$(basename "$(REPORT_OF "$sc")") — overwrite if it exists.";;
+    fresh-scaffold-dotnet) report="Write your full Step 7 report to $out/scaffold-report.md — outside the target repo.";;
     case-practice) report="";;
     rotted-layer|audit-engine-absent) report="Save your full audit report to $out/audit-report.md — outside the target repo (which you must not touch: zero writes).";;
     restructure) report="Write your final restructure report to $out/restructure-report.md — overwrite if it exists.";;
@@ -202,7 +203,7 @@ msg_block() { # <dir>
   cat <<MSG
 Read $SKILL/SKILL.md and follow it EXACTLY, including referenced files under $SKILL/. Work in $WS/$sc/repo. $p
 
-Ground rules: NEVER run git commit — leave all changes uncommitted for review. Byte-for-byte copies happen via Bash cp exactly as the skill instructs. The skill's own law governs what each mode may write — do not infer extra prohibitions from these ground rules. The scenario folder $WS/$sc is the working directory (the repo and $out are writable siblings).
+Ground rules: NEVER run git commit — leave all changes uncommitted for review. Owned files are written by the engine jobs exactly as the skill instructs. The skill's own law governs what each mode may write — do not infer extra prohibitions from these ground rules. The scenario folder $WS/$sc is the working directory (the repo and $out are writable siblings).
 
 CONFIRMATION WAIVER (scripted run — nobody will answer): every confirmation the skill asks for is pre-approved. Answer with the skill's own default plus what the repo evidences; the skill knows what to deploy. Never end your turn on a question. $report
 MSG

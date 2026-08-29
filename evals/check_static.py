@@ -128,12 +128,14 @@ if engine_src.exists():
     check(eng.startswith("#!/usr/bin/env python3"), "engine has a python3 shebang")
     # v22 adds os + tempfile: the baseline job stages its one write in a
     # sibling temp file and os.replace's it (ADR-0003's atomicity clause).
+    # v24 adds hashlib: the run record's path is derived from the repo root.
     STDLIB_OK = {"re", "sys", "subprocess", "pathlib", "datetime",
-                 "__future__", "json", "os", "shutil", "tempfile"}
+                 "__future__", "json", "os", "shutil", "tempfile", "hashlib"}
     imported = set(re.findall(r"^\s*(?:from|import)\s+([a-zA-Z_][\w.]*)", eng, re.M))
     check(imported <= STDLIB_OK, "engine imports only stdlib modules",
           f"unexpected: {sorted(imported - STDLIB_OK)}")
-    for job in ("anchors", "okf-debt", "sdd-lint", "baseline"):
+    for job in ("anchors", "okf-debt", "sdd-lint", "baseline",
+                "audit", "detect", "apply", "verify", "report"):
         check(f'"{job}"' in eng, f"engine declares the {job} job")
 check("assets/engine/engine.py" in skill_md,
       "SKILL.md Step 3 names the engine source", "Step 3 does not deliver it")

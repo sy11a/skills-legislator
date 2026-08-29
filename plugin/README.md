@@ -71,10 +71,10 @@ no-op.
 - **`.claude/rules/**` (project law, per `core/project-rules.md`) is
   project-owned and intentionally unguarded** — the guard protects only the
   machine-managed fleet law under `docs/ai/rules/**`.
-- **`docs/ai/manifest.json` itself is not guarded.** SKILL.md Step 3.7
-  rewrites the manifest with the `Write` tool on every legislator run, and
-  that rewrite already heals hand-edits to it every run. Guarding it would
-  block legislator's own upgrade runs.
+- **`docs/ai/manifest.json` itself is not guarded.** The engine's `apply`
+  job (SKILL.md Step 3.7; v24) regenerates the manifest on every legislator
+  run, and that rewrite already heals hand-edits to it. Guarding it would
+  add nothing the regeneration does not already give.
 - **A deliberate Bash write bypasses the guard** (`sed -i`, `>`, `cat >>`,
   …). This hook only intercepts the file-editing tools (`Edit`/`Write`/
   `MultiEdit`/`NotebookEdit`); Bash is never inspected. That asymmetry is the

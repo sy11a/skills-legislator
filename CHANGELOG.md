@@ -8,6 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **Edition v24** (BL-075): the engine gains `detect`, `apply`, `verify` and
+  `report`. Step 3 — the owned-file copies, deletions, keep rules, the pinned
+  manifest and the v14 file model — is one engine invocation (ADR-0006: the
+  engine writes the owned layer); Step 6 is `verify`; the Step-7 report is
+  printed from the run record with pinned model slots (candidates, review
+  lines), the scaffold report becoming a persisted artifact. Two real entry
+  documents stop `apply` (exit 4) at the decision gate, writing nothing.
+
 - The per-job model floor probe (BL-048, spike): the constitution-candidate
   test stays at the sonnet floor (3B locals collapse to constant answers,
   haiku 12/15); glossary term extraction is the one job every candidate

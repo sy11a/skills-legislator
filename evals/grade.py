@@ -786,11 +786,15 @@ def report_text(g: Grader) -> str:
 def grade_fresh(ws: Path) -> Grader:
     home = ws / "fresh-scaffold-dotnet"
     repo = home / "repo"
-    g = Grader(repo=repo, home=home, label="fresh-scaffold-dotnet")
+    g = Grader(repo=repo, report=home / "outputs" / "scaffold-report.md",
+               home=home, label="fresh-scaffold-dotnet")
     g.common_checks(repo)
     check_mode_authority(g, repo, "scaffold")
     g.scaffold_checks(repo)
     g.no_unresolved_tokens(repo)
+    # v24 BL-075 (R-769): the scaffold report is a persisted, graded artifact.
+    g.probe("scaffold_report_saved", g.report_art, container=g.home_art)
+    check_report_stamp(g, report_text(g))
     return g
 
 
@@ -810,6 +814,7 @@ def grade_migration(ws: Path) -> Grader:
             else "migration left v2 wiring as Step 7 proposals instead of writing it", artifact=g.repo_art)
     report = report_text(g)
     g.probe("step7_report_saved", g.report_art, container=g.home_art)
+    check_report_stamp(g, report)
     m = re.search(r"## Constitution candidates\n(.*?)(?=\nClean checks:|\n#|\Z)", report, re.S)
     section = m.group(1) if m else ""
     # Coupled to the constitution's CURRENT content: if a decimal-for-money
@@ -880,6 +885,7 @@ def grade_migration_agents_first(ws: Path) -> Grader:
             if agents_preserved
             else f"law preserved={bool(law_hits)}, instance data in AGENTS.md={instance_kept}", artifact=g.repo_art)
     g.probe("migration_report_saved", g.report_art, container=g.home_art)
+    check_report_stamp(g, report_text(g))
     return g
 
 
@@ -903,6 +909,23 @@ def grade_upgrade(ws: Path) -> Grader:
 
     report = report_text(g)
     g.probe("step7_report_saved", g.report_art, container=g.home_art)
+    check_report_stamp(g, report)
+    check_engine_backed_step7(g, repo, report)
+    created_sec = re.search(r"^## Created\s*\n(.*?)(?=^## |\Z)", report, re.S | re.M)
+    created_sec = created_sec.group(1) if created_sec else ""
+    new_rules = [f"docs/ai/rules/core/{meta['withheld_core_rule']}",
+                 f"docs/ai/rules/stacks/dotnet/{meta['withheld_stack_rule']}"]
+    listed = all(f"- `{r}`" in created_sec for r in new_rules)
+    g.check("report_created_lists_new_rules", listed,
+            "both newly delivered rules listed under ## Created as pinned lines" if listed
+            else f"missing under ## Created: {[r for r in new_rules if f'- `{r}`' not in created_sec]}",
+            artifact=g.report_art)
+    deleted_sec = re.search(r"^## Deleted\s*\n(.*?)(?=^## |\Z)", report, re.S | re.M)
+    deleted_sec = deleted_sec.group(1) if deleted_sec else ""
+    retired_line = f"- `docs/ai/rules/core/{meta['retired_rule']}`"
+    g.check("report_deleted_lists_retired_rule", retired_line in deleted_sec,
+            "retired rule listed under ## Deleted" if retired_line in deleted_sec
+            else "retired rule not a pinned line under ## Deleted", artifact=g.report_art)
     core_import = f"@docs/ai/rules/core/{meta['withheld_core_rule']}"
     core_review_idx = report.find("eeds your review")
     core_proposed = core_review_idx >= 0 and core_import in report[core_review_idx:]
@@ -1011,6 +1034,75 @@ def check_engine_backed_report(g: "Grader", repo: Path, report: str) -> None:
             "model findings sit inside ## Warning" if not displaced
             else f"model findings outside their section: {displaced}",
             artifact=g.report_art)
+
+REPORT_STAMP = "Emitted by docs/ai/engine.py report — constitution v"
+
+
+def check_report_stamp(g: "Grader", report: str) -> None:
+    """v24 BL-075 (R-762): the Step-7 report is the engine's print."""
+    g.check("report_carries_engine_stamp", REPORT_STAMP in report,
+            "engine stamp present" if REPORT_STAMP in report
+            else "no emitter stamp — the report was not engine-printed",
+            artifact=g.report_art)
+
+
+def run_record_path(repo: Path) -> Path:
+    """The engine's derived run-record path for `repo` (R-751) — the same
+    derivation the engine uses, so the grader re-prints from the very
+    record the run wrote."""
+    import hashlib, tempfile
+    root = repo.resolve()
+    digest = hashlib.sha1(str(root).encode("utf-8")).hexdigest()[:8]
+    return Path(tempfile.gettempdir()) / "legislator-runs" / f"{root.name}-{digest}.json"
+
+
+def engine_report_lines(g: "Grader", repo: Path) -> list[str] | None:
+    """The engine's own mechanical report lines for `repo`, re-printed at
+    grade time from the run record (snapshotted into outputs/ on first
+    grade, so the idempotency stage's second run cannot rewrite the
+    evidence). None when no record exists."""
+    snap = g.home_art.path / "outputs" / "run-record.json" if g.home_art else None
+    live = run_record_path(repo)
+    if snap is not None and not snap.exists() and live.exists():
+        snap.write_bytes(live.read_bytes())
+    rec = snap if snap is not None and snap.exists() else live
+    if not rec.exists():
+        return None
+    r = subprocess.run(
+        [sys.executable, str(SKILL / "assets/engine/engine.py"), "report",
+         "--root", str(repo), "--skill", str(SKILL), "--record", str(rec)],
+        capture_output=True, text=True)
+    if r.returncode != 0:
+        # A re-print failure is a FAILED verdict with the engine's reason, never
+        # a crash: under a mutation that corrupts the manifest (the
+        # manifest_valid_json kill) the whole pass must keep going (found by
+        # the v24 mutation pass, 2026-08-29).
+        return [f"<engine report re-run failed ({r.returncode}): {r.stderr.strip()[:200]}>"]
+    out, keep = [], False
+    for line in r.stdout.splitlines():
+        if line.startswith("## "):
+            keep = line in ("## Created", "## Overwritten", "## Deleted", "## Health")
+            continue
+        if keep and (line.startswith("- ") or line.startswith("Health:")):
+            out.append(line)
+    return out
+
+
+def check_engine_backed_step7(g: "Grader", repo: Path, report: str) -> None:
+    """v24 BL-075: every mechanical line of the report is the engine's."""
+    lines = engine_report_lines(g, repo)
+    record_art = Artifact.file(f"run-record:{g.label}",
+                               (g.home_art.path / "outputs" / "run-record.json") if g.home_art
+                               else run_record_path(repo))
+    if lines is None:
+        g.check("report_mechanical_lines_match_engine", False, "", artifact=record_art)
+        return
+    missing = [l for l in lines if l not in report]
+    g.check("report_mechanical_lines_match_engine", not missing,
+            f"all {len(lines)} engine lines present verbatim" if not missing
+            else f"engine lines absent from the report: {missing[:3]!r} "
+                 f"(+{max(0, len(missing) - 3)} more)", artifact=g.report_art)
+
 
 def grade_audit(ws: Path) -> Grader:
     home = ws / "rotted-layer"
@@ -1596,6 +1688,7 @@ def grade_upgrade_drop_stack(ws: Path) -> Grader:
             else f"dotnet mismatch: {dotnet_left}", artifact=g.repo_art)
 
     g.probe("upgrade_report_saved", g.report_art, container=g.home_art)
+    check_report_stamp(g, report_text(g))
     # No `if has_report:` guard any more. An assert that is not emitted is an
     # assert nobody can see was not measured — the same silence POLICY §1b
     # exists to end. It is emitted, it declares the report, and it comes out
