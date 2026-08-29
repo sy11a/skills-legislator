@@ -300,8 +300,11 @@ same cycle. `evals/check_static.py` enforces it: a case named here that carries
 a closed status in the backlog fails the check, so the section cannot quietly
 outlive what it describes.
 
-- **Outer mode** (BL-027) is designed and named, not implemented. Every
-  legislated repository today is inner.
+- **Outer-only placement** (ADR-0007) is decided and specified (BL-077,
+  edition v25), not built: the control directory, the machine registry,
+  the stub and its sentinel, the two-root engine. Every legislated
+  repository today still carries its AI layer inside the code tree and
+  awaits the migration edition (BL-078).
 
 ---
 

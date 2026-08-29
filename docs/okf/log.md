@@ -3,10 +3,20 @@ type: Changelog
 title: OKF Bundle Changelog
 description: Chronological record of significant changes to the OKF knowledge bundle.
 tags: [changelog, okf]
-timestamp: 2026-08-28T00:00:00Z
+timestamp: 2026-08-29T00:00:00Z
 ---
 
 # OKF Bundle Changelog
+
+## 2026-08-29 — BL-077: the outer-only pivot is decided and specified
+
+The glossary gains `control directory`, `instance`, `machine registry`,
+`stub`, `sentinel`, `two-root engine`, `paired MR`, `D / A step class`,
+`config is code` and `module (legislator)`, all linking ADR-0007. No
+concept document changed yet: the pivot is specified (case BL-077), not
+built — the codebase map, the engine and the arms change in the v25
+implementation, and their documents with them. `docs/ontology.md`
+§Placement modes and `docs/philosophy.md` §Horizon carry the decision.
 
 ## 2026-08-28 — BL-075: edition v24, the engine writes the owned layer
 
