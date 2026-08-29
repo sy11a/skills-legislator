@@ -4,6 +4,8 @@
 
 accepted
 
+*Phasing amended by 0008 (the port moves to v25); end state, integrity model and the opencode exception stand.*
+
 ## Context
 
 BL-047 measured the constitution: 97 of 176 units are enforceable by code
