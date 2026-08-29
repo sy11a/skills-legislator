@@ -60,7 +60,44 @@ file-disjoint from all of it. Background agents can't pause to ask questions,
 so anything dispatched to Track B must have its design fully settled at
 Gate 0/1 — that ordering is what makes the parallelism safe.
 
-## Edition plan (agreed 2026-08-22, after v17 closed at 177/177)
+## Agreed order after v24 (2026-08-29) — the outer-only pivot
+
+Settled with the owner in the 2026-08-29 brainstorm (ADR-0007; case
+`docs/cases/BL-077-outer-only-control-directory/`). The legislator becomes
+the installer of a developer-experience framework — legislator (laws),
+kbl (the knowledge fund), fleet-obs (practice observability), a dev-flow
+tool — whose shared property is that **no AI-layer file is ever committed
+into a code repository**. Everything below is ordered by dependency.
+
+1. **fleet-obs prerequisites (its repo, parallel with v25, must merge
+   first)** — registry from an external source without crashing on
+   unknown keys (its ADR-0041), note roles from the node manifest instead
+   of path literals, `@import` expansion in the adapters. Tracked here as
+   **BL-080**; a generated registry lands on an unpatched fleet-obs and
+   takes it down.
+2. **Edition v25 — BL-077**: the machine registry, the instance
+   repository, link/stub/restore + sentinel, the two-root engine, the
+   registry predicate in all four arms, fleet enumeration, D/A step
+   classes, paired MRs, member #0 migrated by hand, the corpus re-cut,
+   three spikes. Absorbs BL-027, BL-044, BL-045, BL-052, BL-071.
+3. **Edition v26 — BL-078 + BL-076**: inner→outer migration with rule
+   reconciliation (operator decides, the installer drives), the
+   restructure emitter and the fidelity job re-targeted to the control
+   tree; the fleet sweep happens here, not after v25.
+4. **Edition v27 — BL-079**: sub-group layering inside an instance —
+   inheritance, stack tags as orthogonal selectors, per-node skills/MCP
+   scoping — and the kbl module contract's first real member.
+5. **After v27, in this order:** BL-067 (analyzer binding — unblocked by
+   config-is-code), BL-046 (context-scope law — the eager-import loss of
+   v25 is its strongest motivation), BL-072 + the `legislator` CLI with
+   shell-init (M3 env-attach; carrier of BL-008's distribution question),
+   BL-081 (semver and version sync across the four tools).
+6. **Off the edition track, unchanged:** BL-031 (backlog split — do it
+   *after* BL-078 moves the file), BL-039, BL-040 (more urgent: instance
+   repositories of work projects carry employer names by construction —
+   R-7706), BL-074.
+
+## Edition plan (agreed 2026-08-22, after v17 closed at 177/177) — *superseded 2026-08-29 by "Agreed order after v24"; kept as history*
 
 - **v18 — rights and names.** One theme: every fact about who may write
   what, and every concept's single name, stated in exactly one place.
@@ -112,7 +149,7 @@ Gate 0/1 — that ordering is what makes the parallelism safe.
   tool, each able to report success while having done nothing) — both
   **DONE 2026-08-24**.
 
-## Agreed order after v21 (2026-08-25)
+## Agreed order after v21 (2026-08-25) — *superseded 2026-08-29 by "Agreed order after v24"; kept as history*
 
 Settled with the owner at the close of the v21 cycle, after the fleet sweep.
 
@@ -286,6 +323,8 @@ legislator upgrade run still completes (guard does not break owned-file
 updates).
 
 ## BL-008 — Package the toolchain as a plugin in a private marketplace
+
+**Note 2026-08-29:** the entry's premise ("the constitution travels with each repo") is the sentence ADR-0007 deletes; its subject — capabilities travelling with the *machine* — is the singleton legislator of BL-077. Re-read through that lens when picked up; the marketplace is one candidate distribution channel for BL-072's arm.
 
 **What:** extend BL-007's plugin skeleton into the full capability bundle:
 the legislator skill itself, the BL-007 hooks, LSP configs (C# `csharp-ls`,
@@ -1004,7 +1043,7 @@ if they need permanence).
 
 ## BL-027 — Outer placement mode (Vector A: legislation outside the codebase)
 
-**Status: queued (behavioral — skill/ changes, VERSION bump + full e2e) → edition v21+, after its own design cycle. Renamed 2026-08-20 from "Enterprise sidecar placement mode": outer names the mode (the AI layer sits outside the codebase — ontology §Placement modes), the sidecar is only the mechanism that hosts it.**
+**Status: ABSORBED 2026-08-29 into BL-077** — the pivot made outer the *only* mode (ADR-0007): the sidecar/stub/exclude/restore/regeneration mechanics below are v25 verbatim; "outer as a mode declared per repo", one sidecar per target, the `enterprise-solo` profile and the fleet-obs root addition are superseded (research in `docs/cases/BL-077-outer-only-control-directory/research.md` §4). Kept as the design record. Previously: **queued (behavioral — skill/ changes, VERSION bump + full e2e) → edition v21+, after its own design cycle. Renamed 2026-08-20 from "Enterprise sidecar placement mode": outer names the mode (the AI layer sits outside the codebase — ontology §Placement modes), the sidecar is only the mechanism that hosts it.**
 
 **What:** a placement mode for legislating a repo the operator **cannot
 commit to** (real enterprise case, anonymized — large fast-mutating
@@ -1813,7 +1852,7 @@ content-type with its gold-panel exclusion.
 
 ## BL-044 — Cross-harness parity: the asymmetry study and channel subtraction
 
-**Status: PROPOSED 2026-08-23** — research case (no `skill/` change, no VERSION, no benchmark; its deliverable is a spec the two cases below consume). Raised while v20 was in flight, from a review of how Claude Code and opencode each assemble a session's context.
+**Status: ABSORBED 2026-08-29 into BL-077's spikes** — the control-tree link mechanism turns its questions into three time-boxed spikes (spec §Spikes); the divergences listed below are re-expressed against the control tree there. Previously: **PROPOSED 2026-08-23** — research case (no `skill/` change, no VERSION, no benchmark; its deliverable is a spec the two cases below consume). Raised while v20 was in flight, from a review of how Claude Code and opencode each assemble a session's context.
 
 **What:** establish by experiment — not by reading either tool's documentation — what each harness actually loads and what can be prevented from loading, then record the findings as a spec.
 
@@ -1829,7 +1868,7 @@ Three questions, each answered by a reproducible probe:
 
 ## BL-045 — One declaration, two projections: the owned import index
 
-**Status: PROPOSED 2026-08-23** — behavioral (`skill/` changes, VERSION bump + full e2e). The mechanism was settled in discussion 2026-08-23; the cycle it rides is not.
+**Status: ABSORBED 2026-08-29 into BL-077** — "one wiring line, written once" *is* the untracked stub (R-7708); the index and `opencode.json` become owned files of the control tree, the stub a third generated projection. Previously: **PROPOSED 2026-08-23** — behavioral (`skill/` changes, VERSION bump + full e2e). The mechanism was settled in discussion 2026-08-23; the cycle it rides is not.
 
 **What:** the eager set stops being two hand-maintained lists and becomes one machine-written declaration with a projection per harness.
 
@@ -2033,7 +2072,7 @@ recorded per `evals/README.md`, compared against v20.
 
 ## BL-052 — Spike: does the constitution load at all outside the two harnesses we test?
 
-**Status: SPIKE PROPOSED 2026-08-23** — exploration, time-boxed, no `skill/` change, no VERSION, no benchmark. Widens BL-044 (Claude Code ↔ opencode) to the whole provider field; BL-044 stays the deeper study of the two harnesses this repo actually measures.
+**Status: ABSORBED 2026-08-29 into BL-077** — its premise (a 1,122-byte `AGENTS.md` standing in for 25 KB of delivered law) is an artifact v25 deletes; the surviving question — which agents follow an untracked stub to a tree outside the project, and Codex's 32 KiB cap — rides BL-077's spikes. Previously: **SPIKE PROPOSED 2026-08-23** — exploration, time-boxed, no `skill/` change, no VERSION, no benchmark. Widens BL-044 (Claude Code ↔ opencode) to the whole provider field; BL-044 stays the deeper study of the two harnesses this repo actually measures.
 
 **The question that makes this urgent, and it is arithmetic rather than opinion.** A legislated repo's `AGENTS.md` is **1,122 bytes**, of which twelve `@`-import lines stand in for **25,778 bytes** of delivered law. `@path` expansion is a Claude Code feature; opencode never parses it and gets the law through a second channel, the `instructions` array in `opencode.json`. Every other agent that reads `AGENTS.md` — Codex, Cursor, Copilot, Windsurf, Amp, Gemini CLI, Antigravity — would therefore load a kilobyte of pointers and **none of the law they point at**. If that holds, the constitution today is enforced in exactly two harnesses and is decorative in the rest, which is not what "AGENTS.md is the canonical entry document" implies to anyone reading it.
 
@@ -2556,7 +2595,7 @@ still `measured`.
 
 ## BL-067 — The analyzer binding: stack law adjudicated by the repo's own build
 
-**Status: PROPOSED 2026-08-26** — design-first; sized from BL-047's ranked list (group 2), the biggest single bucket-(b) mass.
+**Status: PROPOSED 2026-08-26 — unblocked 2026-08-29 by ADR-0007's config-is-code rule; implement after v26.** The delivery channel is decided: build configuration is code, generated deterministically from stack law (one clause ↔ analyzer-rule table per stack) and *proposed* through the code repository's own MR — never owned, never byte-verified; an audit check then judges the build's configuration against the law semantically (a repo may tighten). Native analyzers, generators and compilers before agents, for every stack. Originally: design-first; sized from BL-047's ranked list (group 2), the biggest single bucket-(b) mass.
 
 **The finding:** 25 of 28 stack clauses (dotnet coding-standards, architecture, data-access) are classic analyzer / architecture-test / msbuild-property territory — enforcement exists off the shelf; nothing needs the engine. What does not exist is the **binding**: the legislator neither ships nor verifies any of it, so the fleet's stack law is adjudicated by session judgement at every-edit cadence.
 
@@ -2607,13 +2646,13 @@ still `measured`.
 
 ## BL-071 — The file-model fork: the CLAUDE.md symlink vs an import-line real file
 
-**Status: PROPOSED 2026-08-26** — the decision case for BL-068's D1/D2/E7, the deadliest silent Windows cell: a symlink-less checkout materializes `CLAUDE.md` as a one-word text file and the constitution does not load at all. Platform-independent — ADR-0005 explicitly leaves it here.
+**Status: ABSORBED 2026-08-29 into BL-077 (decided by construction)** — under outer-only placement the clone's `CLAUDE.md` is always an untracked, installer-rendered real file with one import line (R-7708): never checked out, never a symlink, so the symlink ritual and the one-word-text-file failure disappear. Residue carried by BL-077: whether the control tree's own `AGENTS.md`/`CLAUDE.md` pair still uses a symlink, and the eval substrate's symlink-aware save/restore (E7). Previously: **PROPOSED 2026-08-26** — the decision case for BL-068's D1/D2/E7, the deadliest silent Windows cell: a symlink-less checkout materializes `CLAUDE.md` as a one-word text file and the constitution does not load at all. Platform-independent — ADR-0005 explicitly leaves it here.
 
 **The fork (decision-gate material, the owner chooses):** (a) keep the symlink model and make its preconditions law — require `core.symlinks=true` (+ Developer Mode on Windows, `MSYS=winsymlinks:nativestrict`), enforced by a new audit check that reads the checked-out `CLAUDE.md` and fails loudly when it is a plain file; or (b) change the v14 file model — `CLAUDE.md` becomes a real file whose entire content is the import line `@AGENTS.md`, symlink-free and portable everywhere. Option (b) is a law + template + eval + grader change (edition-size) and touches every fleet repo on upgrade; option (a) is cheaper but makes Windows onboarding a config ritual. The eval substrate's symlink-aware save/restore (E7) follows whichever branch wins.
 
 ## BL-072 — The machine-installed binary arm (ADR-0005 phase 2)
 
-**Status: PROPOSED 2026-08-26** — the design-and-migration case for ADR-0005's end state: one .NET binary (NativeAOT per platform) carrying the engine jobs, the Claude Code hooks and the operator tools; machine-installed and versioned like the hooks plugin; edition pins the tool version, audit verifies version + release checksum; the law stays delivered text; the opencode guard stays TS (accepted exception).
+**Status: PROPOSED 2026-08-26 — strengthened 2026-08-29 by ADR-0007:** a singleton machine-installed legislator owning `~/.config/legislator/instances.yaml`, installing modules and running upgrade with no agent *is* this arm's shape; nothing is delivered into a code repository any more, so per-repo byte-verification of an executable stops being the constraint; the BL-071 gate is void (decided by construction); the arm is the natural carrier of the `legislator` CLI + shell-init that turns the stub into an env-attach projection (BL-077 research §2, M3). Originally — the design-and-migration case for ADR-0005's end state: one .NET binary (NativeAOT per platform) carrying the engine jobs, the Claude Code hooks and the operator tools; machine-installed and versioned like the hooks plugin; edition pins the tool version, audit verifies version + release checksum; the law stays delivered text; the opencode guard stays TS (accepted exception).
 
 **Gates, in order:** BL-069's dependency register (what the binary replaces and what it may depend on), BL-070 complete (the behavior contract it must reproduce, measured), BL-071 decided (the file model it must serve). **Design first:** distribution channel and install/update flow, checksum recording at tag time, reproducibility story, the audit-check split (text byte-diff vs arm version+checksum), migration order (engine as pilot → hooks → operator tools), each step red-first under `evals/POLICY.md`. Implementation is L+, multi-edition, and starts only when the owner picks this case up explicitly.
 
@@ -2633,9 +2672,49 @@ Originally: harness hardening, sized from the v23 cycle's two operator-induced i
 
 **Status: DONE 2026-08-29, edition v24** — branch `bl/075-edition-v24`, case `docs/cases/BL-075-engine-apply-and-report/` (tier 2, R-751–R-772, converged); benchmark `evals/benchmarks/v24.md` (214/214, idem ×3, mutations 214/214 killed, floor sonnet; runs 20–35% shorter where Step 3/7 dominated). The half of BL-066's composition clarify that rode to v24: Step 3's copy/ownedFiles/deletions/keep/manifest/file-model mechanics and Step 6's byte-verify become engine jobs the model invokes (sk-6…sk-13, sk-23, sk-24), Step 1's decision tree becomes `detect` (sk-3…sk-5), and the Step-7 report becomes an engine print from the run record with pinned model slots (sk-25, sk-26; BL-049's contract). ADR-0006 extends ADR-0003: `apply` writes exactly the owned set, the manifest, the file-model wiring and its run record. Restructure emitter + fidelity job split off as BL-076 (composition clarify 2026-08-28).
 
-## BL-076 — The restructure emitter and the fidelity job (v25)
+## BL-076 — The restructure emitter and the fidelity job (v26, re-targeted)
 
-**Status: PROPOSED 2026-08-28** — the other half of BL-066's v24 composition, split off at BL-075's clarify because it is a second contract (plan skeleton from audit findings via the closed action mapping, model slots for merge/move/decision items, outcomes, the fidelity line) and a second job (`fidelity`: the moved/merged line inventory as a grep pass, sk-38). Reads BL-075's run record. Sized L; gated on v24 shipping so the record shape is stable.
+**Status: PROPOSED 2026-08-28 — re-targeted 2026-08-29 to v26 alongside BL-078:** the v25 slot is the pivot (BL-077), and restructure's subject becomes "extract an inner repository's AI layer into the control tree", which is BL-078's migration; the fidelity job is that migration's moved/merged inventory. Originally — the other half of BL-066's v24 composition, split off at BL-075's clarify because it is a second contract (plan skeleton from audit findings via the closed action mapping, model slots for merge/move/decision items, outcomes, the fidelity line) and a second job (`fidelity`: the moved/merged line inventory as a grep pass, sk-38). Reads BL-075's run record. Sized L; gated on v24 shipping so the record shape is stable.
+
+## BL-077 — Outer-only placement: the AI layer leaves the code repository (edition v25)
+
+**Status: OPEN 2026-08-29 — spec written, awaiting plan** — branch `bl/077-outer-only-control-directory`, case `docs/cases/BL-077-outer-only-control-directory/` (tier 2, feature, R-7701–R-7726, ADR-0007). Behavioral: `skill/` changes, VERSION 25, full e2e on a re-cut corpus.
+
+**What:** inner mode is retired. A project's whole AI layer — owned rules, engine, manifest, OKF, cases, ADRs, journal, project law, entry documents — lives in an external *control directory*: one git repository per **instance** (a group of projects sharing rules; work vs. pet is the first split), projects as subtrees whose layout equals the v24 inner tree (so migration is a move and fleet-obs's path literals keep matching), a light group node. The code repository keeps zero tracked AI files: `legislator link` renders a two-file untracked stub (`CLAUDE.md` with one absolute `@import`, `opencode.json` with absolute `instructions`) excluded via `.git/info/exclude`; the global hooks/plugin act as sentinel — restore a missing stub and say so, stay silent outside the registry, emit `context.loaded` for the import chain. The single truth is the machine registry `~/.config/legislator/instances.yaml` (generated, legislator-written; instances → projects → `clones[]`); fail loud when a clone is unregistered, fail open with one warning when the registry is absent. The engine gains a two-root model (`--control`, `--code`): path-anchors route by first segment, symbols in code only, `okf-debt` reads two git histories; `audit` gains the `unmigrated` check; `sdd-lint` requires a `[D]`/`[A]` class on every plan task (A must say why determinism is impossible). `fleet.sh` enumerates instances — upgrade runs with no agent. Law text: paired MRs (instance half first), two-root anchors, Horizon and ontology rewritten. Member #0 migrates by hand as the proof. Doctrine: **config is code** (build configuration goes through the code repo's MR; native analyzers before agents) and **default deterministic**.
+
+**Why:** the framework the owner is assembling (legislator + kbl + fleet-obs + dev-flow) needs one installation per machine that configures every project, and rule layering that keeps context small — both impossible while the layer is a per-repository commit. Full reasoning and the harness facts: the case's `research.md`.
+
+**Done when:** corpus 100% (fresh, link, restore, upgrade, audit, audit-engine-absent, guards, two-root-engine, case-practice, fleet-obs-module, idem ×3), model floor recorded, `evals/benchmarks/v25.md`; BL-080's fleet-obs cases merged first; this repository linked from an instance with `git status` clean and every check green through the two-root engine.
+
+## BL-078 — Inner→outer migration with rule reconciliation (edition v26)
+
+**Status: PROPOSED 2026-08-29** — sized by BL-077; rides with BL-076 (restructure emitter + fidelity job) as one edition. Behavioral, VERSION 26, full e2e.
+
+**What:** `legislator migrate <clone>`: `detect` recognises the inner layout (BL-077's `unmigrated` finding), `apply` moves `docs/ai/**`, `docs/okf`, `docs/cases`, `docs/adr`, `docs/journal`, `docs/backlog.md`, `.claude/rules`, the entry documents and `opencode.json` into `<instance>/<project>/`, deletes them from the clone in a proposed commit, links the clone. **Rule reconciliation** is the one agent step of the flow (class A: two prose rule sets with overlapping intent cannot be merged mechanically): project rules are matched against instance rules, and the operator decides per rule — keep in project, lift to instance, drop — the installer drives the dialogue and records the decisions in the case. The fidelity job (BL-076) inventories every moved/merged line. Fleet sweep: every legislated repository migrates in this edition, one paired MR per repo + one per instance.
+
+**Done when:** the fleet has no inner repository; `audit` reports zero `unmigrated`; a migration fixture with a conflicting rule set exercises the reconciliation red-first; idempotent on re-run (a migrated clone is a no-op).
+
+## BL-079 — Sub-group layering inside an instance (edition v27)
+
+**Status: PROPOSED 2026-08-29** — sized by BL-077's clarify ("layering is a headline feature: rule flexibility without context pollution").
+
+**What:** an instance tree may nest **sub-groups** between the group node and projects, each a node with its own `legislator.yaml` and `rules/`. Resolution for a project = machine layer (via `knowledge_root`, read-only here) → instance `rules/` → every sub-group on the path → project `.claude/rules/`; the rendered `CLAUDE.md` import list is generated from that path (one declaration, N projections). **Stacks stay orthogonal tags**, not tree nodes — a project selects stacks, a node may set defaults; the tree is organisation, tags are technology. Nodes may scope skills, commands and MCP servers (e.g. front-end tooling only for projects on that branch) through the module contract. Open for the case's own brainstorm: whether per-node scoping renders into the stub or waits for M3 env-attach (BL-072 / the CLI), and the kbl module's first real content.
+
+**Done when:** a three-level fixture (instance → sub-group → project) resolves the expected import list red-first; adding a rule at a sub-group changes exactly the projects beneath it; `audit` reports a rule duplicated across levels as a lift candidate.
+
+## BL-080 — The fleet-obs module and its fleet-obs-side prerequisites
+
+**Status: PROPOSED 2026-08-29** — cross-repo case; the fleet-obs half lives in fleet-obs's own backlog (reference rows here, per `sdd.md` cross-repo rule). Must merge **before** v25 ships.
+
+**What (fleet-obs side, three cases):** (1) registry from an external source — accept `constitution.instances` and tolerate unknown keys without crashing any entry point (its ADR-0041's degradation work); (2) note roles (lifecycle / machine-managed / reference) read from the node manifest the legislator ships instead of `/docs/ai/` and `/docs/cases/` path literals; (3) adapters follow `@import` chains when emitting `context.loaded` (or accept the legislator sentinel's events, R-7711). **What (legislator side, the module):** `modules: [fleet-obs]` on the machine registry renders fleet-obs's `registry.yaml` as a **generated artifact** — `knowledge_root` as the single `global` source, one `framework` source per project control tree, `local` sources for clones that declare in-code knowledge, `constitution: {versionFile, instances}`, `sdd.skills` from the union of stage maps — merged with a hand-written overlay file for foreign sources and `taskPattern`. The module also places the capture hooks into the global hook set (once, in the template, not per repo). Machine-wide by construction: one registry, one pulse, shared across instances.
+
+**Why:** the owner's ask — fleet-obs serves the whole machine and learns "what is where" from the legislator — and kbl's law (no parallel roots list) meet in one owner per fact: placement is the legislator's, knowledge sources are fleet-obs's, derived. Full analysis: BL-077 `research.md` §1.
+
+**Done when:** a generated registry plus overlay round-trips through the fleet-obs `registry show` command with zero hand edits; the spec-before-code panel and the constitution fleet line are non-zero on a migrated repository; the `fleet-obs-module` corpus scenario is green.
+
+## BL-081 — Semver and version sync across the four tools
+
+**Status: PROPOSED 2026-08-29 — deferred, after v27.** The integer edition is bonded to `check_static.py`, fleet-obs's `ConstitutionFleet` (bare integer or exception) and the `vNN` tags; moving to semver and synchronising legislator / kbl / fleet-obs / dev-flow versions is its own case with its own compatibility matrix. Recorded now so the pivot's version policy is a known deferral, not an omission.
 
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
 

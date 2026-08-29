@@ -155,6 +155,17 @@ One core, no fork: law overlap between modes is ~90%; the differences are
 placement mechanics and ceremony defaults, decided in BL-027's design
 cycle.
 
+**Decided 2026-08-29 (ADR-0007): outer is the only mode.** The two-mode
+picture above is kept as the record of how the axis was named; from
+edition v25 (BL-077) the AI layer of every project lives in a *control
+directory* — one git repository per **instance** (a group of projects
+sharing rules), projects as subtrees — and the code repository keeps zero
+tracked AI files, linked by an untracked stub that a global sentinel
+restores. Placement is no longer declared per repo: the machine registry
+(`~/.config/legislator/instances.yaml`) is the single truth about which
+clone belongs to which project. Inner repositories are *unmigrated*
+(an audit finding) until BL-078.
+
 ## 3. Naming conventions — how terms enter and stay
 
 1. **Industry term first.** Where the SDD/software field has an established

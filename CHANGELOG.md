@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- **The outer-only pivot is decided and specified** (ADR-0007, BL-077):
+  from edition v25 the AI layer leaves the code repository for an external
+  control directory; the backlog is re-prioritised around it (v25 BL-077 →
+  v26 BL-078 migration → v27 BL-079 layering; fleet-obs prerequisites
+  BL-080 first; semver BL-081 deferred), and BL-027/044/045/052/071 are
+  absorbed. Docs only — no `skill/` change in this commit.
+
 ### Added
 
 - **Edition v24** (BL-075): the engine gains `detect`, `apply`, `verify` and
