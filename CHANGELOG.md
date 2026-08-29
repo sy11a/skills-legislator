@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- **Spike BL-085 filed** — the legislator inherits the host repository's
+  work-tracking discipline (Jira, GitHub Issues, Linear … via their MCP
+  servers) instead of imposing the text backlog, which becomes the
+  lowest-priority home with a standing migration recommendation. Backlog
+  entry only; no behaviour change.
+
 ### Changed
 
 - **The deterministic substrate becomes .NET from v25** (ADR-0008, BL-082):

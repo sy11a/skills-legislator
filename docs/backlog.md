@@ -110,6 +110,12 @@ the core is proven. Everything below is ordered by dependency.
    *after* BL-078 moves the file), BL-039, BL-040 (more urgent: instance
    repositories of work projects carry employer names by construction —
    R-7706), BL-074.
+7. **Spike, unscheduled (raised 2026-08-30):** BL-085 — the legislator
+   inherits the host repository's work-tracking discipline (Jira, GitHub
+   Issues, Linear … through their MCP servers) instead of imposing the
+   text backlog, which becomes the lowest-priority home with a standing
+   migration recommendation. Its follow-ups land on BL-082/BL-083; it
+   may absorb BL-031.
 
 ## Edition plan (agreed 2026-08-22, after v17 closed at 177/177) — *superseded 2026-08-29 by "Agreed order after v24"; kept as history*
 
@@ -2753,6 +2759,20 @@ Originally: harness hardening, sized from the v23 cycle's two operator-induced i
 **Why:** the failure mode the owner named — a Python file edited on the fly by the agent that runs it — is closed only when what the agent calls has no editable logic and is tested to product standard. MCP is the surface; the gates are the proof.
 
 **Done when:** the MCP scenario passes at 100 %, the same jobs produce byte-identical output through MCP and CLI on the fixtures, and the tool list is generated from the engine's job registry (adding a job adds a tool with no MCP code).
+
+## BL-085 — Spike: work-tracking discipline is inherited from the host, not imposed by the legislator
+
+**Status: SPIKE PROPOSED 2026-08-30** — exploration, time-boxed, no `skill/` change, no VERSION, no benchmark. Raised by the owner: the legislator should *inherit* the task-tracking discipline of the repository it attaches to, not bring its own.
+
+**The question:** where does a legislated project keep its work items — and what should the legislator do about it? Today the answer is hard-coded: `docs/backlog.md`, a text file, with `BL-NNN` cases minted by hand. That is the right answer for a repository with nothing else, and the wrong one for a repository whose team already lives in Jira, GitHub Issues, GitLab Issues, Linear, Azure Boards or YouTrack — there the text backlog is a second, drifting register.
+
+**The probe:** (1) **Detection** — what a run can observe deterministically: a `.github/` tree and a GitHub remote, a GitLab remote, `.jira`/`atlassian` references in commit messages and branch names (`PROJ-123`), Linear/YouTrack key patterns, an existing issue-tracker MCP server in the host's configuration (`.mcp.json`, `opencode.json`, `~/.claude.json`), and — the strongest signal — branch and commit conventions already referencing a tracker key. Rank the signals by precision. (2) **Sanction, not silence** — for each tracker family, what the legislator *offers*: connect it (the sanctioned MCP server for that tracker, registered per instance the same way BL-079 scopes MCPs), and drive the case lifecycle through it — case creation, numbering (the tracker's key replaces `BL-NNN` as the case identifier; branch pattern and case-directory name follow, so both become options in the BL-082/083 model, never literals), reading status and linking the case directory from the ticket. The law's shape changes with it: `core/sdd.md`'s "backlog/register row links into the case" becomes "the tracker item links into the case"; `pair-development.md`'s branch convention defers to the tracker key. (3) **The migration recommendation** — the text backlog is the *lowest-priority* home, kept only where no tracker exists. Where a repository has a hosting platform with a tracker (GitHub Issues at minimum — every GitHub remote has one) and still runs a text backlog, the audit report carries a standing recommendation to migrate, with an offered path (a deterministic `backlog → issues` export that preserves `BL-NNN` in the issue title and closes the loop by rewriting the register rows to links). Member #0 is the first candidate: this file has 85 entries and a GitHub remote. (4) **What stays text regardless** — the case directory (`docs/cases/`), ADRs, the journal; the tracker holds the *item*, the repository holds the *record*. Draw that line explicitly so no tracker ever becomes the home of a spec.
+
+**What the answer decides:** whether "backlog" in the law names a file or a *port* with a text-file default; whether the BL-083 options model needs a `tracker` section (`kind`, `keyPattern`, `mcpServer`, `caseIdSource`); and whether the migration recommendation is a report line (advisory) or a restructure step (gated). It also decides the fate of BL-031 (the backlog split): if the register moves to a tracker, BL-031 is absorbed.
+
+**Why a spike and not a case:** the detection table and the per-tracker capability matrix (which MCP servers exist, what they can create/read/number, what they cannot) are measurements nobody in this repo has taken; the law text follows from them, not the other way round. Three answers are plausible — port with default, advisory only, or tracker-first with the file as fallback — and they imply different amounts of engine work.
+
+**Stop condition:** the deliverable is `docs/cases/BL-085-inherit-work-tracking/` with the detection-signal table, the tracker × capability matrix (create / number / read / link, via which MCP server), the recommended law wording for `sdd.md` and `pair-development.md`, and a sized list of follow-up cases (the options-model section, the export job, the audit line). No tracker integration is written inside the spike. Depends on nothing; its follow-ups land on the BL-082 substrate and the BL-083 options model.
 
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
 

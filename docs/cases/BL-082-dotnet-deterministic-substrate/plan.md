@@ -240,7 +240,7 @@ dotnet test --nologo
   `System.IO.Abstractions.IFileSystem` and `System.TimeProvider` are used as-is.
 - Test helper (in Core.Tests, `public`, reused by every later test project via `InternalsVisibleTo` is *not* used — it is a `TestSupport` project-less folder copied by `<Compile Include>` link in each test csproj):
   ```csharp
-  public sealed class FakeEnvironment : IEnvironment { public Dictionary<string,string> Vars {get;} = new(); public string CurrentDirectory {get;set;} = "/work"; public string HomeDirectory {get;set;} = "/home/u"; public string? GetVariable(string n) => Vars.GetValueOrDefault(n); }
+  public sealed class FakeEnvironment : IEnvironment { public Dictionary<string,string> Vars {get;} = new(); public string CurrentDirectory {get;set;} = "/work"; public string HomeDirectory {get;set;} = "/fake-home"; public string? GetVariable(string n) => Vars.GetValueOrDefault(n); }
   public sealed class FakeProcessRunner : IProcessRunner { public Func<string, IReadOnlyList<string>, string, ProcessResult> OnRun {get;set;} = (_,_,_) => new(0,"",""); public List<(string,IReadOnlyList<string>,string)> Calls {get;} = new(); public ProcessResult Run(string f, IReadOnlyList<string> a, string d, TimeSpan t){ Calls.Add((f,a,d)); return OnRun(f,a,d);} }
   ```
 
@@ -445,7 +445,7 @@ public class OptionsComposerTests
     }
     [Fact] public void Machine_file_overrides_default_and_stamps_source()
     {
-        var o = OptionsComposer.Compose(Fs(("/home/u/.config/legislator/legislator.yaml", "cases_dir: work\n")), new FakeEnvironment(), "/home/u/.config/legislator/legislator.yaml", null);
+        var o = OptionsComposer.Compose(Fs(("/fake-home/.config/legislator/legislator.yaml", "cases_dir: work\n")), new FakeEnvironment(), "/fake-home/.config/legislator/legislator.yaml", null);
         Assert.Equal("work", o.CasesDir.Value); Assert.Equal(OptionsLayer.Machine, o.CasesDir.Source);
     }
     [Fact] public void Instance_beats_machine_and_env_beats_instance()
@@ -546,7 +546,7 @@ public class ProgramTests
     }
     [Fact] public void Config_error_exits_2_naming_layer_key_reason()
     {
-        var fs = new MockFileSystem(); fs.AddFile("/home/u/.config/legislator/legislator.yaml", new MockFileData("nope: 1\n"));
+        var fs = new MockFileSystem(); fs.AddFile("/fake-home/.config/legislator/legislator.yaml", new MockFileData("nope: 1\n"));
         var e = new StringWriter();
         var code = Program.Run(["config", "show"], fs, TimeProvider.System, new FakeEnvironment(), new FakeProcessRunner(), new StringWriter(), e);
         Assert.Equal(2, code); Assert.Contains("machine: nope: unknown key", e.ToString());
