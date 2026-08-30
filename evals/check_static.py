@@ -321,6 +321,21 @@ if props.exists():
                   f"{csproj.relative_to(REPO)} does not restate {key}",
                   "build discipline is declared once, in Directory.Build.props")
 
+print("== BL-082: no statics in the core (R-8204) ==")
+# A static call is the identifier at the start of a member chain, optionally
+# qualified by its namespace; `fs.File.Exists` (IFileSystem) is not a static.
+FORBIDDEN_STATIC = re.compile(
+    r"(?<![\w.])(?:System\.(?:IO\.|Diagnostics\.)?)?"
+    r"(?:(?:File|Directory|Environment|Process)\.|Path\.GetFullPath\b|DateTime(?:Offset)?\.(?:Now|UtcNow)\b)")
+for proj in ("Legislator.Core", "Legislator.Engine"):
+    for cs in sorted((SRC / proj).rglob("*.cs")):
+        if "/obj/" in cs.as_posix() or "/bin/" in cs.as_posix():
+            continue
+        hits = [n for n, line in enumerate(cs.read_text().splitlines(), 1)
+                if FORBIDDEN_STATIC.search(line) and not line.strip().startswith("//")]
+        check(not hits, f"{cs.relative_to(REPO)} has no static file/clock/env/process call",
+              f"lines {hits}")
+
 if failures:
     print(f"\n{len(failures)} check(s) FAILED")
     sys.exit(1)
