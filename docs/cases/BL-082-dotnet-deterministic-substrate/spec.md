@@ -150,6 +150,7 @@ to the law's content beyond the command names.
 
 ## Hurting case
 
+**HC-8201 — overridden cases directory: parity and provenance.**
 **GIVEN** a fleet machine with the v25 binary installed and
 `~/.config/legislator/legislator.yaml` overriding the cases directory
 name, **WHEN** an agent runs `legislator sdd-lint --control <dir>` from
@@ -183,3 +184,12 @@ line.
   `tests/`, one solution, .NET 10, xUnit v3 on Microsoft.Testing.Platform,
   NativeAOT CLI. One repository, one CI, one benchmark, one case per
   edition.
+
+### Session 2026-08-30 (dev-flow stage 4 audit)
+
+- Q: R-8201 says one test project per source project; the plan adds a
+  fifth, `Legislator.Parity.Tests`. Split or keep? → **A: Keep.** The parity
+  twins are a boundary of their own — they run the published binary
+  against the Python rulers' labels, not a library — and mixing them into
+  `Legislator.Cli.Tests` would blur the gate a reviewer reads. R-8201's
+  letter is departed from here deliberately; its id is unchanged.

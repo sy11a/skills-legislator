@@ -1,6 +1,6 @@
 # BL-082 — The .NET deterministic substrate — Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **Execution:** by the owner under dev-flow — stage 6 (build), one task per session, red → green → owned, review with the owner per R-8216; the flow tracker in the KB (`Tasks/BL-082/`) is the single record of build progress. Steps use checkbox (`- [ ]`) syntax for tracking. *(Header rewritten 2026-08-30, stage 4 audit — the original named an agent sub-skill; superseded by the owner-executes ruling of 2026-08-29.)*
 
 **Goal:** Replace the Python engine and the four Python hooks with one tested .NET core behind a NativeAOT `legislator` CLI, byte-parity-proven against the existing Python checks, with every default in one options model composed from four configuration layers.
 
@@ -8,7 +8,7 @@
 
 **Tech Stack:** .NET 10 SDK (10.0.106 on the reference machine), C# 14, xUnit v3 on Microsoft.Testing.Platform, `TestableIO.System.IO.Abstractions` (+ TestingHelpers), `YamlDotNet` with its static (source-generated) context for AOT, NativeAOT publish per RID.
 
-**Spec:** `docs/cases/BL-082-dotnet-deterministic-substrate/spec.md` (R-8201–R-8217). Read it first; every task below traces `per R-NNN`. Every task is class **[D]** — deterministic, no agent needed to execute its deliverable.
+**Spec:** `docs/cases/BL-082-dotnet-deterministic-substrate/spec.md` (R-8201–R-8217). **Contracts:** `contracts.md` (C-01–C-12) — tasks cite them, never restate them. Read both first; every task below traces `per R-NNN`. Every task is class **[D]** — deterministic, no agent needed to execute its deliverable.
 
 ## Global Constraints
 
@@ -103,8 +103,11 @@ plugin/hooks/hooks.json               names the binary
 - Modify: `evals/check_static.py` (append a section)
 - Modify: `.gitignore` (add `src/**/bin/`, `src/**/obj/`, `tests/**/bin/`, `tests/**/obj/`, `artifacts/`)
 
-**Interfaces:**
-- Produces: the project names above; test projects reference their source project; `Legislator.Parity.Tests` references `Legislator.Cli`.
+**Interfaces:** produces **C-01** (`contracts.md`).
+
+**Amendments (2026-08-30, stage 4 audit — operator-approved):**
+- AOT-first: `evals/check_dotnet.sh` also runs `dotnet publish Legislator.Cli -c Release -r linux-x64 -o ../artifacts/linux-x64` from this task on, so trim/AOT warnings (`IL2026`/`IL3050`) surface in the task that causes them; Task 12 keeps only the per-RID loop and checksums.
+- R-8202 scope: the "does not restate" check covers `tests/**/*.csproj` too; `IsAotCompatible=false` in test projects is the ONE permitted override (the static check's list excludes that key by design) — say so in the check's message.
 
 - [ ] **Step 1: Write the failing static check** — append to `evals/check_static.py`:
 
@@ -230,19 +233,7 @@ dotnet test --nologo
 - Test: `tests/Legislator.Core.Tests/Abstractions/FakeEnvironmentTests.cs`
 - Modify: `evals/check_static.py` (statics-in-core check)
 
-**Interfaces:**
-- Produces:
-  ```csharp
-  public interface IEnvironment { string? GetVariable(string name); string CurrentDirectory { get; } string HomeDirectory { get; } }
-  public sealed record ProcessResult(int ExitCode, string Stdout, string Stderr);
-  public interface IProcessRunner { ProcessResult Run(string fileName, IReadOnlyList<string> args, string workingDirectory, TimeSpan timeout); }
-  ```
-  `System.IO.Abstractions.IFileSystem` and `System.TimeProvider` are used as-is.
-- Test helper (in Core.Tests, `public`, reused by every later test project via `InternalsVisibleTo` is *not* used — it is a `TestSupport` project-less folder copied by `<Compile Include>` link in each test csproj):
-  ```csharp
-  public sealed class FakeEnvironment : IEnvironment { public Dictionary<string,string> Vars {get;} = new(); public string CurrentDirectory {get;set;} = "/work"; public string HomeDirectory {get;set;} = "/fake-home"; public string? GetVariable(string n) => Vars.GetValueOrDefault(n); }
-  public sealed class FakeProcessRunner : IProcessRunner { public Func<string, IReadOnlyList<string>, string, ProcessResult> OnRun {get;set;} = (_,_,_) => new(0,"",""); public List<(string,IReadOnlyList<string>,string)> Calls {get;} = new(); public ProcessResult Run(string f, IReadOnlyList<string> a, string d, TimeSpan t){ Calls.Add((f,a,d)); return OnRun(f,a,d);} }
-  ```
+**Interfaces:** produces **C-02** (`contracts.md`).
 
 - [ ] **Step 1: Write the failing static check** — append to `evals/check_static.py`:
 
@@ -284,7 +275,7 @@ public class FakeEnvironmentTests
 
 - [ ] **Step 4: Run, expect compile FAIL** — `dotnet test tests/Legislator.Core.Tests` → `IEnvironment` not found.
 
-- [ ] **Step 5: Implement** the three interfaces and the two fakes as specified in *Interfaces*; `Composition.cs` in Cli:
+- [ ] **Step 5: Implement** the three interfaces and the two fakes as specified in C-02; `Composition.cs` in Cli:
 
 ```csharp
 internal sealed class SystemEnvironment : IEnvironment
@@ -320,45 +311,7 @@ internal sealed class SystemProcessRunner : IProcessRunner
 - Test: `tests/Legislator.Core.Tests/Options/LegislatorOptionsTests.cs`
 - Modify: `evals/check_static.py` (literal-outside-options check)
 
-**Interfaces:**
-- Produces:
-  ```csharp
-  public enum OptionsLayer { Defaults, Machine, Instance, Environment }
-  public sealed record OptionValue<T>(T Value, OptionsLayer Source);
-  public sealed class LegislatorOptions
-  {
-      // every member: a default here and nowhere else. Keys are the YAML/env names.
-      public OptionValue<string> DocsDir { get; init; } = new("docs", OptionsLayer.Defaults);               // key: docs_dir
-      public OptionValue<string> AiDir { get; init; } = new("ai", OptionsLayer.Defaults);                   // ai_dir     (under docs)
-      public OptionValue<string> RulesDir { get; init; } = new("rules", OptionsLayer.Defaults);             // rules_dir  (under docs/ai)
-      public OptionValue<string> OkfDir { get; init; } = new("okf", OptionsLayer.Defaults);                 // okf_dir
-      public OptionValue<string> CasesDir { get; init; } = new("cases", OptionsLayer.Defaults);             // cases_dir
-      public OptionValue<string> AdrDir { get; init; } = new("adr", OptionsLayer.Defaults);                 // adr_dir
-      public OptionValue<string> JournalDir { get; init; } = new("journal", OptionsLayer.Defaults);         // journal_dir
-      public OptionValue<string> ManifestFile { get; init; } = new("manifest.json", OptionsLayer.Defaults); // manifest_file
-      public OptionValue<string> BaselineFile { get; init; } = new("baseline.md", OptionsLayer.Defaults);   // baseline_file
-      public OptionValue<string> EntryDocument { get; init; } = new("AGENTS.md", OptionsLayer.Defaults);    // entry_document
-      public OptionValue<string> EntryAlias { get; init; } = new("CLAUDE.md", OptionsLayer.Defaults);       // entry_alias
-      public OptionValue<string> OpencodeConfig { get; init; } = new("opencode.json", OptionsLayer.Defaults);
-      public OptionValue<string> ProjectRulesDir { get; init; } = new(".claude/rules", OptionsLayer.Defaults);
-      public OptionValue<string> BacklogFile { get; init; } = new("backlog.md", OptionsLayer.Defaults);
-      public OptionValue<string> ChangelogFile { get; init; } = new("CHANGELOG.md", OptionsLayer.Defaults);
-      public OptionValue<int> OkfDebtDays { get; init; } = new(30, OptionsLayer.Defaults);                  // okf_debt_days
-      public OptionValue<string> BranchPattern { get; init; } = new("bl/{nnn}-{slug}", OptionsLayer.Defaults);
-      public OptionValue<string> EditionTagPattern { get; init; } = new("v{n}", OptionsLayer.Defaults);
-      public OptionValue<string> MachineConfigFile { get; init; } = new(".config/legislator/legislator.yaml", OptionsLayer.Defaults); // relative to home
-      public OptionValue<string> InstanceConfigFile { get; init; } = new("legislator.yaml", OptionsLayer.Defaults);
-      public OptionValue<string> RunRecordDir { get; init; } = new("legislator-runs", OptionsLayer.Defaults); // under the system temp dir
-      public OptionValue<string> GitExecutable { get; init; } = new("git", OptionsLayer.Defaults);
-      public OptionValue<int> GitTimeoutSeconds { get; init; } = new(10, OptionsLayer.Defaults);
-      public OptionValue<IReadOnlyList<string>> SourceExtensions { get; init; } = new([".cs", ".ts", ".tsx", ".js", ".jsx", ".py", ".go", ".rs", ".java", ".kt", ".rb", ".php", ".sql", ".html", ".css"], OptionsLayer.Defaults);
-      public OptionValue<IReadOnlyList<string>> BuildDirs { get; init; } = new(["bin", "obj", "node_modules", "dist"], OptionsLayer.Defaults);
-      public OptionValue<IReadOnlyList<string>> HumanClassDocs { get; init; } = new(["glossary.md", "log.md"], OptionsLayer.Defaults);
-      public static IReadOnlyDictionary<string, string> KeyMap { get; }  // "docs_dir" → nameof(DocsDir) … generated by hand, asserted complete by test
-      public IEnumerable<(string Key, string Value, OptionsLayer Source)> Enumerate();
-  }
-  ```
-  The list above is the v24 engine's constant surface (`ROOT/docs/okf`, `docs/cases`, `HUMAN_CLASS`, `BUILD_DIRS`, `SOURCE_EXTS`, `DEBT_DAYS`, the audit checks' file names). Add a member whenever a port in Tasks 6–10 meets another literal — never the literal.
+**Interfaces:** produces **C-03** (`contracts.md`).
 
 - [ ] **Step 1: Write the failing static check** — append to `evals/check_static.py`:
 
@@ -402,7 +355,7 @@ public class LegislatorOptionsTests
 (The reflection test runs in the test project only — `IsAotCompatible=false` there; `Enumerate` and `KeyMap` themselves are hand-written, no reflection in Core.)
 
 - [ ] **Step 4: Run, expect FAIL** (types missing).
-- [ ] **Step 5: Implement** `LegislatorOptions` exactly as in *Interfaces*, with a hand-written `KeyMap` dictionary and `Enumerate()` switch over every member (lists joined with `,`).
+- [ ] **Step 5: Implement** `LegislatorOptions` exactly as in C-03, with a hand-written `KeyMap` dictionary and `Enumerate()` switch over every member (lists joined with `,`).
 - [ ] **Step 6: Run** — green; `check_static.py` ok.
 - [ ] **Step 7: Commit** — `"BL-082: the options model — every default in one place, static check for literals"`.
 - [ ] **Step 8: Review with the owner.**
@@ -415,21 +368,7 @@ public class LegislatorOptionsTests
 - Create: `src/Legislator.Core/Options/YamlLayerReader.cs`, `EnvLayerReader.cs`, `OptionsValidator.cs`, `OptionsComposer.cs`, `OptionsError.cs`, `YamlStaticContext.cs`
 - Test: `tests/Legislator.Core.Tests/Options/OptionsComposerTests.cs`, `OptionsValidatorTests.cs`, `EnvLayerReaderTests.cs`
 
-**Interfaces:**
-- Produces:
-  ```csharp
-  public sealed record OptionsError(OptionsLayer Layer, string Key, string Reason);
-  public sealed class OptionsException(IReadOnlyList<OptionsError> errors) : Exception { public IReadOnlyList<OptionsError> Errors {get;} = errors; }
-  public static class OptionsComposer
-  {
-      // machineFile/instanceFile: absolute paths or null (layer absent). Throws OptionsException (all errors, first layer first).
-      public static LegislatorOptions Compose(IFileSystem fs, IEnvironment env, string? machineFile, string? instanceFile);
-  }
-  public static class YamlLayerReader { public static IReadOnlyDictionary<string,string> Read(IFileSystem fs, string path); } // flat top-level scalars and sequences only
-  public static class EnvLayerReader  { public static IReadOnlyDictionary<string,string> Read(IEnvironment env, IEnumerable<string> knownKeys); } // LEGISLATOR_DOCS_DIR → docs_dir
-  public static class OptionsValidator { public static IReadOnlyList<OptionsError> Validate(OptionsLayer layer, IReadOnlyDictionary<string,string> raw); } // unknown key; int keys parse ≥ 1; non-empty strings; no path separator '..' segments
-  ```
-  Precedence low→high: Defaults, Machine, Instance, Environment. A key set in a higher layer overrides and stamps its `Source`.
+**Interfaces:** produces **C-04** (`contracts.md`).
 
 - [ ] **Step 1: Write the failing tests**:
 
@@ -504,17 +443,10 @@ public class EnvLayerReaderTests
 - Create: `src/Legislator.Cli/Properties/launchSettings.json` (none — omit), `src/Legislator.Cli/Version.props` (`<Version>25.0.0</Version>`, imported by the csproj)
 - Test: `tests/Legislator.Cli.Tests/ProgramTests.cs`, `tests/Legislator.Engine.Tests/JobRegistryTests.cs`
 
-**Interfaces:**
-- Produces:
-  ```csharp
-  public sealed record JobResult(int ExitCode, string Stdout, string Stderr);
-  public sealed class JobContext(IFileSystem fs, TimeProvider clock, IEnvironment env, IProcessRunner proc, LegislatorOptions options, string root, IReadOnlyList<string> args, TextWriter? log = null) { /* properties of the same names */ }
-  public interface IJob { string Name { get; } string Usage { get; } JobResult Run(JobContext ctx); }
-  public static class JobRegistry { public static IReadOnlyDictionary<string, Func<IJob>> Jobs { get; } public static IReadOnlyList<string> Names => Jobs.Keys.Order().ToList(); }
-  // Cli
-  public static class Program { public static int Main(string[] args); }   // exit codes 0/1/2/3/4 as Global Constraints
-  ```
-  `legislator <job> [--root <dir>] [job args…]` — `--root` defaults to `env.CurrentDirectory`. `legislator config show [--json] [--root <dir>]`. `legislator version` prints `Version.props`'s value. Unknown job → usage on stderr, exit 2. Any exception escaping a job → `engine failed: <Type>: <message>` on stderr, exit 3 — mirrors the Python `main`.
+**Interfaces:** produces **C-05** (`contracts.md`).
+
+**Amendments (2026-08-30, stage 4 audit — operator-approved):**
+- AOT-first: `Legislator.Cli.Tests` golden runs spawn the PUBLISHED binary (`artifacts/linux-x64/legislator`, built by `check_dotnet.sh`), never `dotnet run` — what is measured is what ships.
 
 - [ ] **Step 1: Write the failing tests**:
 
@@ -581,10 +513,11 @@ public class JobRegistryTests
 - Create: `tests/Legislator.Parity.Tests/Labels.cs`, `tests/Legislator.Parity.Tests/LabelCoverageTests.cs`, `tests/Legislator.Parity.Tests/ParityAttribute.cs`
 - Create: `evals/parity_labels.py` (prints every `check(...)` label of both rulers, one per line — the source of truth the meta-test reads)
 
-**Interfaces:**
-- `LEGISLATOR_ENGINE_CMD` — when set, `run()`/`audit()`/`eng()` execute `[$LEGISLATOR_ENGINE_CMD, <job>, "--root", <root>, …]` instead of `python3 docs/ai/engine.py`; the fixture repos still copy `engine.py` in (until Task 12 removes it), so both arms are measured on identical trees.
-- `LEGISLATOR_HOOK_CMD` — when set, `run_hook(script, …)` executes `[$LEGISLATOR_HOOK_CMD, "hook", <script.stem>]`.
-- `[Parity("engine", "anchors_clean_repo_exit_0")]` — attribute naming the ruler (`engine`|`hooks`) and label a .NET test twins.
+**Interfaces:** produces **C-06** (`contracts.md`).
+
+**Amendments (2026-08-30, stage 4 audit — operator-approved):**
+- AOT-first: the parity meta-test and every twin execute the published binary via `LEGISLATOR_ENGINE_CMD`/`LEGISLATOR_HOOK_CMD` pointing at `artifacts/linux-x64/legislator`.
+- `Legislator.Parity.Tests` stays a fifth test project — a deliberate departure from R-8201's letter, recorded in spec.md `## Clarifications` (2026-08-30).
 
 - [ ] **Step 1: Write `evals/parity_labels.py`**:
 
@@ -665,17 +598,10 @@ Print the arm under test at the top of each ruler: `print(f"arm: {ENGINE_CMD or 
 - Test: `tests/Legislator.Engine.Tests/Anchors/AnchorClassifierTests.cs`, `tests/Legislator.Engine.Tests/Jobs/AnchorsJobTests.cs`, `tests/Legislator.Parity.Tests/Engine/AnchorsTwins.cs`
 - Reference: `skill/assets/engine/engine.py:60-220` (the Python `classify`, `path_target`, `resolve_symbols`, `anchored_docs`, `scannable_lines`, `TOKEN`), `docs/ai/rules/core/okf.md` §Link hardness (the closed definition).
 
-**Interfaces:**
-- Produces:
-  ```csharp
-  public sealed class RepoLayout(LegislatorOptions o, string root) { public string Docs {get;} public string Okf {get;} public string Cases {get;} public string Ai {get;} public string Rules {get;} public string Manifest {get;} /* joined with '/' — never Path.Combine on a real disk */ }
-  public enum AnchorKind { None, Path, Symbol }
-  public static class AnchorClassifier { public static AnchorKind Classify(string token, IReadOnlySet<string> topLevelDirs); public static string PathTarget(string token); /* strips trailing .Member() */ }
-  public sealed class SymbolIndex { public static SymbolIndex Build(IFileSystem fs, string root, LegislatorOptions o); public bool Contains(string leadingSegment); }
-  public sealed class AnchorsJob : IJob { public string Name => "anchors"; … }
-  public static class Findings { public static JobResult AsResult(IEnumerable<string> findings) => new(findings.Any() ? 1 : 0, string.Join("", findings.Order(StringComparer.Ordinal).Select(f => f + "\n")), ""); }
-  ```
-  Finding text is byte-identical to the Python: `"{rel}:{lineno}: path-anchor: {token} → no such file"` and `"{rel}:{lineno}: symbol-anchor: {token} → not found in {roots}"`, sorted ordinal.
+**Interfaces:** produces **C-07** (`contracts.md`).
+
+**Amendments (2026-08-30, stage 4 audit — operator-approved):**
+- AOT-first: every regex in `AnchorClassifier` (and any later Core/Engine regex) is a `[GeneratedRegex]` partial method — never `new Regex(...)`, whose AOT fallback is the interpreter.
 
 - [ ] **Step 1: Write the failing classifier tests** (from `core/okf.md`'s closed definition):
 
@@ -768,14 +694,7 @@ The label list for this task is the output of `python3 evals/parity_labels.py | 
 - Test: `tests/Legislator.Engine.Tests/Jobs/{OkfDebtJobTests,SddLintJobTests,BaselineJobTests}.cs`, `tests/Legislator.Parity.Tests/Engine/{OkfDebtTwins,SddLintTwins,BaselineTwins}.cs`
 - Reference: `skill/assets/engine/engine.py:221-560` and the sdd-lint helpers up to `job_baseline`.
 
-**Interfaces:**
-- Produces:
-  ```csharp
-  public static class GitLog { /* newest commit ISO date for rel path, or null when untracked / no git; NoGit flag when the git call itself fails */ public static (string? Iso, bool GitAvailable) NewestCommit(IProcessRunner proc, LegislatorOptions o, string root, string rel); }
-  public sealed record CaseFile(string Dir, string Spec, string? Plan, string Header, IReadOnlyList<string> RequirementIds, bool Converged);
-  public static class CaseModel { public static IReadOnlyList<CaseFile> Load(IFileSystem fs, RepoLayout l); }
-  ```
-  `okf-debt` **without git is a loud finding** (`"okf-debt: git unavailable — debt cannot be computed"`, exit 1) — the BL-069 F1 fix, already in the Python since BL-070; the twin asserts it.
+**Interfaces:** produces **C-08** (`contracts.md`).
 
 - [ ] **Step 1** For each job, in this order (`okf-debt` → `sdd-lint` → `baseline`): write the unit tests for every branch of the Python function (the Python's section comments are the branch list: `DEBT_DAYS` threshold from `OkfDebtDays`, directory anchors not sources, untracked docs skipped, `sdd-lint`'s coverage R↔task, dangling `per R-NNN`, unresolved `{{TOKEN}}` outside the ADR template, one-SHALL EARS bullets, ADR name/sequence/sections/status closed set, journal day-names, changelog Unreleased section, OKF front-matter status, quoted tokens are quotation, converged cases skipped; `baseline` writes exactly `docs/ai/baseline.md` and nothing else, content byte-equal to the Python's on the same tree).
 - [ ] **Step 2** Run, expect FAIL. **Step 3** Implement by transliteration, directory names via `RepoLayout`, thresholds via options, git via `GitLog` over `IProcessRunner`. **Step 4** Run, green.
@@ -792,10 +711,7 @@ The label list for this task is the output of `python3 evals/parity_labels.py | 
 - Test: `tests/Legislator.Engine.Tests/Audit/*.cs` (one file per check), `Jobs/DetectJobTests.cs`, `tests/Legislator.Parity.Tests/Engine/{AuditTwins,DetectTwins}.cs`
 - Reference: `skill/assets/engine/engine.py:560-1222`; `skill/references/audit-checks.md` (the pinned report shape the checks print).
 
-**Interfaces:**
-- `legislator audit --skill <path> [--root <dir>] [--model-findings <json>]` — exit 1 when any finding, 0 clean; report on stdout starts `# AI-Layer Audit`, clean report contains `No findings.`.
-- `legislator detect --skill <path> [--root <dir>]` — JSON (`indent=1, sort_keys` in Python → `JsonSerializerOptions { WriteIndented = true }` gives 2-space indent: **the twin asserts the parsed object, and the ruler's `detect` checks parse JSON too — confirm by reading them; if any compares raw text, emit with a custom 1-space writer to stay byte-identical**).
-- `--skill` missing or not a directory → stderr `"{job} requires --skill <skill-path> (the legislator package root)"`, exit 2 (verbatim).
+**Interfaces:** produces **C-09** (`contracts.md`).
 
 - [ ] **Step 1** Unit tests per audit check (the Python names them by number and slug; the test class names match: `Check02OwnedIntegrityTests` …), on `MockFileSystem` repos built like `audit_repo()` in the ruler. **Step 2** FAIL. **Step 3** Implement, one check per commit if a check exceeds ~80 lines. **Step 4** Green.
 - [ ] **Step 5** Twins for every `engine` label in the audit/detect sections (`grep -E '^engine\t(audit|check_|detect|R-6)'`). **Step 6** Parity run: `LEGISLATOR_ENGINE_CMD=… python3 evals/check_engine.py | grep -E 'audit|detect'` all ok; the report text `diff`-clean against the Python on `evals/fixtures/upgrade-base`.
@@ -810,11 +726,7 @@ The label list for this task is the output of `python3 evals/parity_labels.py | 
 - Test: `tests/Legislator.Engine.Tests/Apply/*.cs`, `Jobs/{ApplyJobTests,VerifyJobTests,ReportJobTests}.cs`, `tests/Legislator.Parity.Tests/Engine/{ApplyTwins,VerifyTwins,ReportTwins}.cs`
 - Reference: `skill/assets/engine/engine.py:1222-1483`, ADR-0006, `SKILL.md` Steps 3/6/7.
 
-**Interfaces:**
-- `apply --skill <p> --stacks <a,b> [--keep-add <path>::<reason>]* [--keep-remove <path>]* [--record <file>] [--root <dir>]` — stdout lines exactly as `_run_job` prints (`apply: {mode} mode, constitution v{version}, stacks [...]`, the `owned:`/`keep:`/`file model:` lines, `run record: {path}`); exit 4 with `apply stopped: {reason}` on stderr when two real entry documents exist, **having written nothing**; `--keep-add` without `::` → usage, exit 2.
-- `verify [--record <file>]` — failures one per line, exit 1; appends the post snapshot to the record.
-- `report [--record <file>] [--model-findings <json>]` — the Step-7 report from the record.
-- Record path default: `RunRecordDir` under the system temp dir (`ctx.Fs.Path.GetTempPath()` — an `IFileSystem` call, permitted).
+**Interfaces:** produces **C-10** (`contracts.md`).
 
 - [ ] **Step 1** Unit tests: owned-set copy/overwrite/unchanged/delete classification, keep rules (add/remove/refused), manifest regeneration (`ownedFiles` sorted), the v14 file model events, the decision-gate stop writes nothing (assert `MockFileSystem` unchanged), verify's one re-copy on byte-diff, report's pinned model slots. **Step 2** FAIL. **Step 3** Implement. **Step 4** Green.
 - [ ] **Step 5** Twins for the `engine` labels of the v24 sections (`grep -E '^engine\t(apply|verify|report|record|owned|keep|step|R-7[5])'`). **Step 6** Parity run — full `check_engine.py` against the binary is now **all ok**; save the output as `docs/cases/BL-082-dotnet-deterministic-substrate/parity-engine-green.txt`.
@@ -830,10 +742,7 @@ The label list for this task is the output of `python3 evals/parity_labels.py | 
 - Test: `tests/Legislator.Hooks.Tests/Hooks/*.cs`, `tests/Legislator.Parity.Tests/Hooks/*Twins.cs`
 - Reference: `plugin/hooks/*.py` (each file's docstring is its contract), `evals/check_hooks.py`.
 
-**Interfaces:**
-- `legislator hook <guard_owned_files|guard_git_conduct|format_on_edit|okf_sync_check>` reads one JSON object on stdin; exit `0` allow, `2` block with the message on stderr; **never** another exit code, **never** an exception escaping — malformed input → 0 (the hook contract: a crash must not stop the user's work). `HookCommand` wraps every hook in a catch-all returning 0.
-- `hooks.json` commands become `"legislator hook guard_owned_files"` etc. (the binary is on PATH by Task 12's installer); `format_on_edit` keeps its `timeout: 10`.
-- The registry predicate (walk up to `docs/ai/manifest.json`) is the v24 one; BL-077 replaces it with the machine registry on this same code.
+**Interfaces:** produces **C-11** (`contracts.md`).
 
 - [ ] **Step 1** For each hook, transliterate its Python into a hook class with one unit test per documented branch (`guard_owned_files`: rules dir, `opencode.json`, `engine.py`, manifest not guarded, not legislated → 0, malformed → 0; `guard_git_conduct`: the command-head parser incl. `git.exe` and backslash heads from BL-070, the blocked verbs, warnings; `format_on_edit`: best-effort formatter absent → 0; `okf_sync_check`: `stop_hook_active` guard). **Step 2** FAIL. **Step 3** Implement. **Step 4** Green.
 - [ ] **Step 5** Twins for every `hooks` label (`python3 evals/parity_labels.py | grep '^hooks'`). **Step 6** Parity: `LEGISLATOR_HOOK_CMD=$PWD/artifacts/legislator python3 evals/check_hooks.py` all ok. Now run the meta-test: `dotnet test tests/Legislator.Parity.Tests` — `Every_ruler_label_has_a_named_twin` **green**; drop the `--filter-not-trait` from `check_dotnet.sh`.
@@ -850,11 +759,7 @@ The label list for this task is the output of `python3 evals/parity_labels.py | 
 - Test: `tests/Legislator.Cli.Tests/StartupBudgetTests.cs`, `tests/Legislator.Engine.Tests/Audit/ArmIntegrityCheckTests.cs`
 - Modify: `evals/check_static.py` (the edition pin: `skill/VERSION` == major of `src/Legislator.Cli/Version.props`)
 
-**Interfaces:**
-- `tools/publish-legislator.sh` → `artifacts/<rid>/legislator[.exe]` + `artifacts/SHA256SUMS` for `linux-x64 win-x64 osx-x64 osx-arm64`.
-- `tools/install-legislator.sh [--from artifacts/<rid>]` → copies to `~/.local/bin/legislator` (Linux/macOS) — the operator-side script (declared operator-side-Linux/macOS in the register; the Windows install is `Copy-Item` documented in README, per BL-068's declaration rule).
-- `legislator version --json` → `{"version":"25.0.0","rid":"linux-x64","sha256":"…"}`.
-- Audit check `arm-integrity`: **absent binary or mismatch is a finding** (verification fails loud); the *hooks* never depend on this — they are the binary.
+**Interfaces:** produces **C-12** (`contracts.md`).
 
 - [ ] **Step 1** Failing test `StartupBudgetTests`: publishes once per test run (`[assembly: AssemblyFixture]`), runs `legislator version` 20× via `Process`, asserts median wall time < 50 ms (skip with a reason when `LEGISLATOR_STARTUP_BUDGET_SKIP=1` — CI runners vary; the reference machine is the gate). **Step 2** FAIL (no publish script). **Step 3** Write `publish-legislator.sh` (`dotnet publish src/Legislator.Cli -c Release -r $rid -o artifacts/$rid` in a loop; `sha256sum` into `SHA256SUMS`); `IsAotCompatible` warnings must be zero — fix any `IL2026`/`IL3050` by source-generated JSON/YAML event parsing (already the design). **Step 4** Green; record the measured median in the case's `research.md` §2.
 - [ ] **Step 5** Failing tests for `ArmIntegrityCheck` (version match, mismatch, absent) and `version --json`. **Step 6** Implement. **Step 7** Green.
@@ -864,6 +769,9 @@ The label list for this task is the output of `python3 evals/parity_labels.py | 
 ---
 
 ### Task 13 [D]: Law text names one command per job; retire the Python engine and hooks (per R-8207, R-8213)
+
+**Amendments (2026-08-30, stage 4 audit — operator-approved):**
+- Also update the comments that name the Python hooks: `plugin/opencode/legislator-guard.ts` lines 3 and 161, `evals/check_opencode_plugin.mjs` line 2 — they reference `plugin/hooks/*.py`, deleted by this task.
 
 **Files:**
 - Modify: `skill/assets/rules/core/verification.md` (the static rung: `python3 docs/ai/engine.py anchors` → `legislator anchors`; the "where python3 is absent" sentence → "where the `legislator` binary is absent the rung cannot run — a gap to close"), `skill/assets/rules/core/okf.md` (the two engine sentences), `skill/assets/rules/core/sdd.md` (`sdd-lint`, `baseline`), `skill/assets/rules/core/artifact-lifecycle.md` (`baseline`)
