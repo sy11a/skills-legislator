@@ -23,3 +23,10 @@ orchestrate.log
 status.md
 queue.json
 run.json
+
+# .NET substrate (BL-082)
+src/**/bin/
+src/**/obj/
+tests/**/bin/
+tests/**/obj/
+artifacts/

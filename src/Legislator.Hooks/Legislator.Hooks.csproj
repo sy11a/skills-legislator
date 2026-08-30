@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../Legislator.Core/Legislator.Core.csproj" />
+  </ItemGroup>
+</Project>

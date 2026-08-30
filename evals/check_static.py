@@ -296,6 +296,31 @@ for label, text in (("step 3.6", step3_keep.group(0) if step3_keep else ""),
               f"keep_refusal_covers_owned_set: {label} does not describe the owned set as docs/ai/rules/ alone",
               "found the narrow phrasing — engine.py and opencode.json remain keep-listable")
 
+print("== BL-082: the .NET substrate's build discipline lives once ==")
+SRC = REPO / "src"
+props = SRC / "Directory.Build.props"
+check(props.exists(), "src/Directory.Build.props exists")
+tests_props = REPO / "tests" / "Directory.Build.props"
+check(tests_props.exists() and '<Import Project="../src/Directory.Build.props" />' in tests_props.read_text(),
+      "tests/Directory.Build.props imports src/Directory.Build.props",
+      "MSBuild searches upward from the project dir; tests/ must import, never restate")
+if props.exists():
+    txt = props.read_text()
+    for key, val in [("Nullable", "enable"), ("TreatWarningsAsErrors", "true"),
+                     ("EnforceCodeStyleInBuild", "true"),
+                     ("AnalysisLevel", "latest-recommended"),
+                     ("IsAotCompatible", "true"), ("TargetFramework", "net10.0")]:
+        check(f"<{key}>{val}</{key}>" in txt, f"Directory.Build.props sets {key}={val}")
+    # IsAotCompatible is deliberately absent from the list below: test projects
+    # (JIT) set it to false, the one permitted override.
+    for csproj in sorted(list(SRC.rglob("*.csproj")) + list((REPO / "tests").rglob("*.csproj"))):
+        body = csproj.read_text()
+        for key in ("Nullable", "TreatWarningsAsErrors", "EnforceCodeStyleInBuild",
+                    "AnalysisLevel", "TargetFramework"):
+            check(f"<{key}>" not in body,
+                  f"{csproj.relative_to(REPO)} does not restate {key}",
+                  "build discipline is declared once, in Directory.Build.props")
+
 if failures:
     print(f"\n{len(failures)} check(s) FAILED")
     sys.exit(1)
