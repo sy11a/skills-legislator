@@ -36,6 +36,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   sources through `/flow-setup`, hands over what it already established,
   invokes nothing on its own authority, and skips the offer when the skill
   is not installed.
+- **Backlog BL-088 filed** — the roadmap names cases, not edition numbers:
+  every forward reference to an edition version becomes a reference to the
+  case that carries it, so a queue reshuffle cannot leave stale version
+  claims behind. Backlog entry only.
 
 - **Spike BL-085 filed** — the legislator inherits the host repository's
   work-tracking discipline (Jira, GitHub Issues, Linear … via their MCP
@@ -53,18 +57,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   with the next edition.
 - **The deterministic substrate becomes .NET from v25** (ADR-0008, BL-082):
   BL-072 is pulled forward to step zero of edition v25 — one `src/`
+- **Edition numbers are assigned at merge, never reserved** (BL-082,
+  applying the roadmap ruling made at the v25 merge). The .NET tool pin
+  `src/Legislator.Cli/Version.props` holds `0.0.0` until the edition is
+  merged; BL-082 Task 12 reads the number that is free then, bumps
+  `skill/VERSION` to it and sets the pin's major to the same, with the
+  static check binding the two from that commit on. BL-082 and BL-077 no
+  longer claim v25 — that number went to BL-085/BL-087.
+
+- **The deterministic substrate becomes .NET** (ADR-0008, BL-082):
+  BL-072 is pulled forward to step zero of the edition — one `src/`
   solution (Core, Engine, Hooks, CLI), the engine and hooks ported
   red-first against the Python checks, an options model with four
   configuration layers and `config show` provenance; Python becomes
-  prototype-only; the MCP host (BL-084, v27) and the complete
-  configuration layer (BL-083, v26) are queued behind it. Project law
+  prototype-only; the MCP host (BL-084) and the complete
+  configuration layer (BL-083) are queued behind it. Project law
   `.claude/rules/dotnet-substrate.md`. Docs only — no `skill/` change in
   this commit.
 
 - **The outer-only pivot is decided and specified** (ADR-0007, BL-077):
-  from edition v25 the AI layer leaves the code repository for an external
-  control directory; the backlog is re-prioritised around it (v25 BL-077 →
-  v26 BL-078 migration → v27 BL-079 layering; fleet-obs prerequisites
+  the AI layer leaves the code repository for an external control
+  directory; the backlog is re-prioritised around it (BL-077 → BL-078
+  migration → BL-079 layering; fleet-obs prerequisites
   BL-080 first; semver BL-081 deferred), and BL-027/044/045/052/071 are
   absorbed. Docs only — no `skill/` change in this commit.
 

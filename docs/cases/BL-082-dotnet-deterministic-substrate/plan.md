@@ -440,7 +440,7 @@ public class EnvLayerReaderTests
 **Files:**
 - Create: `src/Legislator.Engine/IJob.cs`, `JobContext.cs`, `JobResult.cs`, `JobRegistry.cs`
 - Create: `src/Legislator.Cli/Program.cs`, `Commands/JobCommand.cs`, `Commands/ConfigCommand.cs`, `Commands/VersionCommand.cs`
-- Create: `src/Legislator.Cli/Properties/launchSettings.json` (none — omit), `src/Legislator.Cli/Version.props` (`<Version>25.0.0</Version>`, imported by the csproj)
+- Create: `src/Legislator.Cli/Properties/launchSettings.json` (none — omit), `src/Legislator.Cli/Version.props` (`<Version>0.0.0</Version>` — the un-assigned pin; the edition number is assigned at Task 12, imported by the csproj)
 - Test: `tests/Legislator.Cli.Tests/ProgramTests.cs`, `tests/Legislator.Engine.Tests/JobRegistryTests.cs`
 
 **Interfaces:** produces **C-05** (`contracts.md`).
@@ -755,7 +755,7 @@ The label list for this task is the output of `python3 evals/parity_labels.py | 
 
 **Files:**
 - Create: `tools/install-legislator.sh`, `tools/publish-legislator.sh`, `.github/workflows/dotnet.yml` (or the repo's CI home — check `ls .github` first; create if absent)
-- Create: `src/Legislator.Engine/Audit/ArmIntegrityCheck.cs` (new audit check: installed version vs edition pin, checksum vs `evals/benchmarks/v25.md`'s recorded per-RID sums), `src/Legislator.Cli/Commands/VersionCommand.cs` (`--json` adds `rid` and `sha256` of the running executable)
+- Create: `src/Legislator.Engine/Audit/ArmIntegrityCheck.cs` (new audit check: installed version vs edition pin, checksum vs `evals/benchmarks/v<N>.md`'s recorded per-RID sums), `src/Legislator.Cli/Commands/VersionCommand.cs` (`--json` adds `rid` and `sha256` of the running executable)
 - Test: `tests/Legislator.Cli.Tests/StartupBudgetTests.cs`, `tests/Legislator.Engine.Tests/Audit/ArmIntegrityCheckTests.cs`
 - Modify: `evals/check_static.py` (the edition pin: `skill/VERSION` == major of `src/Legislator.Cli/Version.props`)
 
@@ -763,7 +763,7 @@ The label list for this task is the output of `python3 evals/parity_labels.py | 
 
 - [ ] **Step 1** Failing test `StartupBudgetTests`: publishes once per test run (`[assembly: AssemblyFixture]`), runs `legislator version` 20× via `Process`, asserts median wall time < 50 ms (skip with a reason when `LEGISLATOR_STARTUP_BUDGET_SKIP=1` — CI runners vary; the reference machine is the gate). **Step 2** FAIL (no publish script). **Step 3** Write `publish-legislator.sh` (`dotnet publish src/Legislator.Cli -c Release -r $rid -o artifacts/$rid` in a loop; `sha256sum` into `SHA256SUMS`); `IsAotCompatible` warnings must be zero — fix any `IL2026`/`IL3050` by source-generated JSON/YAML event parsing (already the design). **Step 4** Green; record the measured median in the case's `research.md` §2.
 - [ ] **Step 5** Failing tests for `ArmIntegrityCheck` (version match, mismatch, absent) and `version --json`. **Step 6** Implement. **Step 7** Green.
-- [ ] **Step 8** Static check: edition pin — `check(Path("skill/VERSION").read_text().strip() == version_props_major, "edition pins the tool major")`. Bump `skill/VERSION` to `25` in this commit (the constitution-source rule: a `skill/` change bumps VERSION) — the benchmark (Task 14) validates the edition.
+- [ ] **Step 8** Static check: edition pin — `check(Path("skill/VERSION").read_text().strip() == version_props_major, "edition pins the tool major")`. **Assign the edition number here, do not reserve it earlier** (amended 2026-08-31: v25 went to BL-085/BL-087 at merge, and the roadmap rule is that numbers are assigned at merge, never reserved). Read the highest `evals/benchmarks/v*.md` on freshly-fetched `master`, take the next integer `N`, bump `skill/VERSION` to it (the constitution-source rule: a `skill/` change bumps VERSION) and set `Version.props` to `<N>.0.0` in the same commit — the static check above is what makes the two impossible to separate, and the benchmark (Task 14) validates the edition.
 - [ ] **Step 9** Commit `"BL-082: NativeAOT publish per RID, install script, arm integrity audit, startup budget test"`. **Step 10** Review with the owner.
 
 ---
@@ -797,12 +797,12 @@ The label list for this task is the output of `python3 evals/parity_labels.py | 
 - Modify: `README.md` (install section: `tools/install-legislator.sh`, Windows copy; release runbook gains `tools/publish-legislator.sh` and checksum recording), `evals/README.md` (the two env vars; `check_dotnet.sh`), `CHANGELOG.md`, `docs/journal/<day>.md`
 - Modify: `.claude/rules/dotnet-substrate.md` — already written at case opening; verify each bullet has an enforcing check and name it in the bullet (`(check_static.py)`).
 - Modify: `docs/backlog.md` BL-082 status; `docs/cases/BL-069-dependency-register/register.md` — **no**: converged history; instead a new row set lands in `docs/okf/` only if the register was promoted to reference (check its header; if lifecycle, note the delta in the journal).
-- Create: `evals/benchmarks/v25.md` (with BL-077's half when that lands — this task records the BL-082 checkpoint: static rulers green on the binary, per-RID checksums, startup medians).
+- Create: `evals/benchmarks/v<N>.md`, `N` being the number Task 12 assigned (with BL-077's half when that lands — this task records the BL-082 checkpoint: static rulers green on the binary, per-RID checksums, startup medians).
 
 - [ ] **Step 1** `python3 docs/ai/engine.py anchors` → now `legislator anchors`: clean after the map edits (the `src/` rows resolve now). `legislator sdd-lint` clean; `legislator okf-debt` clean.
-- [ ] **Step 2** Run the full e2e benchmark per `evals/README.md` (`python3 evals/setup_workspace.py <ws>`, `tools/evals-bg.sh <ws>`), grade, idempotency ×3, mutation pass — record in `evals/benchmarks/v25.md` against `v24.md`. A drop is a regression: classify (law/grader/harness/model), fix, re-run; never commit over it.
+- [ ] **Step 2** Run the full e2e benchmark per `evals/README.md` (`python3 evals/setup_workspace.py <ws>`, `tools/evals-bg.sh <ws>`), grade, idempotency ×3, mutation pass — record in `evals/benchmarks/v<N>.md` against the previous edition's file. A drop is a regression: classify (law/grader/harness/model), fix, re-run; never commit over it.
 - [ ] **Step 3** Converge (`core/sdd.md`): judge the tree against R-8201–R-8217 and ADR-0008; append any gap as `per R-NNN (<gap>)` tasks here, append-only; loop until "✅ Converged" — then BL-077's plan takes over on this branch.
-- [ ] **Step 4** Commit `"BL-082: docs, benchmark v25 checkpoint, converge"`. **Step 5** Final review session with the owner.
+- [ ] **Step 4** Commit `"BL-082: docs, benchmark checkpoint, converge"`. **Step 5** Final review session with the owner.
 
 ---
 
