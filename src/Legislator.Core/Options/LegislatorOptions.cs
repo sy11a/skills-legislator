@@ -7,8 +7,11 @@ namespace Legislator.Core.Options;
 /// threshold and version default (R-8209). Law content is never an option (R-8213). A port that
 /// meets another literal adds a member here, never the literal (C-03).
 /// </summary>
-public sealed class LegislatorOptions
+public sealed record LegislatorOptions
 {
+    /// <summary>The one character that joins and splits list options - in YAML sequences read, env values read and <see cref="Enumerate"/> rendered (C-04).</summary>
+    public const char ListSeparator = ',';
+
     public OptionValue<string> DocsDir { get; init; } = new("docs", OptionsLayer.Defaults);
 
     public OptionValue<string> AiDir { get; init; } = new("ai", OptionsLayer.Defaults); // under docs
@@ -92,6 +95,13 @@ public sealed class LegislatorOptions
         ["human_class_docs"] = nameof(HumanClassDocs),
     };
 
+    /// <summary>The keys whose member is an <c>OptionValue&lt;int&gt;</c> - the validator parses these as integers of 1 or more; asserted against the members by test (C-04).</summary>
+    public static IReadOnlySet<string> IntegerKeys { get; } = new HashSet<string>(StringComparer.Ordinal)
+    {
+        "okf_debt_days",
+        "git_timeout_seconds",
+    };
+
     /// <summary>Every option as (key, rendered value, source): lists comma-joined, numbers invariant (C-03).</summary>
     public IEnumerable<(string Key, string Value, OptionsLayer Source)> Enumerate()
     {
@@ -118,8 +128,8 @@ public sealed class LegislatorOptions
         yield return ("run_record_dir", RunRecordDir.Value, RunRecordDir.Source);
         yield return ("git_executable", GitExecutable.Value, GitExecutable.Source);
         yield return ("git_timeout_seconds", GitTimeoutSeconds.Value.ToString(CultureInfo.InvariantCulture), GitTimeoutSeconds.Source);
-        yield return ("source_extensions", string.Join(",", SourceExtensions.Value), SourceExtensions.Source);
-        yield return ("build_dirs", string.Join(",", BuildDirs.Value), BuildDirs.Source);
-        yield return ("human_class_docs", string.Join(",", HumanClassDocs.Value), HumanClassDocs.Source);
+        yield return ("source_extensions", string.Join(ListSeparator, SourceExtensions.Value), SourceExtensions.Source);
+        yield return ("build_dirs", string.Join(ListSeparator, BuildDirs.Value), BuildDirs.Source);
+        yield return ("human_class_docs", string.Join(ListSeparator, HumanClassDocs.Value), HumanClassDocs.Source);
     }
 }

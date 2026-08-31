@@ -38,4 +38,15 @@ public sealed class LegislatorOptionsTests
         Assert.Contains(options.Enumerate(),
             e => e.Key == "human_class_docs" && e.Value == "glossary.md,log.md");
     }
+
+    [Fact]
+    public void Integer_keys_census_matches_the_int_members()
+    {
+        var intKeys = typeof(LegislatorOptions).GetProperties()
+            .Where(p => p.PropertyType == typeof(OptionValue<int>))
+            .Select(p => LegislatorOptions.KeyMap.Single(kv => kv.Value == p.Name).Key)
+            .ToHashSet();
+
+        Assert.Equal(intKeys, LegislatorOptions.IntegerKeys.ToHashSet());
+    }
 }

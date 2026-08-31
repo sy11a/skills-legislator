@@ -70,6 +70,8 @@ Interfaces, schemas and command-line shapes the plan's tasks produce and consume
   ```
   The list above is the v24 engine's constant surface (`ROOT/docs/okf`, `docs/cases`, `HUMAN_CLASS`, `BUILD_DIRS`, `SOURCE_EXTS`, `DEBT_DAYS`, the audit checks' file names). Add a member whenever a port in Tasks 6–10 meets another literal — never the literal.
 
+*Amended 2026-08-31 (T-04, owner ruling):* `LegislatorOptions` is a `sealed record` (the composer stamps layers with `with`-expressions); it also carries `public const char ListSeparator = ','` (the one character that joins and splits list options in YAML sequences, env values and `Enumerate()`) and `public static IReadOnlySet<string> IntegerKeys` (the keys whose member is `OptionValue<int>`, asserted against the members by test).
+
 ## C-04 Configuration layers, composition, validation, provenance
 
 *per R-8210, R-8211, R-8212 · produced by T-04 · consumed by: Cli `ConfigCommand` (T-05), hurting case HC-8201, BL-083*
@@ -88,6 +90,8 @@ Interfaces, schemas and command-line shapes the plan's tasks produce and consume
   public static class OptionsValidator { public static IReadOnlyList<OptionsError> Validate(OptionsLayer layer, IReadOnlyDictionary<string,string> raw); } // unknown key; int keys parse ≥ 1; non-empty strings; no path separator '..' segments
   ```
   Precedence low→high: Defaults, Machine, Instance, Environment. A key set in a higher layer overrides and stamps its `Source`.
+
+*Amended 2026-08-31 (T-04, owner ruling):* `YamlLayerReader.Read(IFileSystem fs, string path, OptionsLayer layer)` — the layer is passed so a structural fault (document not a mapping, nested value, invalid YAML) becomes an `OptionsError` of that layer (`Key` empty for document-level faults); the reader throws `OptionsException`, the composer catches per layer and keeps collecting. `EnvLayerReader.Prefix` (`LEGISLATOR_`) is public. Lists from env and from YAML scalars are split on `LegislatorOptions.ListSeparator`; an item containing a comma is not expressible. Only known keys are asked of the environment (`IEnvironment` cannot enumerate), so a stray `LEGISLATOR_*` variable is not an error — open question for T-05. `YamlStaticContext.cs` was not needed (event-stream parser, no deserializer).
 
 ## C-05 Job contract, CLI entry point, exit codes
 
