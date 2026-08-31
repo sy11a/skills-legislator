@@ -62,6 +62,13 @@ Gate 0/1 — that ordering is what makes the parallelism safe.
 
 ## Agreed order after v24 (revised 2026-08-29 evening) — the outer-only pivot on a .NET substrate
 
+**Out-of-order edition (2026-08-31): v25 is the tracker-slots edition.**
+BL-085's answer shipped ahead of the pair below — BL-082 is parked by the
+owner and BL-077 is built on it, while the slots block another product's
+whole migration line (cross-repo case: clerk `docs/cases/BL-016-legislator-slots/`,
+its invariant "law before migration"). Edition numbers are assigned at merge,
+never reserved: the pair keeps its content and its order, not its number.
+
 Settled with the owner in the 2026-08-29 brainstorm (ADR-0007; case
 `docs/cases/BL-077-outer-only-control-directory/`). The legislator becomes
 the installer of a developer-experience framework — legislator (laws),
@@ -79,7 +86,7 @@ the core is proven. Everything below is ordered by dependency.
    of path literals, `@import` expansion in the adapters. Tracked here as
    **BL-080**; a generated registry lands on an unpatched fleet-obs and
    takes it down.
-2. **Edition v25 — BL-082 + BL-077** *(BL-082 parked 2026-08-29: the owner executes it with the dev-flow approach; agents do not start it)*: step zero is the substrate
+2. **The edition after v25 — BL-082 + BL-077** *(BL-082 parked 2026-08-29: the owner executes it with the dev-flow approach; agents do not start it)*: step zero is the substrate
    (BL-082, absorbing BL-072): the `src/` solution, the engine port as
    pilot red-first against `check_engine.py`, the hooks port, the options
    model with its four layers and `config show`, the machine install and
@@ -1184,6 +1191,8 @@ but the rules corpus @ VERSION; benchmark green with zero behavioral
 diffs beyond the expected prose changes.
 
 ## BL-031 — Split backlog.md into queue + case register sections
+
+**Not absorbed by BL-085 (ruled 2026-08-31).** The tracker slots make the *register* row a tracker item wherever a repo records a tracker — but this repository records none, its 86-entry file still smears queue and register, and `backlog.md.tpl` still ships a queue body for the no-tracker case. The split stays a real case here.
 
 **Status: queued (docs-only — `backlog.md.tpl` carries no queue/register structure, so the split concerns this repo's `docs/backlog.md` only; no VERSION, no benchmark; any time). Left the v18 cycle 2026-08-22.**
 
@@ -2762,7 +2771,9 @@ Originally: harness hardening, sized from the v23 cycle's two operator-induced i
 
 ## BL-085 — Spike: work-tracking discipline is inherited from the host, not imposed by the legislator
 
-**Status: SPIKE PROPOSED 2026-08-30** — exploration, time-boxed, no `skill/` change, no VERSION, no benchmark. Raised by the owner: the legislator should *inherit* the task-tracking discipline of the repository it attaches to, not bring its own.
+**Status: ANSWERED 2026-08-31 (edition v25)** — the spike's questions are settled and its deliverables shipped: the detection-signal table and the vendor capability matrix were measured in the companion's case (clerk `docs/research/detection-signals.md`, BL-008), and the law wording it asked for is delivered by the tracker slots — cross-repo case clerk `docs/cases/BL-016-legislator-slots/`, branch `bl/085-inherit-work-tracking` here. What landed: `skills.md` output redirection, `sdd.md` register row and `pair-development.md` branch convention now name both homes (tracker where the entry document records one, `docs/backlog.md` where it does not); `AGENTS.md.tpl` gains the `Task tracker:` pointer line; `backlog.md.tpl` gains a pointer body; audit check 18 `tracker-drift`; the companion named in the README. What was deliberately NOT done: no tracker is ever read, no MCP server is registered, and no repository is migrated by this skill — the tracker is a companion's territory, and this edition only makes room for it. *(Original spike text below, kept as history.)*
+
+**Status when raised: SPIKE PROPOSED 2026-08-30** — exploration, time-boxed, no `skill/` change, no VERSION, no benchmark. Raised by the owner: the legislator should *inherit* the task-tracking discipline of the repository it attaches to, not bring its own.
 
 **The question:** where does a legislated project keep its work items — and what should the legislator do about it? Today the answer is hard-coded: `docs/backlog.md`, a text file, with `BL-NNN` cases minted by hand. That is the right answer for a repository with nothing else, and the wrong one for a repository whose team already lives in Jira, GitHub Issues, GitLab Issues, Linear, Azure Boards or YouTrack — there the text backlog is a second, drifting register.
 
@@ -2788,7 +2799,9 @@ Originally: harness hardening, sized from the v23 cycle's two operator-induced i
 
 ## BL-087 — Spike: `/flow-setup` as a step of legislating a repository
 
-**Status: SPIKE PROPOSED 2026-08-30 — unsequenced (after BL-086, which makes the skill present on the machine at all); exploration, no `skill/` change until the design is chosen.** Raised by the owner: binding a repository to dev-flow (`/flow-setup` — the one-decision-per-window interview that records every information source of a project in the operator's `Tech/Sources/<project>.md` note and points the dev-flow link registry at it) should be *part of* legislating that repository, not a separate ritual the operator has to remember.
+**Status: ANSWERED 2026-08-31 (edition v25)** — option **A (composition)** chosen and shipped as `SKILL.md` Step 7.1: a legislating run closes with one gated offer to bind the project's sources, names `/flow-setup`, hands over the facts this run already established, invokes nothing on its own authority, and skips the offer when the skill is absent. The dev-flow half — pre-filling those windows — is filed there (clerk BL-018). Option C (absorption) is rejected for the reason the spike anticipated: it would put writes to the operator's knowledge base inside a procedure whose contract is "never write outside the target repo". *(Original spike text below, kept as history.)*
+
+**Status when raised: SPIKE PROPOSED 2026-08-30 — unsequenced (after BL-086, which makes the skill present on the machine at all); exploration, no `skill/` change until the design is chosen.** Raised by the owner: binding a repository to dev-flow (`/flow-setup` — the one-decision-per-window interview that records every information source of a project in the operator's `Tech/Sources/<project>.md` note and points the dev-flow link registry at it) should be *part of* legislating that repository, not a separate ritual the operator has to remember.
 
 **The question:** where in the legislation procedure does source binding belong, and who owns the result? Today the two runs are disjoint: `/legislator` writes the constitution into the repo (`AGENTS.md`, `docs/ai/**`, rules, backlog) and knows nothing about trackers, wikis or MCPs; `/flow-setup` interviews the operator and writes into the *knowledge base*, not the repo, and knows nothing about the constitution except one ask (`case home`, read from the repo's wrapper). Both already touch the same facts from opposite sides — BL-085's tracker detection is `/flow-setup`'s `tracker` kind; the `case home` row is `docs/cases/` that legislation scaffolds — so the seam is real and currently crossed by hand.
 

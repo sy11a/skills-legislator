@@ -108,3 +108,16 @@ Initial OKF bundle scaffolded by the Legislator, during BL-034
 existing 48-term register at `docs/glossary.md` was migrated forward into
 `glossary.md`, keeping its `Status` and `Lives` columns, and the old path was
 removed.
+
+
+## 2026-08-31 — edition v25, the tracker slots
+
+The constitution learns that a repository's work items may live outside it.
+Three law sentences (`skills.md` output redirection, `sdd.md` register row,
+`pair-development.md` branch convention) name two homes instead of one; the
+entry-document and backlog templates gain the pointer shapes; audit check 18
+`tracker-drift` guards the seam from inside the repository only. The tracker
+itself stays a companion's territory — the constitution never reads one,
+never names a vendor, and never migrates a repository. Answers the BL-085 and
+BL-087 spikes; the initiating case lives in the companion's repository
+(clerk BL-016).

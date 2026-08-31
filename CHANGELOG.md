@@ -8,6 +8,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **Edition v25 — tracker slots (BL-085 answered; cross-repo case clerk
+  BL-016).** A repository may now keep its work items in a task tracker
+  instead of `docs/backlog.md`, and the constitution makes room for that
+  without knowing what a tracker is: the entry document gains a
+  `Task tracker:` pointer line naming the project's sources note;
+  `backlog.md.tpl` gains a pointer body (`{{BACKLOG_BODY}}`, chosen by
+  whether a tracker is recorded); the three law sentences — skill output
+  redirection, the case-register row, the branch convention — now name both
+  homes; audit check 18 `tracker-drift` reports a work item standing in the
+  pointer region or a file that has become a second source of truth, judging
+  only files inside the repository. No tracker is read, no vendor is named,
+  and no repository is migrated by this skill: that is the companion's work.
+- **`SKILL.md` Step 7.1 — the gated source-binding offer (BL-087 answered,
+  option A).** A legislating run closes by offering to bind the project's
+  sources through `/flow-setup`, hands over what it already established,
+  invokes nothing on its own authority, and skips the offer when the skill
+  is not installed.
+
 - **Spike BL-085 filed** — the legislator inherits the host repository's
   work-tracking discipline (Jira, GitHub Issues, Linear … via their MCP
   servers) instead of imposing the text backlog, which becomes the

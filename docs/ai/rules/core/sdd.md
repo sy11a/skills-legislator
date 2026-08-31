@@ -4,7 +4,7 @@ Every unit of work is a **case** (`BL-NNN`), and every case runs under this law.
 
 ### Cases and their home
 
-- **One case, one home** — everything a case produces (spec, plan package, summary) lives in `docs/cases/BL-NNN/`; the backlog/register row links into it. `docs/superpowers/**` is legacy: history stays where it lies, never rewritten, never moved.
+- **One case, one home** — everything a case produces (spec, plan package, summary) lives in `docs/cases/BL-NNN/`; the register row links into it — the tracker item where the entry document records a task tracker (`Task tracker:`), the `docs/backlog.md` row where it does not. The tracker holds the item, the repository holds the record: a spec never moves into a tracker. `docs/superpowers/**` is legacy: history stays where it lies, never rewritten, never moved.
 - **Declare the tier at case opening** — tier 0 (direct: no spec; backlog line → branch → journal; converge still audits), tier 1 (light: EARS spec + hurting case + clarify), or tier 2 (full: research → contracts → analyze → implement → converge) — chosen on blast radius × novelty, recorded in the case header. Tier 0 is lawful, not a shortcut; inflating a tier is waste. Converge may raise a tier when it finds missing behavior.
 - **Cross-repo cases live once** — the case file lives in the initiating repo; sibling repos carry reference rows and the same `bl/NNN` branches; converge judges the whole tree.
 

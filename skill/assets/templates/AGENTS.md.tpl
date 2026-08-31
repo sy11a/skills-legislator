@@ -10,6 +10,7 @@ Stack: {{STACK_SUMMARY}}
 - Domain glossary: `docs/okf/glossary.md` — check it when a term is unclear; add terms as they emerge
 - Project-specific rules: `.claude/rules/` — one law file per topic (auto-loaded by Claude Code; opencode loads them via `opencode.json`'s `instructions`); read `docs/ai/rules/core/project-rules.md` before adding one
 - Specs and plans: `docs/superpowers/` (committed)
+- Task tracker: the project's sources note records it (kind `tracker`); `docs/backlog.md` is the work-item home only while no tracker is recorded
 
 @docs/ai/rules/core/okf.md
 @docs/ai/rules/core/pair-development.md
