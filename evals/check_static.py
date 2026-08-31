@@ -336,6 +336,22 @@ for proj in ("Legislator.Core", "Legislator.Engine"):
         check(not hits, f"{cs.relative_to(REPO)} has no static file/clock/env/process call",
               f"lines {hits}")
 
+
+print("== BL-082: no path/name literal outside the options model (R-8209) ==")
+# The v24 engine's constant surface as a tripwire: a quoted path, file name,
+# branch/tag shape or version literal anywhere in src/ means a default escaped
+# the options model. LegislatorOptions.cs is the one lawful home (C-03).
+LITERAL = re.compile(r'"(docs|\.claude|\.config|CLAUDE\.md|AGENTS\.md|opencode\.json|manifest\.json|baseline\.md|glossary\.md|log\.md|CHANGELOG\.md|backlog\.md|bl/|v\d+|\.git\b)[^"]*"')
+ALLOWED = {"src/Legislator.Core/Options/LegislatorOptions.cs"}
+for cs in sorted(SRC.rglob("*.cs")):
+    rel = cs.relative_to(REPO).as_posix()
+    if "/obj/" in rel or "/bin/" in rel or rel in ALLOWED:
+        continue
+    hits = [n for n, line in enumerate(cs.read_text().splitlines(), 1)
+            if LITERAL.search(line) and not line.strip().startswith("//")]
+    check(not hits, f"{rel} carries no path/name literal",
+          f"lines {hits} — add an option instead (C-03)")
+
 if failures:
     print(f"\n{len(failures)} check(s) FAILED")
     sys.exit(1)
