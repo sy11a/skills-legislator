@@ -622,7 +622,8 @@ AUDIT_ORDER = ["imports-resolve", "unresolved-placeholders",
                "codebase-map", "orphan-docs", "journal-recency",
                "foreign-structures", "keep-list", "project-rules",
                "stray-rulebooks", "glossary-vitality", "skill-bindings",
-               "okf-anchors", "legacy-home-violation", "okf-sync-debt"]
+               "okf-anchors", "legacy-home-violation", "okf-sync-debt",
+               "tracker-drift"]
 AUDIT_MODEL_CHECKS = {"project-rules", "stray-rulebooks"}
 SEVERITIES = ("Critical", "Warning", "Info")
 MD_LINK = re.compile(r"\]\(([^)#\s]+)\)")
@@ -633,6 +634,10 @@ FOREIGN_FIXED = [".cursorrules", ".cursor", ".github/copilot-instructions.md",
                  "UBIQUITOUS_LANGUAGE.md", "NOTES.md", "docs/agents", ".scratch"]
 GENERATED_DIRS = {"bin", "obj", "node_modules", "dist"}
 SKILL_NAME_TOKEN = re.compile(r"`([a-z][a-z0-9-]{2,})`")
+# A work-item line, closed: a heading or list bullet whose first token is a case key.
+WORK_ITEM = re.compile(r"^(?:#{2,}\s+|\s*[-*]\s+)\**\s*([A-Z]{2,}-\d+)")
+# The companion's generated-mirror marker, recognised by its text, never by its vendor.
+MIRROR_MARKER = re.compile(r"^\s*<!--.*mirror generated.*-->\s*$", re.I)
 
 
 def _entry_doc() -> Path | None:
@@ -953,6 +958,29 @@ def audit_checks(skill: Path) -> AuditResult:
         for line in job_okf_debt():
             res.add("Warning", "okf-sync-debt",
                     f"{line} → update the document or state why it still holds")
+
+    # 18 tracker-drift (Warning) — file-local: the tracker itself is never read
+    backlog = ROOT / "docs" / "backlog.md"
+    if backlog.is_file():
+        lines = _read(backlog).splitlines()
+        marker = next((i for i, ln in enumerate(lines) if MIRROR_MARKER.match(ln)), None)
+        entry = _entry_doc()
+        tracked = bool(entry) and "Task tracker:" in _read(entry)
+        for i, ln in enumerate(lines):
+            m = WORK_ITEM.match(ln)
+            if not m:
+                continue
+            if marker is not None and i < marker:
+                res.add("Warning", "tracker-drift",
+                        f"docs/backlog.md:{i + 1}: work item {m.group(1)} above the "
+                        f"generated mirror marker → the pointer region holds no items; "
+                        f"move it into the tracker or below the marker")
+            elif marker is None and tracked:
+                res.add("Warning", "tracker-drift",
+                        f"docs/backlog.md:{i + 1}: work item {m.group(1)} while the entry "
+                        f"document records a task tracker and this file carries no "
+                        f"generated mirror → two sources of truth; migrate the item or "
+                        f"drop the tracker line")
     return res
 
 

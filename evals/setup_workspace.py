@@ -436,8 +436,19 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
     # touches src/ dated 2026-07-01 (see the two-commit history below).
     (dest / "docs/journal/2026-01-15-setup.md").write_text(
         "# 2026-01-15 — Initial setup\n\nLegislated the repo.\n")
+    # Defect 18 -- tracker drift: this repo migrated its backlog to a
+    # tracker (the generated mirror marker is present), but a work item was
+    # left standing in the pointer region above it. Audit check 18 must flag
+    # it at Warning; restructure must route it to "For the team" and leave
+    # docs/backlog.md byte-unchanged (the region below the marker belongs to
+    # the companion that generates it, and moving an item into a tracker is
+    # a write outside the repository).
     (dest / "docs/backlog.md").write_text(
-        "# LegacyBilling — Backlog\n\n- BL-001 — Archive importer cleanup.\n")
+        "# LegacyBilling — Backlog\n\n"
+        "- BL-001 — Archive importer cleanup.\n\n"
+        "<!-- clerk:mirror generated 2026-08-30T09:00:00Z from acme/legacy-billing"
+        " — do not edit -->\n\n"
+        "## Ready\n\n- **BL-002 — Retry storm triage** (#2)\n")
     (dest / "CHANGELOG.md").write_text(
         "# Changelog\n\n## Unreleased\n\n- Initial legislation.\n")
     # Defect 9 — foreign AI-layer structure.
@@ -555,6 +566,8 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
             "okf-anchors]",                  # defect 16a: pinned slug
             "OldImporter.cs",                # defect 16b: the dead path named
             "ArchivedInvoiceSweeper",        # defect 16c: the dead symbol named
+            "tracker-drift]",                # defect 18a: pinned slug
+            "BL-001",                        # defect 18b: the stray item named
             "okf-sync-debt]",                # defect 17a: pinned slug
             "docs/okf/endpoints.md",         # defect 17b: the document named
             "dry-run mode before a real import",  # harvest: candidate quoted
@@ -583,6 +596,7 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
             "legacy-home-violation",    # late-feature-spec.md born into a legacy home
             "okf-anchors",              # importer.md names a dead path and symbol
             "okf-sync-debt",            # endpoints.md's source moved on 167 days later
+            "tracker-drift",            # BL-001 left above the generated mirror marker
         ],
         # BL-025 item 2: Critical findings must sit under the Critical
         # severity heading, not merely appear somewhere in the report

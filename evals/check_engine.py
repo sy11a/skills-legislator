@@ -647,6 +647,29 @@ check("src/" in out.split("[codebase-map]", 1)[1] if out.count("[codebase-map]")
       "audit_map_missing_row", f"out={out[:700]!r}")
 
 
+print("== check 18 tracker-drift: the pointer region holds no items ==")
+# (a) an item above the generated marker is drift; the mirror below it is not
+root = audit_repo({"docs/backlog.md":
+                   "# r — Backlog\n\n## BL-042 — stray item\n\n"
+                   "<!-- clerk:mirror generated 2026-08-31T00:00:00Z from o/r — do not edit -->\n\n"
+                   "## Ready\n\n- **BL-007 — mirrored** (#7)\n"})
+code, out, err = audit(root)
+check("[tracker-drift]" in out and "BL-042" in out and "BL-007" not in out.split("[tracker-drift]", 1)[1].split("\n")[0],
+      "audit_check18_item_above_marker", f"out={out[:600]!r}")
+
+# (b) a tracker recorded in the entry document, items but no mirror → two sources of truth
+root = audit_repo({"docs/backlog.md": "# r — Backlog\n\n## BL-042 — an item\n"})
+(root / "AGENTS.md").write_text("# Repo\n\n- Task tracker: the project's sources note records it\n\n@docs/okf/index.md\n")
+code, out, err = audit(root)
+check("[tracker-drift]" in out and "two sources of truth" in out,
+      "audit_check18_items_while_tracker_recorded", f"out={out[:600]!r}")
+
+# (c) the ordinary repo — a queue backlog with no tracker — is silent
+root = audit_repo({"docs/backlog.md": "# r — Backlog\n\n## BL-042 — an item\n"})
+code, out, err = audit(root)
+check("[tracker-drift]" not in out, "audit_check18_quiet_without_tracker", f"out={out[:600]!r}")
+
+
 print("== v23 defect fixes: check 14 sees backticked names; journal dates from prefix+content ==")
 root = audit_repo({".claude/rules/skills.md": "# Skills\n\n- **implement:** `made-up-skill-zz`\n"})
 code, out, err = audit(root)

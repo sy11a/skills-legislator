@@ -131,6 +131,14 @@ work:
    actually installed — agents consult it at stage boundaries, so the right
    skill fires at the right step. Audit check 14 flags sanctioned skills
    that aren't installed on the current machine.
+5. **Companions are installed the same way.** A repository that keeps its
+   work items in a task tracker rather than `docs/backlog.md` installs the
+   tracker companion `clerk` by the same clone-and-link route. The
+   constitution names it and never restates what it does: its whole
+   footprint in the law is the entry document's `Task tracker:` pointer
+   line, the pointer body of `backlog.md.tpl`, and audit check 18
+   (`tracker-drift`). The companion owns the tracker; the constitution owns
+   the repository.
 
 ## Content discipline for rule files
 
