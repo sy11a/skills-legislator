@@ -6,6 +6,8 @@ namespace Legislator.Cli;
 /// <summary>Real implementations of the Core abstractions. The host owns the statics; Core and Engine only ever see the interfaces (R-8204).</summary>
 internal sealed class SystemEnvironment : IEnvironment
 {
+    public IEnumerable<string> VariableNames => Environment.GetEnvironmentVariables().Keys.Cast<string>();
+
     public string? GetVariable(string name) => Environment.GetEnvironmentVariable(name);
 
     public string CurrentDirectory => Environment.CurrentDirectory;

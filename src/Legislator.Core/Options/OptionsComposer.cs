@@ -18,7 +18,7 @@ public static class OptionsComposer
         var errors = new List<OptionsError>();
         ReadFile(fs, OptionsLayer.Machine, machineFile, layers, errors);
         ReadFile(fs, OptionsLayer.Instance, instanceFile, layers, errors);
-        Admit(OptionsLayer.Environment, EnvLayerReader.Read(env, LegislatorOptions.KeyMap.Keys), layers, errors);
+        Admit(OptionsLayer.Environment, EnvLayerReader.Read(env), layers, errors);
         if (errors.Count > 0)
         {
             throw new OptionsException(errors);

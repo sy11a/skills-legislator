@@ -1,4 +1,4 @@
-using Legislator.Core.Tests.TestSupport;
+using Legislator.TestSupport;
 using Xunit;
 
 namespace Legislator.Core.Tests.Abstractions;

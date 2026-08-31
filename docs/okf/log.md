@@ -143,3 +143,14 @@ wherever the skill is installed. ADR-0009's decision 2 records the
 generated half beside the instance half; `skills-rules.md.tpl` needed no
 change (it interpolates the derived list verbatim). Case
 `docs/cases/L-2-autoflow-entry-line/`.
+## 2026-08-31 — `job (engine)` enters the glossary; the map names `src/` and `tests/`
+
+BL-082 T-05 turned the job from a shape inside `engine.py` into a declared
+contract — `IJob`, `JobContext`, `JobResult`, `JobRegistry` in
+`Legislator.Engine`, dispatched by the CLI host and, from BL-084, exposed one
+tool per job by the MCP server. That made **job (engine)** a term the bundle
+had used (inside `deterministic substrate`'s own definition) without ever
+defining: `coin`, since the field's "task"/"command"/"handler" all carry the
+wrong half of the meaning. `codebase-map.md` gained the `src/` and `tests/`
+rows it has owed since T-01 created those directories — the table promises one
+line per top-level directory, and for four tasks it was two lines short.

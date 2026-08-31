@@ -4,6 +4,7 @@
   <Project Path="../tests/Legislator.Engine.Tests/Legislator.Engine.Tests.csproj" />
   <Project Path="../tests/Legislator.Hooks.Tests/Legislator.Hooks.Tests.csproj" />
   <Project Path="../tests/Legislator.Parity.Tests/Legislator.Parity.Tests.csproj" />
+  <Project Path="../tests/Legislator.TestSupport/Legislator.TestSupport.csproj" />
   <Project Path="Legislator.Cli/Legislator.Cli.csproj" />
   <Project Path="Legislator.Core/Legislator.Core.csproj" />
   <Project Path="Legislator.Engine/Legislator.Engine.csproj" />

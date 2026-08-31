@@ -1,6 +1,6 @@
 using Legislator.Core.Abstractions;
 
-namespace Legislator.Core.Tests.TestSupport;
+namespace Legislator.TestSupport;
 
 /// <summary>Scripted <see cref="IProcessRunner"/>: every call is recorded in <see cref="Calls"/>, the result comes from <see cref="OnRun"/> (default: exit 0, empty output).</summary>
 public sealed class FakeProcessRunner : IProcessRunner
