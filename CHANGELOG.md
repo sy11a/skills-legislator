@@ -36,6 +36,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   sources through `/flow-setup`, hands over what it already established,
   invokes nothing on its own authority, and skips the offer when the skill
   is not installed.
+- **The parity rulers can measure either arm** (BL-082 T-06):
+  `evals/check_engine.py` and `evals/check_hooks.py` run the command named by
+  `LEGISLATOR_ENGINE_CMD` / `LEGISLATOR_HOOK_CMD` when it is set — the
+  published `legislator` binary — and the Python engine and hook scripts when
+  it is not, on identical fixture trees; each ruler prints the arm it is
+  measuring before its first check. `evals/parity_labels.py` reads every
+  assertion label out of both rulers, and `tests/Legislator.Parity.Tests`
+  holds the coverage ledger against it: a `[Parity(ruler, label)]` twin per
+  assertion, with the debt recorded as a number that may not grow.
+
 - **Backlog BL-088 filed** — the roadmap names cases, not edition numbers:
   every forward reference to an edition version becomes a reference to the
   case that carries it, so a queue reshuffle cannot leave stale version

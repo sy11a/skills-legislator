@@ -15,6 +15,28 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 ENGINE_SRC = REPO / "skill" / "assets" / "engine" / "engine.py"
 
+# The arm under test. Unset, this ruler measures the Python engine; set, it measures
+# the command it names — the .NET binary — on the same fixture trees, which is what
+# makes it a parity ruler and not a test of one implementation (BL-082, R-8205).
+ENGINE_CMD = os.environ.get("LEGISLATOR_ENGINE_CMD")
+
+
+def _engine_argv(program: Path | str, root: Path, *args: str,
+                 python_takes_root: bool = False) -> list[str]:
+    """Argv for one job under test.
+
+    The binary is always told its repository explicitly. The Python engine is told
+    only where the job parses the flag (the --skill/--root family); the rest derive
+    the root from the engine file's own location, and an extra flag is a usage exit.
+    """
+    if ENGINE_CMD:
+        return [ENGINE_CMD, *args, "--root", str(root)]
+    argv = [sys.executable, str(program), *args]
+    if python_takes_root:
+        argv += ["--root", str(root)]
+    return argv
+
+
 failures: list[str] = []
 
 
@@ -42,7 +64,7 @@ def make_repo(docs: dict[str, str], sources: dict[str, str]) -> Path:
 
 
 def run(root: Path, job: str) -> tuple[int, str]:
-    r = subprocess.run([sys.executable, "docs/ai/engine.py", job],
+    r = subprocess.run(_engine_argv("docs/ai/engine.py", root, job),
                        cwd=root, capture_output=True, text=True)
     return r.returncode, r.stdout
 
@@ -56,6 +78,7 @@ def git(root: Path, *args: str, date: str | None = None) -> None:
                    capture_output=True, env=env)
 
 
+print(f"arm: {ENGINE_CMD or 'python3 docs/ai/engine.py'}")
 print("== anchors: resolving anchors are silent ==")
 root = make_repo(
     {"widgets.md": "# Widgets\n\nSee `src/App/WidgetStore.cs` and `WidgetStore`.\n"},
@@ -547,8 +570,8 @@ def audit_repo(files: dict[str, str], manifest: str = '{"legislatorVersion": ' +
 
 
 def audit(root: Path, *extra: str) -> tuple[int, str, str]:
-    r = subprocess.run([sys.executable, "docs/ai/engine.py", "audit",
-                        "--skill", str(REPO / "skill"), *extra],
+    r = subprocess.run(_engine_argv("docs/ai/engine.py", root, "audit",
+                                    "--skill", str(REPO / "skill"), *extra),
                        cwd=root, capture_output=True, text=True)
     return r.returncode, r.stdout, r.stderr
 
@@ -799,7 +822,7 @@ SKILL_DIR = REPO / "skill"
 def eng(root: Path, *args: str, env: dict | None = None) -> tuple[int, str, str]:
     """Run the SKILL SOURCE engine against `root` (the fresh-scaffold shape:
     no docs/ai/engine.py exists yet, so --root is the contract)."""
-    r = subprocess.run([sys.executable, str(ENGINE_SRC), *args, "--root", str(root)],
+    r = subprocess.run(_engine_argv(ENGINE_SRC, root, *args, python_takes_root=True),
                        cwd=root, capture_output=True, text=True, env=env)
     return r.returncode, r.stdout, r.stderr
 

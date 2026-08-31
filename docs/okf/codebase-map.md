@@ -14,7 +14,7 @@ One line per top-level directory. Keep this table in sync with the actual tree (
 | Directory | What lives there |
 |-----------|------------------|
 | `skill/` | The shipped package — `SKILL.md`, `assets/rules/**` (the law's only source), `assets/templates/**`, `assets/engine/`, `references/**`, `VERSION`. Symlinked into `~/.claude/skills/legislator`. |
-| `evals/` | The regression suite — `POLICY.md` (the bar), `evals.json`, fixtures, `grade.py`, `setup_workspace.py`, the four static checks, and the per-edition benchmark records. |
+| `evals/` | The regression suite — `POLICY.md` (the bar), `evals.json`, fixtures, `grade.py`, `setup_workspace.py`, the four static checks, `check_dotnet.sh` and `parity_labels.py` (the port's instruments), and the per-edition benchmark records. |
 | `tools/` | Operator scripts — `fleet.sh` (discover and upgrade legislated repos), `evals-bg.sh` (the staged eval runner), and the skill/plugin linkers. |
 | `plugin/` | The deterministic enforcement arms — `hooks/**` for Claude Code and `opencode/legislator-guard.ts` for opencode. |
 | `src/` | The .NET deterministic substrate (from v25, ADR-0008) — `Legislator.Core` (abstractions, the options model), `Legislator.Engine` (the jobs), `Legislator.Hooks`, `Legislator.Cli` (the host), and the build discipline declared once in `Directory.Build.props`. |

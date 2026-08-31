@@ -10,6 +10,7 @@ Usage: python3 evals/check_hooks.py
 Exit code 0 = all checks pass; 1 = at least one failure (printed).
 """
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -19,6 +20,11 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 PLUGIN = REPO / "plugin"
 HOOKS = PLUGIN / "hooks"
+
+# The arm under test. Unset, this ruler measures the Python hook scripts; set, it
+# measures the command it names — the .NET binary, addressed as `<cmd> hook <name>`
+# — on the same payloads (BL-082, R-8205).
+HOOK_CMD = os.environ.get("LEGISLATOR_HOOK_CMD")
 
 failures: list[str] = []
 
@@ -31,10 +37,27 @@ def check(ok: bool, label: str, detail: str = "") -> None:
         failures.append(label)
 
 
+def _hook_argv(script: Path) -> list[str]:
+    """Argv for one hook under test: the binary carries it under the script's own stem."""
+    return [HOOK_CMD, "hook", script.stem] if HOOK_CMD else [sys.executable, str(script)]
+
+
+def run_hook_raw(script: Path, text: str):
+    """Pipe `text` verbatim on stdin — the defensive cases, whose whole point is stdin
+    that is not JSON. They go through the same argv as the rest: a call site that built
+    its own would keep measuring Python after the arm was switched."""
+    return subprocess.run(_hook_argv(script), input=text,
+                          capture_output=True, text=True, timeout=15)
+
+
 def run_hook(script: Path, payload: dict, cwd: Path | None = None):
-    """Pipe `payload` as JSON on stdin into `script`; return CompletedProcess."""
+    """Pipe `payload` as JSON on stdin into `script`; return CompletedProcess.
+
+    The binary carries the same hook under the script's own stem, so both arms
+    answer the identical payload.
+    """
     return subprocess.run(
-        [sys.executable, str(script)],
+        _hook_argv(script),
         input=json.dumps(payload),
         capture_output=True,
         text=True,
@@ -59,6 +82,7 @@ def edit_payload(file_path: str) -> dict:
 # =====================================================================
 # Guard (guard_owned_files.py)
 # =====================================================================
+print(f"arm: {HOOK_CMD or 'python3 plugin/hooks/<name>.py'}")
 print("== guard_owned_files.py ==")
 GUARD = HOOKS / "guard_owned_files.py"
 
@@ -126,11 +150,9 @@ with tempfile.TemporaryDirectory() as tmp:
           f"got exit {proc.returncode}, stderr={proc.stderr!r}")
 
 # Defensive: malformed stdin never blocks.
-proc = subprocess.run([sys.executable, str(GUARD)], input="not json",
-                       capture_output=True, text=True, timeout=15)
+proc = run_hook_raw(GUARD, "not json")
 check(proc.returncode == 0, "malformed stdin allowed (exit 0)", f"got {proc.returncode}")
-proc = subprocess.run([sys.executable, str(GUARD)], input="",
-                       capture_output=True, text=True, timeout=15)
+proc = run_hook_raw(GUARD, "")
 check(proc.returncode == 0, "empty stdin allowed (exit 0)", f"got {proc.returncode}")
 
 
@@ -158,8 +180,7 @@ with tempfile.TemporaryDirectory() as tmp:
     check(proc.returncode == 0, "non-code file: exit 0", f"got {proc.returncode}")
 
 # Defensive: malformed stdin never blocks.
-proc = subprocess.run([sys.executable, str(FORMAT)], input="not json",
-                       capture_output=True, text=True, timeout=15)
+proc = run_hook_raw(FORMAT, "not json")
 check(proc.returncode == 0, "malformed stdin allowed (exit 0)", f"got {proc.returncode}")
 
 
@@ -259,8 +280,7 @@ else:
               f"got {proc.returncode}, stderr={proc.stderr!r}")
 
 # Defensive: malformed stdin never blocks.
-proc = subprocess.run([sys.executable, str(OKF)], input="not json",
-                       capture_output=True, text=True, timeout=15)
+proc = run_hook_raw(OKF, "not json")
 check(proc.returncode == 0, "malformed stdin allowed (exit 0)", f"got {proc.returncode}")
 
 
@@ -408,8 +428,7 @@ else:
               f"got exit {proc.returncode}, stderr={proc.stderr!r}")
 
     # per R-646: malformed stdin and non-git commands never block.
-    proc = subprocess.run([sys.executable, str(CONDUCT)], input="not json",
-                          capture_output=True, text=True, timeout=15)
+    proc = run_hook_raw(CONDUCT, "not json")
     check(proc.returncode == 0, "malformed stdin allowed (exit 0) per R-646",
           f"got {proc.returncode}")
     with tempfile.TemporaryDirectory() as tmp:

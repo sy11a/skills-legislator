@@ -154,3 +154,24 @@ defining: `coin`, since the field's "task"/"command"/"handler" all carry the
 wrong half of the meaning. `codebase-map.md` gained the `src/` and `tests/`
 rows it has owed since T-01 created those directories — the table promises one
 line per top-level directory, and for four tasks it was two lines short.
+
+
+## 2026-08-31 — the label ledger, and why it is a ratchet rather than a red test
+
+BL-082 T-06 built the instrument that measures the port instead of trusting it.
+Three terms entered the glossary together, because none of them names itself:
+**label ledger** (what the rulers assert against what the .NET suite twins),
+**arm (under test)** (which implementation a ruler is measuring on this run —
+now printed before the first check, since the same output means different
+things under each), and **ledger ratchet** (the ledger's form while the port is
+under way).
+
+The ratchet is the decision worth recording. The plan had the coverage test
+stay red from T-06 to T-11, excluded from CI by a trait. A gate that is red on
+every commit for five tasks is not a gate: the next genuine failure arrives
+inside the expected one and nobody sees it. So the red R-8206 demands was shown
+once against the empty implementation and recorded in the case as
+`parity-red.txt`, and the living test asserts the debt equals its written
+number — 196 today, zero at T-11 — which fails the moment the debt grows and
+also when it falls without the record following. `codebase-map.md`'s `evals/`
+row gained the two instruments the port added.

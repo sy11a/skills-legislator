@@ -1,0 +1,215 @@
+BL-082 T-06 — the parity ledger's red, 2026-08-31
+=================================================
+
+Lifecycle artifact (core/artifact-lifecycle.md): the record of the red R-8206
+demands, kept until the ledger closes at T-11 and dies with the case.
+
+Produced by `dotnet test` from `src/` against the ledger test with zero [Parity]
+attributes in the assembly: suite 74 total, 73 passed, 1 failed. The ledger then became
+a ratchet (`LedgerDebt`, operator ruling 2026-08-31) so the every-commit gate keeps
+working while the debt is paid down — this file is the red R-8206 demands, recorded once
+against the empty implementation, and the ratchet is what stops it growing back.
+
+The 196 labels below are every assertion of the two parity rulers
+(evals/check_engine.py 139, evals/check_hooks.py 57 — 200 check(...) calls, of
+which 4 are duplicate labels) that has no named .NET twin yet. Each line must
+disappear from this list by T-11, one [Parity("<ruler>", "<label>")] at a time,
+before the Python job it covers may be removed.
+
+196 ruler labels without a .NET twin:
+engine	19 days is inside the 30-day threshold
+engine	a directory anchor's history (the union of everything beneath it) never produces debt
+engine	a document that moved with its source is clean
+engine	a healthy document produces no findings
+engine	a repo with no docs/okf/ is clean, not an error
+engine	a source 59 days newer than its document is debt
+engine	a symbol that exists only in prose does not resolve
+engine	a trailing .Member() is stripped before the file test
+engine	an unknown job exits 2
+engine	an untracked tree yields no debt findings
+engine	apply_copies_owned_set_byte_for_byte
+engine	apply_deletes_retired_and_removes_emptied_stack_dir
+engine	apply_footprint_is_exactly_the_declared_set
+engine	apply_fresh_exit_0
+engine	apply_manifest_pinned_serialization
+engine	apply_second_run_byte_stable_and_records_unchanged
+engine	apply_writes_record_at_derived_tempdir_path
+engine	audit_check14_sees_backticked_names
+engine	audit_clean_checks_line_present
+engine	audit_clean_repo_clean_report
+engine	audit_constitution_header_behind
+engine	audit_defects_exit_1
+engine	audit_finds_staleness
+engine	audit_finds_{}
+engine	audit_journal_date_from_prefixed_filename
+engine	audit_keep_key_missing_info
+engine	audit_keep_path_missing
+engine	audit_malformed_model_findings_fails_loud
+engine	audit_map_missing_row
+engine	audit_map_stale_row
+engine	audit_report_byte_stable
+engine	audit_report_carries_engine_stamp
+engine	audit_severity_sections_present
+engine	baseline_bytes_deterministic
+engine	baseline_declares_itself_generated
+engine	baseline_definition_keeps_inline_code
+engine	baseline_destroys_hand_edits: regeneration is the class's defining property
+engine	baseline_lists_uncovered_requirements
+engine	baseline_maps_requirement_to_test
+engine	baseline_writes_declared_target
+engine	baseline_writes_nothing_else
+engine	both_real_entry_documents_is_a_loud_stop_with_zero_writes
+engine	crash_exits_distinctly (control): a crash prints nothing to stdout, so a stdout-only reader sees no findings
+engine	crash_exits_distinctly: an unhandled exception exits with a code distinct from clean/findings/usage
+engine	detect_edge_case_reconstructs_from_disk
+engine	detect_fresh
+engine	detect_migration_agents
+engine	detect_migration_claude_and_stack_candidate
+engine	detect_upgrade_reads_legacy_profiles
+engine	detect_writes_nothing
+engine	engine_audit_fails_loud_without_git
+engine	engine_audit_writes_nothing
+engine	exit_codes_unchanged: clean is 0
+engine	exit_codes_unchanged: findings is 1
+engine	exit_codes_unchanged: usage error is 2
+engine	file_model_links_when_only_agents_exists
+engine	file_model_rename_is_git_mv_when_tracked
+engine	file_model_renames_real_claude_and_links
+engine	front matter and fenced code are skipped
+engine	keep_add_and_dedupe_by_path
+engine	keep_pinned_one_entry_per_line
+engine	keep_refusals_recorded_with_reasons
+engine	keep_remove_only_on_request
+engine	lint_adr (control): well-shaped ADR + template are silent
+engine	lint_adr_missing_section: absent Consequences is a finding
+engine	lint_adr_sequence_gap: 0002 missing is a finding
+engine	lint_adr_status_closed_set: unknown status is a finding
+engine	lint_boundary_required: missing boundary is a finding
+engine	lint_bugfix (control): current/expected/unchanged present is silent
+engine	lint_bugfix_sections: missing unchanged statement is a finding
+engine	lint_changelog (control): Unreleased present is silent
+engine	lint_changelog_unreleased: missing heading is a finding
+engine	lint_clarifications_required: missing session is a finding
+engine	lint_converged_case_exempt: history is never re-linted
+engine	lint_ears_no_shall: an R-line with no SHALL is a finding
+engine	lint_ears_quoted_shall (control): backticked SHALL is quotation
+engine	lint_ears_two_shalls: two SHALLs on one R-line is a finding
+engine	lint_hurting_case_required: missing GIVEN/WHEN/THEN is a finding
+engine	lint_journal (control): dated file + README are silent
+engine	lint_journal_filename: a stray name is a finding
+engine	lint_okf_status (control): implemented is silent
+engine	lint_okf_status_closed_set: 'shipped' is a finding
+engine	lint_okf_status_human_exempt: glossary.md is never linted
+engine	lint_quoted_converge_marker_not_a_closure: an inline mention does not exempt the case
+engine	lint_specless_case_clean: tier-0 direct case stays silent
+engine	lint_standalone_converge_marker_closes (control): the standalone line still exempts
+engine	lint_tier_and_type (control): a headered spec is silent
+engine	lint_tier_required: missing tier is a finding
+engine	lint_type_required: missing spec type is a finding
+engine	log.md and glossary.md are never anchored
+engine	missing path reported with document, line and token
+engine	missing symbol reported
+engine	model_candidates_appended
+engine	model_findings_in_pinned_sections
+engine	nested_build_output_ignored: a symbol living only in nested build output stays unresolved
+engine	no job exits 2
+engine	okf_debt_git_absent (boundary): nothing to measure is clean even without git
+engine	okf_debt_git_absent (control): with git the 85-day debt is a finding
+engine	okf_debt_git_absent (stdout control): no findings text a stdout-reader could mistake
+engine	okf_debt_git_absent: without git the job exits as a check failure, never clean
+engine	real_source_still_resolves: a symbol outside build output resolves as before
+engine	record_carries_mode_version_events_and_pre_snapshot
+engine	record_lives_outside_the_repo
+engine	removed_doc_no_debt (control): the live sibling still accrues debt
+engine	removed_doc_no_debt: a status: removed document accrues no okf-sync-debt
+engine	removed_doc_not_anchored (control): a live sibling with the same dead path still reports
+engine	removed_doc_not_anchored: a status: removed document produces no anchor finding
+engine	report_byte_stable
+engine	report_created_lists_owned_files_and_step4_artifacts_from_snapshots
+engine	report_entry_document_listed_once_by_its_file_model_event
+engine	report_health_clean_and_no_keep_section_without_delta
+engine	report_health_runs_audit_checks_1_to_6
+engine	report_keep_list_added_and_refused
+engine	report_malformed_findings_is_a_loud_exit
+engine	report_merges_candidates_and_review_lines_into_pinned_sections
+engine	report_overwritten_lists_changed_owned_file
+engine	report_review_carries_import_deltas_and_scaffold_wiring
+engine	report_scaffold_never_prints_candidates
+engine	report_scaffold_sections_pinned_order_no_health_no_keep
+engine	report_scaffold_title
+engine	report_stamp_is_last_line
+engine	report_upgrade_sections_with_keep_and_health
+engine	report_upgrade_title
+engine	sdd_lint_accepts_three_definition_forms_and_list_refs
+engine	sdd_lint_bare_token_reported
+engine	sdd_lint_clean_exit_0
+engine	sdd_lint_converged_case_skipped: completed lifecycle artifacts are never re-judged
+engine	sdd_lint_covered_requirement_silent
+engine	sdd_lint_cross_case_reference_resolves: a rider may trace a sibling case's requirement
+engine	sdd_lint_dangling_reference_named
+engine	sdd_lint_findings_exit_1
+engine	sdd_lint_planless_case_clean: tier 0/1 is lawful — no plan, no coverage findings
+engine	sdd_lint_quoted_token_exempt: a backticked token is quotation, not a placeholder
+engine	sdd_lint_uncovered_requirement_named
+engine	sdd_lint_writes_nothing
+engine	templates, globs, ~ and / paths, commands, lowercase and 3-char tokens are not anchors
+engine	verify_appends_post_snapshot_to_record
+engine	verify_names_a_missing_step4_artifact
+engine	verify_recopies_a_diverged_owned_file_once_and_is_clean
+hooks	.cs file with no dotnet project: exit 0
+hooks	.cs file with no dotnet project: no output
+hooks	Claude co-author trailer blocked per R-643
+hooks	GIT.EXE merge blocked per R-701
+hooks	Generated-with footer blocked per R-643
+hooks	PreToolUse has a Bash entry running guard_git_conduct.py per R-641
+hooks	attribution block message says why per R-643
+hooks	attribution in gh pr body blocked per R-644
+hooks	backslashed git.exe path push blocked per R-701
+hooks	bare push on default branch blocked per R-642
+hooks	block message mentions machine-managed law
+hooks	clean gh pr body allowed per R-644
+hooks	clean tree: exit 0
+hooks	detached HEAD merge allowed (can't tell) per R-646
+hooks	dirty src/ + docs/okf/: exit 0
+hooks	dirty src/ only: exit 2
+hooks	empty stdin allowed (exit 0)
+hooks	gh pr merge blocked per R-645
+hooks	git available for guard_git_conduct.py tests
+hooks	git available for okf_sync_check.py tests
+hooks	git.exe merge on default branch blocked per R-701
+hooks	github-named binary not treated as git per R-701
+hooks	grep for the pattern allowed per R-643
+hooks	guard blocks through the launcher with only `python` on PATH per R-702
+hooks	hooks.json has at least one event
+hooks	hooks.json parses as JSON
+hooks	human co-author trailer allowed per R-643
+hooks	malformed stdin allowed (exit 0)
+hooks	malformed stdin allowed (exit 0) per R-646
+hooks	merge --abort allowed per R-641
+hooks	merge INTO a feature branch allowed per R-641
+hooks	merge block message names the rule per R-641
+hooks	merge inside a compound command blocked per R-641
+hooks	merge into default branch blocked (exit 2) per R-641
+hooks	non-code file: exit 0
+hooks	non-git command allowed per R-646
+hooks	non-legislated git repo: exit 0
+hooks	non-legislated repo: merge on default allowed per R-647
+hooks	non-owned edit passes through the launcher per R-702
+hooks	non-owned root package.json allowed (exit 0)
+hooks	non-rules file in legislated repo allowed (exit 0)
+hooks	ordinary commit message allowed per R-643
+hooks	outside any git repo: exit 0
+hooks	owned engine.py blocked (exit 2)
+hooks	owned root opencode.json blocked (exit 2)
+hooks	owned rule file in legislated repo blocked (exit 2)
+hooks	push HEAD:master blocked per R-642
+hooks	push of a task branch allowed per R-642
+hooks	push origin master blocked per R-642
+hooks	reminder mentions docs/okf
+hooks	rules-shaped path with no manifest allowed (exit 0)
+hooks	stop_hook_active true: exit 0 (loop-safe)
+hooks	unowned docs/ai/notes.md allowed (exit 0)
+hooks	{} command references a hooks/*.py script
+hooks	{} entries form a list
+hooks	{} matcher names real tools ({})
+hooks	{} script exists: {}
