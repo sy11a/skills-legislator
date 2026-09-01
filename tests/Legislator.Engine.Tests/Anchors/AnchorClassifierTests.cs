@@ -18,6 +18,7 @@ public sealed class AnchorClassifierTests
     [InlineData("docs/okf/index.md", AnchorKind.Path)]
     [InlineData("src", AnchorKind.None)]                        // no '/', and lowercase
     [InlineData("nope/x.cs", AnchorKind.None)]                  // first segment is not top-level
+    [InlineData("Src/App/WidgetStore.cs", AnchorKind.None)]     // the top-level test is ordinal: `Src` is not `src`
     // A symbol-anchor: PascalCase, four characters or more, optionally dotted.
     [InlineData("WidgetStore", AnchorKind.Symbol)]
     [InlineData("WidgetStore.Flush", AnchorKind.Symbol)]

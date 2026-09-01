@@ -99,6 +99,24 @@ public sealed class AnchorsJobTests
         Assert.Equal("", result.Stdout);
     }
 
+    /// <summary>
+    /// The human class is matched by name, ordinally, on every operating system: a
+    /// case-insensitive comparison would silently exempt a `Glossary.md` that is an ordinary
+    /// anchored document, and on a case-insensitive checkout (ADR-0005) that is exactly the
+    /// file a Windows or macOS fleet member would produce. One document per repository, so
+    /// the fake's own case policy never enters the answer.
+    /// </summary>
+    [Fact]
+    public void A_document_whose_name_differs_only_in_case_from_the_human_class_is_anchored()
+    {
+        var result = Run(
+            new() { ["Glossary.md"] = "# Glossary\n\nNames `src/App/Gone.cs`.\n" },
+            new() { ["src/App/WidgetStore.cs"] = Source });
+
+        Assert.Equal(1, result.ExitCode);
+        Assert.Equal("docs/okf/Glossary.md:3: path-anchor: src/App/Gone.cs → no such file\n", result.Stdout);
+    }
+
     [Fact]
     public void A_status_removed_document_leaves_the_anchored_class_but_its_live_sibling_does_not()
     {

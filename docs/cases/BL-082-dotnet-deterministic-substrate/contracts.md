@@ -147,7 +147,9 @@ Interfaces, schemas and command-line shapes the plan's tasks produce and consume
   public sealed record CaseFile(string Dir, string Spec, string? Plan, string Header, IReadOnlyList<string> RequirementIds, bool Converged);
   public static class CaseModel { public static IReadOnlyList<CaseFile> Load(IFileSystem fs, RepoLayout l); }
   ```
-  `okf-debt` **without git is a loud finding** (`"okf-debt: git unavailable — debt cannot be computed"`, exit 1) — the BL-069 F1 fix, already in the Python since BL-070; the twin asserts it.
+  `okf-debt` **without git is a loud stop** — the BL-069 F1 fix, already in the Python since BL-070; the twin asserts it.
+
+  *(Amended 2026-09-01, T-08 red review.* This contract said "a loud finding, exit 1"; the ruler says otherwise and the ruler is the law here (R-8205). `check_engine.py`'s `okf_debt_git_absent` asserts `returncode not in (0, 1, 2)`, `"git"` in **stderr** and an **empty stdout** — the Python raises, and the host renders exit 3. So the job throws and the CLI's last line of defence prints `engine failed: …` on stderr; nothing a stdout-reader could mistake for a finding is ever written. *A second amendment:* absent git is discovered by the attempt failing, not by a `which` probe — `IProcessRunner` raises `ProcessStartException` when the executable cannot be started, which is the one process failure that is not a result, and `GitLog` turns it into `GitAvailable = false`. A `which` of our own would duplicate the operating system's rules (`PATHEXT`, the execute bit) and would still call a present-but-unrunnable git available. *A third:* `AnchorTarget.Resolve` in `Legislator.Engine.Anchors` is where a path-anchor becomes a repository-relative file, shared by `anchors` and `okf-debt` — the Python's `path_target` probes the disk for a `Type.Member()` stem, so a job that resolved tokens on its own would accrue debt on a different set of files than the ruler measures. `OkfDocuments` in `Legislator.Engine.Okf` holds the anchored class, the relative form and the scannable lines for the same reason.)*
 
 ## C-09 `audit` and `detect` command lines
 

@@ -32,7 +32,19 @@ internal sealed class SystemProcessRunner : IProcessRunner
             psi.ArgumentList.Add(a);
         }
 
-        using var p = Process.Start(psi) ?? throw new InvalidOperationException($"process failed to start: {fileName}");
+        Process p;
+        try
+        {
+            p = Process.Start(psi) ?? throw new InvalidOperationException($"process failed to start: {fileName}");
+        }
+        catch (System.ComponentModel.Win32Exception ex)
+        {
+            // The executable is absent, or present and not runnable: the question was never
+            // asked, which a job must be able to tell from a run that asked and failed (C-08).
+            throw ProcessStartException.For(fileName, ex);
+        }
+
+        using var _ = p;
         var stdout = p.StandardOutput.ReadToEndAsync();
         var stderr = p.StandardError.ReadToEndAsync();
         if (!p.WaitForExit((int)timeout.TotalMilliseconds))

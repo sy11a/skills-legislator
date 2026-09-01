@@ -36,6 +36,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   sources through `/flow-setup`, hands over what it already established,
   invokes nothing on its own authority, and skips the offer when the skill
   is not installed.
+- **`legislator okf-debt` — the staleness job, ported** (BL-082 T-08): it names
+  anchored documents whose sources moved on without them, byte-identically to
+  `python3 docs/ai/engine.py okf-debt`, and fails loud where git cannot be run
+  at all instead of reporting clean. All eleven `check_engine.py` assertions it
+  answers carry a named `[Parity]` twin; the label ledger fell from 179 to 168.
+
 - **`legislator anchors` — the first ported engine job** (BL-082 T-07): the
   OKF link-hardness check runs from the published binary with byte-identical
   findings and the same exit codes as `python3 docs/ai/engine.py anchors`, and

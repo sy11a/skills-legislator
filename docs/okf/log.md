@@ -202,3 +202,19 @@ once against the empty implementation and recorded in the case as
 number — 196 today, zero at T-11 — which fails the moment the debt grows and
 also when it falls without the record following. `codebase-map.md`'s `evals/`
 row gained the two instruments the port added.
+
+## 2026-09-01 — BL-082 T-08: the git seam, and the second job on the shared OKF rule
+
+`okf-debt` is ported. The job itself is a transliteration; the two decisions
+underneath it are not. First, **absent git**: the Python asks `shutil.which`,
+which the substrate has no lawful way to imitate — `IProcessRunner` now raises
+`ProcessStartException` when the executable cannot be started, `GitLog` turns
+that into `GitAvailable = false`, and the job throws where the Python raises, so
+the host renders exit 3 with the reason on stderr and stdout stays empty. That
+is what the ruler actually asserts; the contract had said "a finding, exit 1"
+and was amended in place. Second, **the shared rule**: `anchors` and `okf-debt`
+read the same anchored class and the same path-anchor targets, so
+`OkfDocuments` and `AnchorTarget` now hold that rule once — two jobs that
+disagreed about which file a token means would measure two different
+repositories. The glossary gained **git seam**.
+
