@@ -21,6 +21,9 @@ public sealed class RepoLayout
         Manifest = Join(Ai, options.ManifestFile.Value);
         Okf = Join(Docs, options.OkfDir.Value);
         Cases = Join(Docs, options.CasesDir.Value);
+        Adr = Join(Docs, options.AdrDir.Value);
+        Journal = Join(Docs, options.JournalDir.Value);
+        Changelog = Join(root, options.ChangelogFile.Value);
     }
 
     public string Root { get; }
@@ -36,6 +39,12 @@ public sealed class RepoLayout
     public string Okf { get; }
 
     public string Cases { get; }
+
+    public string Adr { get; }
+
+    public string Journal { get; }
+
+    public string Changelog { get; }
 
     private static string Join(string left, string right) => $"{left.TrimEnd('/')}/{right}";
 }

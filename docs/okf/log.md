@@ -218,3 +218,14 @@ read the same anchored class and the same path-anchor targets, so
 disagreed about which file a token means would measure two different
 repositories. The glossary gained **git seam**.
 
+## 2026-09-01 — BL-082 T-08: sdd-lint, and where a lint's directories come from
+
+The analyze gate's mechanical passes now run from the binary. The reading rules
+the lint shares with the baseline live in `Legislator.Engine.Sdd` —
+`CaseModel` for the three definition forms and the line-anchored converge
+marker, `Prose` for the rule that a token inside a fence or backticks is
+quotation. `RepoLayout` gained `Adr`, `Journal` and `Changelog`: every
+directory the lint judges is now named by the options model, so a repository
+that calls its cases something else is linted correctly instead of silently not
+at all.
+

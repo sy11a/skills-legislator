@@ -36,6 +36,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   sources through `/flow-setup`, hands over what it already established,
   invokes nothing on its own authority, and skips the offer when the skill
   is not installed.
+- **`legislator sdd-lint` — the analyze gate's mechanical passes, ported**
+  (BL-082 T-08): coverage of requirement to task, dangling `per R-NNN`
+  references, unresolved placeholders, and the case, ADR, journal, changelog and
+  OKF-front-matter shapes, byte-identically to the Python job. All thirty-eight
+  `check_engine.py` assertions it answers carry a named `[Parity]` twin; the
+  label ledger fell from 168 to 130.
+
 - **`legislator okf-debt` — the staleness job, ported** (BL-082 T-08): it names
   anchored documents whose sources moved on without them, byte-identically to
   `python3 docs/ai/engine.py okf-debt`, and fails loud where git cannot be run

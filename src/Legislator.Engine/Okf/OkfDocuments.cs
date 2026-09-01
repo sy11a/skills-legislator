@@ -81,6 +81,15 @@ public static partial class OkfDocuments
         }
     }
 
+    /// <summary>The document's declared front-matter status exactly as written, or null when it declares none.</summary>
+    public static string? StatusOf(string text)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+
+        var match = Status().Match(FrontMatter(text));
+        return match.Success ? match.Groups[1].Value : null;
+    }
+
     private static bool IsRemoved(IFileSystem fs, string document)
     {
         string text;
@@ -97,8 +106,7 @@ public static partial class OkfDocuments
             return false;
         }
 
-        var match = Status().Match(FrontMatter(text));
-        return match.Success && match.Groups[1].Value.Trim('"', '\'') == "removed";
+        return StatusOf(text)?.Trim('"', '\'') == "removed";
     }
 
     /// <summary>The YAML front-matter block, or empty when the document opens with anything else.</summary>

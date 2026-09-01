@@ -9,6 +9,7 @@ public static class JobRegistry
     {
         ["anchors"] = () => new AnchorsJob(),
         ["okf-debt"] = () => new OkfDebtJob(),
+        ["sdd-lint"] = () => new SddLintJob(),
     };
 
     public static IReadOnlyList<string> Names => [.. Jobs.Keys.Order(StringComparer.Ordinal)];
