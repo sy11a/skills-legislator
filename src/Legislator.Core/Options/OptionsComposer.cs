@@ -90,6 +90,7 @@ public static class OptionsComposer
             nameof(LegislatorOptions.SourceExtensions) => o with { SourceExtensions = new(List(value), layer) },
             nameof(LegislatorOptions.BuildDirs) => o with { BuildDirs = new(List(value), layer) },
             nameof(LegislatorOptions.HumanClassDocs) => o with { HumanClassDocs = new(List(value), layer) },
+            nameof(LegislatorOptions.MaxFileBytes) => o with { MaxFileBytes = new(Integer(value), layer) },
             var member => throw new InvalidOperationException($"{member} is in KeyMap but not applied"),
         };
 

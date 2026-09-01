@@ -2894,6 +2894,16 @@ on this task's own authority.
 
 **Done when:** no row in `docs/backlog.md` names an edition number it has not yet merged; the roadmap's ordered steps name cases; the "Out-of-order edition" note becomes the general rule rather than a 2026-08-31 exception. Documentation-only: no `skill/` change, no VERSION, no benchmark.
 
+## BL-089 — An unrecognised `LEGISLATOR_*` variable is fatal to the binary
+
+**Status: PROPOSED 2026-09-01 — raised at BL-082 T-07, when the parity ruler's own control variable bricked the arm it was measuring; small, unsequenced.** The environment layer enumerates: every `LEGISLATOR_*` name in the process environment is admitted as the option key it spells, and an unknown one stops the run with `environment: <key>: unknown key`, exit 2 (R-8210, BL-082 T-05 ruling — the alternative, ignoring what it does not recognise, was rejected as a written-down defect because a typo would then silently do nothing).
+
+**What:** decide whether the binary should refuse to run because of a variable it does not recognise, or refuse only variables that resolve to a known key with a bad value. The question is the blast radius of the prefix claim: `LEGISLATOR_*` is a namespace the binary shares with every packager, shell profile, CI runner and sibling tool on the machine, and today any of them can stop it by exporting a name for their own purposes. T-07 renamed the rulers to `PARITY_ENGINE_CMD` / `PARITY_HOOK_CMD` (contracts.md C-06, 2026-09-01) — that removed the instance and left the class.
+
+**Why:** the failure is silent in the worst way — it is *loud* per invocation but invisible in design review, because nothing in the repository can see what a machine exports. It hid for a whole task here: T-06 wired the rulers to the binary and read 19 ok / 123 FAIL as "the registry is empty", when the arm was in fact exiting 2 before reaching a job. A gate that is expected to be red hides the next real failure inside the expected one; a namespace that is expected to be ours hides the next real collision the same way.
+
+**Done when:** the rule is decided and written — either the prefix stays exclusively the model's (and that claim is stated in `core/` law, not only in a test), or unknown names are ignored while malformed known ones stay fatal, or a reserved sub-prefix is declared. Whichever wins gets a `check_engine.py` assertion and a .NET twin. Behavioral if the binary changes: VERSION bump and full e2e.
+
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
 
 A master-agent that reviews an incoming request in a project and decides whether to route it to an existing project-local mini-agent (`.claude/agents/<name>.md`) or create a new fine-grained specialized one (task-appropriate model, scoped MCPs) is being built as its **own, separate skill** — not as part of Legislator. Rationale: Legislator is build-time scaffolding (runs occasionally, evolves via VERSION/manifest); request routing is a runtime concern with its own lifecycle. Folding both into one skill would blur SRP.

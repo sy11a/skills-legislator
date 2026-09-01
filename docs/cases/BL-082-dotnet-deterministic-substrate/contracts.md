@@ -116,8 +116,10 @@ Interfaces, schemas and command-line shapes the plan's tasks produce and consume
 
 *per R-8205, R-8206 · produced by T-06 · consumed by: `evals/check_engine.py`, `evals/check_hooks.py`, `tests/Legislator.Parity.Tests` (T-06…T-11), `tools/evals-bg.sh` (T-13)*
 
-- `LEGISLATOR_ENGINE_CMD` — when set, `run()`/`audit()`/`eng()` execute `[$LEGISLATOR_ENGINE_CMD, <job>, "--root", <root>, …]` instead of `python3 docs/ai/engine.py`; the fixture repos still copy `engine.py` in (until Task 12 removes it), so both arms are measured on identical trees.
-- `LEGISLATOR_HOOK_CMD` — when set, `run_hook(script, …)` executes `[$LEGISLATOR_HOOK_CMD, "hook", <script.stem>]`.
+**Amendment (2026-09-01, T-07 — operator ruling).** The two variables are renamed OUT of the `LEGISLATOR_*` namespace, to `PARITY_ENGINE_CMD` and `PARITY_HOOK_CMD`. The environment layer admits every `LEGISLATOR_*` name as the option key it spells and refuses an unknown one by name (R-8210, T-05 ruling), so while the binary is the arm its own harness variable made it exit 2 on every check — the ruler measured the collision, not the port. T-06 could not see this: the registry was empty and every job exited 2 anyway, so the fault hid inside the expected failure. Whether an unrecognised `LEGISLATOR_*` variable should be fatal at all is a separate question about the T-05 design and is filed in `docs/backlog.md`.
+
+- `PARITY_ENGINE_CMD` — when set, `run()`/`audit()`/`eng()` execute `[$PARITY_ENGINE_CMD, <job>, "--root", <root>, …]` instead of `python3 docs/ai/engine.py`; the fixture repos still copy `engine.py` in (until Task 12 removes it), so both arms are measured on identical trees.
+- `PARITY_HOOK_CMD` — when set, `run_hook(script, …)` executes `[$PARITY_HOOK_CMD, "hook", <script.stem>]`.
 - `[Parity("engine", "anchors_clean_repo_exit_0")]` — attribute naming the ruler (`engine`|`hooks`) and label a .NET test twins.
 
 ## C-07 Repo layout and the anchors classifier

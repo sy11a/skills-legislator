@@ -3,7 +3,7 @@ type: System
 title: Legislator — System Overview
 description: Root of the OKF knowledge bundle — architecture, tech stack, project layout, and links to every category.
 tags: [system, architecture, index]
-timestamp: 2026-08-24T00:00:00Z
+timestamp: 2026-09-01T00:00:00Z
 status: implemented
 ---
 
@@ -23,9 +23,12 @@ through edit → bump `skill/VERSION` → benchmark → deliver.
 
 ## Tech stack
 
-Python, Bash and Markdown. No stack rules apply — the manifest's `stacks` list
-is empty, because the two stacks the constitution ships (`dotnet`, `aurelia`)
-describe neither this repo's code nor its tests.
+Markdown for the law itself; Python and Bash for the eval harness and the
+operator scripts; and, since BL-082 (ADR-0008), C# under `src/` and `tests/`
+for the deterministic substrate the enforcement arms are becoming. The
+manifest's `stacks` list is still empty: it is machine-managed and changes only
+on a `/legislator` run, so the `dotnet` stack the constitution ships does not
+yet reach this repository's own law even though it now describes its code.
 
 ## What maps to what
 

@@ -64,6 +64,9 @@ public sealed record LegislatorOptions
 
     public OptionValue<IReadOnlyList<string>> HumanClassDocs { get; init; } = new(["glossary.md", "log.md"], OptionsLayer.Defaults);
 
+    /// <summary>A file past this many bytes is not prose or source, so the symbol scan skips it.</summary>
+    public OptionValue<int> MaxFileBytes { get; init; } = new(2_000_000, OptionsLayer.Defaults);
+
     /// <summary>Every YAML/env key mapped to its member name - written by hand, asserted complete by test (C-03).</summary>
     public static IReadOnlyDictionary<string, string> KeyMap { get; } = new Dictionary<string, string>
     {
@@ -93,6 +96,7 @@ public sealed record LegislatorOptions
         ["source_extensions"] = nameof(SourceExtensions),
         ["build_dirs"] = nameof(BuildDirs),
         ["human_class_docs"] = nameof(HumanClassDocs),
+        ["max_file_bytes"] = nameof(MaxFileBytes),
     };
 
     /// <summary>The keys whose member is an <c>OptionValue&lt;int&gt;</c> - the validator parses these as integers of 1 or more; asserted against the members by test (C-04).</summary>
@@ -100,6 +104,7 @@ public sealed record LegislatorOptions
     {
         "okf_debt_days",
         "git_timeout_seconds",
+        "max_file_bytes",
     };
 
     /// <summary>Every option as (key, rendered value, source): lists comma-joined, numbers invariant (C-03).</summary>
@@ -131,5 +136,6 @@ public sealed record LegislatorOptions
         yield return ("source_extensions", string.Join(ListSeparator, SourceExtensions.Value), SourceExtensions.Source);
         yield return ("build_dirs", string.Join(ListSeparator, BuildDirs.Value), BuildDirs.Source);
         yield return ("human_class_docs", string.Join(ListSeparator, HumanClassDocs.Value), HumanClassDocs.Source);
+        yield return ("max_file_bytes", MaxFileBytes.Value.ToString(CultureInfo.InvariantCulture), MaxFileBytes.Source);
     }
 }

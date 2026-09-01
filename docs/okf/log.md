@@ -3,10 +3,37 @@ type: Changelog
 title: OKF Bundle Changelog
 description: Chronological record of significant changes to the OKF knowledge bundle.
 tags: [changelog, okf]
-timestamp: 2026-08-29T00:00:00Z
+timestamp: 2026-09-01T00:00:00Z
 ---
 
 # OKF Bundle Changelog
+
+## 2026-09-01 — BL-082 T-07: the pilot port, and a namespace that was not ours
+
+The first engine job exists in .NET: `anchors` is registered, and the ruler
+measures it byte for byte on the published binary — all seventeen labels the
+job answers are `ok`, and the label ledger fell from 196 to 179 in the same
+commit as the twins that lowered it. `glossary.md` gained **source root** (the
+directories a symbol-anchor may resolve against, and the two exclusions that
+make the check honest) and its **arm** row now names the renamed variables.
+
+The entry worth recording is why they were renamed. The environment layer
+admits every `LEGISLATOR_*` name as the option key it spells and refuses an
+unknown one by name — so while the binary is the arm, the ruler's own
+`LEGISLATOR_ENGINE_CMD` made it exit 2 before reaching a job, and the ruler
+measured the collision instead of the port. T-06 could not have seen it: the
+registry was empty, every job exited 2 anyway, and the fault hid inside the
+expected failure — the same hazard that made the ledger a ratchet rather than a
+test left red for five tasks. The rulers moved out of the namespace
+(`PARITY_ENGINE_CMD`, `PARITY_HOOK_CMD`); whether an unrecognised `LEGISLATOR_*`
+variable should be fatal at all is BL-089.
+
+Two smaller findings, both worth carrying: the options census caught
+`max_file_bytes` present in the key map but missing from the composer's
+hand-written switch — the guard doing exactly its job; and
+`MockFileSystem.File.ReadAllText` returns empty text for a directory where
+`System.IO` throws, so a document the process may not read cannot be modelled
+in the fake at all. The crash fixtures moved to a real temporary directory.
 
 ## 2026-08-29 — BL-082: the deterministic substrate becomes .NET
 

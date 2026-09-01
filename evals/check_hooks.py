@@ -24,7 +24,9 @@ HOOKS = PLUGIN / "hooks"
 # The arm under test. Unset, this ruler measures the Python hook scripts; set, it
 # measures the command it names — the .NET binary, addressed as `<cmd> hook <name>`
 # — on the same payloads (BL-082, R-8205).
-HOOK_CMD = os.environ.get("LEGISLATOR_HOOK_CMD")
+# Out of the LEGISLATOR_* namespace for the reason check_engine.py records: the binary
+# reads that prefix as option keys and refuses an unknown one (BL-082 T-07).
+HOOK_CMD = os.environ.get("PARITY_HOOK_CMD")
 
 failures: list[str] = []
 

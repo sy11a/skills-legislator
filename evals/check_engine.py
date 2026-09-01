@@ -18,7 +18,12 @@ ENGINE_SRC = REPO / "skill" / "assets" / "engine" / "engine.py"
 # The arm under test. Unset, this ruler measures the Python engine; set, it measures
 # the command it names — the .NET binary — on the same fixture trees, which is what
 # makes it a parity ruler and not a test of one implementation (BL-082, R-8205).
-ENGINE_CMD = os.environ.get("LEGISLATOR_ENGINE_CMD")
+#
+# The name stays OUT of the LEGISLATOR_* namespace on purpose: the binary reads every
+# LEGISLATOR_* variable as an option key and refuses an unknown one by name (R-8210), so
+# a ruler variable in that prefix makes the arm exit 2 on every check — measuring the
+# harness instead of the port (BL-082 T-07, operator ruling 2026-09-01).
+ENGINE_CMD = os.environ.get("PARITY_ENGINE_CMD")
 
 
 def _engine_argv(program: Path | str, root: Path, *args: str,

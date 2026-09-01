@@ -19,7 +19,7 @@ public sealed class LabelCoverageTests
     /// against an empty implementation and recorded in the case as `parity-red.txt`, and
     /// from here the ledger's job is to make backsliding impossible.
     /// </summary>
-    const int LedgerDebt = 196;
+    const int LedgerDebt = 179;
 
     /// <summary>
     /// Bites in both directions. Upward — a ruler gained an assertion, or a twin lost the
@@ -46,6 +46,29 @@ public sealed class LabelCoverageTests
         Assert.True(missing.Count == LedgerDebt,
             $"the ledger fell to {missing.Count}: lower LedgerDebt to that number in the "
             + "commit that closed the gap, so the record keeps saying what is true.");
+    }
+
+    /// <summary>
+    /// The other direction, due from T-07 — the task that registered the first twins and made
+    /// the question answerable (H-007). A twin naming a label no ruler asserts is a claim of
+    /// coverage nothing measures: the ruler was reworded or its assertion deleted, and the
+    /// ledger would keep counting the twin as if it still guarded something.
+    /// </summary>
+    [Fact]
+    [Trait("parity", "meta")]
+    public void No_twin_names_a_label_the_rulers_do_not_assert()
+    {
+        var rulers = Labels.FromRulers();
+
+        var orphans = Labels.FromTwins().Where(l => !rulers.Contains(l))
+            .OrderBy(l => l.Ruler, StringComparer.Ordinal)
+            .ThenBy(l => l.Label, StringComparer.Ordinal)
+            .ToList();
+
+        Assert.True(orphans.Count == 0,
+            "a twin names a label no ruler asserts - the ruler was reworded or its assertion "
+            + "removed, and the twin now guards nothing:\n"
+            + string.Join('\n', orphans.Select(l => $"{l.Ruler}\t{l.Label}")));
     }
 
     /// <summary>

@@ -36,9 +36,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   sources through `/flow-setup`, hands over what it already established,
   invokes nothing on its own authority, and skips the offer when the skill
   is not installed.
+- **`legislator anchors` — the first ported engine job** (BL-082 T-07): the
+  OKF link-hardness check runs from the published binary with byte-identical
+  findings and the same exit codes as `python3 docs/ai/engine.py anchors`, and
+  the seventeen `check_engine.py` assertions it answers each carry a named
+  `[Parity]` twin. The label ledger fell from 196 to 179. The options model
+  gained `max_file_bytes`, the ceiling past which a file is not scanned for
+  symbols.
+
 - **The parity rulers can measure either arm** (BL-082 T-06):
   `evals/check_engine.py` and `evals/check_hooks.py` run the command named by
-  `LEGISLATOR_ENGINE_CMD` / `LEGISLATOR_HOOK_CMD` when it is set — the
+  `PARITY_ENGINE_CMD` / `PARITY_HOOK_CMD` when it is set — the
   published `legislator` binary — and the Python engine and hook scripts when
   it is not, on identical fixture trees; each ruler prints the arm it is
   measuring before its first check. `evals/parity_labels.py` reads every
@@ -67,6 +75,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   with the next edition.
 - **The deterministic substrate becomes .NET from v25** (ADR-0008, BL-082):
   BL-072 is pulled forward to step zero of edition v25 — one `src/`
+- **The parity rulers' arm variables left the `LEGISLATOR_*` namespace**
+  (BL-082 T-07): they are `PARITY_ENGINE_CMD` and `PARITY_HOOK_CMD`. The binary
+  reads every `LEGISLATOR_*` variable as an option key and refuses an unknown
+  one, so a ruler variable in that prefix stopped the arm it was measuring.
+
 - **Edition numbers are assigned at merge, never reserved** (BL-082,
   applying the roadmap ruling made at the v25 merge). The .NET tool pin
   `src/Legislator.Cli/Version.props` holds `0.0.0` until the edition is

@@ -82,8 +82,8 @@ tests/
   Legislator.Cli.Tests/               golden runs on evals/fixtures
   Legislator.Parity.Tests/            the label meta-test + one twin per check label
 evals/
-  check_engine.py                     gains LEGISLATOR_ENGINE_CMD
-  check_hooks.py                      gains LEGISLATOR_HOOK_CMD
+  check_engine.py                     gains PARITY_ENGINE_CMD
+  check_hooks.py                      gains PARITY_HOOK_CMD
   check_static.py                     gains src/ discipline checks
   check_dotnet.sh                     build + test + publish smoke, one entry point
 tools/
@@ -516,7 +516,7 @@ public class JobRegistryTests
 **Interfaces:** produces **C-06** (`contracts.md`).
 
 **Amendments (2026-08-30, stage 4 audit — operator-approved):**
-- AOT-first: the parity meta-test and every twin execute the published binary via `LEGISLATOR_ENGINE_CMD`/`LEGISLATOR_HOOK_CMD` pointing at `artifacts/linux-x64/legislator`.
+- AOT-first: the parity meta-test and every twin execute the published binary via `PARITY_ENGINE_CMD`/`PARITY_HOOK_CMD` pointing at `artifacts/linux-x64/legislator` (renamed out of the `LEGISLATOR_*` namespace at T-07 — see contracts.md C-06's 2026-09-01 amendment).
 - `Legislator.Parity.Tests` stays a fifth test project — a deliberate departure from R-8201's letter, recorded in spec.md `## Clarifications` (2026-08-30).
 
 - [ ] **Step 1: Write `evals/parity_labels.py`**:
@@ -564,7 +564,7 @@ public class LabelCoverageTests
 - [ ] **Step 4: Parameterise the rulers** — in `check_engine.py`:
 
 ```python
-ENGINE_CMD = os.environ.get("LEGISLATOR_ENGINE_CMD")
+ENGINE_CMD = os.environ.get("PARITY_ENGINE_CMD")
 
 def _engine_argv(job: str, root: Path, *extra: str) -> list[str]:
     if ENGINE_CMD:
@@ -578,7 +578,7 @@ def run(root: Path, job: str) -> tuple[int, str]:
 `audit()` and `eng()` route through `_engine_argv` the same way (`eng` already passes `--root`; with `ENGINE_CMD` it drops `ENGINE_SRC`). In `check_hooks.py`:
 
 ```python
-HOOK_CMD = os.environ.get("LEGISLATOR_HOOK_CMD")
+HOOK_CMD = os.environ.get("PARITY_HOOK_CMD")
 def run_hook(script: Path, payload: dict, cwd: Path | None = None):
     argv = [HOOK_CMD, "hook", script.stem] if HOOK_CMD else [sys.executable, str(script)]
     return subprocess.run(argv, input=json.dumps(payload), capture_output=True, text=True, cwd=str(cwd) if cwd else None, timeout=15)
@@ -681,7 +681,7 @@ public class AnchorsTwins
 ```
 The label list for this task is the output of `python3 evals/parity_labels.py | grep -E '^engine\t(anchor|symbol|path|human|scannable)'` on the day; write one twin per line.
 
-- [ ] **Step 10: Parity run** — `dotnet publish src/Legislator.Cli -c Release -o artifacts && LEGISLATOR_ENGINE_CMD=$PWD/artifacts/legislator python3 evals/check_engine.py 2>&1 | grep -E '^(  ok|  FAIL)' | grep -i anchor` — every anchors line `ok`, byte-identical stdout (the ruler asserts stdout, not just exit). Any `FAIL` is a port defect: fix the .NET side, never the ruler.
+- [ ] **Step 10: Parity run** — `dotnet publish src/Legislator.Cli -c Release -o artifacts && PARITY_ENGINE_CMD=$PWD/artifacts/legislator python3 evals/check_engine.py 2>&1 | grep -E '^(  ok|  FAIL)' | grep -i anchor` — every anchors line `ok`, byte-identical stdout (the ruler asserts stdout, not just exit). Any `FAIL` is a port defect: fix the .NET side, never the ruler.
 - [ ] **Step 11: Commit** — `"BL-082: anchors ported — pilot job, parity green on the ruler"`.
 - [ ] **Step 12: Review with the owner** — this is the review that sets the pattern for Tasks 8–10; agree the twin style here.
 
@@ -714,7 +714,7 @@ The label list for this task is the output of `python3 evals/parity_labels.py | 
 **Interfaces:** produces **C-09** (`contracts.md`).
 
 - [ ] **Step 1** Unit tests per audit check (the Python names them by number and slug; the test class names match: `Check02OwnedIntegrityTests` …), on `MockFileSystem` repos built like `audit_repo()` in the ruler. **Step 2** FAIL. **Step 3** Implement, one check per commit if a check exceeds ~80 lines. **Step 4** Green.
-- [ ] **Step 5** Twins for every `engine` label in the audit/detect sections (`grep -E '^engine\t(audit|check_|detect|R-6)'`). **Step 6** Parity run: `LEGISLATOR_ENGINE_CMD=… python3 evals/check_engine.py | grep -E 'audit|detect'` all ok; the report text `diff`-clean against the Python on `evals/fixtures/upgrade-base`.
+- [ ] **Step 5** Twins for every `engine` label in the audit/detect sections (`grep -E '^engine\t(audit|check_|detect|R-6)'`). **Step 6** Parity run: `PARITY_ENGINE_CMD=… python3 evals/check_engine.py | grep -E 'audit|detect'` all ok; the report text `diff`-clean against the Python on `evals/fixtures/upgrade-base`.
 - [ ] **Step 7** Commit `"BL-082: audit and detect ported, parity green"`. **Step 8** Review with the owner.
 
 ---
@@ -745,7 +745,7 @@ The label list for this task is the output of `python3 evals/parity_labels.py | 
 **Interfaces:** produces **C-11** (`contracts.md`).
 
 - [ ] **Step 1** For each hook, transliterate its Python into a hook class with one unit test per documented branch (`guard_owned_files`: rules dir, `opencode.json`, `engine.py`, manifest not guarded, not legislated → 0, malformed → 0; `guard_git_conduct`: the command-head parser incl. `git.exe` and backslash heads from BL-070, the blocked verbs, warnings; `format_on_edit`: best-effort formatter absent → 0; `okf_sync_check`: `stop_hook_active` guard). **Step 2** FAIL. **Step 3** Implement. **Step 4** Green.
-- [ ] **Step 5** Twins for every `hooks` label (`python3 evals/parity_labels.py | grep '^hooks'`). **Step 6** Parity: `LEGISLATOR_HOOK_CMD=$PWD/artifacts/legislator python3 evals/check_hooks.py` all ok. Now run the meta-test: `dotnet test tests/Legislator.Parity.Tests` — `Every_ruler_label_has_a_named_twin` **green**; drop the `--filter-not-trait` from `check_dotnet.sh`.
+- [ ] **Step 5** Twins for every `hooks` label (`python3 evals/parity_labels.py | grep '^hooks'`). **Step 6** Parity: `PARITY_HOOK_CMD=$PWD/artifacts/legislator python3 evals/check_hooks.py` all ok. Now run the meta-test: `dotnet test tests/Legislator.Parity.Tests` — `Every_ruler_label_has_a_named_twin` **green**; drop the `--filter-not-trait` from `check_dotnet.sh`.
 - [ ] **Step 7** Rewrite `plugin/hooks/hooks.json` to the binary; `python3 evals/check_hooks.py` (its hooks.json shape checks) and `node evals/check_opencode_plugin.mjs` ok.
 - [ ] **Step 8** Commit `"BL-082: hooks ported, hooks.json names the binary, parity meta-test green"`. **Step 9** Review with the owner.
 
@@ -778,13 +778,13 @@ The label list for this task is the output of `python3 evals/parity_labels.py | 
 - Modify: `skill/SKILL.md` (Step 3 no longer delivers `assets/engine/engine.py`; every `python3 docs/ai/engine.py <job>` → `legislator <job> --skill … --root …`; Step 1 `detect`, Step 6 `verify`, Step 7 `report`), `skill/references/audit-checks.md` (checks 15/17 read `legislator anchors` / `legislator okf-debt`; the new `arm-integrity` check)
 - Modify: `skill/assets/templates/**` wherever `engine.py` is named (`grep -rn "engine.py" skill/`)
 - Delete: `skill/assets/engine/engine.py`, `plugin/hooks/*.py`
-- Modify: `evals/check_static.py:123-143` (the engine-source section becomes: engine source absent; SKILL.md names `legislator`; no `python3` in any rule file — `grep -c python3 skill/assets/rules` == 0), `evals/check_engine.py` (`ENGINE_CMD` becomes **required**: `sys.exit("set LEGISLATOR_ENGINE_CMD")` when unset; fixture repos no longer copy `engine.py`), `evals/check_hooks.py` (same for `HOOK_CMD`), `evals/grade.py` (its engine re-print helper from BL-075 calls the binary), `evals/setup_workspace.py` and `tools/evals-bg.sh` (export the two env vars from `artifacts/linux-x64/legislator`)
+- Modify: `evals/check_static.py:123-143` (the engine-source section becomes: engine source absent; SKILL.md names `legislator`; no `python3` in any rule file — `grep -c python3 skill/assets/rules` == 0), `evals/check_engine.py` (`ENGINE_CMD` becomes **required**: `sys.exit("set PARITY_ENGINE_CMD")` when unset; fixture repos no longer copy `engine.py`), `evals/check_hooks.py` (same for `HOOK_CMD`), `evals/grade.py` (its engine re-print helper from BL-075 calls the binary), `evals/setup_workspace.py` and `tools/evals-bg.sh` (export the two env vars from `artifacts/linux-x64/legislator`)
 - Modify: `src/Legislator.Hooks/Hooks/GuardOwnedFilesHook.cs` — `is_owned_engine` branch removed (no engine file is owned any more); its test flips to "docs/ai/engine.py is an ordinary file"
 - Modify: `docs/philosophy.md` §Horizon (remove any item this closes; `check_static.py` enforces)
 
 - [ ] **Step 1** Red first: extend `check_static.py` with `check(not (SKILL/"assets/engine/engine.py").exists(), "no Python engine ships in the package")` and `check("python3 docs/ai/engine.py" not in rules_text, "law names the binary, not the interpreter")` → FAIL.
 - [ ] **Step 2** Make every edit above; `grep -rn "engine.py\|python3" skill/ plugin/` returns only the `evals`-side mentions in `SKILL.md`'s eval note, if any (decide each hit: rename or delete).
-- [ ] **Step 3** Run all four static checks with the env vars set (`export LEGISLATOR_ENGINE_CMD=$PWD/artifacts/linux-x64/legislator LEGISLATOR_HOOK_CMD=$LEGISLATOR_ENGINE_CMD`): all ok.
+- [ ] **Step 3** Run all four static checks with the env vars set (`export PARITY_ENGINE_CMD=$PWD/artifacts/linux-x64/legislator PARITY_HOOK_CMD=$PARITY_ENGINE_CMD`): all ok.
 - [ ] **Step 4** Deliver member #0: `legislator apply --skill skill --stacks "" --root .` then `legislator verify` — `docs/ai/engine.py` is deleted here by the owned-set diff (it left `ownedFiles`); `python3 docs/ai/engine.py anchors` in this repo's `docs/ai/rules/core/verification.md` now reads `legislator anchors`; `legislator anchors` exits 0.
 - [ ] **Step 5** Commit `"BL-082: law names legislator <job>; Python engine and hooks retired; member #0 delivered"`. **Step 6** Review with the owner.
 
