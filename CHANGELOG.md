@@ -36,6 +36,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   sources through `/flow-setup`, hands over what it already established,
   invokes nothing on its own authority, and skips the offer when the skill
   is not installed.
+- **`legislator detect` — the mode decision, ported** (BL-082 T-09): Step 1's
+  decision tree and Step 2's stack signals as JSON on stdout, writing nothing —
+  `fresh` / `migration` / `upgrade`, the entry document (an alias that is the
+  symlink is not one), the subscription read from the modern `stacks` key or the
+  legacy `profiles`, and the owned set reconstructed off disk when the manifest
+  is gone but the layer is plainly installed. All six `check_engine.py`
+  assertions it answers carry a named `[Parity]` twin; the label ledger fell from
+  122 to 116.
+
 - **`legislator baseline` — the requirement-to-test register, ported** (BL-082
   T-08): the engine's one write, deterministic over an unchanged repository and
   destroying any hand edit, byte-identical to the Python's on the same tree

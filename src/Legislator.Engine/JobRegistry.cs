@@ -9,6 +9,7 @@ public static class JobRegistry
     {
         ["anchors"] = () => new AnchorsJob(),
         ["baseline"] = () => new BaselineJob(),
+        ["detect"] = () => new DetectJob(),
         ["okf-debt"] = () => new OkfDebtJob(),
         ["sdd-lint"] = () => new SddLintJob(),
     };

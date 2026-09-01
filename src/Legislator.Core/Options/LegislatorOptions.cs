@@ -67,6 +67,27 @@ public sealed record LegislatorOptions
     /// <summary>A file past this many bytes is not prose or source, so the symbol scan skips it.</summary>
     public OptionValue<int> MaxFileBytes { get; init; } = new(2_000_000, OptionsLayer.Defaults);
 
+    public OptionValue<string> EngineFile { get; init; } = new("engine.py", OptionsLayer.Defaults); // under docs/ai
+
+    public OptionValue<string> StacksDir { get; init; } = new("stacks", OptionsLayer.Defaults); // under docs/ai/rules
+
+    /// <summary>The import whose presence in the entry document says the layer is already installed, so a manifest-less repository is an upgrade to reconstruct rather than a migration.</summary>
+    public OptionValue<string> LegislationMarker { get; init; } = new("core/okf.md", OptionsLayer.Defaults); // under docs/ai/rules
+
+    public OptionValue<string> SkillVersionFile { get; init; } = new("VERSION", OptionsLayer.Defaults); // under the skill package
+
+    /// <summary>The stack a project file of one of <see cref="DotnetProjectPatterns"/> makes a candidate for; also the name of its directory under the skill's rule stacks.</summary>
+    public OptionValue<string> DotnetStack { get; init; } = new("dotnet", OptionsLayer.Defaults);
+
+    /// <summary>The stack <see cref="AureliaMarkerFile"/> or a package of the same name makes a candidate for.</summary>
+    public OptionValue<string> AureliaStack { get; init; } = new("aurelia", OptionsLayer.Defaults);
+
+    public OptionValue<IReadOnlyList<string>> DotnetProjectPatterns { get; init; } = new(["*.slnx", "*.sln", "*.csproj"], OptionsLayer.Defaults);
+
+    public OptionValue<string> NodePackageFile { get; init; } = new("package.json", OptionsLayer.Defaults);
+
+    public OptionValue<string> AureliaMarkerFile { get; init; } = new("aurelia_project/aurelia.json", OptionsLayer.Defaults);
+
     /// <summary>Every YAML/env key mapped to its member name - written by hand, asserted complete by test (C-03).</summary>
     public static IReadOnlyDictionary<string, string> KeyMap { get; } = new Dictionary<string, string>
     {
@@ -97,6 +118,15 @@ public sealed record LegislatorOptions
         ["build_dirs"] = nameof(BuildDirs),
         ["human_class_docs"] = nameof(HumanClassDocs),
         ["max_file_bytes"] = nameof(MaxFileBytes),
+        ["engine_file"] = nameof(EngineFile),
+        ["stacks_dir"] = nameof(StacksDir),
+        ["legislation_marker"] = nameof(LegislationMarker),
+        ["skill_version_file"] = nameof(SkillVersionFile),
+        ["dotnet_stack"] = nameof(DotnetStack),
+        ["aurelia_stack"] = nameof(AureliaStack),
+        ["dotnet_project_patterns"] = nameof(DotnetProjectPatterns),
+        ["node_package_file"] = nameof(NodePackageFile),
+        ["aurelia_marker_file"] = nameof(AureliaMarkerFile),
     };
 
     /// <summary>The keys whose member is an <c>OptionValue&lt;int&gt;</c> - the validator parses these as integers of 1 or more; asserted against the members by test (C-04).</summary>
@@ -137,5 +167,14 @@ public sealed record LegislatorOptions
         yield return ("build_dirs", string.Join(ListSeparator, BuildDirs.Value), BuildDirs.Source);
         yield return ("human_class_docs", string.Join(ListSeparator, HumanClassDocs.Value), HumanClassDocs.Source);
         yield return ("max_file_bytes", MaxFileBytes.Value.ToString(CultureInfo.InvariantCulture), MaxFileBytes.Source);
+        yield return ("engine_file", EngineFile.Value, EngineFile.Source);
+        yield return ("stacks_dir", StacksDir.Value, StacksDir.Source);
+        yield return ("legislation_marker", LegislationMarker.Value, LegislationMarker.Source);
+        yield return ("skill_version_file", SkillVersionFile.Value, SkillVersionFile.Source);
+        yield return ("dotnet_stack", DotnetStack.Value, DotnetStack.Source);
+        yield return ("aurelia_stack", AureliaStack.Value, AureliaStack.Source);
+        yield return ("dotnet_project_patterns", string.Join(ListSeparator, DotnetProjectPatterns.Value), DotnetProjectPatterns.Source);
+        yield return ("node_package_file", NodePackageFile.Value, NodePackageFile.Source);
+        yield return ("aurelia_marker_file", AureliaMarkerFile.Value, AureliaMarkerFile.Source);
     }
 }

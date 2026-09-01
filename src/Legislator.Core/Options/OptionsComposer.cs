@@ -91,6 +91,15 @@ public static class OptionsComposer
             nameof(LegislatorOptions.BuildDirs) => o with { BuildDirs = new(List(value), layer) },
             nameof(LegislatorOptions.HumanClassDocs) => o with { HumanClassDocs = new(List(value), layer) },
             nameof(LegislatorOptions.MaxFileBytes) => o with { MaxFileBytes = new(Integer(value), layer) },
+            nameof(LegislatorOptions.EngineFile) => o with { EngineFile = new(value, layer) },
+            nameof(LegislatorOptions.StacksDir) => o with { StacksDir = new(value, layer) },
+            nameof(LegislatorOptions.LegislationMarker) => o with { LegislationMarker = new(value, layer) },
+            nameof(LegislatorOptions.SkillVersionFile) => o with { SkillVersionFile = new(value, layer) },
+            nameof(LegislatorOptions.DotnetStack) => o with { DotnetStack = new(value, layer) },
+            nameof(LegislatorOptions.AureliaStack) => o with { AureliaStack = new(value, layer) },
+            nameof(LegislatorOptions.DotnetProjectPatterns) => o with { DotnetProjectPatterns = new(List(value), layer) },
+            nameof(LegislatorOptions.NodePackageFile) => o with { NodePackageFile = new(value, layer) },
+            nameof(LegislatorOptions.AureliaMarkerFile) => o with { AureliaMarkerFile = new(value, layer) },
             var member => throw new InvalidOperationException($"{member} is in KeyMap but not applied"),
         };
 

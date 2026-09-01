@@ -241,3 +241,13 @@ distinguishable, which is the rule `prose_only` already applies everywhere else
 in this engine. `SourceTree` in `Legislator.Engine.Anchors` now holds the source
 walk that the symbol index and the annotated-test scan share.
 
+## 2026-09-01 — BL-082 T-09: detect ported
+
+The `detect` job is ported: Step 1's decision tree and Step 2's stack signals,
+answered off a tree alone and printed as JSON. Three glossary rows were minted —
+**detect job**, **skill package** and **reconstructed upgrade**, the last being
+the manifest-less repository whose entry document still imports the constitution,
+where the owned set is read back off disk rather than assumed absent. The
+manifest is modelled as data and never as a typed record, because its shape grows
+between editions and detect echoes the whole object back.
+
