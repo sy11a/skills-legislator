@@ -1,0 +1,26 @@
+BL-082 T-08 — the recorded red of the baseline half (per R-8205, R-8206, R-8209)
+Taken 2026-09-01 on bl/082-dotnet-deterministic-substrate at 6304689 (okf-debt and
+sdd-lint already green), before any production code of the baseline existed.
+
+== dotnet test --project ../tests/Legislator.Parity.Tests ==
+  total: 77  failed: 9  succeeded: 68
+  All eight baseline twins red on the host's exit 2 for an unknown job:
+    BaselineTwins.Baseline_writes_its_declared_target
+    BaselineTwins.Baseline_maps_a_requirement_to_the_test_that_carries_its_marker
+    BaselineTwins.Baseline_lists_the_requirements_no_test_carries
+    BaselineTwins.Baseline_declares_itself_generated
+    BaselineTwins.Baseline_bytes_are_deterministic_over_an_unchanged_repository
+    BaselineTwins.Regeneration_destroys_a_hand_edit
+    BaselineTwins.Baseline_writes_exactly_its_declared_target
+    BaselineTwins.A_definition_reaches_the_baseline_with_its_inline_code
+  plus the ledger: "the ledger fell to 122" (130 - 8) — the number plan Task 8 predicted
+  for the end of this task (196 - 17 anchors - 57 here).
+
+  None of the eight is vacuous: every one asserts something the job must have WRITTEN,
+  and an engine that does not know the job writes nothing. baseline_writes_nothing_else
+  compares the created set against exactly {docs/ai/baseline.md} rather than against
+  emptiness, so silence fails it.
+
+  One analyzer finding was caught at this red build and fixed inside the step: CA1859 on
+  a twin helper's parameter — the fifth of its kind in this case (T-04, T-05, T-07, T-08
+  twice).

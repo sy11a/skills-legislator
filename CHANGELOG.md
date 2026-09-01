@@ -36,6 +36,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   sources through `/flow-setup`, hands over what it already established,
   invokes nothing on its own authority, and skips the offer when the skill
   is not installed.
+- **`legislator baseline` — the requirement-to-test register, ported** (BL-082
+  T-08): the engine's one write, deterministic over an unchanged repository and
+  destroying any hand edit, byte-identical to the Python's on the same tree
+  (30 747 bytes over this repository). All eight `check_engine.py` assertions it
+  answers carry a named `[Parity]` twin; the label ledger fell from 130 to 122.
+
 - **`legislator sdd-lint` — the analyze gate's mechanical passes, ported**
   (BL-082 T-08): coverage of requirement to task, dangling `per R-NNN`
   references, unresolved placeholders, and the case, ADR, journal, changelog and

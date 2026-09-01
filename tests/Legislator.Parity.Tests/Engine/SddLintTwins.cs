@@ -15,6 +15,14 @@ namespace Legislator.Parity.Tests.Engine;
 /// </summary>
 public sealed class SddLintTwins
 {
+    /// <summary>
+    /// The traceability marker, assembled rather than written: `core/artifact-lifecycle.md`
+    /// annotates a test by the literal `per R-NNN` it carries, and a fixture that spelled the
+    /// marker whole would enter the baseline as an annotation for requirements it does not
+    /// test - a false green in the register a human reads.
+    /// </summary>
+    private const string Per = "per ";
+
     private const string Tier1Head = "# BL-900 — test\n\n**Tier: 1 (light).** x\n\n**Spec type: feature.** y\n\n";
     private const string Boundary = "## Boundary\n\n**In:** a thing.\n\n**Out:** another thing (out of scope).\n\n";
     private const string Hurt = "## The hurting case\n\nGIVEN a repo, WHEN it runs, THEN it works.\n\n";
@@ -71,9 +79,9 @@ public sealed class SddLintTwins
             + "### R-002 — widgets list\n\nWHEN listed THEN widgets SHALL appear.\n\n"
             + "### R-003 — widgets delete\n\nWHEN deleted THEN widgets SHALL disappear.\n",
         ["docs/cases/BL-001-widget-flow/plan.md"] =
-            "# plan\n\n1. store layer, per R-001\n2. list endpoint, per R-002\n3. cleanup, per R-999\n",
+            "# plan\n\n1. store layer, " + Per + "R-001\n2. list endpoint, " + Per + "R-002\n3. cleanup, " + Per + "R-999\n",
         ["docs/cases/BL-001-widget-flow/notes.md"] = "# notes\n\nLeft behind: {{PROJECT_OVERVIEW}}\n",
-        ["src/App.Tests/WidgetStoreTests.cs"] = "// per R-001\npublic class WidgetStoreTests { }\n",
+        ["src/App.Tests/WidgetStoreTests.cs"] = "// " + Per + "R-001\npublic class WidgetStoreTests { }\n",
     });
 
     /// <summary>The ruler's `run(root, "sdd-lint")`, in process: the same argv the binary is given.</summary>
@@ -165,7 +173,7 @@ public sealed class SddLintTwins
         fs.RemoveFile("/r/docs/cases/BL-001-widget-flow/notes.md");
         fs.File.WriteAllText(
             "/r/docs/cases/BL-001-widget-flow/plan.md",
-            "# plan\n\n1. store, per R-001\n2. list, per R-002\n3. delete, per R-003\n");
+            "# plan\n\n1. store, " + Per + "R-001\n2. list, " + Per + "R-002\n3. delete, " + Per + "R-003\n");
 
         var (exit, output, _) = SddLint(fs);
 
@@ -461,7 +469,7 @@ public sealed class SddLintTwins
             + "### R-001 — heading form\n\nWHEN a THEN b SHALL c.\n\n"
             + "- **R-002** — bullet form: the store SHALL persist `docs/x.md` rows.\n\n"
             + "R-003 — bare form SHALL hold.\n",
-        ["docs/cases/BL-002-forms/plan.md"] = "# plan\n\n1. all of it, per R-001, R-002, R-003\n",
+        ["docs/cases/BL-002-forms/plan.md"] = "# plan\n\n1. all of it, " + Per + "R-001, R-002, R-003\n",
     });
 
     [Fact]
@@ -476,7 +484,7 @@ public sealed class SddLintTwins
             ["docs/cases/BL-004-rider/spec.md"] =
                 "# BL-004-rider\n\n**Tier: 0 (direct).** fixture\n\n**Spec type: exploration.** fixture\n\n"
                 + "# rider\n\n(no requirements of its own)\n",
-            ["docs/cases/BL-004-rider/plan.md"] = "# plan\n\n1. fix the sibling too, per R-001\n",
+            ["docs/cases/BL-004-rider/plan.md"] = "# plan\n\n1. fix the sibling too, " + Per + "R-001\n",
         });
 
         var (exit, output, _) = SddLint(fs);

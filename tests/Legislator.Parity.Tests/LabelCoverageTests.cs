@@ -19,7 +19,7 @@ public sealed class LabelCoverageTests
     /// against an empty implementation and recorded in the case as `parity-red.txt`, and
     /// from here the ledger's job is to make backsliding impossible.
     /// </summary>
-    const int LedgerDebt = 130;
+    const int LedgerDebt = 122;
 
     /// <summary>
     /// Bites in both directions. Upward — a ruler gained an assertion, or a twin lost the

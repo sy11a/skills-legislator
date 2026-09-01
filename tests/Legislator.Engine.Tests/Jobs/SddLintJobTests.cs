@@ -14,6 +14,14 @@ namespace Legislator.Engine.Tests.Jobs;
 /// </summary>
 public sealed class SddLintJobTests
 {
+    /// <summary>
+    /// The traceability marker, assembled rather than written: `core/artifact-lifecycle.md`
+    /// annotates a test by the literal `per R-NNN` it carries, and a fixture that spelled the
+    /// marker whole would enter the baseline as an annotation for requirements it does not
+    /// test - a false green in the register a human reads.
+    /// </summary>
+    private const string Per = "per ";
+
     private const string Tier0Head = "**Tier: 0 (direct).** fixture\n\n**Spec type: exploration.** fixture\n\n";
 
     private static MockFileSystem Repo(Dictionary<string, string> files)
@@ -50,12 +58,12 @@ public sealed class SddLintJobTests
         var result = Run(new Dictionary<string, string>
         {
             ["docs/cases/BL-001-x/spec.md"] = $"# BL-001\n\n{Tier0Head}### R-001 — a\n\nx SHALL y.\n",
-            ["docs/cases/BL-001-x/plan.md"] = "# plan\n\n1. a, per R-001\n2. b, per R-999\n",
+            ["docs/cases/BL-001-x/plan.md"] = "# plan\n\n1. a, " + Per + "R-001\n2. b, " + Per + "R-999\n",
         });
 
         Assert.Equal(1, result.ExitCode);
         Assert.Equal(
-            "docs/cases/BL-001-x/plan.md: dangling: per R-999 resolves to no EARS definition in any docs/cases/*/spec.md\n",
+            "docs/cases/BL-001-x/plan.md: dangling: " + Per + "R-999 resolves to no EARS definition in any docs/cases/*/spec.md\n",
             result.Stdout);
     }
 
@@ -66,7 +74,7 @@ public sealed class SddLintJobTests
         {
             ["docs/cases/BL-001-x/spec.md"] =
                 $"# BL-001\n\n{Tier0Head}### R-001 — a\n\nx SHALL y.\n\n### R-002 — b\n\nx SHALL z.\n",
-            ["docs/cases/BL-001-x/plan.md"] = "# plan\n\n1. a, per R-001\n",
+            ["docs/cases/BL-001-x/plan.md"] = "# plan\n\n1. a, " + Per + "R-001\n",
         });
 
         Assert.Equal(1, result.ExitCode);
@@ -97,9 +105,9 @@ public sealed class SddLintJobTests
         var result = Run(new Dictionary<string, string>
         {
             ["docs/cases/BL-001-x/spec.md"] = $"# BL-001\n\n{Tier0Head}### R-001 — a\n\nx SHALL y.\n",
-            ["docs/cases/BL-001-x/plan.md"] = "# plan\n\n1. a, per R-001\n",
+            ["docs/cases/BL-001-x/plan.md"] = "# plan\n\n1. a, " + Per + "R-001\n",
             ["docs/cases/BL-002-y/spec.md"] = $"# BL-002\n\n{Tier0Head}### R-001 — b\n\nx SHALL z.\n",
-            ["docs/cases/BL-002-y/plan.md"] = "# plan\n\n1. b, per R-001\n",
+            ["docs/cases/BL-002-y/plan.md"] = "# plan\n\n1. b, " + Per + "R-001\n",
         });
 
         Assert.Equal(0, result.ExitCode);
@@ -112,7 +120,7 @@ public sealed class SddLintJobTests
     {
         var result = Run(new Dictionary<string, string>
         {
-            ["docs/superpowers/specs/old.md"] = "# old\n\n1. a, per R-999\n\nLeft: {{TOKEN}}\n",
+            ["docs/superpowers/specs/old.md"] = "# old\n\n1. a, " + Per + "R-999\n\nLeft: {{TOKEN}}\n",
             ["docs/cases/BL-001-x/spec.md"] = $"# BL-001\n\n{Tier0Head}",
         });
 

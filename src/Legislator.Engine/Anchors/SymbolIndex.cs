@@ -32,42 +32,20 @@ public sealed class SymbolIndex
         ArgumentNullException.ThrowIfNull(fs);
         ArgumentNullException.ThrowIfNull(options);
 
-        var buildDirs = options.BuildDirs.Value.ToHashSet(StringComparer.Ordinal);
-        var ignored = new HashSet<string>(buildDirs, StringComparer.Ordinal) { options.DocsDir.Value };
-
-        var roots = TopLevelDirectories(fs, root)
-            .Where(name => !ignored.Contains(name))
-            .Order(StringComparer.Ordinal)
-            .ToList();
-
+        var roots = SourceTree.Roots(fs, root, options);
         var texts = new List<string>();
-        foreach (var name in roots)
+        foreach (var file in SourceTree.Files(fs, root, options))
         {
-            foreach (var file in Files(fs, $"{root}/{name}"))
+            try
             {
-                var relative = file[(root.Length + 1)..].Replace('\\', '/');
-                var parts = relative.Split('/');
-                if (parts.Any(part => part.StartsWith('.') || buildDirs.Contains(part)))
-                {
-                    continue;
-                }
-
-                try
-                {
-                    if (fs.FileInfo.New(file).Length > options.MaxFileBytes.Value)
-                    {
-                        continue;
-                    }
-
-                    texts.Add(fs.File.ReadAllText(file));
-                }
-                catch (IOException)
-                {
-                    // A file that cannot be read resolves nothing; the Python skips it the same way.
-                }
-                catch (UnauthorizedAccessException)
-                {
-                }
+                texts.Add(fs.File.ReadAllText($"{root}/{file}"));
+            }
+            catch (IOException)
+            {
+                // A file that cannot be read resolves nothing; the Python skips it the same way.
+            }
+            catch (UnauthorizedAccessException)
+            {
             }
         }
 

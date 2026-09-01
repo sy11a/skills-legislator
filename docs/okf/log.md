@@ -229,3 +229,15 @@ directory the lint judges is now named by the options model, so a repository
 that calls its cases something else is linted correctly instead of silently not
 at all.
 
+## 2026-09-01 — BL-082 T-08: baseline, and a register that claimed coverage nobody wrote
+
+The baseline job is ported, and regenerating the document over this repository
+found the thing the port was always going to find: the annotation rule counts a
+literal `per R-NNN` wherever it appears in a file whose path says "test", so the
+port's own fixtures entered the register as annotations for requirements they do
+not test. The fixtures now assemble the marker instead of spelling it, and the
+rule's hole is **BL-090** — an annotation and a quotation of one must be
+distinguishable, which is the rule `prose_only` already applies everywhere else
+in this engine. `SourceTree` in `Legislator.Engine.Anchors` now holds the source
+walk that the symbol index and the annotated-test scan share.
+
