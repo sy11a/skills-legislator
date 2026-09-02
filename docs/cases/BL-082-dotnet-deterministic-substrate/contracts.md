@@ -161,6 +161,8 @@ Interfaces, schemas and command-line shapes the plan's tasks produce and consume
 - `legislator detect --skill <path> [--root <dir>]` — JSON (`indent=1, sort_keys` in Python → `JsonSerializerOptions { WriteIndented = true }` gives 2-space indent: **the twin asserts the parsed object, and the ruler's `detect` checks parse JSON too — confirm by reading them; if any compares raw text, emit with a custom 1-space writer to stay byte-identical**).
 - `--skill` missing or not a directory → stderr `"{job} requires --skill <skill-path> (the legislator package root)"`, exit 2 (verbatim).
 
+> **Amended 2026-09-02 (T-09).** `detect` prints through a 1-space `Utf8JsonWriter` with ordinal-sorted keys, written by hand rather than through a serializer context: the manifest is echoed back as the `JsonNode` the repository wrote (its shape grows between editions), which keeps the output AOT-trivial and byte-identical to `indent=1, sort_keys` even though the ruler's `detect` checks only parse it. `audit` on a repository where git cannot be run at all exits 2 with the refusal on stderr and nothing on stdout, never a clean report (`engine_audit_fails_loud_without_git`); `--model-findings` naming a malformed file is the same failure class. Both `--skill` jobs share `SkillArguments.Parse`, so the verbatim refusal is written once.
+
 ## C-10 `apply`, `verify`, `report` command lines and the run record
 
 *per R-8205 · produced by T-10 · consumed by: SKILL.md Steps 3/6/7 (T-13), `evals/grade.py` re-print helper*

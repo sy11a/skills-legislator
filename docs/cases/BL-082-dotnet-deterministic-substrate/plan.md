@@ -713,9 +713,11 @@ The label list for this task is the output of `python3 evals/parity_labels.py | 
 
 **Interfaces:** produces **C-09** (`contracts.md`).
 
-- [ ] **Step 1** Unit tests per audit check (the Python names them by number and slug; the test class names match: `Check02OwnedIntegrityTests` …), on `MockFileSystem` repos built like `audit_repo()` in the ruler. **Step 2** FAIL. **Step 3** Implement, one check per commit if a check exceeds ~80 lines. **Step 4** Green.
-- [ ] **Step 5** Twins for every `engine` label in the audit/detect sections (`grep -E '^engine\t(audit|check_|detect|R-6)'`). **Step 6** Parity run: `PARITY_ENGINE_CMD=… python3 evals/check_engine.py | grep -E 'audit|detect'` all ok; the report text `diff`-clean against the Python on `evals/fixtures/upgrade-base`.
-- [ ] **Step 7** Commit `"BL-082: audit and detect ported, parity green"`. **Step 8** Review with the owner.
+- [x] **Step 1** Unit tests per audit check (the Python names them by number and slug; the test class names match: `Check02OwnedIntegrityTests` …), on `MockFileSystem` repos built like `audit_repo()` in the ruler. **Step 2** FAIL. **Step 3** Implement, one check per commit if a check exceeds ~80 lines. **Step 4** Green.
+- [x] **Step 5** Twins for every `engine` label in the audit/detect sections (`grep -E '^engine\t(audit|check_|detect|R-6)'`). **Step 6** Parity run: `PARITY_ENGINE_CMD=… python3 evals/check_engine.py | grep -E 'audit|detect'` all ok; the report text `diff`-clean against the Python on `evals/fixtures/upgrade-base`.
+- [x] **Step 7** Commit `"BL-082: audit and detect ported, parity green"`. **Step 8** Review with the owner.
+
+> **Amended 2026-09-02 (T-09 close, operator ruling).** Executed as two commits, `detect` first (`2b08cfb`) then `audit` (`b409efd`), by the operator's session-shape ruling. Departures from the letter, owned as built: `skill/references/audit-checks.md` does not exist — `skill/SKILL.md` § Audit was the reference; checks 1, 2, 4, 6, 14 and 17 have no unit file of their own, their twins already driving the ruler's fixture (H-007); the manifest is `JsonNode` data on `ManifestFile`, not a typed `Manifest.cs`; the Step-5 selector was not used — ownership re-derived by ruler section (20 audit + 6 detect labels). Four ruler checks that hardcoded the interpreter were routed through `_engine_argv` in the same commit (decision gate, option a); the two `usage` labels stay with Task 12.
 
 ---
 
@@ -731,6 +733,8 @@ The label list for this task is the output of `python3 evals/parity_labels.py | 
 - [ ] **Step 1** Unit tests: owned-set copy/overwrite/unchanged/delete classification, keep rules (add/remove/refused), manifest regeneration (`ownedFiles` sorted), the v14 file model events, the decision-gate stop writes nothing (assert `MockFileSystem` unchanged), verify's one re-copy on byte-diff, report's pinned model slots. **Step 2** FAIL. **Step 3** Implement. **Step 4** Green.
 - [ ] **Step 5** Twins for the `engine` labels of the v24 sections (`grep -E '^engine\t(apply|verify|report|record|owned|keep|step|R-7[5])'`). **Step 6** Parity run — full `check_engine.py` against the binary is now **all ok**; save the output as `docs/cases/BL-082-dotnet-deterministic-substrate/parity-engine-green.txt`.
 - [ ] **Step 7** Commit `"BL-082: apply/verify/report ported — check_engine.py fully green on the binary"`. **Step 8** Review with the owner.
+
+> **Amended 2026-09-02 (T-09 close, operator ruling).** Carries the case-sensitivity item's half (a), open since T-06: an audit check for case-collision variants of owned names (`Changelog.md` beside `CHANGELOG.md`), material on case-insensitive checkouts (ADR-0005). It lands here rather than in T-09 because `apply` is where the owned set is written and a collision becomes observable; the check itself is an audit check added in this task, with its own unit test and — where the ruler has no label for it — a twin-less test recorded as such in the ledger's notes. Option (i) of three (T-10 / backlog row / drop).
 
 ---
 
