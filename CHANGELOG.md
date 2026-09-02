@@ -36,6 +36,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   sources through `/flow-setup`, hands over what it already established,
   invokes nothing on its own authority, and skips the offer when the skill
   is not installed.
+- **`legislator audit` — the read-only health check, ported** (BL-082 T-09):
+  fourteen mechanical checks and the pinned report printed from them, byte-stable
+  over an unchanged repository and writing nothing. The audit is the second
+  caller of the anchors and okf-debt jobs rather than a second derivation of
+  them, and it fails loud where git cannot be run at all instead of reporting a
+  clean layer. All twenty `check_engine.py` assertions it answers carry a named
+  `[Parity]` twin; the label ledger fell from 116 to 96.
+
 - **`legislator detect` — the mode decision, ported** (BL-082 T-09): Step 1's
   decision tree and Step 2's stack signals as JSON on stdout, writing nothing —
   `fresh` / `migration` / `upgrade`, the entry document (an alias that is the
@@ -270,5 +278,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   all 48 terms carried, under `core/okf.md`'s sync checklist.
 
 ### Fixed
+
+- **The engine parity ruler measured Python where it claimed to measure the arm
+  under test** (BL-082 T-09): four checks — the three `okf_debt_git_absent`
+  labels and `engine_audit_fails_loud_without_git` — hardcoded the interpreter
+  instead of going through `_engine_argv`, so they were green on the .NET arm
+  without ever running it. They now follow `PARITY_ENGINE_CMD` like every other
+  check. The two `usage`-family labels keep the same fault by the T-07 ruling
+  that assigned them to the CLI task.
 
 ### Removed

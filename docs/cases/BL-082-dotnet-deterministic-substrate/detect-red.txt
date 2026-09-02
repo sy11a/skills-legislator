@@ -2,7 +2,7 @@
 
 ## Legislator.Engine.Tests — build
 
-/home/admin/Repository/custom_skills/legislator/tests/Legislator.Engine.Tests/Jobs/DetectJobTests.cs(37,13): error CS0246: The type or namespace name 'DetectJob' could not be found (are you missing a using directive or an assembly reference?) [/home/admin/Repository/custom_skills/legislator/tests/Legislator.Engine.Tests/Legislator.Engine.Tests.csproj]
+<repo>/tests/Legislator.Engine.Tests/Jobs/DetectJobTests.cs(37,13): error CS0246: The type or namespace name 'DetectJob' could not be found (are you missing a using directive or an assembly reference?) [<repo>/tests/Legislator.Engine.Tests/Legislator.Engine.Tests.csproj]
 
 ## Legislator.Parity.Tests — run
 

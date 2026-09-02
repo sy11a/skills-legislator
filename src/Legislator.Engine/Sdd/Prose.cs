@@ -9,6 +9,10 @@ namespace Legislator.Engine.Sdd;
 /// </summary>
 public static partial class Prose
 {
+    /// <summary>A template token nobody replaced. Two checks ask - the analyze gate's lint and the audit - and both ask about prose only, a token inside a fence being an example of one.</summary>
+    [GeneratedRegex(@"\{\{[A-Z_]+\}\}")]
+    public static partial Regex Placeholder();
+
     /// <summary>`per R-NNN` and the list form `per R-001, R-002` — the first plan written under this law used the list, so the reference form admits it.</summary>
     [GeneratedRegex(@"\bper (R-\d{3}(?:,\s*R-\d{3})*)\b")]
     private static partial Regex PerRef();

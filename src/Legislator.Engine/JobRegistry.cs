@@ -8,6 +8,7 @@ public static class JobRegistry
     public static IReadOnlyDictionary<string, Func<IJob>> Jobs { get; } = new Dictionary<string, Func<IJob>>(StringComparer.Ordinal)
     {
         ["anchors"] = () => new AnchorsJob(),
+        ["audit"] = () => new AuditJob(),
         ["baseline"] = () => new BaselineJob(),
         ["detect"] = () => new DetectJob(),
         ["okf-debt"] = () => new OkfDebtJob(),

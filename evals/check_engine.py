@@ -261,7 +261,10 @@ with tempfile.TemporaryDirectory() as shim:
         if real:
             os.symlink(real, Path(shim) / tool)
     os.symlink(sys.executable, Path(shim) / "python3")
-    r = subprocess.run([sys.executable, "docs/ai/engine.py", "okf-debt"],
+    # Through the arm variable like every other check: hardcoding the interpreter here made
+    # this label green on the .NET arm without ever running it (BL-082 T-09), which is a
+    # verification artifact reporting what it did not measure.
+    r = subprocess.run(_engine_argv("docs/ai/engine.py", root, "okf-debt"),
                        cwd=root, capture_output=True, text=True,
                        env={"PATH": shim})
     check(r.returncode not in (0, 1, 2) and "git" in r.stderr.lower(),
@@ -275,7 +278,7 @@ print("== v23 R-665 boundary: no anchored docs needs no git ==")
 root = make_repo({}, {"src/a.py": "x\n"})
 with tempfile.TemporaryDirectory() as shim:
     os.symlink(sys.executable, Path(shim) / "python3")
-    r = subprocess.run([sys.executable, "docs/ai/engine.py", "okf-debt"],
+    r = subprocess.run(_engine_argv("docs/ai/engine.py", root, "okf-debt"),
                        cwd=root, capture_output=True, text=True,
                        env={"PATH": shim})
     check(r.returncode == 0,
@@ -643,8 +646,8 @@ check(code not in (0, 1, 2) and out == "",
 print("== R-665: audit without git fails loud ==")
 with tempfile.TemporaryDirectory() as shim:
     os.symlink(sys.executable, Path(shim) / "python3")
-    r = subprocess.run([sys.executable, "docs/ai/engine.py", "audit",
-                        "--skill", str(REPO / "skill")],
+    r = subprocess.run(_engine_argv("docs/ai/engine.py", root, "audit",
+                                    "--skill", str(REPO / "skill")),
                        cwd=root, capture_output=True, text=True, env={"PATH": shim})
     check(r.returncode not in (0, 1, 2) and "git" in r.stderr.lower(),
           "engine_audit_fails_loud_without_git",

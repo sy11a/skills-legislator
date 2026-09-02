@@ -39,7 +39,7 @@ public sealed class DetectJob : IJob
         var fs = ctx.Fs;
         var layout = new RepoLayout(ctx.Options, ctx.Root);
         var manifest = ManifestFile.Read(fs, layout);
-        var entry = EntryDocument(fs, layout, ctx.Options.EntryDocument.Value, ctx.Options.EntryAlias.Value);
+        var entry = EntryDocument.Of(fs, layout, ctx.Options);
 
         string mode;
         var reconstructed = false;
@@ -76,18 +76,6 @@ public sealed class DetectJob : IJob
         return new JobResult(0, Render(
             mode, entry, reconstructed, manifest, subscribed,
             StackCandidates.Of(fs, ctx.Root, ctx.Options), ownedOld, parsed.Skill.Version), "");
-    }
-
-    /// <summary>The entry document as the file model defines it: the canonical one when it exists, otherwise the alias only where it is a real file - an alias that is the symlink is the model working, not a second entry.</summary>
-    private static string? EntryDocument(IFileSystem fs, RepoLayout layout, string canonical, string alias)
-    {
-        if (fs.File.Exists($"{layout.Root}/{canonical}"))
-        {
-            return canonical;
-        }
-
-        var path = $"{layout.Root}/{alias}";
-        return fs.File.Exists(path) && fs.FileInfo.New(path).LinkTarget is null ? alias : null;
     }
 
     private static bool Imports(IFileSystem fs, RepoLayout layout, string entry) =>

@@ -24,7 +24,13 @@ public sealed partial class OkfDebtJob : IJob
     [GeneratedRegex("`([^`\n]+)`")]
     private static partial Regex Token();
 
-    public JobResult Run(JobContext ctx)
+    public JobResult Run(JobContext ctx) => Findings.AsResult(Stale(ctx));
+
+    /// <summary>
+    /// Every anchored document its sources moved on without, as the lines this job prints. The
+    /// audit is the second caller (check 17), and re-prints them rather than re-deriving them.
+    /// </summary>
+    public static IReadOnlyList<string> Stale(JobContext ctx)
     {
         ArgumentNullException.ThrowIfNull(ctx);
 
@@ -85,7 +91,8 @@ public sealed partial class OkfDebtJob : IJob
             }
         }
 
-        return Findings.AsResult(findings);
+        findings.Sort(StringComparer.Ordinal);
+        return findings;
     }
 
     /// <summary>

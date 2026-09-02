@@ -22,7 +22,14 @@ public sealed partial class AnchorsJob : IJob
     [GeneratedRegex("`([^`\n]+)`")]
     private static partial Regex Token();
 
-    public JobResult Run(JobContext ctx)
+    public JobResult Run(JobContext ctx) => Findings.AsResult(Unresolved(ctx));
+
+    /// <summary>
+    /// Every anchor that no longer resolves, as the lines this job prints. The audit is the
+    /// second caller (check 15): it re-prints them under its own severity rather than deriving
+    /// the answer again, so the two can never disagree about what an anchor is.
+    /// </summary>
+    public static IReadOnlyList<string> Unresolved(JobContext ctx)
     {
         ArgumentNullException.ThrowIfNull(ctx);
 
@@ -69,7 +76,8 @@ public sealed partial class AnchorsJob : IJob
             }
         }
 
-        return Findings.AsResult(findings);
+        findings.Sort(StringComparer.Ordinal);
+        return findings;
     }
 
     private static bool PathResolves(IFileSystem fs, JobContext ctx, string token) =>

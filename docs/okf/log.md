@@ -3,7 +3,7 @@ type: Changelog
 title: OKF Bundle Changelog
 description: Chronological record of significant changes to the OKF knowledge bundle.
 tags: [changelog, okf]
-timestamp: 2026-09-01T00:00:00Z
+timestamp: 2026-09-02T00:00:00Z
 ---
 
 # OKF Bundle Changelog
@@ -251,3 +251,14 @@ where the owned set is read back off disk rather than assumed absent. The
 manifest is modelled as data and never as a typed record, because its shape grows
 between editions and detect echoes the whole object back.
 
+## 2026-09-02 — BL-082 T-09: audit ported, and the ruler that measured Python
+
+The `audit` job is ported: fourteen mechanical checks and the pinned report,
+byte-stable and writing nothing, failing loud where git cannot run at all.
+`glossary.md` gained **audit job**, **model-findings channel** and **clean-checks
+line**. The audit is the second caller of the anchors and okf-debt jobs — the
+port extracted `AnchorsJob.Unresolved`, `OkfDebtJob.Stale`, `EntryDocument.Of`
+and `Prose.Placeholder()` for it rather than deriving any of them twice. Four
+`check_engine.py` checks that hardcoded the interpreter now follow
+`PARITY_ENGINE_CMD`; the two `usage` labels keep the fault until T-12 by the
+T-07 ruling.

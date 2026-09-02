@@ -12,14 +12,11 @@ namespace Legislator.Engine.Jobs;
 /// never enters a lint pass, and a converged case is history too: its going out of date is the
 /// design, so the gate serves work in flight, not the record.
 /// </summary>
-public sealed partial class SddLintJob : IJob
+public sealed class SddLintJob : IJob
 {
     public string Name => "sdd-lint";
 
     public string Usage => Name;
-
-    [GeneratedRegex(@"\{\{[A-Z_]+\}\}")]
-    private static partial Regex Placeholder();
 
     public JobResult Run(JobContext ctx)
     {
@@ -50,7 +47,7 @@ public sealed partial class SddLintJob : IJob
                     }
                 }
 
-                foreach (var placeholder in Placeholder().Matches(prose).Cast<Match>())
+                foreach (var placeholder in Prose.Placeholder().Matches(prose).Cast<Match>())
                 {
                     findings.Add($"{relative}: unresolved-placeholder: {placeholder.Value}");
                 }

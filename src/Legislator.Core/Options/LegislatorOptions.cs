@@ -88,6 +88,40 @@ public sealed record LegislatorOptions
 
     public OptionValue<string> AureliaMarkerFile { get; init; } = new("aurelia_project/aurelia.json", OptionsLayer.Defaults);
 
+    public OptionValue<string> OkfIndexFile { get; init; } = new("index.md", OptionsLayer.Defaults); // under docs/okf
+
+    public OptionValue<string> CodebaseMapFile { get; init; } = new("codebase-map.md", OptionsLayer.Defaults); // under docs/okf
+
+    public OptionValue<string> GlossaryFile { get; init; } = new("glossary.md", OptionsLayer.Defaults); // under docs/okf
+
+    public OptionValue<string> AdrTemplateFile { get; init; } = new("template.md", OptionsLayer.Defaults); // under docs/adr
+
+    public OptionValue<string> ReadmeFile { get; init; } = new("README.md", OptionsLayer.Defaults);
+
+    public OptionValue<string> GitDir { get; init; } = new(".git", OptionsLayer.Defaults);
+
+    /// <summary>The legacy home of pre-case specs and plans; a document born there after legislation is a finding, and everything already in it is history.</summary>
+    public OptionValue<string> LegacyHomeDir { get; init; } = new("superpowers", OptionsLayer.Defaults); // under docs
+
+    public OptionValue<IReadOnlyList<string>> LegacyHomeSubdirs { get; init; } = new(["specs", "plans"], OptionsLayer.Defaults);
+
+    /// <summary>How far the journal may lag the last commit outside the documentation tree before the audit says so. Distinct from <see cref="OkfDebtDays"/>: two cadences that happen to agree today.</summary>
+    public OptionValue<int> JournalRecencyDays { get; init; } = new(30, OptionsLayer.Defaults);
+
+    /// <summary>Foreign AI-layer structures and agent-tooling debris - each either folded into the layer or cleaned up.</summary>
+    public OptionValue<IReadOnlyList<string>> ForeignStructures { get; init; } = new([".cursorrules", ".cursor", ".github/copilot-instructions.md", "wiki", ".superpowers", ".specify", "adrs", "doc/adr", ".claude/plans", "CONTEXT.md", "CONTEXT-MAP.md", "UBIQUITOUS_LANGUAGE.md", "NOTES.md", "docs/agents", ".scratch"], OptionsLayer.Defaults);
+
+    /// <summary>Where a sanctioned skill may be installed on this machine, relative to the home directory.</summary>
+    public OptionValue<IReadOnlyList<string>> SkillHomes { get; init; } = new([".claude/skills", ".agents/skills", ".config/opencode/skills"], OptionsLayer.Defaults);
+
+    public OptionValue<string> SkillsRuleFile { get; init; } = new("skills.md", OptionsLayer.Defaults); // under the project rules dir
+
+    public OptionValue<string> SkillRulesPath { get; init; } = new("assets/rules", OptionsLayer.Defaults); // under the skill package
+
+    public OptionValue<string> SkillEnginePath { get; init; } = new("assets/engine/engine.py", OptionsLayer.Defaults); // under the skill package
+
+    public OptionValue<string> SkillOpencodeTemplate { get; init; } = new("assets/templates/opencode.json.tpl", OptionsLayer.Defaults); // under the skill package
+
     /// <summary>Every YAML/env key mapped to its member name - written by hand, asserted complete by test (C-03).</summary>
     public static IReadOnlyDictionary<string, string> KeyMap { get; } = new Dictionary<string, string>
     {
@@ -127,6 +161,21 @@ public sealed record LegislatorOptions
         ["dotnet_project_patterns"] = nameof(DotnetProjectPatterns),
         ["node_package_file"] = nameof(NodePackageFile),
         ["aurelia_marker_file"] = nameof(AureliaMarkerFile),
+        ["okf_index_file"] = nameof(OkfIndexFile),
+        ["codebase_map_file"] = nameof(CodebaseMapFile),
+        ["glossary_file"] = nameof(GlossaryFile),
+        ["adr_template_file"] = nameof(AdrTemplateFile),
+        ["readme_file"] = nameof(ReadmeFile),
+        ["git_dir"] = nameof(GitDir),
+        ["legacy_home_dir"] = nameof(LegacyHomeDir),
+        ["legacy_home_subdirs"] = nameof(LegacyHomeSubdirs),
+        ["journal_recency_days"] = nameof(JournalRecencyDays),
+        ["foreign_structures"] = nameof(ForeignStructures),
+        ["skill_homes"] = nameof(SkillHomes),
+        ["skills_rule_file"] = nameof(SkillsRuleFile),
+        ["skill_rules_path"] = nameof(SkillRulesPath),
+        ["skill_engine_path"] = nameof(SkillEnginePath),
+        ["skill_opencode_template"] = nameof(SkillOpencodeTemplate),
     };
 
     /// <summary>The keys whose member is an <c>OptionValue&lt;int&gt;</c> - the validator parses these as integers of 1 or more; asserted against the members by test (C-04).</summary>
@@ -135,6 +184,7 @@ public sealed record LegislatorOptions
         "okf_debt_days",
         "git_timeout_seconds",
         "max_file_bytes",
+        "journal_recency_days",
     };
 
     /// <summary>Every option as (key, rendered value, source): lists comma-joined, numbers invariant (C-03).</summary>
@@ -176,5 +226,20 @@ public sealed record LegislatorOptions
         yield return ("dotnet_project_patterns", string.Join(ListSeparator, DotnetProjectPatterns.Value), DotnetProjectPatterns.Source);
         yield return ("node_package_file", NodePackageFile.Value, NodePackageFile.Source);
         yield return ("aurelia_marker_file", AureliaMarkerFile.Value, AureliaMarkerFile.Source);
+        yield return ("okf_index_file", OkfIndexFile.Value, OkfIndexFile.Source);
+        yield return ("codebase_map_file", CodebaseMapFile.Value, CodebaseMapFile.Source);
+        yield return ("glossary_file", GlossaryFile.Value, GlossaryFile.Source);
+        yield return ("adr_template_file", AdrTemplateFile.Value, AdrTemplateFile.Source);
+        yield return ("readme_file", ReadmeFile.Value, ReadmeFile.Source);
+        yield return ("git_dir", GitDir.Value, GitDir.Source);
+        yield return ("legacy_home_dir", LegacyHomeDir.Value, LegacyHomeDir.Source);
+        yield return ("legacy_home_subdirs", string.Join(ListSeparator, LegacyHomeSubdirs.Value), LegacyHomeSubdirs.Source);
+        yield return ("journal_recency_days", JournalRecencyDays.Value.ToString(CultureInfo.InvariantCulture), JournalRecencyDays.Source);
+        yield return ("foreign_structures", string.Join(ListSeparator, ForeignStructures.Value), ForeignStructures.Source);
+        yield return ("skill_homes", string.Join(ListSeparator, SkillHomes.Value), SkillHomes.Source);
+        yield return ("skills_rule_file", SkillsRuleFile.Value, SkillsRuleFile.Source);
+        yield return ("skill_rules_path", SkillRulesPath.Value, SkillRulesPath.Source);
+        yield return ("skill_engine_path", SkillEnginePath.Value, SkillEnginePath.Source);
+        yield return ("skill_opencode_template", SkillOpencodeTemplate.Value, SkillOpencodeTemplate.Source);
     }
 }
