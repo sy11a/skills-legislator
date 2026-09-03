@@ -34,6 +34,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- **Output redirection names the pen (clerk BL-032).** Where a repository
+  records a tracker, the skill-output law now says *how* a work item reaches
+  it — through `clerk file`, never as a hand-written row in a generated
+  mirror — so a skill with something to file has a command to reach for
+  instead of a file to edit. One sentence in `core/skills.md`; delivered
+  with the next edition.
 - **The deterministic substrate becomes .NET from v25** (ADR-0008, BL-082):
   BL-072 is pulled forward to step zero of edition v25 — one `src/`
   solution (Core, Engine, Hooks, CLI), the engine and hooks ported
