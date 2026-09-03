@@ -153,7 +153,7 @@ with tempfile.TemporaryDirectory() as tmp:
 
 # Defensive: malformed stdin never blocks.
 proc = run_hook_raw(GUARD, "not json")
-check(proc.returncode == 0, "malformed stdin allowed (exit 0)", f"got {proc.returncode}")
+check(proc.returncode == 0, "guard_owned_files: malformed stdin allowed (exit 0)", f"got {proc.returncode}")
 proc = run_hook_raw(GUARD, "")
 check(proc.returncode == 0, "empty stdin allowed (exit 0)", f"got {proc.returncode}")
 
@@ -183,7 +183,7 @@ with tempfile.TemporaryDirectory() as tmp:
 
 # Defensive: malformed stdin never blocks.
 proc = run_hook_raw(FORMAT, "not json")
-check(proc.returncode == 0, "malformed stdin allowed (exit 0)", f"got {proc.returncode}")
+check(proc.returncode == 0, "format_on_edit: malformed stdin allowed (exit 0)", f"got {proc.returncode}")
 
 
 # =====================================================================
@@ -283,7 +283,7 @@ else:
 
 # Defensive: malformed stdin never blocks.
 proc = run_hook_raw(OKF, "not json")
-check(proc.returncode == 0, "malformed stdin allowed (exit 0)", f"got {proc.returncode}")
+check(proc.returncode == 0, "okf_sync_check: malformed stdin allowed (exit 0)", f"got {proc.returncode}")
 
 
 

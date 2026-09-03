@@ -182,6 +182,8 @@ Interfaces, schemas and command-line shapes the plan's tasks produce and consume
 - `hooks.json` commands become `"legislator hook guard_owned_files"` etc. (the binary is on PATH by Task 12's installer); `format_on_edit` keeps its `timeout: 10`.
 - The registry predicate (walk up to `docs/ai/manifest.json`) is the v24 one; BL-077 replaces it with the machine registry on this same code.
 
+*Amended 2026-09-03 (T-11):* the `hooks.json` clause is delivered by **T-13**, not T-11 — rewriting it removes the subject of five ruler assertions T-13 also owns (operator ruling, option a′). The rest of the contract is met here. Three shapes the contract did not state and the port fixed: the host reads stdin and the hook touches neither stream, so the catch-all and the option composition both sit in `HookCommand` — a malformed `legislator.yaml` must not reach a hook, because exit 2 from a hook BLOCKS the edit; an **unknown hook name is exit 2 with usage**, not a silent 0, since a typo in `hooks.json` would otherwise disable a guard with nobody the wiser; and an **unusable payload is an explicit allow in every hook**, because the Python parses before it decides and a hook needing no field would otherwise walk on and judge.
+
 ## C-12 Publish, install, `version --json`, arm integrity
 
 *per R-8203, R-8214, R-8215 · produced by T-12 · consumed by: `evals/check_static.py` edition pin (T-12), README install/runbook (T-14), `evals/benchmarks/v25.md`, audit `arm-integrity` (T-09/T-12)*

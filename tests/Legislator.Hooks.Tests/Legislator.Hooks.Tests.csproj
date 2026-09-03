@@ -10,5 +10,6 @@
     <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" />
     <PackageReference Include="TestableIO.System.IO.Abstractions.TestingHelpers" />
     <ProjectReference Include="../../src/Legislator.Hooks/Legislator.Hooks.csproj" />
+    <ProjectReference Include="../Legislator.TestSupport/Legislator.TestSupport.csproj" />
   </ItemGroup>
 </Project>

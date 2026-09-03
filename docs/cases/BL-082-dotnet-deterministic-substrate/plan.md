@@ -746,6 +746,12 @@ The label list for this task is the output of `python3 evals/parity_labels.py | 
 
 ### Task 11 [D]: Port the four Claude Code hooks (per R-8208, R-8206)
 
+**Amendments (2026-09-03, T-11 — operator-approved):**
+- **Step 7 moves to Task 13.** Rewriting `plugin/hooks/hooks.json` to the binary removes the subject of five `check_hooks.py` assertions — `{} command references a hooks/*.py script`, `{} script exists: {}`, `PreToolUse has a Bash entry running guard_git_conduct.py per R-641`, and the two R-702 launcher checks — and one of them does not merely fail but crashes the ruler (`guard_entry = next(...)`, an uncaught `StopIteration` once no command names `guard_owned_files.py`). Task 13 already owns `check_hooks.py` and the deletion of `plugin/hooks/*.py`, and the T-06 journal had already placed the launcher tests there. Step 7's `hooks.json` shape checks therefore stay green here because the file is untouched.
+- **Those five labels are not twinned in Task 11 either** (option a′ of four). The ledger falls 62 → **8**, not to 3: three engine labels belong to Task 12 and these five to Task 13, held as declared debt with an address rather than as twins written to be deleted.
+- **Step 6's two claims are stale and are struck.** There is no test named `Every_ruler_label_has_a_named_twin`: T-06 replaced it with the ratchet `Ruler_labels_without_a_twin_match_the_recorded_debt`, which is green whenever the number is truthful and so never "goes green". And `evals/check_dotnet.sh` carries no `--filter-not-trait` to drop — the ratchet removed the need for an exclusion before one was ever added.
+- The three `malformed stdin allowed (exit 0)` call sites in `check_hooks.py` (lines 156, 186, 286) are renamed to carry their hook: one label over three different hooks let a single twin claim three defensive paths. Hooks labels 57 → 59, twins in scope 54.
+
 **Files:**
 - Create: `src/Legislator.Hooks/IHook.cs`, `HookPayload.cs` (+ source-generated JSON context), `HookResult.cs`, `HookRegistry.cs`, `Hooks/GuardOwnedFilesHook.cs`, `Hooks/GuardGitConductHook.cs`, `Hooks/FormatOnEditHook.cs`, `Hooks/OkfSyncCheckHook.cs`, `src/Legislator.Cli/Commands/HookCommand.cs`
 - Modify: `plugin/hooks/hooks.json`
@@ -779,6 +785,10 @@ The label list for this task is the output of `python3 evals/parity_labels.py | 
 ---
 
 ### Task 13 [D]: Law text names one command per job; retire the Python engine and hooks (per R-8207, R-8213)
+
+**Amendments (2026-09-03, T-11 — operator-approved):**
+- **Inherits Task 11's Step 7:** rewrite `plugin/hooks/hooks.json` to `"legislator hook <name>"` (keeping `format_on_edit`'s `timeout: 10`), and re-cut in the same commit the five `check_hooks.py` assertions whose subject it removes — the `.py` command shape and the script-exists check become the binary's form, the Bash-entry check names the binary's `guard_git_conduct`, and the two R-702 launcher checks are re-pointed to drive the rewritten command line through a PATH shim carrying `artifacts/linux-x64` (a stronger test than the interpreter-resolution one, whose subject the rewrite deletes). R-702's requirement text is what dies, not its coverage; `docs/ai/baseline.md` follows on the next regeneration.
+- Lower `LedgerDebt` from 8 to 3 in the same commit, and to 0 with Task 12's three.
 
 **Amendments (2026-08-30, stage 4 audit — operator-approved):**
 - Also update the comments that name the Python hooks: `plugin/opencode/legislator-guard.ts` lines 3 and 161, `evals/check_opencode_plugin.mjs` line 2 — they reference `plugin/hooks/*.py`, deleted by this task.

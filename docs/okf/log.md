@@ -292,3 +292,23 @@ and `Prose.Placeholder()` for it rather than deriving any of them twice. Four
 `check_engine.py` checks that hardcoded the interpreter now follow
 `PARITY_ENGINE_CMD`; the two `usage` labels keep the fault until T-12 by the
 T-07 ruling.
+
+## 2026-09-03 — BL-082 T-11: the four hooks ported, and what a guard's green is worth
+
+The four Claude Code hooks are .NET: `guard_owned_files`, `guard_git_conduct`,
+`format_on_edit` and `okf_sync_check` behind an `IHook`, dispatched by
+`legislator hook <name>` with the host reading stdin and the catch-all living in
+`HookCommand` — the contract's hard edge, that a crashing guard must not stop the
+user's work. `glossary.md` gained **hook (substrate)** and **permissive arm**.
+Two Core seams were extracted rather than walked three times: `LegislatedRepo.Find`,
+which three hooks ask from three different starting points, and
+`ExecutableLookup.Which`, without which "a machine carrying only one toolchain" is
+untestable. `GitLog` gained `Read` beside `Ask`: `Ask` trims, and porcelain's first
+two columns ARE the answer — a caller reading a fixed-width format through `Ask`
+loses a column and never learns it.
+
+The hooks ruler was driven against the binary for the first time since the T-07
+rename — 65 ok / 0 FAIL — and then re-run with a PERMISSIVE arm, which is what the
+number is worth: 44 of the 65 stay green under a hook that only ever allows.
+`plugin/hooks/hooks.json` is NOT rewritten here; it moves to T-13 with the five
+ruler assertions whose subject it removes.

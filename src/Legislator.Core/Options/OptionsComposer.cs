@@ -117,6 +117,18 @@ public static class OptionsComposer
             nameof(LegislatorOptions.SkillOpencodeTemplate) => o with { SkillOpencodeTemplate = new(value, layer) },
             nameof(LegislatorOptions.SkillFile) => o with { SkillFile = new(value, layer) },
             nameof(LegislatorOptions.RulesCoreDir) => o with { RulesCoreDir = new(value, layer) },
+            nameof(LegislatorOptions.ConventionalDefaultBranches) => o with { ConventionalDefaultBranches = new(List(value), layer) },
+            nameof(LegislatorOptions.SrcDir) => o with { SrcDir = new(value, layer) },
+            nameof(LegislatorOptions.PathVariable) => o with { PathVariable = new(value, layer) },
+            nameof(LegislatorOptions.ExecutableExtensions) => o with { ExecutableExtensions = new(List(value), layer) },
+            nameof(LegislatorOptions.DotnetExecutable) => o with { DotnetExecutable = new(value, layer) },
+            nameof(LegislatorOptions.NpxExecutable) => o with { NpxExecutable = new(value, layer) },
+            nameof(LegislatorOptions.PrettierExecutable) => o with { PrettierExecutable = new(value, layer) },
+            nameof(LegislatorOptions.FormatterTimeoutSeconds) => o with { FormatterTimeoutSeconds = new(Integer(value), layer) },
+            nameof(LegislatorOptions.CSharpExtension) => o with { CSharpExtension = new(value, layer) },
+            nameof(LegislatorOptions.PrettierExtensions) => o with { PrettierExtensions = new(List(value), layer) },
+            nameof(LegislatorOptions.PrettierConfigFiles) => o with { PrettierConfigFiles = new(List(value), layer) },
+            nameof(LegislatorOptions.PrettierPackageKey) => o with { PrettierPackageKey = new(value, layer) },
             var member => throw new InvalidOperationException($"{member} is in KeyMap but not applied"),
         };
 

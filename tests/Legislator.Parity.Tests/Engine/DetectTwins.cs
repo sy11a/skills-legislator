@@ -4,6 +4,7 @@ using System.Text.Json;
 using Legislator.Cli;
 using Legislator.Core.Abstractions;
 using Legislator.Engine;
+using Legislator.Hooks;
 using Legislator.TestSupport;
 using Xunit;
 
@@ -42,8 +43,8 @@ public sealed class DetectTwins
         var stdout = new StringWriter();
         var stderr = new StringWriter();
         var exit = Program.Run(
-            ["detect", "--skill", SkillPath, "--root", "/r"], JobRegistry.Jobs, fs,
-            TimeProvider.System, new FakeEnvironment(), new FakeProcessRunner(), stdout, stderr);
+            ["detect", "--skill", SkillPath, "--root", "/r"], JobRegistry.Jobs, HookRegistry.Hooks, fs,
+            TimeProvider.System, new FakeEnvironment(), new FakeProcessRunner(), TextReader.Null, stdout, stderr);
 
         var raw = stdout.ToString();
         var json = exit == 0 && raw.TrimStart().StartsWith('{')

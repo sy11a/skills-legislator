@@ -1,6 +1,7 @@
 using System.IO.Abstractions.TestingHelpers;
 using Legislator.Cli;
 using Legislator.Engine;
+using Legislator.Hooks;
 using Legislator.TestSupport;
 using Xunit;
 
@@ -48,8 +49,8 @@ public sealed class BaselineTwins
         var stdout = new StringWriter();
         var stderr = new StringWriter();
         return Program.Run(
-            ["baseline", "--root", "/r"], JobRegistry.Jobs, fs, TimeProvider.System,
-            new FakeEnvironment(), new FakeProcessRunner(), stdout, stderr);
+            ["baseline", "--root", "/r"], JobRegistry.Jobs, HookRegistry.Hooks, fs, TimeProvider.System,
+            new FakeEnvironment(), new FakeProcessRunner(), TextReader.Null, stdout, stderr);
     }
 
     private static string Text(MockFileSystem fs) => fs.File.Exists(Target) ? fs.File.ReadAllText(Target) : "";

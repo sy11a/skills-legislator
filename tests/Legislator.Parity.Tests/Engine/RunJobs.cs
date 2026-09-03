@@ -6,6 +6,7 @@ using System.Text.Json;
 using Legislator.Cli;
 using Legislator.Core.Abstractions;
 using Legislator.Engine;
+using Legislator.Hooks;
 using Legislator.TestSupport;
 
 namespace Legislator.Parity.Tests.Engine;
@@ -166,8 +167,8 @@ internal static class RunJobs
         var stdout = new StringWriter();
         var stderr = new StringWriter();
         var exit = Program.Run(
-            [job, "--skill", SkillPath, "--root", Root, .. extra], JobRegistry.Jobs, fs,
-            clock ?? Day, new FakeEnvironment(), git ?? NoRepo(), stdout, stderr);
+            [job, "--skill", SkillPath, "--root", Root, .. extra], JobRegistry.Jobs, HookRegistry.Hooks, fs,
+            clock ?? Day, new FakeEnvironment(), git ?? NoRepo(), TextReader.Null, stdout, stderr);
 
         return (exit, stdout.ToString(), stderr.ToString());
     }

@@ -12,14 +12,18 @@ namespace Legislator.Parity.Tests;
 public sealed class LabelCoverageTests
 {
     /// <summary>
-    /// The debt as it stands: ruler labels still waiting for a twin. T-07…T-11 lower it to
-    /// zero, and the number moves in the same commit as the twins that lowered it. A test
-    /// left permanently red is not a gate — it hides the next real failure inside the
+    /// The debt as it stands: ruler labels still waiting for a twin, and the number moves in
+    /// the same commit as the twins that moved it. T-07…T-11 brought it to EIGHT, not zero,
+    /// and the remainder has an address rather than a hope: three engine labels about usage
+    /// and unknown jobs belong to T-12, and five hooks labels — the `.py` command shape, the
+    /// script-exists check and the two R-702 launcher checks — belong to T-13, which rewrites
+    /// `hooks.json` to the binary and re-cuts them with their subject (ruling 2026-09-03). A
+    /// test left permanently red is not a gate — it hides the next real failure inside the
     /// expected one — so the ledger is a ratchet instead: the red R-8206 demands was shown
     /// against an empty implementation and recorded in the case as `parity-red.txt`, and
     /// from here the ledger's job is to make backsliding impossible.
     /// </summary>
-    const int LedgerDebt = 60;
+    const int LedgerDebt = 8;
 
     /// <summary>
     /// Bites in both directions. Upward — a ruler gained an assertion, or a twin lost the

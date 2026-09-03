@@ -44,6 +44,32 @@ public static class GitLog
     }
 
     /// <summary>
+    /// The command's output VERBATIM - no trim - or null when git ran and refused. <see cref="Ask"/>
+    /// trims because a branch name or a date carries no leading space; porcelain does, and its
+    /// first two columns ARE the answer. A caller reading a fixed-width format through
+    /// <see cref="Ask"/> loses one column and never learns it.
+    /// </summary>
+    public static (string? Output, bool Available) Read(
+        IProcessRunner proc, LegislatorOptions options, string root, params string[] args)
+    {
+        ArgumentNullException.ThrowIfNull(proc);
+        ArgumentNullException.ThrowIfNull(options);
+
+        try
+        {
+            var result = proc.Run(
+                options.GitExecutable.Value, args, root,
+                TimeSpan.FromSeconds(options.GitTimeoutSeconds.Value));
+
+            return result.ExitCode == 0 ? (result.Stdout, true) : (null, true);
+        }
+        catch (ProcessStartException)
+        {
+            return (null, false);
+        }
+    }
+
+    /// <summary>
     /// Whether git ran the command and it succeeded. Distinct from <see cref="Ask"/>, which
     /// answers with output: a command that writes rather than reports - `mv` - succeeds
     /// silently, and an empty answer from <see cref="Ask"/> cannot be told from a refusal.

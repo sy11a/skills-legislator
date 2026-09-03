@@ -3,6 +3,7 @@ using System.Text.Json;
 using Legislator.Core.Options;
 using Legislator.TestSupport;
 using Legislator.Engine;
+using Legislator.Hooks;
 using Xunit;
 
 namespace Legislator.Cli.Tests;
@@ -17,6 +18,7 @@ public sealed class ProgramTests : IDisposable
     private readonly FakeEnvironment env = new();
     private readonly FakeProcessRunner proc = new();
     private readonly Dictionary<string, Func<IJob>> jobs = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, Func<IHook>> hooks = new(StringComparer.Ordinal);
     private readonly StringWriter stdout = new();
     private readonly StringWriter stderr = new();
 
@@ -184,7 +186,8 @@ public sealed class ProgramTests : IDisposable
         stderr.Dispose();
     }
 
-    private int Run(params string[] args) => Program.Run(args, jobs, fs, TimeProvider.System, env, proc, stdout, stderr);
+    private int Run(params string[] args) => Program.Run(
+        args, jobs, hooks, fs, TimeProvider.System, env, proc, TextReader.Null, stdout, stderr);
 
     private sealed class StubJob(Func<JobContext, JobResult> run) : IJob
     {

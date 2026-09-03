@@ -3,6 +3,7 @@ using System.IO.Abstractions.TestingHelpers;
 using Legislator.Cli;
 using Legislator.Core.Abstractions;
 using Legislator.Engine;
+using Legislator.Hooks;
 using Legislator.TestSupport;
 using Xunit;
 
@@ -66,8 +67,8 @@ public sealed class AuditTwins
         var stdout = new StringWriter();
         var stderr = new StringWriter();
         var exit = Program.Run(
-            ["audit", "--skill", SkillPath, "--root", Root, .. extra], JobRegistry.Jobs, fs,
-            TimeProvider.System, new FakeEnvironment(), git ?? NoRepo(), stdout, stderr);
+            ["audit", "--skill", SkillPath, "--root", Root, .. extra], JobRegistry.Jobs, HookRegistry.Hooks, fs,
+            TimeProvider.System, new FakeEnvironment(), git ?? NoRepo(), TextReader.Null, stdout, stderr);
 
         return (exit, stdout.ToString(), stderr.ToString());
     }

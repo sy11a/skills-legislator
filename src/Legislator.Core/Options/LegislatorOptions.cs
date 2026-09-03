@@ -128,6 +128,37 @@ public sealed record LegislatorOptions
     /// <summary>The rule directory every legislated repository gets whatever it is subscribed to; the stacks beside it are chosen, this one is not.</summary>
     public OptionValue<string> RulesCoreDir { get; init; } = new("core", OptionsLayer.Defaults); // under docs/ai/rules and under the package rules path
 
+    /// <summary>The names a repository's default branch conventionally carries; the conduct guard falls back to them only when exactly one is present, an ambiguity being a case it cannot decide.</summary>
+    public OptionValue<IReadOnlyList<string>> ConventionalDefaultBranches { get; init; } = new(["main", "master"], OptionsLayer.Defaults);
+
+    /// <summary>The sources directory the OKF-sync reminder watches - the half of okf.md's law that says code moved.</summary>
+    public OptionValue<string> SrcDir { get; init; } = new("src", OptionsLayer.Defaults);
+
+    /// <summary>The variable naming the executable search path - read through the injected environment, never through the process's own (R-8204).</summary>
+    public OptionValue<string> PathVariable { get; init; } = new("PATH", OptionsLayer.Defaults);
+
+    /// <summary>The extensions an executable may carry where a bare name does not resolve; empty on a POSIX machine, which is why the bare name is tried first.</summary>
+    public OptionValue<IReadOnlyList<string>> ExecutableExtensions { get; init; } = new([".exe", ".cmd", ".bat"], OptionsLayer.Defaults);
+
+    public OptionValue<string> DotnetExecutable { get; init; } = new("dotnet", OptionsLayer.Defaults);
+
+    public OptionValue<string> NpxExecutable { get; init; } = new("npx", OptionsLayer.Defaults);
+
+    /// <summary>The formatter this repository's own stack owns; the extension decides which of the two the format hook reaches for.</summary>
+    public OptionValue<string> PrettierExecutable { get; init; } = new("prettier", OptionsLayer.Defaults);
+
+    /// <summary>A ceiling per formatter invocation, under the whole hook's own timeout in hooks.json - best-effort polish never holds a session open.</summary>
+    public OptionValue<int> FormatterTimeoutSeconds { get; init; } = new(8, OptionsLayer.Defaults);
+
+    public OptionValue<string> CSharpExtension { get; init; } = new(".cs", OptionsLayer.Defaults);
+
+    public OptionValue<IReadOnlyList<string>> PrettierExtensions { get; init; } = new([".ts", ".tsx", ".js", ".jsx", ".html", ".css"], OptionsLayer.Defaults);
+
+    public OptionValue<IReadOnlyList<string>> PrettierConfigFiles { get; init; } = new([".prettierrc", ".prettierrc.json", ".prettierrc.yml", ".prettierrc.yaml", ".prettierrc.js", ".prettierrc.cjs", "prettier.config.js", "prettier.config.cjs"], OptionsLayer.Defaults);
+
+    /// <summary>The key that turns the node package file into a prettier configuration of its own.</summary>
+    public OptionValue<string> PrettierPackageKey { get; init; } = new("prettier", OptionsLayer.Defaults);
+
     /// <summary>Every YAML/env key mapped to its member name - written by hand, asserted complete by test (C-03).</summary>
     public static IReadOnlyDictionary<string, string> KeyMap { get; } = new Dictionary<string, string>
     {
@@ -173,6 +204,18 @@ public sealed record LegislatorOptions
         ["adr_template_file"] = nameof(AdrTemplateFile),
         ["readme_file"] = nameof(ReadmeFile),
         ["git_dir"] = nameof(GitDir),
+        ["conventional_default_branches"] = nameof(ConventionalDefaultBranches),
+        ["src_dir"] = nameof(SrcDir),
+        ["path_variable"] = nameof(PathVariable),
+        ["executable_extensions"] = nameof(ExecutableExtensions),
+        ["dotnet_executable"] = nameof(DotnetExecutable),
+        ["npx_executable"] = nameof(NpxExecutable),
+        ["prettier_executable"] = nameof(PrettierExecutable),
+        ["formatter_timeout_seconds"] = nameof(FormatterTimeoutSeconds),
+        ["csharp_extension"] = nameof(CSharpExtension),
+        ["prettier_extensions"] = nameof(PrettierExtensions),
+        ["prettier_config_files"] = nameof(PrettierConfigFiles),
+        ["prettier_package_key"] = nameof(PrettierPackageKey),
         ["legacy_home_dir"] = nameof(LegacyHomeDir),
         ["legacy_home_subdirs"] = nameof(LegacyHomeSubdirs),
         ["journal_recency_days"] = nameof(JournalRecencyDays),
@@ -193,6 +236,7 @@ public sealed record LegislatorOptions
         "git_timeout_seconds",
         "max_file_bytes",
         "journal_recency_days",
+        "formatter_timeout_seconds",
     };
 
     /// <summary>Every option as (key, rendered value, source): lists comma-joined, numbers invariant (C-03).</summary>
@@ -251,5 +295,17 @@ public sealed record LegislatorOptions
         yield return ("skill_opencode_template", SkillOpencodeTemplate.Value, SkillOpencodeTemplate.Source);
         yield return ("skill_file", SkillFile.Value, SkillFile.Source);
         yield return ("rules_core_dir", RulesCoreDir.Value, RulesCoreDir.Source);
+        yield return ("conventional_default_branches", string.Join(ListSeparator, ConventionalDefaultBranches.Value), ConventionalDefaultBranches.Source);
+        yield return ("src_dir", SrcDir.Value, SrcDir.Source);
+        yield return ("path_variable", PathVariable.Value, PathVariable.Source);
+        yield return ("executable_extensions", string.Join(ListSeparator, ExecutableExtensions.Value), ExecutableExtensions.Source);
+        yield return ("dotnet_executable", DotnetExecutable.Value, DotnetExecutable.Source);
+        yield return ("npx_executable", NpxExecutable.Value, NpxExecutable.Source);
+        yield return ("prettier_executable", PrettierExecutable.Value, PrettierExecutable.Source);
+        yield return ("formatter_timeout_seconds", FormatterTimeoutSeconds.Value.ToString(CultureInfo.InvariantCulture), FormatterTimeoutSeconds.Source);
+        yield return ("csharp_extension", CSharpExtension.Value, CSharpExtension.Source);
+        yield return ("prettier_extensions", string.Join(ListSeparator, PrettierExtensions.Value), PrettierExtensions.Source);
+        yield return ("prettier_config_files", string.Join(ListSeparator, PrettierConfigFiles.Value), PrettierConfigFiles.Source);
+        yield return ("prettier_package_key", PrettierPackageKey.Value, PrettierPackageKey.Source);
     }
 }

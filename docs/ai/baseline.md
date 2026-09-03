@@ -77,13 +77,13 @@
 | R-606 | Mutations SHALL be applied and reverted in place (byte-restore of | `docs/cases/BL-063-mutation-manifest` | — |
 | R-607 | The pass SHALL print and record one summary — total, killed, | `docs/cases/BL-063-mutation-manifest` | — |
 | R-608 | `evals/POLICY.md` §1c SHALL name the command and the cadence | `docs/cases/BL-063-mutation-manifest` | — |
-| R-641 | WHEN the agent invokes Bash with a `git merge` command WHILE | `docs/cases/BL-064-git-conduct-guard` | — |
-| R-642 | WHEN the agent invokes Bash with a `git push` command whose | `docs/cases/BL-064-git-conduct-guard` | — |
-| R-643 | WHEN a `git commit` (or `git commit --amend`) command's | `docs/cases/BL-064-git-conduct-guard` | — |
-| R-644 | WHEN a `gh pr create` / `gh pr edit` command's title/body | `docs/cases/BL-064-git-conduct-guard` | — |
-| R-645 | WHEN the agent invokes Bash with a `gh pr merge` command, in | `docs/cases/BL-064-git-conduct-guard` | — |
-| R-646 | WHILE the input is malformed, the command is not a git/gh | `docs/cases/BL-064-git-conduct-guard` | — |
-| R-647 | WHILE the working directory is not inside a legislated repo | `docs/cases/BL-064-git-conduct-guard` | — |
+| R-641 | WHEN the agent invokes Bash with a `git merge` command WHILE | `docs/cases/BL-064-git-conduct-guard` | `tests/Legislator.Parity.Tests/Hooks/GuardGitConductTwins.cs` |
+| R-642 | WHEN the agent invokes Bash with a `git push` command whose | `docs/cases/BL-064-git-conduct-guard` | `tests/Legislator.Parity.Tests/Hooks/GuardGitConductTwins.cs` |
+| R-643 | WHEN a `git commit` (or `git commit --amend`) command's | `docs/cases/BL-064-git-conduct-guard` | `tests/Legislator.Parity.Tests/Hooks/GuardGitConductTwins.cs` |
+| R-644 | WHEN a `gh pr create` / `gh pr edit` command's title/body | `docs/cases/BL-064-git-conduct-guard` | `tests/Legislator.Parity.Tests/Hooks/GuardGitConductTwins.cs` |
+| R-645 | WHEN the agent invokes Bash with a `gh pr merge` command, in | `docs/cases/BL-064-git-conduct-guard` | `tests/Legislator.Parity.Tests/Hooks/GuardGitConductTwins.cs` |
+| R-646 | WHILE the input is malformed, the command is not a git/gh | `docs/cases/BL-064-git-conduct-guard` | `tests/Legislator.Parity.Tests/Hooks/GuardGitConductTwins.cs` |
+| R-647 | WHILE the working directory is not inside a legislated repo | `docs/cases/BL-064-git-conduct-guard` | `tests/Legislator.Parity.Tests/Hooks/GuardGitConductTwins.cs` |
 | R-648 | The opencode plugin SHALL mirror R-641–R-645 for its bash | `docs/cases/BL-064-git-conduct-guard` | — |
 | R-649 | Every new check in the two harnesses SHALL be shown failing | `docs/cases/BL-064-git-conduct-guard` | — |
 | R-651 | WHEN a case spec under `docs/cases/*/spec.md` lacks a | `docs/cases/BL-065-case-shape-lints` | — |
@@ -105,7 +105,7 @@
 | R-667 | The zero-writes contract SHALL hold and be verified: the | `docs/cases/BL-066-audit-job-and-emitter` | — |
 | R-668 | Every new corpus assert SHALL be shown red against the v22 | `docs/cases/BL-066-audit-job-and-emitter` | — |
 | R-669 | WHILE inputs are identical, the printed report SHALL be | `docs/cases/BL-066-audit-job-and-emitter` | — |
-| R-701 | WHEN a Bash command invokes git or gh via a Windows-style | `docs/cases/BL-070-portability-patch-set` | — |
+| R-701 | WHEN a Bash command invokes git or gh via a Windows-style | `docs/cases/BL-070-portability-patch-set` | `tests/Legislator.Parity.Tests/Hooks/GuardGitConductTwins.cs` |
 | R-702 | The hooks.json command lines SHALL resolve the interpreter | `docs/cases/BL-070-portability-patch-set` | `tests/Legislator.Parity.Tests/Labels.cs` |
 | R-703 | The two link scripts SHALL be Python (`tools/link_skills.py`, | `docs/cases/BL-070-portability-patch-set` | — |
 | R-704 | WHILE running on Windows (`os.name == "nt"`), check_engine's | `docs/cases/BL-070-portability-patch-set` | — |
@@ -213,13 +213,6 @@
 - R-606 — Mutations SHALL be applied and reverted in place (byte-restore of (`docs/cases/BL-063-mutation-manifest`)
 - R-607 — The pass SHALL print and record one summary — total, killed, (`docs/cases/BL-063-mutation-manifest`)
 - R-608 — `evals/POLICY.md` §1c SHALL name the command and the cadence (`docs/cases/BL-063-mutation-manifest`)
-- R-641 — WHEN the agent invokes Bash with a `git merge` command WHILE (`docs/cases/BL-064-git-conduct-guard`)
-- R-642 — WHEN the agent invokes Bash with a `git push` command whose (`docs/cases/BL-064-git-conduct-guard`)
-- R-643 — WHEN a `git commit` (or `git commit --amend`) command's (`docs/cases/BL-064-git-conduct-guard`)
-- R-644 — WHEN a `gh pr create` / `gh pr edit` command's title/body (`docs/cases/BL-064-git-conduct-guard`)
-- R-645 — WHEN the agent invokes Bash with a `gh pr merge` command, in (`docs/cases/BL-064-git-conduct-guard`)
-- R-646 — WHILE the input is malformed, the command is not a git/gh (`docs/cases/BL-064-git-conduct-guard`)
-- R-647 — WHILE the working directory is not inside a legislated repo (`docs/cases/BL-064-git-conduct-guard`)
 - R-648 — The opencode plugin SHALL mirror R-641–R-645 for its bash (`docs/cases/BL-064-git-conduct-guard`)
 - R-649 — Every new check in the two harnesses SHALL be shown failing (`docs/cases/BL-064-git-conduct-guard`)
 - R-651 — WHEN a case spec under `docs/cases/*/spec.md` lacks a (`docs/cases/BL-065-case-shape-lints`)
@@ -241,7 +234,6 @@
 - R-667 — The zero-writes contract SHALL hold and be verified: the (`docs/cases/BL-066-audit-job-and-emitter`)
 - R-668 — Every new corpus assert SHALL be shown red against the v22 (`docs/cases/BL-066-audit-job-and-emitter`)
 - R-669 — WHILE inputs are identical, the printed report SHALL be (`docs/cases/BL-066-audit-job-and-emitter`)
-- R-701 — WHEN a Bash command invokes git or gh via a Windows-style (`docs/cases/BL-070-portability-patch-set`)
 - R-703 — The two link scripts SHALL be Python (`tools/link_skills.py`, (`docs/cases/BL-070-portability-patch-set`)
 - R-704 — WHILE running on Windows (`os.name == "nt"`), check_engine's (`docs/cases/BL-070-portability-patch-set`)
 - R-705 — WHEN `ps` is absent or fails, the dashboard SHALL treat the (`docs/cases/BL-070-portability-patch-set`)

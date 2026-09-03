@@ -2,6 +2,7 @@ using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using Legislator.Cli;
 using Legislator.Engine;
+using Legislator.Hooks;
 using Legislator.TestSupport;
 using Xunit;
 
@@ -41,8 +42,8 @@ public sealed class AnchorsTwins
         var stdout = new StringWriter();
         var stderr = new StringWriter();
         var exit = Program.Run(
-            ["anchors", "--root", "/r"], JobRegistry.Jobs, fs, TimeProvider.System,
-            new FakeEnvironment(), new FakeProcessRunner(), stdout, stderr);
+            ["anchors", "--root", "/r"], JobRegistry.Jobs, HookRegistry.Hooks, fs, TimeProvider.System,
+            new FakeEnvironment(), new FakeProcessRunner(), TextReader.Null, stdout, stderr);
 
         return (exit, stdout.ToString(), stderr.ToString());
     }
@@ -252,8 +253,8 @@ public sealed class AnchorsTwins
         var stdout = new StringWriter();
         var stderr = new StringWriter();
         var exit = Program.Run(
-            ["anchors", "--root", temp.Path], JobRegistry.Jobs, new FileSystem(), TimeProvider.System,
-            new FakeEnvironment(), new FakeProcessRunner(), stdout, stderr);
+            ["anchors", "--root", temp.Path], JobRegistry.Jobs, HookRegistry.Hooks, new FileSystem(), TimeProvider.System,
+            new FakeEnvironment(), new FakeProcessRunner(), TextReader.Null, stdout, stderr);
 
         return (exit, stdout.ToString(), stderr.ToString());
     }

@@ -36,6 +36,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   sources through `/flow-setup`, hands over what it already established,
   invokes nothing on its own authority, and skips the offer when the skill
   is not installed.
+- **The four Claude Code hooks, ported** (BL-082 T-11): `guard_owned_files`,
+  `guard_git_conduct`, `format_on_edit` and `okf_sync_check` run as
+  `legislator hook <name>`, reading the hook payload on stdin and answering exit 0
+  to allow or exit 2 to block — never another code, and never an exception
+  escaping: the host wraps every hook in a catch-all, so a bug in a guard cannot
+  stop the user's work. A misspelled hook name is a loud usage error rather than a
+  silent no-op, because a guard disabled by a typo is the failure nobody notices.
+  `plugin/hooks/hooks.json` still names the Python scripts; it is rewritten to the
+  binary in the task that retires them.
+
 - **`legislator apply`, `verify` and `report` — the write path, ported** (BL-082
   T-10): Step 3 whole (byte-for-byte copies of the owned set, retirement of files
   the package no longer delivers, the keep rules with their three named refusals,

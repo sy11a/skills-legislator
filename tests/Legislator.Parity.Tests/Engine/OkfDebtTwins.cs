@@ -3,6 +3,7 @@ using System.IO.Abstractions.TestingHelpers;
 using Legislator.Cli;
 using Legislator.Core.Abstractions;
 using Legislator.Engine;
+using Legislator.Hooks;
 using Legislator.TestSupport;
 using Xunit;
 
@@ -61,8 +62,8 @@ public sealed class OkfDebtTwins
         var stdout = new StringWriter();
         var stderr = new StringWriter();
         var exit = Program.Run(
-            ["okf-debt", "--root", "/r"], JobRegistry.Jobs, fs, TimeProvider.System,
-            new FakeEnvironment(), git, stdout, stderr);
+            ["okf-debt", "--root", "/r"], JobRegistry.Jobs, HookRegistry.Hooks, fs, TimeProvider.System,
+            new FakeEnvironment(), git, TextReader.Null, stdout, stderr);
 
         return (exit, stdout.ToString(), stderr.ToString());
     }

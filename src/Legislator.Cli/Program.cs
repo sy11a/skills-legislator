@@ -5,7 +5,9 @@ using System.Text;
 using System.Text.Json;
 using Legislator.Core.Abstractions;
 using Legislator.Core.Options;
+using Legislator.Cli.Commands;
 using Legislator.Engine;
+using Legislator.Hooks;
 
 namespace Legislator.Cli;
 
@@ -24,10 +26,12 @@ public static class Program
     public static int Main(string[] args) => Run(
         args,
         JobRegistry.Jobs,
+        HookRegistry.Hooks,
         new FileSystem(),
         TimeProvider.System,
         new SystemEnvironment(),
         new SystemProcessRunner(),
+        Console.In,
         Console.Out,
         Console.Error);
 
@@ -35,16 +39,18 @@ public static class Program
     public static int Run(
         string[] args,
         IReadOnlyDictionary<string, Func<IJob>> jobs,
+        IReadOnlyDictionary<string, Func<IHook>> hooks,
         IFileSystem fs,
         TimeProvider clock,
         IEnvironment env,
         IProcessRunner proc,
+        TextReader stdin,
         TextWriter stdout,
         TextWriter stderr)
     {
         if (args.Length == 0)
         {
-            return Usage(stderr, jobs, null);
+            return Usage(stderr, jobs, hooks, null);
         }
 
         var command = args[0];
@@ -55,8 +61,10 @@ public static class Program
             return command switch
             {
                 "version" => Version(stdout),
-                "config" => Config(rest, fs, env, stdout, stderr, jobs),
-                _ => Job(command, rest, jobs, fs, clock, env, proc, stdout, stderr),
+                "config" => Config(rest, fs, env, stdout, stderr, jobs, hooks),
+                "hook" => HookCommand.Run(rest, hooks, stdin, fs, env, proc, () => Compose(fs, env, env.CurrentDirectory), stderr)
+                    ?? Usage(stderr, jobs, hooks, rest.Count == 0 ? null : $"unknown hook: {rest[0]}"),
+                _ => Job(command, rest, jobs, hooks, fs, clock, env, proc, stdout, stderr),
             };
         }
         catch (OptionsException ex)
@@ -84,11 +92,12 @@ public static class Program
         IEnvironment env,
         TextWriter stdout,
         TextWriter stderr,
-        IReadOnlyDictionary<string, Func<IJob>> jobs)
+        IReadOnlyDictionary<string, Func<IJob>> jobs,
+        IReadOnlyDictionary<string, Func<IHook>> hooks)
     {
         if (rest.Count == 0 || rest[0] != "show")
         {
-            return Usage(stderr, jobs, null);
+            return Usage(stderr, jobs, hooks, null);
         }
 
         rest.RemoveAt(0);
@@ -96,7 +105,7 @@ public static class Program
         var root = env.CurrentDirectory;
         if (!TryTakeRoot(rest, ref root) || rest.Count > 0)
         {
-            return Usage(stderr, jobs, null);
+            return Usage(stderr, jobs, hooks, null);
         }
 
         var options = Compose(fs, env, root);
@@ -108,6 +117,7 @@ public static class Program
         string command,
         List<string> rest,
         IReadOnlyDictionary<string, Func<IJob>> jobs,
+        IReadOnlyDictionary<string, Func<IHook>> hooks,
         IFileSystem fs,
         TimeProvider clock,
         IEnvironment env,
@@ -117,13 +127,13 @@ public static class Program
     {
         if (!jobs.TryGetValue(command, out var job))
         {
-            return Usage(stderr, jobs, $"unknown job: {command}");
+            return Usage(stderr, jobs, hooks, $"unknown job: {command}");
         }
 
         var root = env.CurrentDirectory;
         if (!TryTakeRoot(rest, ref root))
         {
-            return Usage(stderr, jobs, null);
+            return Usage(stderr, jobs, hooks, null);
         }
 
         // Composition comes before the job is even constructed: a faulty layer stops the run
@@ -197,15 +207,25 @@ public static class Program
         return true;
     }
 
-    private static int Usage(TextWriter stderr, IReadOnlyDictionary<string, Func<IJob>> jobs, string? problem)
+    private static int Usage(
+        TextWriter stderr,
+        IReadOnlyDictionary<string, Func<IJob>> jobs,
+        IReadOnlyDictionary<string, Func<IHook>> hooks,
+        string? problem)
     {
         var text = new StringBuilder();
         text.Append("usage: legislator <job> [--root <dir>] [job args...]\n");
+        text.Append("       legislator hook <name>   (reads the hook payload on stdin)\n");
         text.Append("       legislator config show [--json] [--root <dir>]\n");
         text.Append("       legislator version\n");
         if (jobs.Count > 0)
         {
             text.Append($"jobs: {string.Join(", ", jobs.Keys.Order(StringComparer.Ordinal))}\n");
+        }
+
+        if (hooks.Count > 0)
+        {
+            text.Append($"hooks: {string.Join(", ", hooks.Keys.Order(StringComparer.Ordinal))}\n");
         }
 
         if (problem is not null)

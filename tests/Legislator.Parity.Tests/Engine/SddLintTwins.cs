@@ -2,6 +2,7 @@ using System.IO.Abstractions;
 using System.IO.Abstractions.TestingHelpers;
 using Legislator.Cli;
 using Legislator.Engine;
+using Legislator.Hooks;
 using Legislator.TestSupport;
 using Xunit;
 
@@ -90,8 +91,8 @@ public sealed class SddLintTwins
         var stdout = new StringWriter();
         var stderr = new StringWriter();
         var exit = Program.Run(
-            ["sdd-lint", "--root", "/r"], JobRegistry.Jobs, fs, TimeProvider.System,
-            new FakeEnvironment(), new FakeProcessRunner(), stdout, stderr);
+            ["sdd-lint", "--root", "/r"], JobRegistry.Jobs, HookRegistry.Hooks, fs, TimeProvider.System,
+            new FakeEnvironment(), new FakeProcessRunner(), TextReader.Null, stdout, stderr);
 
         return (exit, stdout.ToString(), stderr.ToString());
     }
