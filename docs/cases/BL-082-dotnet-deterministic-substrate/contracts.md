@@ -172,6 +172,8 @@ Interfaces, schemas and command-line shapes the plan's tasks produce and consume
 - `report [--record <file>] [--model-findings <json>]` — the Step-7 report from the record.
 - Record path default: `RunRecordDir` under the system temp dir (`ctx.Fs.Path.GetTempPath()` — an `IFileSystem` call, permitted).
 
+> **Amended 2026-09-03 (T-10, operator ownership ruling).** Delivered as written with four shape corrections. The decision-gate stop is **not** an exception: `ApplyJob` returns `JobResult` with exit 4 and the reason on stderr, and "having written nothing" holds because the check runs before the first write. `--keep-add` and `--keep-remove` repeat, so `SkillArguments` keeps `(flag, value)` pairs in order and exposes `Value(flag)` / `All(flag)`; the `::`-less `--keep-add` usage exit is the job's, the parser owning shape and the job owning meaning. The record's home is `Legislator.Engine.Runs` (`RunRecord`, `RecordPath`), and the record itself is a `JsonNode`, never a typed model. `RunRecord.Write` refuses any path inside the repository, which is what makes the default's promise checkable rather than conventional.
+
 ## C-11 Hook contract
 
 *per R-8208 · produced by T-11 · consumed by: `plugin/hooks/hooks.json` (T-11), `evals/check_hooks.py`, BL-077 registry predicate*

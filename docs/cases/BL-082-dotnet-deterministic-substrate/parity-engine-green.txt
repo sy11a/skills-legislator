@@ -1,0 +1,257 @@
+# T-10 green: the engine ruler against the published binary (2026-09-03)
+
+    PARITY_ENGINE_CMD=$PWD/artifacts/linux-x64/legislator python3 evals/check_engine.py
+
+Result: 142 ok, 0 FAIL, exit 0. Artifact 5 075 544 bytes.
+
+## What this run does NOT prove — measured, not assumed
+
+Re-run with `PARITY_ENGINE_CMD=/bin/false`, an arm that cannot answer anything: 123 FAIL and
+**19 labels still green**. Those nineteen passed without the arm running at all, so "142 ok"
+means 123 measured labels and nineteen that a dead engine also satisfies.
+
+Two of the nineteen are the known fault — `check_engine.py`'s usage section builds its own
+invocation with `sys.executable` instead of `_engine_argv`, so on the .NET arm it measures the
+Python:
+
+  - an unknown job exits 2   (check_engine.py:161)
+  - no job exits 2           (check_engine.py:164)
+
+They belong to the CLI task and are fixed there, by the T-07 ruling that kept T-09 out of
+T-12's ownership.
+
+The other seventeen are assertions of ABSENCE - no finding, no write, no section, two runs
+equal - which hold vacuously when nothing runs. Four of them are T-10's:
+
+  - record_lives_outside_the_repo
+  - apply_footprint_is_exactly_the_declared_set
+  - report_byte_stable
+  - report_scaffold_never_prints_candidates
+
+Each has a .NET twin that asserts MORE than the ruler does: the run exited 0 and printed a
+report beside the absence, so the twin cannot pass over an engine that did nothing. The
+remaining thirteen belong to jobs ported in T-07..T-09 and to the ruler itself, not to this
+task; they are the instrument's weakness, recorded here rather than silently inherited.
+
+## What did run
+
+Every job the port carries answers on the binary: anchors, okf-debt, sdd-lint, baseline,
+detect, audit, and — new in T-10 — apply, verify and report, including the run record, the keep
+rules, the v14 file model and the pinned Step-7 report. The ruler drives the binary through
+real temporary git repositories, so this run is also the task's drive of the published
+artifact.
+
+## Full output
+
+arm: <repo>/artifacts/linux-x64/legislator
+== anchors: resolving anchors are silent ==
+  ok    a healthy document produces no findings
+== anchors: a path that does not exist is a finding ==
+  ok    missing path reported with document, line and token
+== anchors: a symbol absent from the source is a finding ==
+  ok    missing symbol reported
+== anchors: the closed definition excludes non-anchors ==
+  ok    templates, globs, ~ and / paths, commands, lowercase and 3-char tokens are not anchors
+== anchors: a member suffix resolves to its file ==
+  ok    a trailing .Member() is stripped before the file test
+== anchors: human-class documents are exempt ==
+  ok    log.md and glossary.md are never anchored
+== anchors: front matter and fenced blocks are not scanned ==
+  ok    front matter and fenced code are skipped
+== anchors: docs/ is not a source root ==
+  ok    a symbol that exists only in prose does not resolve
+== usage ==
+  ok    an unknown job exits 2
+  ok    no job exits 2
+== no OKF bundle ==
+  ok    a repo with no docs/okf/ is clean, not an error
+== okf-debt: a source that moved on is debt ==
+  ok    a source 59 days newer than its document is debt
+== okf-debt: inside the threshold is not debt ==
+  ok    19 days is inside the 30-day threshold
+== okf-debt: a document updated with its source is clean ==
+  ok    a document that moved with its source is clean
+== okf-debt: no git history, no findings ==
+  ok    an untracked tree yields no debt findings
+== okf-debt: a directory anchor is never a debt source ==
+  ok    a directory anchor's history (the union of everything beneath it) never produces debt
+== v23 R-665: okf-debt without git fails loud, never clean ==
+  ok    okf_debt_git_absent (control): with git the 85-day debt is a finding
+  ok    okf_debt_git_absent: without git the job exits as a check failure, never clean
+  ok    okf_debt_git_absent (stdout control): no findings text a stdout-reader could mistake
+== v23 R-665 boundary: no anchored docs needs no git ==
+  ok    okf_debt_git_absent (boundary): nothing to measure is clean even without git
+== BL-051 item 1: a status: removed document is outside the anchored class ==
+  ok    removed_doc_not_anchored: a status: removed document produces no anchor finding
+  ok    removed_doc_not_anchored (control): a live sibling with the same dead path still reports
+== BL-051 item 1: nor does it accrue sync debt ==
+  ok    removed_doc_no_debt: a status: removed document accrues no okf-sync-debt
+  ok    removed_doc_no_debt (control): the live sibling still accrues debt
+== BL-051 item 2: build output is excluded at any depth, not just top level ==
+  ok    nested_build_output_ignored: a symbol living only in nested build output stays unresolved
+== BL-051 item 2 (control): a symbol in real source still resolves ==
+  ok    real_source_still_resolves: a symbol outside build output resolves as before
+== BL-051 item 3: an unhandled exception must not read as a clean audit ==
+  ok    crash_exits_distinctly: an unhandled exception exits with a code distinct from clean/findings/usage
+  ok    crash_exits_distinctly (control): a crash prints nothing to stdout, so a stdout-only reader sees no findings
+== BL-051 item 3 (regression contract): the three documented exit codes ==
+  ok    exit_codes_unchanged: clean is 0
+  ok    exit_codes_unchanged: findings is 1
+  ok    exit_codes_unchanged: usage error is 2
+== BL-043 sdd-lint: dangling, uncovered and bare tokens are findings ==
+  ok    sdd_lint_findings_exit_1
+  ok    sdd_lint_dangling_reference_named
+  ok    sdd_lint_uncovered_requirement_named
+  ok    sdd_lint_bare_token_reported
+  ok    sdd_lint_quoted_token_exempt: a backticked token is quotation, not a placeholder
+  ok    sdd_lint_covered_requirement_silent
+== BL-043 sdd-lint: a case without a plan is not lint ==
+  ok    sdd_lint_planless_case_clean: tier 0/1 is lawful — no plan, no coverage findings
+== BL-043 sdd-lint: a clean case tree is silent ==
+  ok    sdd_lint_clean_exit_0
+== R-651: tier and spec type declared ==
+  ok    lint_tier_and_type (control): a headered spec is silent
+  ok    lint_tier_required: missing tier is a finding
+  ok    lint_type_required: missing spec type is a finding
+== R-651 boundary: a case with no spec at all is lawful (tier 0) ==
+  ok    lint_specless_case_clean: tier-0 direct case stays silent
+== R-652: bugfix spec states current/expected/unchanged ==
+  ok    lint_bugfix (control): current/expected/unchanged present is silent
+  ok    lint_bugfix_sections: missing unchanged statement is a finding
+== R-653: boundary and hurting case for tier >= 1 ==
+  ok    lint_boundary_required: missing boundary is a finding
+  ok    lint_hurting_case_required: missing GIVEN/WHEN/THEN is a finding
+== R-654: one SHALL per requirement line ==
+  ok    lint_ears_two_shalls: two SHALLs on one R-line is a finding
+  ok    lint_ears_no_shall: an R-line with no SHALL is a finding
+  ok    lint_ears_quoted_shall (control): backticked SHALL is quotation
+== R-655: Clarifications required for tier >= 1 ==
+  ok    lint_clarifications_required: missing session is a finding
+== R-656: ADR shape ==
+  ok    lint_adr (control): well-shaped ADR + template are silent
+  ok    lint_adr_sequence_gap: 0002 missing is a finding
+  ok    lint_adr_status_closed_set: unknown status is a finding
+  ok    lint_adr_missing_section: absent Consequences is a finding
+== R-657: journal day-file names ==
+  ok    lint_journal (control): dated file + README are silent
+  ok    lint_journal_filename: a stray name is a finding
+== R-658: CHANGELOG carries [Unreleased] ==
+  ok    lint_changelog (control): Unreleased present is silent
+  ok    lint_changelog_unreleased: missing heading is a finding
+== R-659: OKF front-matter status closed set ==
+  ok    lint_okf_status (control): implemented is silent
+  ok    lint_okf_status_closed_set: 'shipped' is a finding
+  ok    lint_okf_status_human_exempt: glossary.md is never linted
+== v23 defect: a QUOTED converge marker must not converge the case ==
+  ok    lint_quoted_converge_marker_not_a_closure: an inline mention does not exempt the case
+  ok    lint_standalone_converge_marker_closes (control): the standalone line still exempts
+== BL-065: a converged case is skipped by every case lint ==
+  ok    lint_converged_case_exempt: history is never re-linted
+== R-661: a clean repo prints a clean report, exit 0 ==
+  ok    audit_clean_repo_clean_report
+  ok    audit_clean_checks_line_present
+== R-663: the emitter stamp is printed ==
+  ok    audit_report_carries_engine_stamp
+== R-661: planted defects are found with their pinned slugs ==
+  ok    audit_defects_exit_1
+  ok    audit_finds_imports-resolve
+  ok    audit_finds_unresolved-placeholders
+  ok    audit_finds_orphan-docs
+  ok    audit_finds_foreign-structures
+  ok    audit_severity_sections_present
+== R-669: byte-stable across runs ==
+  ok    audit_report_byte_stable
+== R-667: the audit job writes nothing ==
+  ok    engine_audit_writes_nothing
+== R-662: model findings merge into their sections ==
+  ok    model_findings_in_pinned_sections
+  ok    model_candidates_appended
+== R-662: a malformed model-findings file is a loud exit ==
+  ok    audit_malformed_model_findings_fails_loud
+== R-665: audit without git fails loud ==
+  ok    engine_audit_fails_loud_without_git
+== R-661: staleness and the constitution header ==
+  ok    audit_constitution_header_behind
+  ok    audit_finds_staleness
+== R-661: keep-list integrity and the no-keep-key Info ==
+  ok    audit_keep_key_missing_info
+  ok    audit_keep_path_missing
+== R-661: codebase-map freshness both directions ==
+  ok    audit_map_stale_row
+  ok    audit_map_missing_row
+== v23 defect fixes: check 14 sees backticked names; journal dates from prefix+content ==
+  ok    audit_check14_sees_backticked_names
+  ok    audit_journal_date_from_prefixed_filename
+== BL-043 baseline: rows for covered, an explicit uncovered list ==
+  ok    baseline_writes_declared_target
+  ok    baseline_maps_requirement_to_test
+  ok    baseline_lists_uncovered_requirements
+  ok    baseline_declares_itself_generated
+== BL-043 baseline: deterministic, and a hand edit is destroyed ==
+  ok    baseline_bytes_deterministic
+  ok    baseline_destroys_hand_edits: regeneration is the class's defining property
+== BL-043 baseline: writes exactly its declared target (ADR-0003) ==
+  ok    baseline_writes_nothing_else
+== BL-043: check jobs still write nothing ==
+  ok    sdd_lint_writes_nothing
+== BL-043 sdd-lint: all three real definition forms parse ==
+  ok    sdd_lint_accepts_three_definition_forms_and_list_refs
+  ok    baseline_definition_keeps_inline_code
+== BL-043 sdd-lint: a cross-case reference is not dangling ==
+  ok    sdd_lint_cross_case_reference_resolves: a rider may trace a sibling case's requirement
+== BL-043 sdd-lint: a converged case is history, not lint ==
+  ok    sdd_lint_converged_case_skipped: completed lifecycle artifacts are never re-judged
+== R-753: detect — the three modes and the edge case, zero writes ==
+  ok    detect_fresh
+  ok    detect_migration_agents
+  ok    detect_migration_claude_and_stack_candidate
+  ok    detect_upgrade_reads_legacy_profiles
+  ok    detect_edge_case_reconstructs_from_disk
+  ok    detect_writes_nothing
+== R-754/R-757/R-751/R-752: apply — copies, ownedFiles, the pinned manifest, the record ==
+  ok    apply_fresh_exit_0
+  ok    apply_copies_owned_set_byte_for_byte
+  ok    apply_manifest_pinned_serialization
+  ok    apply_writes_record_at_derived_tempdir_path
+  ok    record_carries_mode_version_events_and_pre_snapshot
+  ok    record_lives_outside_the_repo
+  ok    apply_second_run_byte_stable_and_records_unchanged
+== R-755: deletions and empty stack directories ==
+  ok    apply_deletes_retired_and_removes_emptied_stack_dir
+== R-756: the keep rules — carry, add, refuse, dedupe, remove ==
+  ok    keep_add_and_dedupe_by_path
+  ok    keep_refusals_recorded_with_reasons
+  ok    keep_pinned_one_entry_per_line
+  ok    keep_remove_only_on_request
+== R-758/R-771: the v14 file model ==
+  ok    file_model_renames_real_claude_and_links
+  ok    file_model_rename_is_git_mv_when_tracked
+  ok    file_model_links_when_only_agents_exists
+  ok    both_real_entry_documents_is_a_loud_stop_with_zero_writes
+== R-759: apply writes nothing but the owned set, the manifest and the wiring ==
+  ok    apply_footprint_is_exactly_the_declared_set
+== R-760/R-761: verify — diverged file re-copied once, missing artifacts named, post snapshot ==
+  ok    verify_recopies_a_diverged_owned_file_once_and_is_clean
+  ok    verify_names_a_missing_step4_artifact
+  ok    verify_appends_post_snapshot_to_record
+== R-762/R-763/R-765/R-766/R-767: report — skeleton, deltas, Health, Keep gating, stamp, stability ==
+  ok    report_scaffold_title
+  ok    report_scaffold_sections_pinned_order_no_health_no_keep
+  ok    report_created_lists_owned_files_and_step4_artifacts_from_snapshots
+  ok    report_stamp_is_last_line
+  ok    report_byte_stable
+  ok    report_upgrade_title
+  ok    report_upgrade_sections_with_keep_and_health
+  ok    report_overwritten_lists_changed_owned_file
+  ok    report_review_carries_import_deltas_and_scaffold_wiring
+  ok    report_keep_list_added_and_refused
+  ok    report_health_runs_audit_checks_1_to_6
+  ok    report_health_clean_and_no_keep_section_without_delta
+== R-762 defect (2026-08-28 manual run): a renamed entry document is not also 'scaffolded' ==
+  ok    report_entry_document_listed_once_by_its_file_model_event
+== R-764: the Step-7 model-findings channel ==
+  ok    report_merges_candidates_and_review_lines_into_pinned_sections
+  ok    report_malformed_findings_is_a_loud_exit
+  ok    report_scaffold_never_prints_candidates
+
+all engine checks passed

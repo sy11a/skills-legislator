@@ -115,6 +115,8 @@ public static class OptionsComposer
             nameof(LegislatorOptions.SkillRulesPath) => o with { SkillRulesPath = new(value, layer) },
             nameof(LegislatorOptions.SkillEnginePath) => o with { SkillEnginePath = new(value, layer) },
             nameof(LegislatorOptions.SkillOpencodeTemplate) => o with { SkillOpencodeTemplate = new(value, layer) },
+            nameof(LegislatorOptions.SkillFile) => o with { SkillFile = new(value, layer) },
+            nameof(LegislatorOptions.RulesCoreDir) => o with { RulesCoreDir = new(value, layer) },
             var member => throw new InvalidOperationException($"{member} is in KeyMap but not applied"),
         };
 

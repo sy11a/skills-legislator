@@ -3,10 +3,40 @@ type: Changelog
 title: OKF Bundle Changelog
 description: Chronological record of significant changes to the OKF knowledge bundle.
 tags: [changelog, okf]
-timestamp: 2026-09-02T00:00:00Z
+timestamp: 2026-09-03T00:00:00Z
 ---
 
 # OKF Bundle Changelog
+
+## 2026-09-03 — BL-082 T-10: the write path, and a ruler measured with a dead arm
+
+`apply`, `verify` and `report` exist in .NET, and with them the run record, the
+keep rules, the owned set and the v14 file model. The engine ruler now reads
+142 ok / 0 FAIL on the published binary and the label ledger fell from 96 to 60.
+`glossary.md` gained **owned set**, **case collision**, **verify job** and
+**report job**, and re-homed **run record** and **apply job** onto their .NET
+files.
+
+The entry worth recording is what the green number does not say. Re-run with
+`PARITY_ENGINE_CMD=/bin/false` — an arm that answers nothing — nineteen labels
+stay green. Two are the known `usage` pair that still hardcodes the interpreter
+and belongs to the CLI task; the other seventeen are assertions of ABSENCE (no
+finding, no write, no section, two runs equal) which hold vacuously when nothing
+runs. So "142 ok" is 123 measured labels and nineteen a dead engine also
+satisfies. Four of the nineteen are this task's, and each has a twin that
+asserts more than the ruler does — the run exited 0 and printed a report beside
+the absence — so the port is measured even where the instrument is not. The
+number was written down rather than inherited, which is the only reason it is
+now a known quantity instead of a comfortable one.
+
+The second entry is a fake that lied. `MockFileSystem.CreateSymbolicLink`
+resolves a relative target against the process's current directory and demands
+it exist, where the real `System.IO` does not resolve it at creation at all. The
+product's link is relative on purpose — an absolute one breaks when the
+repository moves, and the ruler reads `readlink` — so the fake was pointed at
+the repository root rather than the product bent to the fake. It is the second
+place where this fake's behaviour and the real one's part company; the first was
+reading a directory (T-08).
 
 ## 2026-09-01 — BL-082 T-07: the pilot port, and a namespace that was not ours
 

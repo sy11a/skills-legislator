@@ -44,6 +44,30 @@ public static class GitLog
     }
 
     /// <summary>
+    /// Whether git ran the command and it succeeded. Distinct from <see cref="Ask"/>, which
+    /// answers with output: a command that writes rather than reports - `mv` - succeeds
+    /// silently, and an empty answer from <see cref="Ask"/> cannot be told from a refusal.
+    /// The flag is false only when git itself could not be started.
+    /// </summary>
+    public static (bool Ok, bool Available) Succeeded(
+        IProcessRunner proc, LegislatorOptions options, string root, params string[] args)
+    {
+        ArgumentNullException.ThrowIfNull(proc);
+        ArgumentNullException.ThrowIfNull(options);
+
+        try
+        {
+            return (proc.Run(
+                options.GitExecutable.Value, args, root,
+                TimeSpan.FromSeconds(options.GitTimeoutSeconds.Value)).ExitCode == 0, true);
+        }
+        catch (ProcessStartException)
+        {
+            return (false, false);
+        }
+    }
+
+    /// <summary>
     /// The committer date of the newest commit touching <paramref name="relative"/>, ISO-8601,
     /// or null when the path is untracked or the tree is no repository. The flag is false only
     /// when git itself could not be started.

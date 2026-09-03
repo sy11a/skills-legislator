@@ -28,6 +28,7 @@ public sealed class RepoLayout
         Engine = Join(Ai, options.EngineFile.Value);
         Opencode = Join(root, options.OpencodeConfig.Value);
         RuleStacks = Join(Rules, options.StacksDir.Value);
+        RulesCore = Join(Rules, options.RulesCoreDir.Value);
         LegislationImport = Relative(Join(Rules, options.LegislationMarker.Value));
     }
 
@@ -61,6 +62,9 @@ public sealed class RepoLayout
 
     /// <summary>The stack rule directories; their names are what a manifest-less repository was subscribed to.</summary>
     public string RuleStacks { get; }
+
+    /// <summary>The core rule directory - delivered whole to every legislated repository, whatever it subscribes to.</summary>
+    public string RulesCore { get; }
 
     /// <summary>The import line's target as the entry document writes it: repository-relative, so it can be searched for in text.</summary>
     public string LegislationImport { get; }

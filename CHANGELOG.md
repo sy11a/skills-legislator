@@ -36,6 +36,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   sources through `/flow-setup`, hands over what it already established,
   invokes nothing on its own authority, and skips the offer when the skill
   is not installed.
+- **`legislator apply`, `verify` and `report` — the write path, ported** (BL-082
+  T-10): Step 3 whole (byte-for-byte copies of the owned set, retirement of files
+  the package no longer delivers, the keep rules with their three named refusals,
+  the pinned manifest and the v14 file model), Step 6's byte-verify with exactly
+  one re-copy per diverged file, and Step 7's report printed from the run record
+  rather than from the tree. The record is written outside the repository by
+  construction and refuses any path inside it. Two real entry documents stop the
+  run at exit 4 before the first write, so the promise that nothing was written
+  rests on nothing having been written yet. All thirty-six `check_engine.py`
+  assertions the three answer carry a named `[Parity]` twin, five of them
+  strengthened past the ruler because the ruler's own assertion is satisfied by an
+  engine that does nothing; the label ledger fell from 96 to 60, and the full
+  engine ruler is green on the published binary.
+
+- **Case-collision detection beside the owned set** (BL-082 T-10): a file whose
+  path differs from an owned path only by letter case is named with the path it
+  collides with. It is one file on a case-insensitive checkout and two on this
+  one, which is why nothing else notices it.
+
 - **`legislator audit` — the read-only health check, ported** (BL-082 T-09):
   fourteen mechanical checks and the pinned report printed from them, byte-stable
   over an unchanged repository and writing nothing. The audit is the second

@@ -1,0 +1,65 @@
+# T-10 red: apply / verify / report and the run record (recorded 2026-09-02)
+
+Predicted before the run: Legislator.Engine.Tests does not compile, every error naming a
+type this task creates; the 36 twins of the ruler's v24 section fail on `unknown job`; the
+ledger falls to 60 and says so; `No_twin_names_a_label_the_rulers_do_not_assert` stays green.
+All four seen.
+
+## Legislator.Engine.Tests — build, 6 errors
+
+<repo>/tests/Legislator.Engine.Tests/Apply/FileModelTests.cs(1,25): error CS0234: The type or namespace name 'Apply' does not exist in the namespace 'Legislator.Engine' (are you missing an assembly reference?)
+<repo>/tests/Legislator.Engine.Tests/Apply/KeepListTests.cs(1,25): error CS0234: The type or namespace name 'Apply' does not exist in the namespace 'Legislator.Engine' (are you missing an assembly reference?)
+<repo>/tests/Legislator.Engine.Tests/Apply/KeepListTests.cs(17,20): error CS0246: The type or namespace name 'KeepOutcome' could not be found (are you missing a using directive or an assembly reference?)
+<repo>/tests/Legislator.Engine.Tests/Apply/KeepListTests.cs(18,21): error CS0246: The type or namespace name 'KeepEntry' could not be found (are you missing a using directive or an assembly reference?)
+<repo>/tests/Legislator.Engine.Tests/Apply/OwnedSetTests.cs(1,25): error CS0234: The type or namespace name 'Apply' does not exist in the namespace 'Legislator.Engine' (are you missing an assembly reference?)
+<repo>/tests/Legislator.Engine.Tests/Runs/RecordPathTests.cs(2,25): error CS0234: The type or namespace name 'Runs' does not exist in the namespace 'Legislator.Engine' (are you missing an assembly reference?)
+
+## Legislator.Parity.Tests — run, 37 failures (36 twins + the ledger)
+
+failed Legislator.Parity.Tests.Engine.VerifyTwins.Verify_appends_post_snapshot_to_record (49ms)
+failed Legislator.Parity.Tests.Engine.ReportTwins.Report_upgrade_sections_with_keep_and_health (65ms)
+failed Legislator.Parity.Tests.Engine.ApplyTwins.Keep_add_and_dedupe_by_path (49ms)
+failed Legislator.Parity.Tests.Engine.ApplyTwins.Keep_remove_only_on_request (1ms)
+failed Legislator.Parity.Tests.Engine.VerifyTwins.Verify_names_a_missing_step4_artifact (2ms)
+failed Legislator.Parity.Tests.Engine.VerifyTwins.Verify_recopies_a_diverged_owned_file_once_and_is_clean (0ms)
+failed Legislator.Parity.Tests.Engine.ApplyTwins.Apply_footprint_is_exactly_the_declared_set (3ms)
+failed Legislator.Parity.Tests.Engine.ReportTwins.Report_malformed_findings_is_a_loud_exit (6ms)
+failed Legislator.Parity.Tests.Engine.ReportTwins.Report_entry_document_listed_once_by_its_file_model_event (1ms)
+failed Legislator.Parity.Tests.Engine.ReportTwins.Report_stamp_is_last_line (2ms)
+failed Legislator.Parity.Tests.Engine.ApplyTwins.Keep_pinned_one_entry_per_line (9ms)
+failed Legislator.Parity.Tests.Engine.ReportTwins.Report_keep_list_added_and_refused (2ms)
+failed Legislator.Parity.Tests.Engine.ReportTwins.Report_review_carries_import_deltas_and_scaffold_wiring (1ms)
+failed Legislator.Parity.Tests.Engine.ReportTwins.Report_created_lists_owned_files_and_step4_artifacts_from_snapshots (1ms)
+failed Legislator.Parity.Tests.Engine.ApplyTwins.Record_carries_mode_version_events_and_pre_snapshot (2ms)
+failed Legislator.Parity.Tests.Engine.ReportTwins.Report_health_runs_audit_checks_1_to_6 (5ms)
+failed Legislator.Parity.Tests.Engine.ApplyTwins.Apply_deletes_retired_and_removes_emptied_stack_dir (0ms)
+failed Legislator.Parity.Tests.Engine.ReportTwins.Report_scaffold_title (0ms)
+failed Legislator.Parity.Tests.Engine.ApplyTwins.File_model_renames_real_claude_and_links (0ms)
+failed Legislator.Parity.Tests.Engine.ReportTwins.Report_health_clean_and_no_keep_section_without_delta (0ms)
+failed Legislator.Parity.Tests.Engine.ApplyTwins.Both_real_entry_documents_is_a_loud_stop_with_zero_writes (0ms)
+failed Legislator.Parity.Tests.Engine.ReportTwins.Report_merges_candidates_and_review_lines_into_pinned_sections (1ms)
+failed Legislator.Parity.Tests.Engine.ApplyTwins.Apply_copies_owned_set_byte_for_byte (1ms)
+failed Legislator.Parity.Tests.Engine.ApplyTwins.Apply_second_run_byte_stable_and_records_unchanged (0ms)
+failed Legislator.Parity.Tests.Engine.ReportTwins.Report_scaffold_never_prints_candidates (1ms)
+failed Legislator.Parity.Tests.Engine.ApplyTwins.Apply_manifest_pinned_serialization (1ms)
+failed Legislator.Parity.Tests.Engine.ReportTwins.Report_scaffold_sections_pinned_order_no_health_no_keep (1ms)
+failed Legislator.Parity.Tests.Engine.ApplyTwins.Apply_writes_record_at_derived_tempdir_path (0ms)
+failed Legislator.Parity.Tests.Engine.ReportTwins.Report_overwritten_lists_changed_owned_file (1ms)
+failed Legislator.Parity.Tests.Engine.ApplyTwins.Apply_fresh_exit_0 (0ms)
+failed Legislator.Parity.Tests.Engine.ReportTwins.Report_byte_stable (1ms)
+failed Legislator.Parity.Tests.Engine.ApplyTwins.Record_lives_outside_the_repo (0ms)
+failed Legislator.Parity.Tests.Engine.ReportTwins.Report_upgrade_title (1ms)
+failed Legislator.Parity.Tests.Engine.ApplyTwins.Keep_refusals_recorded_with_reasons (3ms)
+failed Legislator.Parity.Tests.Engine.ApplyTwins.File_model_rename_is_git_mv_when_tracked (4ms)
+failed Legislator.Parity.Tests.Engine.ApplyTwins.File_model_links_when_only_agents_exists (1ms)
+failed Legislator.Parity.Tests.LabelCoverageTests.Ruler_labels_without_a_twin_match_the_recorded_debt (68ms)
+
+## The ledger's own arithmetic — the independent check on ownership
+
+  the ledger fell to 60: lower LedgerDebt to that number in the commit that closed the gap, so the record keeps saying what is true.
+
+## Test run summary
+
+  total: 142
+  failed: 37
+  succeeded: 105

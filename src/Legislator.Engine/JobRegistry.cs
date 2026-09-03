@@ -8,11 +8,14 @@ public static class JobRegistry
     public static IReadOnlyDictionary<string, Func<IJob>> Jobs { get; } = new Dictionary<string, Func<IJob>>(StringComparer.Ordinal)
     {
         ["anchors"] = () => new AnchorsJob(),
+        ["apply"] = () => new ApplyJob(),
         ["audit"] = () => new AuditJob(),
         ["baseline"] = () => new BaselineJob(),
         ["detect"] = () => new DetectJob(),
         ["okf-debt"] = () => new OkfDebtJob(),
+        ["report"] = () => new ReportJob(),
         ["sdd-lint"] = () => new SddLintJob(),
+        ["verify"] = () => new VerifyJob(),
     };
 
     public static IReadOnlyList<string> Names => [.. Jobs.Keys.Order(StringComparer.Ordinal)];

@@ -30,7 +30,7 @@ public sealed class AuditJob : IJob
 
         var layout = new RepoLayout(ctx.Options, ctx.Root);
         var result = new AuditChecks(ctx, parsed.Skill).Run();
-        var model = parsed.Flags.TryGetValue(ModelFindingsFlag, out var path)
+        var model = parsed.Value(ModelFindingsFlag) is { } path
             ? ModelFindings.Load(ctx.Fs, path)
             : null;
 

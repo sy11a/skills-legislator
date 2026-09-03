@@ -10,6 +10,7 @@ using Legislator.Engine.Anchors;
 using Legislator.Engine.Jobs;
 using Legislator.Engine.Okf;
 using Legislator.Engine.Sdd;
+using Legislator.Engine.Apply;
 
 namespace Legislator.Engine.Audit;
 
@@ -36,6 +37,14 @@ public sealed partial class AuditChecks(JobContext job, SkillPackage skill)
 
     private static readonly Dictionary<string, int> places =
         Order.Select((slug, at) => (slug, at)).ToDictionary(p => p.slug, p => p.at, StringComparer.Ordinal);
+
+    /// <summary>
+    /// The checks the Step-7 report's Health section runs - the first six of the pinned order,
+    /// derived from it rather than restated, so a renamed check cannot leave the report asking
+    /// for a slug the audit no longer raises.
+    /// </summary>
+    public static IReadOnlySet<string> HealthChecks { get; } =
+        new HashSet<string>(Order.Take(6), StringComparer.Ordinal);
 
     /// <summary>The two checks no engine can perform - they are judgements about meaning, and the model supplies them.</summary>
     public static IReadOnlySet<string> ModelChecks { get; } =
@@ -147,7 +156,7 @@ public sealed partial class AuditChecks(JobContext job, SkillPackage skill)
                 continue;
             }
 
-            var source = SkillSourceOf(relative);
+            var source = OwnedSet.SourceOf(relative, skill, layout, options);
             if (source is not null && fs.File.Exists(source)
                 && !fs.File.ReadAllBytes(delivered).SequenceEqual(fs.File.ReadAllBytes(source)))
             {
@@ -155,25 +164,6 @@ public sealed partial class AuditChecks(JobContext job, SkillPackage skill)
                     $"{relative}: diverges from the skill source → re-run /legislator to restore it byte-for-byte");
             }
         }
-    }
-
-    /// <summary>Where an owned path came from inside the package, or null for a path the skill does not author.</summary>
-    private string? SkillSourceOf(string relative)
-    {
-        var rules = $"{layout.Relative(layout.Rules)}/";
-        if (relative.StartsWith(rules, StringComparison.Ordinal))
-        {
-            return $"{skill.Root}/{options.SkillRulesPath.Value}/{relative[rules.Length..]}";
-        }
-
-        if (relative == layout.Relative(layout.Engine))
-        {
-            return $"{skill.Root}/{options.SkillEnginePath.Value}";
-        }
-
-        return relative == options.OpencodeConfig.Value
-            ? $"{skill.Root}/{options.SkillOpencodeTemplate.Value}"
-            : null;
     }
 
     private IEnumerable<AuditFinding> Check04Staleness(JsonNode? manifest)

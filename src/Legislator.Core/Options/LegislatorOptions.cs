@@ -122,6 +122,12 @@ public sealed record LegislatorOptions
 
     public OptionValue<string> SkillOpencodeTemplate { get; init; } = new("assets/templates/opencode.json.tpl", OptionsLayer.Defaults); // under the skill package
 
+    /// <summary>The package's own procedure document - Step 4's table is where the scaffold targets are declared, and apply snapshots them before and after a run.</summary>
+    public OptionValue<string> SkillFile { get; init; } = new("SKILL.md", OptionsLayer.Defaults); // under the skill package
+
+    /// <summary>The rule directory every legislated repository gets whatever it is subscribed to; the stacks beside it are chosen, this one is not.</summary>
+    public OptionValue<string> RulesCoreDir { get; init; } = new("core", OptionsLayer.Defaults); // under docs/ai/rules and under the package rules path
+
     /// <summary>Every YAML/env key mapped to its member name - written by hand, asserted complete by test (C-03).</summary>
     public static IReadOnlyDictionary<string, string> KeyMap { get; } = new Dictionary<string, string>
     {
@@ -176,6 +182,8 @@ public sealed record LegislatorOptions
         ["skill_rules_path"] = nameof(SkillRulesPath),
         ["skill_engine_path"] = nameof(SkillEnginePath),
         ["skill_opencode_template"] = nameof(SkillOpencodeTemplate),
+        ["skill_file"] = nameof(SkillFile),
+        ["rules_core_dir"] = nameof(RulesCoreDir),
     };
 
     /// <summary>The keys whose member is an <c>OptionValue&lt;int&gt;</c> - the validator parses these as integers of 1 or more; asserted against the members by test (C-04).</summary>
@@ -241,5 +249,7 @@ public sealed record LegislatorOptions
         yield return ("skill_rules_path", SkillRulesPath.Value, SkillRulesPath.Source);
         yield return ("skill_engine_path", SkillEnginePath.Value, SkillEnginePath.Source);
         yield return ("skill_opencode_template", SkillOpencodeTemplate.Value, SkillOpencodeTemplate.Source);
+        yield return ("skill_file", SkillFile.Value, SkillFile.Source);
+        yield return ("rules_core_dir", RulesCoreDir.Value, RulesCoreDir.Source);
     }
 }
