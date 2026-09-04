@@ -58,6 +58,28 @@ CLI — chosen once, no v2→v3 migration later; the coverage gate of §7 runs
 on MTP's code-coverage extension, not coverlet. Follow-up candidate, not
 this case: promote the R-8202 bar into the dotnet stack law.
 
+**Measured 2026-09-04 (T-12, plan Step 4) — the startup budget, and what the
+port's growth cost.** Twenty runs of `legislator version` on the published
+`linux-x64` binary: **median 3.3 ms**, fastest 3.1, slowest 4.1, against
+ADR-0005's PreToolUse budget of 50 ms. Fifteen times inside it. This closes the
+open question the handoff has carried since T-11 — the artifact grew from
+3 445 624 bytes at T-07 to 5 158 216 here, and that growth costs nothing
+measurable at start: NativeAOT's cost is image size, which is paid once on disk,
+not per invocation, and a hook runs on every edit. The number is a property of
+the reference machine, which is why `STARTUP_BUDGET_SKIP=1` excuses a shared CI
+runner rather than lowering the bar for everyone.
+
+**Measured 2026-09-04 (T-12) — the four RIDs are not one machine's work.** The
+AOT toolchain answers `error : Cross-OS native compilation is not supported`, so
+`tools/publish-legislator.sh` publishes the host's RID and refuses the rest by
+name before reaching the SDK; `.github/workflows/dotnet.yml` builds all four.
+C-12's "in a loop" sentence is amended accordingly (operator ruling 2026-09-04,
+option a). A second finding rode along: `RuntimeInformation.RuntimeIdentifier`
+answers the machine's SPECIFIC rid under the test host (`fedora.43-x64` here),
+which is never a rid an edition releases — the published binary reports the
+portable `linux-x64` it was built for, and only a test fixture asking the
+runtime about itself gets the other answer.
+
 ## 3. Shape: one core, several hosts
 
 **Decision:** `Legislator.Core` (file model, registry, options,

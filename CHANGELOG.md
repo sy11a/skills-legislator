@@ -36,6 +36,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   sources through `/flow-setup`, hands over what it already established,
   invokes nothing on its own authority, and skips the offer when the skill
   is not installed.
+- **The release path for the deterministic arm** (BL-082 T-12):
+  `tools/publish-legislator.sh` publishes a NativeAOT binary for the host's RID
+  and refuses any other by name — the AOT toolchain does not cross-compile
+  between operating systems, so the edition's other three RIDs come from the
+  matrix in `.github/workflows/dotnet.yml`, which is now part of the edition
+  rather than incidental configuration. `tools/install-legislator.sh` copies the
+  result onto `PATH`. Every publish records the binary's SHA-256 in
+  `artifacts/SHA256SUMS`.
+- **`legislator version --json`** (BL-082 T-12) — the version, the RID the binary
+  was built for, and the SHA-256 of the executable that is running, taken by the
+  binary itself rather than of a path a caller names. The plain `legislator
+  version` is unchanged, and an unknown flag is now a usage error rather than a
+  silently ignored argument.
+- **Edition 26 pins the tool** (BL-082 T-12): `skill/VERSION` and
+  `src/Legislator.Cli/Version.props` carry the same number, and a static check
+  makes them impossible to move apart. The number was assigned from
+  freshly-fetched `master`, never reserved.
+
 - **The four Claude Code hooks, ported** (BL-082 T-11): `guard_owned_files`,
   `guard_git_conduct`, `format_on_edit` and `okf_sync_check` run as
   `legislator hook <name>`, reading the hook payload on stdin and answering exit 0

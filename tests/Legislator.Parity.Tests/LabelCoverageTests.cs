@@ -17,7 +17,15 @@ public sealed class LabelCoverageTests
     /// and the remainder has an address rather than a hope: three engine labels about usage
     /// and unknown jobs belong to T-12, and five hooks labels — the `.py` command shape, the
     /// script-exists check and the two R-702 launcher checks — belong to T-13, which rewrites
-    /// `hooks.json` to the binary and re-cuts them with their subject (ruling 2026-09-03). A
+    /// `hooks.json` to the binary and re-cuts them with their subject (ruling 2026-09-03).
+    /// Merging edition v25 added THREE more (`audit_check18_*`): v25 shipped an eighteenth
+    /// audit check, `tracker-drift`, which this arm does not carry — the spec ports v24
+    /// (R-8205), so the check is new law arriving mid-port rather than a gap in it. Its
+    /// address is T-13, which already owns adding a check to `AuditChecks.Order` and to
+    /// `SKILL.md` § Audit; the case-collision check the T-10 ruling sent there becomes 19,
+    /// v25 having taken 18 (ruling 2026-09-04). T-12 then wrote the three host twins its own
+    /// row owned, so the engine side is clear and eight remain: five hooks labels and the three
+    /// `audit_check18_*`, all of them T-13's, all of them with an address. A
     /// test left permanently red is not a gate — it hides the next real failure inside the
     /// expected one — so the ledger is a ratchet instead: the red R-8206 demands was shown
     /// against an empty implementation and recorded in the case as `parity-red.txt`, and

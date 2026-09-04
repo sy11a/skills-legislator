@@ -352,6 +352,38 @@ for cs in sorted(SRC.rglob("*.cs")):
     check(not hits, f"{rel} carries no path/name literal",
           f"lines {hits} — add an option instead (C-03)")
 
+print("== BL-082: the release matrix is the only home of three of the four RIDs (R-8203) ==")
+# NativeAOT does not cross-compile between operating systems, so `publish-legislator.sh`
+# publishes the host's RID and no more. The other three exist only if the matrix builds
+# them, which makes this workflow part of the edition rather than incidental config
+# (operator ruling 2026-09-04, option a).
+RIDS = ("linux-x64", "win-x64", "osx-x64", "osx-arm64")
+workflow = REPO / ".github" / "workflows" / "dotnet.yml"
+check(workflow.is_file(), "the release workflow exists",
+      f"{workflow.relative_to(REPO).as_posix()} is absent - three of the four RIDs have no builder")
+if workflow.is_file():
+    body = workflow.read_text()
+    missing = [rid for rid in RIDS if rid not in body]
+    check(not missing, "the release workflow names every released RID",
+          f"absent from the matrix: {missing} - a RID nothing builds is a RID the edition cannot release")
+    check("-warnaserror" in body, "the release workflow builds strict",
+          "the matrix must build under the same discipline as the gate (R-8202)")
+
+print("== BL-082: the edition pins the tool (R-8214, C-12) ==")
+# One number, two homes, and neither may move without the other: `skill/VERSION` is the
+# edition and `src/Legislator.Cli/Version.props` is what `legislator version` prints back.
+# `0.0.0` is the un-assigned pin - lawful only while no edition has been assigned, which
+# stops being true the moment this repository carries a VERSION at all.
+props = (REPO / "src" / "Legislator.Cli" / "Version.props").read_text()
+pin = re.search(r"<Version>([^<]+)</Version>", props)
+check(pin is not None, "Version.props declares a <Version>", f"got {props!r}")
+if pin:
+    major = pin.group(1).split(".")[0]
+    check(major == version_text,
+          "edition pins the tool major",
+          f"skill/VERSION={version_text!r} but Version.props major={major!r} "
+          f"(<Version>{pin.group(1)}</Version>) - bump both in one commit")
+
 if failures:
     print(f"\n{len(failures)} check(s) FAILED")
     sys.exit(1)

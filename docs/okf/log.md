@@ -312,3 +312,30 @@ rename — 65 ok / 0 FAIL — and then re-run with a PERMISSIVE arm, which is wh
 number is worth: 44 of the 65 stay green under a hook that only ever allows.
 `plugin/hooks/hooks.json` is NOT rewritten here; it moves to T-13 with the five
 ruler assertions whose subject it removes.
+
+## 2026-09-04 — BL-082 T-12: the release path, and a budget that turned out not to be tight
+
+Edition 26 is assigned (not reserved) and pinned in two places that can no longer
+move apart: `skill/VERSION` and `src/Legislator.Cli/Version.props`, held together
+by a `check_static.py` check written before either number changed.
+
+The publish path learned what the toolchain would only say when asked:
+`Cross-OS native compilation is not supported`. So `tools/publish-legislator.sh`
+publishes the host's RID and refuses the rest by name before reaching the SDK,
+`.github/workflows/dotnet.yml` carries the four-RID matrix, and `artifacts/`
+enters the codebase map as a declared generation target holding the binaries and
+the `SHA256SUMS` the integrity check compares against.
+
+`legislator version --json` answers version, rid and the sha256 of the RUNNING
+executable — the digest taken by the binary itself rather than of a path a caller
+names, because a path holds whatever lies there now. `ArmIntegrityCheck` is the
+mechanism that judges those three facts; it is not yet a numbered audit check,
+the check set being law both arms must spell identically (the T-10 precedent), so
+its slug arrives in T-13 as 19 — v25 having taken 18 for `tracker-drift`.
+
+The startup budget was measured rather than assumed: **median 3.3 ms over twenty
+runs against a 50 ms budget**, which closes the open question about the port's
+growth. The artifact went 3 445 624 → 5 158 216 bytes across the port and costs
+nothing measurable at start; NativeAOT's price is image size, paid once on disk,
+and a hook pays per invocation.
+

@@ -1,10 +1,12 @@
 <Project>
   <PropertyGroup>
     <!-- The edition pins the tool version here; `legislator version` prints it back (R-8214, C-12).
-         0.0.0 is the un-assigned pin: edition numbers are assigned at merge, never reserved
-         (roadmap ruling at the v25 merge, ed5c069). Task 12 sets the number that is free then,
-         and the static check holds `skill/VERSION` == this major from that commit on. -->
-    <Version>0.0.0</Version>
+         Assigned 2026-09-04 from freshly-fetched master, whose highest benchmark was v25 and
+         whose VERSION was 25: 26 is the number that was free. Edition numbers are assigned at
+         merge and never reserved (roadmap ruling at the v25 merge, ed5c069) - BL-082's own
+         earlier claim on 25 is what taught the rule. `evals/check_static.py` holds
+         `skill/VERSION` == this major from this commit on, so the two cannot move apart. -->
+    <Version>26.0.0</Version>
     <!-- Without this the informational version carries a +<sha> suffix and stops being the pinned number. -->
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>

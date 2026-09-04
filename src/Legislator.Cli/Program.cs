@@ -60,7 +60,7 @@ public static class Program
         {
             return command switch
             {
-                "version" => Version(stdout),
+                "version" => VersionCommand.Run(rest, stdout) ?? Usage(stderr, jobs, hooks, null),
                 "config" => Config(rest, fs, env, stdout, stderr, jobs, hooks),
                 "hook" => HookCommand.Run(rest, hooks, stdin, fs, env, proc, () => Compose(fs, env, env.CurrentDirectory), stderr)
                     ?? Usage(stderr, jobs, hooks, rest.Count == 0 ? null : $"unknown hook: {rest[0]}"),
@@ -77,13 +77,6 @@ public static class Program
             return Fault(stderr, $"engine failed: {ex.GetType().Name}: {ex.Message}", EngineFailure);
         }
 #pragma warning restore CA1031
-    }
-
-    private static int Version(TextWriter stdout)
-    {
-        var version = typeof(Program).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>();
-        stdout.Write($"{version?.InformationalVersion}\n");
-        return Clean;
     }
 
     private static int Config(

@@ -1,0 +1,61 @@
+# BL-082 (R-8203, C-12): the release matrix.
+#
+# NativeAOT does not cross-compile between operating systems, so three of the edition's four
+# RIDs have no builder anywhere else: `tools/publish-legislator.sh` publishes the host's RID
+# and refuses the rest by name. This workflow is therefore part of the edition rather than
+# incidental configuration, and `evals/check_static.py` holds it to naming every released RID
+# and building under the same strict discipline as the local gate (operator ruling 2026-09-04).
+name: dotnet
+
+on:
+  push:
+    branches: [master]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  matrix:
+    name: ${{ matrix.rid }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest,  rid: linux-x64 }
+          - { os: windows-latest, rid: win-x64 }
+          - { os: macos-13,       rid: osx-x64 }
+          - { os: macos-latest,   rid: osx-arm64 }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Build strict
+        run: dotnet build src -warnaserror --nologo
+
+      # The startup budget is a property of the reference machine, not of a shared runner
+      # whose wall time says nothing about a developer's laptop - so it is skipped here and
+      # measured locally. The variable stays outside the LEGISLATOR_* namespace, which the
+      # binary reads as option keys and refuses by name (R-8210).
+      - name: Test
+        env:
+          STARTUP_BUDGET_SKIP: '1'
+        run: dotnet test src
+
+      - name: Publish ${{ matrix.rid }}
+        shell: bash
+        run: tools/publish-legislator.sh ${{ matrix.rid }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: legislator-${{ matrix.rid }}
+          path: |
+            artifacts/${{ matrix.rid }}/legislator
+            artifacts/${{ matrix.rid }}/legislator.exe
+            artifacts/SHA256SUMS
+          if-no-files-found: error

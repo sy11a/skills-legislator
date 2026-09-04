@@ -19,4 +19,5 @@ One line per top-level directory. Keep this table in sync with the actual tree (
 | `plugin/` | The deterministic enforcement arms — `hooks/**` for Claude Code and `opencode/legislator-guard.ts` for opencode. |
 | `src/` | The .NET deterministic substrate (from v25, ADR-0008) — `Legislator.Core` (abstractions, the options model), `Legislator.Engine` (the jobs), `Legislator.Hooks`, `Legislator.Cli` (the host), and the build discipline declared once in `Directory.Build.props`. |
 | `tests/` | The .NET suite — one test project per production project plus `Legislator.Parity.Tests` (the twins of the Python rulers) and `Legislator.TestSupport` (the fakes every test project shares). |
+| `artifacts/` | Generated (git-ignored, `.gitignore`): the published NativeAOT binaries, one directory per RID, plus `SHA256SUMS` — the digests `tools/publish-legislator.sh` records and `legislator version --json` answers with. Do not edit; republish. |
 | `docs/` | This repo's own AI layer and records — the delivered law under `ai/`, the OKF bundle, `cases/`, `backlog.md`, `philosophy.md`, `ontology.md`, and `superpowers/` as retired history. |

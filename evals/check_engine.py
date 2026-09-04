@@ -42,6 +42,15 @@ def _engine_argv(program: Path | str, root: Path, *args: str,
     return argv
 
 
+def _bare_argv(*args: str) -> list[str]:
+    """Argv with nothing appended - the usage region asks what the process does when it is
+    given exactly this and no more, so `_engine_argv`'s implicit `--root` would change the
+    question from "no job" into "a --root and no job" (BL-082 T-12)."""
+    if ENGINE_CMD:
+        return [ENGINE_CMD, *args]
+    return [sys.executable, "docs/ai/engine.py", *args]
+
+
 failures: list[str] = []
 
 
@@ -158,11 +167,9 @@ check(code == 1 and "symbol-anchor: OnlyInDocs" in out,
 
 print("== usage ==")
 root = make_repo({"widgets.md": "# Widgets\n"}, {"src/App/A.cs": "class A {}\n"})
-r = subprocess.run([sys.executable, "docs/ai/engine.py", "nonsense"],
-                   cwd=root, capture_output=True, text=True)
+r = subprocess.run(_bare_argv("nonsense"), cwd=root, capture_output=True, text=True)
 check(r.returncode == 2, "an unknown job exits 2", f"exit={r.returncode}")
-r = subprocess.run([sys.executable, "docs/ai/engine.py"],
-                   cwd=root, capture_output=True, text=True)
+r = subprocess.run(_bare_argv(), cwd=root, capture_output=True, text=True)
 check(r.returncode == 2, "no job exits 2", f"exit={r.returncode}")
 
 print("== no OKF bundle ==")
