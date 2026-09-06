@@ -123,6 +123,15 @@ the core is proven. Everything below is ordered by dependency.
    text backlog, which becomes the lowest-priority home with a standing
    migration recommendation. Its follow-ups land on BL-082/BL-083; it
    may absorb BL-031.
+8. **Raised 2026-09-06 by Architector BL-008 (the release cycle):** BL-088
+   (the waterflow mode of `core/pair-development.md`, Architector ADR 0007)
+   and BL-089 (the `/autoflow` entry line of dev-flow BL-051 ruling 11).
+   Not on the edition track's critical path: Release 0 runs under the
+   current law with the operator merging into the release branch by hand
+   (Architector's `docs/cases/BL-008-release-cycle/release-0-protocol.md`
+   § 5); both ship in the first edition the owner cuts after v25. The third
+   ask of that case — legislating `sy11a/foundry` as a fleet member — was
+   done the same day from `master` (edition v25), no item needed.
 
 ## Edition plan (agreed 2026-08-22, after v17 closed at 177/177) — *superseded 2026-08-29 by "Agreed order after v24"; kept as history*
 
@@ -2818,3 +2827,21 @@ Originally: harness hardening, sized from the v23 cycle's two operator-induced i
 A master-agent that reviews an incoming request in a project and decides whether to route it to an existing project-local mini-agent (`.claude/agents/<name>.md`) or create a new fine-grained specialized one (task-appropriate model, scoped MCPs) is being built as its **own, separate skill** — not as part of Legislator. Rationale: Legislator is build-time scaffolding (runs occasionally, evolves via VERSION/manifest); request routing is a runtime concern with its own lifecycle. Folding both into one skill would blur SRP.
 
 Legislator has **no involvement** here — no convention hook, no `.claude/agents/` scaffold, nothing. The separate skill owns its own convention entirely: it injects whatever `.claude/agents/` setup it needs directly into a repo when applied, independent of Legislator. (An earlier version of Legislator scaffolded a placeholder `.claude/agents/README.md` via `agents-README.md.tpl` — that has been removed; scaffolding it was itself scope creep into the other skill's responsibility.)
+
+## BL-088 — Waterflow: a second mode of the development law (Architector ADR 0007)
+
+**Status: PROPOSED 2026-09-06** — raised by Architector's case BL-008 (`~/Repository/Architector/docs/adr/0007-waterflow-mode.md`, status *proposed* there because the ruling and the edition are this repository's). Behavioral change to `assets/rules/core/pair-development.md`: VERSION bump, full benchmark.
+
+**The ruling asked for.** For a solo developer the fleet's development law gains a **mode**, declared per repository in the entry document (or per release) — `pair` (today's text, the default) or `waterflow` — and three rules read by mode: *one task at a time* becomes one task per track with tracks in parallel; *never merge yourself* becomes never merge **master** yourself — the release kernel (foundry) merges into the release branch on the reviewer's and the gates' green; *no next task without approval* becomes per **release** — the plan approval and the release-contract approval are the approvals, and inside the release the decision policy rules. Ownership stays available on demand (the decision ledger, the diff, the acceptance verdicts); taste is still learned at the touchpoints. The concept the mode serves is `~/Repository/Architector/docs/okf/release-cycle.md`.
+
+**What lands here.** (1) `pair-development.md` with the mode table and the `pair` default, so a repository that declares nothing reads exactly as today; (2) the entry-document line that declares the mode (`AGENTS.md.tpl`, beside the `Task tracker:` line); (3) an audit check: a `waterflow` repository names its release-branch convention and its kernel, or the check fails; (4) the glossary rows *mode*, *waterflow*, *release branch*. dev-flow amends its own cornerstone and widens ADR-0011 in its own case (dev-flow BL-079); this repository does not edit a product's foundation.
+
+**Stop condition.** The edition ships; `sy11a/foundry` and `sy11a/dev-flow` declare `waterflow` in their entry documents on their own word; every other fleet repository still reads `pair` and its audit is unchanged. Depends on nothing on the edition track; lands in the first edition after v25 the owner cuts.
+
+## BL-089 — The `/autoflow` entry line: task entry is autoflow unless the operator names `/flow`
+
+**Status: PROPOSED 2026-09-06** — the fleet-law half of dev-flow BL-051 ruling 11 (`sy11a/dev-flow#47`, merged 2026-09-05), carried here by Architector BL-008 since dev-flow's item said "the skill in dev-flow first, then the legislator task" and the skill has shipped. Behavioral change to `assets/rules/core/skills.md` (or the stage map it generates): VERSION bump, full benchmark.
+
+**The line.** One sentence in the constitution: in a legislated repository the entry of a task is `/autoflow <KEY>` unless the operator names `/flow <KEY>`; and `autoflow` first in the flow-sessions class of the generated stage map, so `.claude/rules/skills.md` of every fleet repository lists it before `flow`. Nothing else: the two touchpoints, the decision policy and the caps are dev-flow's text (`~/Repository/dev-flow/skills/autoflow/SKILL.md`), never restated here — `tools/restated.py` in dev-flow is the reason.
+
+**Stop condition.** The edition ships; the stage map of a freshly legislated repository names `autoflow` first; the audit is silent on a repository whose `.claude/rules/skills.md` already lists it (Architector, dev-flow). Pairs naturally with BL-088 in one edition.
