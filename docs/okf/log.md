@@ -121,3 +121,14 @@ itself stays a companion's territory — the constitution never reads one,
 never names a vendor, and never migrates a repository. Answers the BL-085 and
 BL-087 spikes; the initiating case lives in the companion's repository
 (clerk BL-016).
+
+## 2026-09-06 — L-2: task entry defaults to `/autoflow`
+
+The glossary gains `task entry route` and `flow-sessions`, linking
+ADR-0009. `core/pair-development.md` states the default (`/autoflow` unless
+the operator names `/flow`, conditioned on the skill pair being installed);
+this repository's own `.claude/rules/skills.md` gains the `flow-sessions`
+class, `autoflow` first. The codebase map does not change. Initiating case:
+Architector's Release 0 kernel (`docs/cases/BL-008-release-cycle/`, epic
+E-5, story S-5.1); this repository's own case is
+`docs/cases/L-2-autoflow-entry-line/`.
