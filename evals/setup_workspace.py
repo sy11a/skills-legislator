@@ -267,6 +267,14 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
     # is about the manifest's version field, not about which files exist.
     (dest / "docs/ai").mkdir(parents=True, exist_ok=True)
 
+    # Defect 17 (check 19, v26) — a case-collision against an owned path: a
+    # hand-made copy of an owned rule whose name differs by case alone. Lawful
+    # on this file system; on a case-insensitive checkout the two are one file
+    # and the clone cannot be completed. Planted as a copy rather than a stub so
+    # no other check reads it as a stray rulebook or a broken document.
+    shutil.copy2(rules_dst / "core" / "verification.md",
+                 rules_dst / "core" / "Verification.md")
+
     # Defect 3 — owned-file drift: one appended line differs from source.
     with open(rules_dst / "core" / "okf.md", "a") as fh:
         fh.write("\n- Local tweak someone hand-added (drift!)\n")
@@ -523,6 +531,8 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
             "ArchivedInvoiceSweeper",        # defect 16c: the dead symbol named
             "tracker-drift]",                # defect 18a: pinned slug
             "BL-001",                        # defect 18b: the stray item named
+            "case-collisions]",              # defect 19a: pinned slug
+            "Verification.md",               # defect 19b: the colliding name
             "okf-sync-debt]",                # defect 17a: pinned slug
             "docs/okf/endpoints.md",         # defect 17b: the document named
             "dry-run mode before a real import",  # harvest: candidate quoted
@@ -552,6 +562,7 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
             "okf-anchors",              # importer.md names a dead path and symbol
             "okf-sync-debt",            # endpoints.md's source moved on 167 days later
             "tracker-drift",            # BL-001 left above the generated mirror marker
+            "case-collisions",          # Verification.md beside the owned verification.md
         ],
         # BL-025 item 2: Critical findings must sit under the Critical
         # severity heading, not merely appear somewhere in the report

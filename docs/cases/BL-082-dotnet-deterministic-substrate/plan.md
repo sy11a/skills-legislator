@@ -1077,3 +1077,31 @@ Grader rows follow the existing shape: the report names the slug and the
 offending path. Until this lands, `v26.md` states both checks as measured at the
 unit boundary only — a benchmark that let the meta-assert stay red without
 saying so would be the silent cap `core/artifact-lifecycle.md` forbids.
+
+#### T-14.1 — closed 2026-09-07, and it split in two
+
+**`case-collisions` got its defect.** The rotted fixture now plants
+`docs/ai/rules/core/Verification.md` beside the owned `verification.md` — a copy,
+not a stub, so no other check reads it as a stray document — with the pinned slug
+and the colliding name as report markers. Verified before it was believed: the
+arm was run against the fixture first and printed exactly one collision finding
+with every other slug's count unmoved, then the scenario was re-measured on the
+same model and came back **52/52 clean**, `parity_every_check_has_a_defect`
+included.
+
+**`arm-integrity` cannot be planted, and the grader now says so.** The probe that
+proved the collision also showed why: run from a shell without the binary, check
+20 answers *"`legislator` is not on this machine"*. Its subject is the machine and
+the edition's release record — neither lives in a repository fixture, so a
+fixture can no more plant a defect for it than it can uninstall a binary.
+`grade.py` carries `ENVIRONMENTAL = {"arm-integrity"}` with that reason and a
+pointer to its real coverage (`ArmIntegrityCheckTests`, six cases). The assert
+fails if the slug ever appears in `check_slugs_covered` while the exemption
+stands, so the declaration cannot quietly outlive the fact. This is the mechanical
+exclusion `core/artifact-lifecycle.md` requires of a class that yields no action —
+not a suppressed finding.
+
+**Also closed in the same pass, found while listing what was still broken:**
+`.github/workflows/dotnet.yml` ran `dotnet test src`, the command T-13.9 proved
+discovers nothing on this SDK. CI's test step now runs `sh evals/check_dotnet.sh`.
+

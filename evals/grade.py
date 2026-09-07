@@ -1149,10 +1149,23 @@ def grade_audit(ws: Path) -> Grader:
     # a planted defect exercising it, and vice versa. Derived check slugs
     # vs slug-markers in the fixture — a new check without its defect (or
     # an orphaned marker) is red at grade time, not discovered by rot.
+    # A check whose subject is the MACHINE and not the repository cannot be
+    # given a planted defect by a repository fixture, and pretending otherwise
+    # would mean a permanently red meta-assert nobody can act on - the class
+    # `core/artifact-lifecycle.md` says to exclude mechanically, by an explicit
+    # rule, never by mental filtering. Exactly one member today: check 20
+    # `arm-integrity` reads `legislator version --json` and the edition's
+    # release record, neither of which lives in a fixture. Its coverage is
+    # `ArmIntegrityCheckTests` (six cases: match, version mismatch, unreleased
+    # rid, unusable answer, absent binary, unreleased digest). Naming it here
+    # is the declaration; the assert below fails if someone plants a defect for
+    # it and leaves the exemption standing, so the two cannot drift apart.
+    ENVIRONMENTAL = {"arm-integrity"}
     law_slugs = audit_check_slugs()
     covered = set(meta.get("check_slugs_covered", []))
-    uncovered = law_slugs - covered
-    orphaned = covered - law_slugs
+    uncovered = law_slugs - covered - ENVIRONMENTAL
+    stale_exemption = ENVIRONMENTAL & covered
+    orphaned = (covered - law_slugs) | stale_exemption
     parity_ok = bool(law_slugs) and not uncovered and not orphaned
     g.check("parity_every_check_has_a_defect", parity_ok,
             f"all {len(law_slugs)} law checks exercised by a planted defect" if parity_ok

@@ -23,6 +23,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- **CI runs the .NET suite through `evals/check_dotnet.sh`** (BL-082 T-14.1) —
+  its test step called `dotnet test src`, which discovers nothing on this SDK.
+- **The audit corpus covers the two checks v26 added** (BL-082 T-14.1): the
+  rotted fixture plants a case-collision against an owned rule, and
+  `arm-integrity` is declared environment-relative in the grader with its
+  reason — its subject is the machine, which no repository fixture can plant.
 - **The eval runner puts the arm on the scenario agent's `PATH`** (BL-082 T-14)
   and `setup_workspace.py` stops copying a Python engine into two fixtures.
   From v26 the law names a binary; a harness that does not put it in front of
