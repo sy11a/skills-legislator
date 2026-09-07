@@ -39,7 +39,7 @@ The engine ruler was re-measured on the same binary and is unmoved: 142 ok / 0 F
 ========================================================================
 ARM = artifacts/linux-x64/legislator
 
-arm: /home/admin/Repository/custom_skills/legislator/artifacts/linux-x64/legislator
+arm: <repo>/artifacts/linux-x64/legislator
 == guard_owned_files.py ==
   ok    owned rule file in legislated repo blocked (exit 2)
   ok    block message mentions machine-managed law
