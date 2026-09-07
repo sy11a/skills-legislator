@@ -8,6 +8,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Removed
 
+- **The `audit-engine-absent` eval scenario** (BL-082 T-13.10, owner's ruling).
+  It falsified check 15's *"bundle present, engine absent → Info"* branch, which
+  the retirement above deletes. `evals.json` carries 9 entries and the graded
+  scenario set is 8 directories. The obligation itself
+  survives at the unit boundary (`ArmIntegrityCheckTests`, plus `check_static.py`
+  asserting that checks 15 and 17 state the absent-arm branch); what is no longer
+  measured end-to-end is whether a model audits honestly on a machine with no arm.
 - **The Python arm** (BL-082 T-13). `skill/assets/engine/engine.py` and the four
   `plugin/hooks/*.py` scripts are gone; `plugin/hooks/hooks.json` names the
   binary. A repository that still carries `docs/ai/engine.py` from an earlier

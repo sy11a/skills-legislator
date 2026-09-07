@@ -1021,3 +1021,31 @@ published binary, else a loud stop), its two emitter stamps name `legislator`,
 the report re-print and `delivered_engine_sdd_lint_clean` drive the binary, and
 the owned map no longer offers an engine source; `tools/evals-bg.sh` exports
 both parity commands from the published arm and refuses to start without one.
+
+#### T-13.10 — ruled 2026-09-07, option (b): the scenario is retired
+
+The owner ruled (b). `audit-engine-absent` is gone from the corpus — its row in
+`evals/evals.json`, its fixture in `evals/setup_workspace.py`, its grader and
+dispatch arm in `evals/grade.py`, its mutation block in `evals/mutations.py`,
+its name in `evals/mutate.py`, and the two report-path arms in
+`tools/evals-bg.sh`. **`evals.json` carries 9 entries where it carried 10, and the graded
+scenario set falls from 9 directories to 8** (`idempotency` is an entry with no
+directory of its own); T-14's benchmark is read against those numbers; the v21–v25 records keep the scenario because they
+recorded what was true then (`core/artifact-lifecycle.md`: completed lifecycle
+artifacts are history).
+
+**What still falsifies the obligation, stated so the loss is visible rather than
+assumed.** Two assertions at the unit boundary, neither of them end-to-end:
+
+- `ArmIntegrityCheckTests.Given_no_binary_on_the_path_When_audited_Then_the_absence_is_the_finding`
+  — an arm that is not on the machine is a finding, never a silent pass.
+- `check_static.py`'s four BL-051 assertions — checks 15 and 17 *state* the
+  absent-arm branch and the non-clean exit. That is the law text asserted, not
+  the behaviour of an agent facing a machine without the arm.
+
+**What is no longer measured:** whether a model performing the audit by hand, on
+a machine with no `legislator`, actually writes the Info line instead of
+reporting the check clean. That was the scenario's whole subject and no unit
+test can reach it — it needs a harness that can run one scenario with the arm
+off PATH. Recorded here as a known gap rather than left to be discovered in a
+later edition's benchmark diff.
