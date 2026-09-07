@@ -3,7 +3,7 @@ type: System
 title: Legislator — Codebase Map
 description: Top-level directory map — where things live in this repo.
 tags: [system, architecture, map]
-timestamp: 2026-08-24T00:00:00Z
+timestamp: 2026-09-07T00:00:00Z
 status: implemented
 ---
 
@@ -13,10 +13,10 @@ One line per top-level directory. Keep this table in sync with the actual tree (
 
 | Directory | What lives there |
 |-----------|------------------|
-| `skill/` | The shipped package — `SKILL.md`, `assets/rules/**` (the law's only source), `assets/templates/**`, `assets/engine/`, `references/**`, `VERSION`. Symlinked into `~/.claude/skills/legislator`. |
+| `skill/` | The shipped package — `SKILL.md`, `assets/rules/**` (the law's only source), `assets/templates/**`, `assets/release/` (the edition's released digests, read by audit check 20), `references/**`, `VERSION`. Ships no executable since v26: the arm is the installed binary, not a delivered file. Symlinked into `~/.claude/skills/legislator`. |
 | `evals/` | The regression suite — `POLICY.md` (the bar), `evals.json`, fixtures, `grade.py`, `setup_workspace.py`, the four static checks, `check_dotnet.sh` and `parity_labels.py` (the port's instruments), and the per-edition benchmark records. |
 | `tools/` | Operator scripts — `fleet.sh` (discover and upgrade legislated repos), `evals-bg.sh` (the staged eval runner), and the skill/plugin linkers. |
-| `plugin/` | The deterministic enforcement arms — `hooks/**` for Claude Code and `opencode/legislator-guard.ts` for opencode. |
+| `plugin/` | The enforcement arms' registration — `hooks/hooks.json`, which names `legislator hook <name>` for Claude Code (the hooks themselves are `src/Legislator.Hooks`, in the binary, since v26), and `opencode/legislator-guard.ts`, still the port that runs inside opencode. |
 | `src/` | The .NET deterministic substrate (from v25, ADR-0008) — `Legislator.Core` (abstractions, the options model), `Legislator.Engine` (the jobs), `Legislator.Hooks`, `Legislator.Cli` (the host), and the build discipline declared once in `Directory.Build.props`. |
 | `tests/` | The .NET suite — one test project per production project plus `Legislator.Parity.Tests` (the twins of the Python rulers) and `Legislator.TestSupport` (the fakes every test project shares). |
 | `artifacts/` | Generated (git-ignored, `.gitignore`): the published NativeAOT binaries, one directory per RID, plus `SHA256SUMS` — the digests `tools/publish-legislator.sh` records and `legislator version --json` answers with. Do not edit; republish. |

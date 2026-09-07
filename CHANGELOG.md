@@ -23,6 +23,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- **README documents the arm's install path** (BL-082 T-14) — publish with
+  `tools/publish-legislator.sh`, install with `tools/install-legislator.sh`,
+  verify with `legislator version --json`; the release runbook gains the digest
+  recording that audit check 20 reads, and the Windows copy is named as manual.
 - **The law names one command per job** (BL-082 T-13). Every rule sentence that
   spelled `python3 docs/ai/engine.py <job>` now spells `legislator <job>` — the
   static rung in `core/verification.md`, the executing-arm bullets in

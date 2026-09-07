@@ -211,6 +211,23 @@ after every scenario, desktop notifications (`notify-send`) on scenario
 and run boundaries, and `queue.json` + `status.md` as the machine-readable
 contract — the interactive session polls a file, never a process.
 
+**The arm the run measures (v26, BL-082 T-13.5).** The rulers and the grader
+drive the deterministic binary, not an interpreter: `evals-bg.sh` resolves it
+from `PARITY_ENGINE_CMD` or, failing that, `artifacts/linux-x64/legislator`,
+exports it as **both** `PARITY_ENGINE_CMD` and `PARITY_HOOK_CMD`, and refuses
+to start when there is none — an absent arm stops the run at the top rather
+than reading as a corpus of failures three stages later. Publish one first with
+`sh tools/publish-legislator.sh`. The same two variables are what
+`check_engine.py` and `check_hooks.py` require when run by hand; `grade.py`
+falls back to the published binary so a hand-run grade needs no environment.
+
+**The .NET gate (v26).** `sh evals/check_dotnet.sh` builds strict, runs every
+test project's Microsoft.Testing.Platform binary directly and publishes the AOT
+smoke. It does **not** use `dotnet test`: on SDK 10.0.106 with the xunit MTP
+adapter that command discovers nothing — "Zero tests ran", exit 5, per project
+— so the gate names its modules and treats a zero-test module as a failure.
+A gate that reports nothing is worse than one that fails.
+
 **One instrument at a time (BL-073).** The runner and `mutate.py` both
 take `<ws>/.lock` for their whole lifetime; a second instrument against a
 live workspace refuses before writing a byte, naming the holder

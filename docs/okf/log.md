@@ -367,3 +367,23 @@ tree, so `evals/check_dotnet.sh` now runs each module's binary directly and
 treats a zero-test module as a named failure. The suite is 656 tests and was
 19 red at the start of the pass.
 
+## 2026-09-07 — BL-082 T-14: the bundle stops describing a Python arm
+
+The documentation half of T-14, written before the benchmark rather than after
+it, so the corpus runs against a bundle that already says what the edition is.
+`codebase-map.md`: the package row loses `assets/engine/` and gains
+`assets/release/`, and the plugin row now says what `plugin/` still is — a
+registration file naming `legislator hook <name>`, plus the opencode port,
+which remains a real second implementation. `index.md`'s stack sentence puts
+C# first and names Python as an instrument that ships in no edition.
+`glossary.md` gains `arm integrity` and `startup budget`, the two terms the
+edition coined that a reader meets in the audit and in the case's numbers.
+
+`.claude/rules/dotnet-substrate.md` now ends each bullet with what enforces it,
+and says "a person" where that is the truth — the logic-versus-wiring rule and
+the red-first discipline have no mechanical check, and a rule that pretends
+otherwise is worse than one that admits it. README gains the arm's install path
+(publish, install, `version --json`) and the runbook gains the digest recording
+that audit check 20 reads; `evals/README.md` gains the two parity variables and
+the reason `check_dotnet.sh` does not call `dotnet test`.
+
