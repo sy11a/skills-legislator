@@ -2828,7 +2828,11 @@ the unattended route (`/autoflow`) unless the operator names `/flow`,
 conditioned on that skill pair being installed. This repository's own
 `.claude/rules/skills.md` gains a `flow-sessions` class naming `autoflow`
 first, since the skill is installed here and has been running daily since
-2026-09-05. No `skill/VERSION` bump taken in this task — proposed in the
+2026-09-05. The generated stage map is pinned to the same shape on the same
+branch: the `{{SANCTIONED_SKILLS_BY_STAGE}}` derivation in `skill/SKILL.md`
+carries the `flow-sessions` affinity (`autoflow` first), so fresh
+legislated repositories emit the class wherever the skill is installed. No
+`skill/VERSION` bump taken in this task — proposed in the
 pull request per DP-1, since an edition's number is the operator's plan
 (editions are assigned at merge, never reserved).
 

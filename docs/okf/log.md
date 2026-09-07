@@ -132,3 +132,14 @@ class, `autoflow` first. The codebase map does not change. Initiating case:
 Architector's Release 0 kernel (`docs/cases/BL-008-release-cycle/`, epic
 E-5, story S-5.1); this repository's own case is
 `docs/cases/L-2-autoflow-entry-line/`.
+
+## 2026-09-07 — L-2: the generated stage map pins `flow-sessions`
+
+The `flow-sessions` glossary row names its second home: the
+`{{SANCTIONED_SKILLS_BY_STAGE}}` derivation bullet in `skill/SKILL.md` pins
+`flow-sessions` — `autoflow` — as the first stage affinity, so a fresh
+legislated repository's generated `.claude/rules/skills.md` emits the class
+wherever the skill is installed. ADR-0009's decision 2 records the
+generated half beside the instance half; `skills-rules.md.tpl` needed no
+change (it interpolates the derived list verbatim). Case
+`docs/cases/L-2-autoflow-entry-line/`.

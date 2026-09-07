@@ -37,7 +37,15 @@ the pair is absent.
    `core/project-rules.md`, `.claude/rules/skills.md` is instance data
    (created once, edited directly per repository, never machine-regenerated
    on every run) — this is a direct edit of that home, not a change to the
-   delivered law stratum.
+   delivered law stratum. Ruling 11's "generated stage map" half is paid
+   here too: the `{{SANCTIONED_SKILLS_BY_STAGE}}` derivation bullet in
+   `skill/SKILL.md` pins `flow-sessions` — `autoflow` (task entry;
+   unattended default per `core/pair-development.md`) — as the first stage
+   affinity, so a fresh legislated repository's generated
+   `.claude/rules/skills.md` emits the `flow-sessions` class wherever
+   `autoflow` is installed (include-only-when-installed, like every pinned
+   affinity). The committed decision covered only the instance half; this
+   sentence completes the pair.
 3. **No `skill/VERSION` bump in this task.** `constitution-source.md` ties a
    `skill/assets/rules/**` edit to a version bump, but naming an edition is
    the operator's plan (editions are assigned at merge, never reserved —
