@@ -1210,3 +1210,42 @@ reaches a user who never opens this repository: a fleet member on a machine
 without the arm gets `sh: legislator: command not found` on every `Edit`,
 `Write`, `Bash` and `Stop` from the moment v26 lands. Waiting on the operator's
 ruling.
+
+#### Converge pass 2 — F-1 closed on option (a), and the case converges
+
+The operator ruled **(a)**. `plugin/hooks/hooks.json` now carries
+`command -v legislator >/dev/null 2>&1 || exit 0; exec legislator hook <name>`
+on all four registrations (`format_on_edit` keeps its `timeout: 10`), and both
+requirement texts moved with it: R-8215's *"one warning"* is now *"silently —
+exit 0, nothing on stderr"*, and R-8208's *"never an interpreter"* is now *"the
+hook lives in the binary and in no interpreter, behind a shell guard"*. The
+clarification is written into the spec's `## Clarifications`, the reasoning into
+**ADR-0011**, and the old text is replaced rather than duplicated.
+
+Red first, as the law requires and as the finding deserved. The new ruler
+assertion was shown red against the unchanged `hooks.json`:
+
+```
+FAIL  hooks.json's guard fails open and silent with no arm on PATH per R-8215
+      — exit=127 stderr='sh: line 1: legislator: command not found\n'
+```
+
+and four shape assertions with it. Its .NET twin drives the same command line as
+a real process through a `PATH` holding a shell and no arm — the property lives
+in the command line, not in a hook this suite can call in-process. A broken pipe
+on stdin is caught and treated as the property working: the guard gave up before
+reading, which is the point.
+
+**No benchmark re-run.** `.claude/rules/evals.md` scopes the e2e requirement to
+edits under `skill/`; this change touches `plugin/`, `evals/` and `tests/`, and
+`grep -rn 'legislator hook' skill/` is empty — the package never named the
+command shape. The four static gates and the full .NET suite are the boundary
+this change has, and they are green.
+
+**Verdict: ✅ Converged.** Every R-line judged against the tree rather than the
+diff, HC-8201 executed, three findings raised and three closed — two in pass 1
+(ADR-0010, `docs/ontology.md`), one here. What remains unmeasured is stated in
+`evals/benchmarks/v26.md` and owed to no promise this case made: the absent-arm
+branch of checks 15/17/20 end to end, and the frozen opencode profile.
+
+Per the plan's own Step 3, BL-077's plan takes over on this branch from here.

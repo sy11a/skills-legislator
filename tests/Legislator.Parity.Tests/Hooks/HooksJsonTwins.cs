@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Xunit;
@@ -102,14 +103,18 @@ public sealed class HooksJsonTwins
     }
 
     [Fact]
-    [Parity("hooks", "{} command names the legislator binary per R-8208")]
-    public void Every_command_names_the_legislator_binary()
+    [Parity("hooks", "{} command runs the binary behind a PATH guard per R-8208")]
+    public void Every_command_runs_the_binary_behind_a_path_guard()
     {
+        // R-8208, amended 2026-09-08 (ADR-0011): the binary carries the hook and no
+        // interpreter does, but the command line is a shell guard first - a machine
+        // without the arm exits 0 in silence instead of printing `command not found`
+        // on every tool call (R-8215).
         foreach (var (name, command) in Commands())
         {
-            var words = command.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            Assert.True(words is ["legislator", "hook", _],
-                        $"{name} command is '{command}', not `legislator hook <name>`");
+            Assert.DoesNotContain(".py", command, StringComparison.Ordinal);
+            Assert.Contains("command -v legislator", command, StringComparison.Ordinal);
+            Assert.Contains("exec legislator hook ", command, StringComparison.Ordinal);
         }
     }
 
@@ -119,12 +124,13 @@ public sealed class HooksJsonTwins
     {
         foreach (var (name, command) in Commands())
         {
-            var words = command.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            if (words is not ["legislator", "hook", var hook])
+            var at = command.IndexOf("exec legislator hook ", StringComparison.Ordinal);
+            if (at < 0)
             {
                 continue;
             }
 
+            var hook = command[(at + "exec legislator hook ".Length)..].Split(' ')[0];
             Assert.True(KnownHooks.Contains(hook, StringComparer.Ordinal),
                         $"{name} names '{hook}', which the binary does not answer to");
         }
@@ -167,5 +173,65 @@ public sealed class HooksJsonTwins
 
         Assert.True(blocked.Exit == 2 && allowed.Exit == 0,
                     $"owned edit exited {blocked.Exit} (want 2), ordinary edit exited {allowed.Exit} (want 0)");
+    }
+
+    /// <summary>Where a POSIX shell is looked for, in order.</summary>
+    private static readonly string[] PosixShells = ["/bin/sh", "/usr/bin/sh"];
+
+    /// <summary>
+    /// R-8215 (ADR-0011): on a machine that has no arm the hook gives up quietly - exit 0 and
+    /// nothing on stderr - so a legislated repository the edition reaches before the install
+    /// loses neither its turn nor its output. Driven as a real process through a PATH that holds
+    /// `sh` and nothing else, because the property belongs to the command line hooks.json
+    /// carries and not to any hook this suite can call in-process.
+    /// </summary>
+    [Fact]
+    [Parity("hooks", "hooks.json's guard fails open and silent with no arm on PATH per R-8215")]
+    public void The_registered_guard_fails_open_and_silent_with_no_arm()
+    {
+        var registered = Commands()
+            .FirstOrDefault(c => c.Command.Contains("guard_owned_files", StringComparison.Ordinal));
+        Assert.False(registered.Command is null or "", "no PreToolUse command registers the owned-file guard");
+
+        var shell = PosixShells.FirstOrDefault(File.Exists);
+        Assert.False(shell is null, "no POSIX shell on this machine to drive the command line with");
+
+        var dir = Directory.CreateTempSubdirectory("legislator-noarm-");
+        try
+        {
+            File.CreateSymbolicLink(Path.Combine(dir.FullName, "sh"), shell!);
+
+            var psi = new ProcessStartInfo(shell!)
+            {
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+            };
+            psi.ArgumentList.Add("-c");
+            psi.ArgumentList.Add(registered.Command);
+            psi.Environment.Clear();
+            psi.Environment["PATH"] = dir.FullName;
+
+            using var proc = Process.Start(psi)!;
+            try
+            {
+                proc.StandardInput.Write("{\"tool_name\":\"Edit\",\"tool_input\":{\"file_path\":\"/tmp/x.md\"}}");
+                proc.StandardInput.Close();
+            }
+            catch (IOException)
+            {
+                // The guard gave up before reading stdin, which is the property under test:
+                // a broken pipe here is the fail-open path working, not a failure of it.
+            }
+            var err = proc.StandardError.ReadToEnd();
+            proc.WaitForExit(15_000);
+
+            Assert.True(proc.ExitCode == 0 && err.Length == 0,
+                        $"exit={proc.ExitCode}, stderr={err}");
+        }
+        finally
+        {
+            dir.Delete(recursive: true);
+        }
     }
 }

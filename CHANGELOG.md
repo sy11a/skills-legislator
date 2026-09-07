@@ -23,6 +23,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- **The hooks fail open silently when the arm is absent** (BL-082, ADR-0011).
+  `hooks.json` runs `command -v legislator >/dev/null 2>&1 || exit 0; exec
+  legislator hook <name>`: a machine that has not installed the binary gets
+  exit 0 and no output instead of `command not found` on every tool call. Up to
+  v25 the Python launcher had this property by accident; v26's first form lost
+  it. Audit check 20 is where an absent arm is said out loud — once per audit,
+  not once per keystroke.
 - **The mutation manifest follows the renamed emitter stamp** (BL-082 T-14).
   Six asserts about `Emitted by …` were unfalsifiable: `grade.py` moved to the
   binary's stamp in T-13 and `evals/mutations.py` did not, so the mutation

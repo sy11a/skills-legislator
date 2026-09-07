@@ -13,7 +13,25 @@ not exist at branch start.
 **Spec type: feature.** Edition branch `bl/082-dotnet-deterministic-substrate`
 (one MR per version; BL-077's work lands on this branch once the
 substrate stands — the two cases share edition v25). Sources: the
-2026-08-29 requirements session (this file's `## Clarifications`),
+2026-08-29 requirements session (this file's `## Clarifications
+
+### Session 2026-09-08 (converge, F-1)
+
+**Q — R-8215 promises the hooks "fail open with one warning" while the arm is
+absent. The delivered `hooks.json` runs `legislator hook <name>` bare, which on
+such a machine answers `sh: legislator: command not found`, exit 127, on every
+tool call. Restore a guard and make it silent, keep the bare command and rewrite
+the requirement to match the harness, or warn once per session?**
+
+A — Restore the guard (option a). `hooks.json` carries
+`command -v legislator >/dev/null 2>&1 || exit 0; exec legislator hook <name>`:
+absent arm, exit 0, nothing printed. R-8215's "one warning" becomes
+"silently" — a per-invocation warning is precisely the thing being removed, and
+"once per session" needs state a hook has no home for. R-8208's "never an
+interpreter" is amended in the same breath: the sentence exists to keep the hook
+*logic* out of an interpreter, which the guard does not touch — it resolves a
+name and execs the binary. Recorded as ADR-0011; both requirement texts above
+are replaced rather than duplicated.`),
 ADR-0005 (end state, amended by ADR-0008), ADR-0007 §6 (default
 deterministic), BL-068 (portability audit), BL-069 (dependency register
 and adoption policy), BL-070 (the measured behaviour contract), BL-072
@@ -106,8 +124,10 @@ to the law's content beyond the command names.
   named by law.
 - **R-8208** — The four Claude Code hooks SHALL run as `legislator hook
   <name>` reading the hook JSON on stdin and returning the exit codes
-  `check_hooks.py` specifies; `hooks.json` SHALL name the binary, never
-  an interpreter.
+  `check_hooks.py` specifies; `hooks.json` SHALL carry the hook in the
+  binary and in no interpreter, behind a shell guard that resolves the
+  arm on `PATH` and gives up when it is absent (amended 2026-09-08,
+  ADR-0011).
 
 ### Configuration
 
@@ -136,8 +156,9 @@ to the law's content beyond the command names.
   and the per-platform release checksum against the values recorded at
   tag time, as ADR-0005 specifies.
 - **R-8215** — WHILE the binary is absent on a machine, the Claude Code
-  hooks SHALL fail open with one warning and verification jobs SHALL
-  fail loud (the BL-069 absence policy).
+  hooks SHALL fail open silently — exit 0, nothing on stderr — and
+  verification jobs SHALL fail loud (the BL-069 absence policy; amended
+  2026-09-08, ADR-0011).
 
 ### Discipline
 

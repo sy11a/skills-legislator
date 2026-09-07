@@ -1,5 +1,5 @@
 {
-  "description": "legislator-hooks — write-guard on owned law, git conduct guard, format-on-edit, OKF-sync reminder",
+  "description": "legislator-hooks \u2014 write-guard on owned law, git conduct guard, format-on-edit, OKF-sync reminder",
   "hooks": {
     "PreToolUse": [
       {
@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "legislator hook guard_owned_files"
+            "command": "command -v legislator >/dev/null 2>&1 || exit 0; exec legislator hook guard_owned_files"
           }
         ]
       },
@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "legislator hook guard_git_conduct"
+            "command": "command -v legislator >/dev/null 2>&1 || exit 0; exec legislator hook guard_git_conduct"
           }
         ]
       }
@@ -27,7 +27,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "legislator hook format_on_edit",
+            "command": "command -v legislator >/dev/null 2>&1 || exit 0; exec legislator hook format_on_edit",
             "timeout": 10
           }
         ]
@@ -38,7 +38,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "legislator hook okf_sync_check"
+            "command": "command -v legislator >/dev/null 2>&1 || exit 0; exec legislator hook okf_sync_check"
           }
         ]
       }

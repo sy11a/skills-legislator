@@ -515,14 +515,23 @@ for event_name, entries in events.items():
             # words, no interpreter, no shim, no path into the package. The
             # shape is asserted before the name because a command that is not
             # this form carries no name to ask about.
-            words = command.split()
-            named = words[:2] == ["legislator", "hook"] and len(words) == 3
-            check(named, f"{event_name} command names the legislator binary per R-8208",
+            # per R-8208 (amended 2026-09-08): the command runs the BINARY -
+            # no interpreter carries the hook - behind a PATH guard that exits
+            # 0 when the arm is not installed, so a machine without it loses
+            # neither the turn nor the quiet (R-8215). The shape is asserted
+            # before the name because a command that is not this form carries
+            # no name to ask about.
+            named = ("legislator hook " in command
+                     and ".py" not in command
+                     and "exec legislator hook " in command
+                     and "command -v legislator" in command)
+            check(named, f"{event_name} command runs the binary behind a PATH guard per R-8208",
                   f"command={command!r}")
             if named:
-                check(words[2] in KNOWN_HOOKS,
+                hook_name = command.split("exec legislator hook ", 1)[1].split()[0]
+                check(hook_name in KNOWN_HOOKS,
                       f"{event_name} command names a known hook per C-11",
-                      f"{words[2]!r} is not one of {sorted(KNOWN_HOOKS)}")
+                      f"{hook_name!r} is not one of {sorted(KNOWN_HOOKS)}")
 
 
 
@@ -566,6 +575,23 @@ with tempfile.TemporaryDirectory() as tmp:
             input=json.dumps(edit_payload(str(target))),
             capture_output=True, text=True, timeout=15,
             env={"PATH": str(binroot)}).returncode
+
+    # R-8215: on a machine without the arm the hook gives up quietly - exit 0,
+    # nothing on stderr - so an uninstalled fleet member loses neither its turn
+    # nor its output. Measured through a PATH that holds `sh` and no arm, which
+    # is the state of every repository the edition reaches before install.
+    if guard_entry is not None:
+        shonly = Path(tmp) / "shonly"
+        shonly.mkdir()
+        _os.symlink(shutil.which("sh"), shonly / "sh")
+        absent = subprocess.run(
+            ["sh", "-c", guard_entry],
+            input=json.dumps(edit_payload(str(rule))),
+            capture_output=True, text=True, timeout=15,
+            env={"PATH": str(shonly)})
+        check(absent.returncode == 0 and absent.stderr == "",
+              "hooks.json's guard fails open and silent with no arm on PATH per R-8215",
+              f"exit={absent.returncode} stderr={absent.stderr[:120]!r}")
 
     if guard_entry is None:
         # A missing entry is a finding, never a crash: the ruler that dies here
