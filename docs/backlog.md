@@ -63,8 +63,9 @@ Gate 0/1 — that ordering is what makes the parallelism safe.
 ## Agreed order after v24 (revised 2026-08-29 evening) — the outer-only pivot on a .NET substrate
 
 **Out-of-order edition (2026-08-31): v25 is the tracker-slots edition.**
-BL-085's answer shipped ahead of the pair below — BL-082 is parked by the
-owner and BL-077 is built on it, while the slots block another product's
+BL-085's answer shipped ahead of the pair below — BL-082 was parked at the
+time (it is in progress since 2026-08-30, see item 2) and BL-077 is built on
+it, while the slots block another product's
 whole migration line (cross-repo case: clerk `docs/cases/BL-016-legislator-slots/`,
 its invariant "law before migration"). Edition numbers are assigned at merge,
 never reserved: the pair keeps its content and its order, not its number.
@@ -86,7 +87,15 @@ the core is proven. Everything below is ordered by dependency.
    of path literals, `@import` expansion in the adapters. Tracked here as
    **BL-080**; a generated registry lands on an unpatched fleet-obs and
    takes it down.
-2. **The edition after v25 — BL-082 + BL-077** *(BL-082 parked 2026-08-29: the owner executes it with the dev-flow approach; agents do not start it)*: step zero is the substrate
+2. **The edition after v25 — BL-082 + BL-077** *(BL-082 IN PROGRESS since
+   2026-08-30 — the park of 2026-08-29 ended when the owner took the case up
+   himself under dev-flow, which is what the park was for; he executes it,
+   agents do not start or continue it. Branch `bl/082-dotnet-deterministic-substrate`,
+   pushed 2026-09-07: T-01…T-12 delivered in 19 commits, T-13 in flight on the
+   off-branch snapshot `wip/bl-082-t13-snapshot` (deliberately red), T-14 —
+   docs, benchmark, converge — remaining. The edition number this ships under
+   is unassigned: the branch carries `skill/VERSION` 26 as a working value,
+   and numbers are assigned at merge)*: step zero is the substrate
    (BL-082, absorbing BL-072): the `src/` solution, the engine port as
    pilot red-first against `check_engine.py`, the hooks port, the options
    model with its four layers and `config show`, the machine install and
@@ -129,7 +138,13 @@ the core is proven. Everything below is ordered by dependency.
    Not on the edition track's critical path: Release 0 runs under the
    current law with the operator merging into the release branch by hand
    (Architector's `docs/cases/BL-008-release-cycle/release-0-protocol.md`
-   § 5); both ship in the first edition the owner cuts after v25. The third
+   § 5); both ship in the first edition the owner cuts after v25. **Track-E
+   ordering ruled by the owner 2026-09-07: BL-088 (Release-0 key `L-1`) waits
+   for BL-082's merge** — it adds an audit check, and a check written against
+   the Python engine would land in a repository whose engine BL-082's T-13
+   removes; run after the substrate, it is written against the arm that will
+   exist. BL-089's law half is already delivered (`L-2`, PR #41, merged
+   2026-09-07). The third
    ask of that case — legislating `sy11a/foundry` as a fleet member — was
    done the same day from `master` (edition v25), no item needed.
 
@@ -2878,13 +2893,15 @@ Legislator has **no involvement** here — no convention hook, no `.claude/agent
 
 ## BL-088 — Waterflow: a second mode of the development law (Architector ADR 0007)
 
-**Status: PROPOSED 2026-09-06** — raised by Architector's case BL-008 (`~/Repository/Architector/docs/adr/0007-waterflow-mode.md`, status *proposed* there because the ruling and the edition are this repository's). Behavioral change to `assets/rules/core/pair-development.md`: VERSION bump, full benchmark.
+**Status: PROPOSED 2026-09-06, held behind BL-082 by the owner's ruling of 2026-09-07** — raised by Architector's case BL-008 (`~/Repository/Architector/docs/adr/0007-waterflow-mode.md`, status *proposed* there because the ruling and the edition are this repository's). Behavioral change to `assets/rules/core/pair-development.md`: VERSION bump, full benchmark.
+
+**Ordering (owner, 2026-09-07).** This item is Release 0's `L-1` and the kernel's to run, but not before BL-082 merges. Its third deliverable is an audit check, and BL-082's T-13 replaces the arm every check executes in; started now, the check is written twice. Track E is occupied until the substrate lands.
 
 **The ruling asked for.** For a solo developer the fleet's development law gains a **mode**, declared per repository in the entry document (or per release) — `pair` (today's text, the default) or `waterflow` — and three rules read by mode: *one task at a time* becomes one task per track with tracks in parallel; *never merge yourself* becomes never merge **master** yourself — the release kernel (foundry) merges into the release branch on the reviewer's and the gates' green; *no next task without approval* becomes per **release** — the plan approval and the release-contract approval are the approvals, and inside the release the decision policy rules. Ownership stays available on demand (the decision ledger, the diff, the acceptance verdicts); taste is still learned at the touchpoints. The concept the mode serves is `~/Repository/Architector/docs/okf/release-cycle.md`.
 
 **What lands here.** (1) `pair-development.md` with the mode table and the `pair` default, so a repository that declares nothing reads exactly as today; (2) the entry-document line that declares the mode (`AGENTS.md.tpl`, beside the `Task tracker:` line); (3) an audit check: a `waterflow` repository names its release-branch convention and its kernel, or the check fails; (4) the glossary rows *mode*, *waterflow*, *release branch*. dev-flow amends its own cornerstone and widens ADR-0011 in its own case (dev-flow BL-079); this repository does not edit a product's foundation.
 
-**Stop condition.** The edition ships; `sy11a/foundry` and `sy11a/dev-flow` declare `waterflow` in their entry documents on their own word; every other fleet repository still reads `pair` and its audit is unchanged. Depends on nothing on the edition track; lands in the first edition after v25 the owner cuts.
+**Stop condition.** The edition ships; `sy11a/foundry` and `sy11a/dev-flow` declare `waterflow` in their entry documents on their own word; every other fleet repository still reads `pair` and its audit is unchanged. Depends on BL-082 for its start (the ordering above); lands in the first edition after v25 the owner cuts.
 
 ## BL-089 — The `/autoflow` entry line: task entry is autoflow unless the operator names `/flow`
 
