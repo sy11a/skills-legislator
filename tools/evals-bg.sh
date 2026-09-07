@@ -54,6 +54,15 @@ if [ ! -x "$ARM" ]; then
 fi
 export PARITY_ENGINE_CMD="$ARM"
 export PARITY_HOOK_CMD="$ARM"
+# The scenario agent needs the arm too, and for the same reason the rulers do:
+# from v26 the law names `legislator <job>`, so an agent on a machine that has
+# no `legislator` on PATH cannot obey the law it is being graded against - it
+# hand-writes the manifest and prints an unstamped report, and the run then
+# measures the machine instead of the edition. Put the published arm's
+# directory on PATH for everything this script spawns. (Found the hard way:
+# v26 benchmark, 2026-09-07, fresh-scaffold 19/21 for exactly this.)
+PATH="$(cd "$(dirname "$ARM")" && pwd):$PATH"
+export PATH
 RUNNER="${RUNNER:-opencode}"
 MODEL="${MODEL:-}"           # profile default applied after flag parsing
 STALL_SECS=180

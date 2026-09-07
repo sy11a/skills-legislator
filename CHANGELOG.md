@@ -23,6 +23,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- **The eval runner puts the arm on the scenario agent's `PATH`** (BL-082 T-14)
+  and `setup_workspace.py` stops copying a Python engine into two fixtures.
+  From v26 the law names a binary; a harness that does not put it in front of
+  the agent measures the machine instead of the edition — the v26 benchmark's
+  first attempt lost two asserts to exactly that.
 - **README documents the arm's install path** (BL-082 T-14) — publish with
   `tools/publish-legislator.sh`, install with `tools/install-legislator.sh`,
   verify with `legislator version --json`; the release runbook gains the digest

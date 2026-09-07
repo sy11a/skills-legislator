@@ -1049,3 +1049,31 @@ reporting the check clean. That was the scenario's whole subject and no unit
 test can reach it — it needs a harness that can run one scenario with the arm
 off PATH. Recorded here as a known gap rather than left to be discovered in a
 later edition's benchmark diff.
+
+### T-14.1 Two audit checks this edition added are unmeasured end-to-end *per R-8206 (missing)*
+
+Raised by the v26 benchmark's own meta-assert, which is what it exists for:
+
+```
+parity_every_check_has_a_defect — checks with no planted defect: ['arm-integrity', 'case-collisions']
+```
+
+`rotted-layer` plants one defect per audit check so the corpus can prove each
+check fires. v26 added check 19 (`case-collisions`, T-10's mechanism wired in
+T-13) and check 20 (`arm-integrity`, T-12) and planted nothing for either, so
+both are covered only by unit tests — `OwnedSet.CaseCollisions`' three tests and
+`ArmIntegrityCheckTests`' six. Neither has ever fired in a report an agent read.
+
+**What to plant.** For `case-collisions`, an owned path with a case-variant
+sibling in the fixture (`Changelog.md` beside the owned `CHANGELOG.md`) — the
+pair is lawful on this file system and is exactly what breaks a checkout on a
+case-insensitive one. For `arm-integrity`, the fixture cannot uninstall the
+machine's arm, so the reachable defect is the **version** half: a fixture whose
+`release.json` pins an edition the installed arm does not report. The absent-arm
+branch stays a unit test until the harness can run one scenario with the arm off
+PATH (the same capability T-13.10 named as missing).
+
+Grader rows follow the existing shape: the report names the slug and the
+offending path. Until this lands, `v26.md` states both checks as measured at the
+unit boundary only — a benchmark that let the meta-assert stay red without
+saying so would be the silent cap `core/artifact-lifecycle.md` forbids.
