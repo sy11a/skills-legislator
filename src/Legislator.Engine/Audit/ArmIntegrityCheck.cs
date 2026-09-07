@@ -58,7 +58,14 @@ public static class ArmIntegrityCheck
             findings.Add($"the installed arm reports {version} where this edition pins {edition} — reinstall from the edition's release");
         }
 
-        if (!released.TryGetValue(rid, out var expected))
+        if (released.Count == 0)
+        {
+            // An edition that has not been tagged has released nothing, so there is no digest to
+            // contradict. Saying so is the wiring's job (an Info line, per `artifact-lifecycle`'s
+            // no-silent-caps rule); inventing a mismatch here would make every audit of an
+            // in-flight edition report a fault that does not exist.
+        }
+        else if (!released.TryGetValue(rid, out var expected))
         {
             findings.Add($"the installed arm was built for {rid}, which this edition never released — its digest cannot be checked against anything");
         }

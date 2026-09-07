@@ -7,8 +7,9 @@ namespace Legislator.Engine.Jobs;
 /// <summary>
 /// The read-only health check of a repository's AI layer: the mechanical checks, the model's
 /// half merged in from the findings channel, and the pinned report printed from both. Exit 1
-/// when anything was found, 0 when nothing was - and an exit outside that pair means the audit
-/// itself failed, which is never the same as a clean layer (ADR-0003, R-661..R-669).
+/// when anything actionable was found - Warning and above; Info alone exits 0 - 0 when nothing
+/// was, and an exit outside that pair means the audit itself failed, which is never the same as
+/// a clean layer (ADR-0003, R-661..R-669).
 /// </summary>
 public sealed class AuditJob : IJob
 {
@@ -54,9 +55,14 @@ public sealed class AuditJob : IJob
             ManifestFile.Scalar(ManifestFile.TryRead(ctx.Fs, layout).Node, ManifestFile.VersionKey) ?? "?",
             parsed.Skill.Version ?? "?",
             model,
-            layout.Relative(layout.Engine));
+            ctx.Options.ArmExecutable.Value);
 
-        return new JobResult(result.Findings.Count > 0 ? 1 : 0, report, "");
+        // v26 (T-13.2): Info does not raise the exit code - only Warning and above do.
+        // An Info line is by construction not a finding to act on (check 20 prints one on
+        // every untagged edition), and an audit that exits 1 for it teaches its callers to
+        // stop reading the exit code, which is the one signal `verify` and the ladder rest on.
+        var actionable = result.Findings.Count(f => f.Severity != Severity.Info);
+        return new JobResult(actionable > 0 ? 1 : 0, report, "");
     }
 
     /// <summary>The repository's own name, which the report's title line carries - the last segment of the root it was given.</summary>

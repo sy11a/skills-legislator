@@ -1,0 +1,132 @@
+T-13 red record — BL-082
+
+=== RED A: the ruler cannot measure the rewritten hooks.json (instrument fault) ===
+hooks.json rewritten to `legislator hook <name>`; evals/check_hooks.py UNMODIFIED.
+Predicted: an uncaught StopIteration at line 543, not a FAIL count. Seen: exactly that.
+Exit 1 — the SAME exit an ordinary FAIL gives, so a caller reading the code alone cannot
+tell '4 assertions failed' from 'the instrument died and the rest never ran'.
+Counts: 54 ok, 4 FAIL, and 7 checks that never ran at all (65 ok / 0 FAIL before).
+
+== hooks.json well-formed ==
+  ok    hooks.json parses as JSON
+  ok    hooks.json has at least one event
+  ok    PreToolUse matcher names real tools ('Edit|Write|MultiEdit|NotebookEdit')
+  FAIL  PreToolUse command references a hooks/*.py script — command='legislator hook guard_owned_files'
+  ok    PreToolUse matcher names real tools ('Bash')
+  FAIL  PreToolUse command references a hooks/*.py script — command='legislator hook guard_git_conduct'
+  ok    PostToolUse matcher names real tools ('Edit|Write|MultiEdit')
+  FAIL  PostToolUse command references a hooks/*.py script — command='legislator hook format_on_edit'
+  FAIL  Stop command references a hooks/*.py script — command='legislator hook okf_sync_check'
+== hooks.json launcher (R-702) ==
+Traceback (most recent call last):
+  File "<repo>/evals/check_hooks.py", line 543, in <module>
+    guard_entry = next(
+        h["command"]
+        for e in events.get("PreToolUse", [])
+        for h in e.get("hooks", [])
+        if "guard_owned_files.py" in h.get("command", ""))
+StopIteration
+
+=== RED B: the re-cut ruler against the Python-shaped hooks.json ===
+Predicted 6 FAIL at the red review AFTER correcting my own count from 10 — the second
+assertion of each pair is guarded by the first, so a command that is not the binary form
+carries no name to ask about. Seen: 6, exactly the predicted labels.
+The glued R-702 pair earned its shape in its own failure text: the ALLOW half exited 0
+(green) while the BLOCK half exited 0 (red). Two assertions would have reported one
+success about a command line that guards nothing.
+
+  FAIL  PreToolUse command names the legislator binary per R-8208 — command='sh -c \'for p in python3 py python; do command -v "$p" >/dev/null 2>&1 && exec "$p" "$1"; done; exit 0\' hookshim "${CLAUDE_PLUGIN_ROOT}/hooks/guard_owned_files.py"'
+  FAIL  PreToolUse command names the legislator binary per R-8208 — command='sh -c \'for p in python3 py python; do command -v "$p" >/dev/null 2>&1 && exec "$p" "$1"; done; exit 0\' hookshim "${CLAUDE_PLUGIN_ROOT}/hooks/guard_git_conduct.py"'
+  FAIL  PostToolUse command names the legislator binary per R-8208 — command='sh -c \'for p in python3 py python; do command -v "$p" >/dev/null 2>&1 && exec "$p" "$1"; done; exit 0\' hookshim "${CLAUDE_PLUGIN_ROOT}/hooks/format_on_edit.py"'
+  FAIL  Stop command names the legislator binary per R-8208 — command='sh -c \'for p in python3 py python; do command -v "$p" >/dev/null 2>&1 && exec "$p" "$1"; done; exit 0\' hookshim "${CLAUDE_PLUGIN_ROOT}/hooks/okf_sync_check.py"'
+  FAIL  hooks.json's PreToolUse guard blocks owned and allows ordinary per R-8208 — owned edit exited 0 (want 2), ordinary edit exited 0 (want 0)
+  FAIL  PreToolUse has a Bash entry running the git-conduct guard per R-641
+6 check(s) FAILED
+
+=== RED C: the .NET suite — seven twins written, six red ===
+Build: 0 errors, 0 warnings (strict). No new production type was needed for the twins,
+so the compile-error shape of T-04/T-07/T-08 does not appear here — predicted and seen.
+Predicted 6 FAIL + 2 vacuous greens NAMED IN ADVANCE. Seen exactly that.
+
+The glued driver failed as the MIRROR of the ruler: 'owned edit exited 2 (want 2),
+ordinary edit exited 2 (want 0)' — here the BLOCK half is green and the ALLOW half red,
+where in the ruler it was the other way round. One assertion catches both directions.
+
+failed Legislator.Parity.Tests.Hooks.HooksJsonTwins.The_registered_guard_blocks_owned_and_allows_ordinary (209ms)
+  owned edit exited 2 (want 2), ordinary edit exited 2 (want 0)
+failed Legislator.Parity.Tests.Hooks.HooksJsonTwins.PreToolUse_has_a_bash_entry_running_the_git_conduct_guard (30ms)
+  no Bash matcher entry registers `legislator hook guard_git_conduct`
+failed Legislator.Parity.Tests.Hooks.HooksJsonTwins.Every_command_names_the_legislator_binary (0ms)
+  PreToolUse command is 'sh -c 'for p in python3 py python; do command -v "$p" >/dev/null 2>&1 && exec "$p" "$1"; done; exit 0' hookshim "${CLAUDE_PLUGIN_ROOT}/hooks/guard_owned_files.py"', not `legislator hook <name>`
+failed Legislator.Parity.Tests.LabelCoverageTests.Ruler_labels_without_a_twin_match_the_recorded_debt (211ms)
+  the ledger fell to 0: lower LedgerDebt to that number in the commit that closed the gap, so the record keeps saying what is true.
+failed Legislator.Parity.Tests.Engine.AuditTwins.Audit_check18_item_above_marker (6ms)
+  Assert.Contains() Failure: Sub-string not found
+failed Legislator.Parity.Tests.Engine.AuditTwins.Audit_check18_items_while_tracker_recorded (2ms)
+  Assert.Contains() Failure: Sub-string not found
+
+--- the two vacuous greens, named before the run, not discovered after:
+
+=== RED C: the .NET suite — seven twins written, six red ===
+Build: 0 errors, 0 warnings (strict). No new production type was needed for the twins, so the
+compile-error shape of T-04/T-07/T-08 does not appear here — predicted and seen.
+Predicted 6 FAIL + 2 vacuous greens NAMED IN ADVANCE. Seen exactly that.
+
+The glued driver failed as the MIRROR of the ruler: "owned edit exited 2 (want 2), ordinary edit
+exited 2 (want 0)" — here the BLOCK half is green and the ALLOW half red, where in the ruler it
+was the other way round. One assertion catches both directions.
+
+failed Legislator.Parity.Tests.Hooks.HooksJsonTwins.The_registered_guard_blocks_owned_and_allows_ordinary (209ms)
+    owned edit exited 2 (want 2), ordinary edit exited 2 (want 0)
+failed Legislator.Parity.Tests.Hooks.HooksJsonTwins.PreToolUse_has_a_bash_entry_running_the_git_conduct_guard (30ms)
+    no Bash matcher entry registers `legislator hook guard_git_conduct`
+failed Legislator.Parity.Tests.Hooks.HooksJsonTwins.Every_command_names_the_legislator_binary (0ms)
+    PreToolUse command is 'sh -c 'for p in python3 py python; do command -v "$p" >/dev/null 2>&1 && exec "$p" "$1"; done; exit 0' hookshim "${CLAUDE_PLUGIN_ROOT}/hooks/guard_owned_files.py"', not `legislator hook <name>`
+failed Legislator.Parity.Tests.LabelCoverageTests.Ruler_labels_without_a_twin_match_the_recorded_debt (211ms)
+    the ledger fell to 0: lower LedgerDebt to that number in the commit that closed the gap, so the record keeps saying what is true.
+failed Legislator.Parity.Tests.Engine.AuditTwins.Audit_check18_item_above_marker (6ms)
+    Assert.Contains() Failure: Sub-string not found
+failed Legislator.Parity.Tests.Engine.AuditTwins.Audit_check18_items_while_tracker_recorded (2ms)
+    Assert.Contains() Failure: Sub-string not found
+
+--- the two vacuous greens, named before the run, not discovered after:
+  "{} command names a known hook per C-11"  — guarded by the same `if` as the ruler
+  "audit_check18_quiet_without_tracker"     — asserts an ABSENCE the arm already gives
+Mutation 1 (Stop -> "legislator hook bogus_name") makes the first bite:
+Stop names 'bogus_name', which the binary does not answer to
+Mutation 2 for the second is only possible after green (there is nothing to suppress yet) and
+is run there.
+
+=== RED D: the static check — the thirteen invert into six ===
+Predicted 6, CORRECTED TO 5 BEFORE THE RUN (the sixth is guarded by `if release.is_file()`, the
+third guarded assert this session to cut a predicted count — a pattern in my own counting, not
+an accident). Seen 5.
+
+  FAIL  no Python engine ships in the package — assets/engine/engine.py is still delivered
+  FAIL  no Python hooks ship in the plugin — still there: ['format_on_edit.py', 'guard_git_conduct.py', 'guard_owned_files.py', 'okf_sync_check.py']
+  FAIL  law names the binary, not the interpreter — a rule file still spells `python3 docs/ai/engine.py`
+  FAIL  SKILL.md no longer delivers an engine source — Step 3 still names assets/engine/engine.py
+  FAIL  the release record ships with the package — expected at skill/assets/release/release.json
+5 check(s) FAILED
+
+=== RED E: T-13.1 — the re-cut BL-051 assertions against the law before the restore ===
+The four assertions were red as `check_1{5,7}_has_python3_branch` because they matched on
+`python3`; re-cut to the arm, they must be red for the RIGHT reason — the sentences are
+absent, not the interpreter. Run against skill/SKILL.md as it stood on
+wip/bl-082-t13-snapshot (checks 15/17 already rewritten to the binary, obligation dropped):
+
+  FAIL  check_15_has_absent_arm_branch: check 15 (okf-anchors) states what it does when the legislator binary is absent — no absent-branch sentence found
+  FAIL  check_15_names_nonzero_exit: check 15 (okf-anchors) states that an arm exit beyond its findings code is a check failure — names_exit=False declares_failure=False
+  FAIL  check_17_has_absent_arm_branch: check 17 (okf-sync-debt) states what it does when the legislator binary is absent — no absent-branch sentence found
+  FAIL  check_17_names_nonzero_exit: check 17 (okf-sync-debt) states that an arm exit beyond its findings code is a check failure — names_exit=False declares_failure=False
+  4 check(s) FAILED
+
+With the restored sentences: all static checks passed. The assertion discriminates the law,
+not the spelling of the instrument.
+
+=== RED F: T-13.9 — the runner's zero-test guard bites ===
+evals/check_dotnet.sh with `--filter-method "*NoSuchTestAtAll*"` injected into its module run,
+so every module reports total 0 — the exact shape `dotnet test` produces today and passes over:
+
+  FAIL  Legislator.Cli.Tests: zero tests ran — the module reported no count; the runner is broken, not the suite
+  exit=1

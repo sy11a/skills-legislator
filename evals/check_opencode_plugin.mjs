@@ -1,5 +1,5 @@
 // Deterministic unit tests for the opencode legislator-guard plugin (the TS
-// analog of evals/check_hooks.py which covers the .py hooks). No agent, no
+// analog of evals/check_hooks.py, which drives the same hooks through the binary). No agent, no
 // opencode runtime — instantiates the plugin with a mock context and drives
 // the returned hooks directly. Run: node evals/check_opencode_plugin.mjs
 import assert from "node:assert/strict";

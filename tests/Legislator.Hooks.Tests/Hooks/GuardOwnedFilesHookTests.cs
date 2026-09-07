@@ -50,9 +50,12 @@ public sealed class GuardOwnedFilesHookTests
     }
 
     [Fact]
-    public void The_delivered_engine_is_blocked()
+    public void The_retired_engine_is_an_ordinary_file()
     {
-        Assert.Equal(2, Judge(Legislated(), Edit("/r/docs/ai/engine.py")).ExitCode);
+        // v26 (R-8207): no engine is delivered any more, so nothing at that path is owned.
+        // A repository that still carries the file carries its own file, and guarding it
+        // would be the hook defending law that no longer exists.
+        Assert.Equal(0, Judge(Legislated(), Edit("/r/docs/ai/engine.py")).ExitCode);
     }
 
     [Fact]

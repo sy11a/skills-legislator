@@ -12,26 +12,21 @@ namespace Legislator.Parity.Tests;
 public sealed class LabelCoverageTests
 {
     /// <summary>
-    /// The debt as it stands: ruler labels still waiting for a twin, and the number moves in
-    /// the same commit as the twins that moved it. T-07…T-11 brought it to EIGHT, not zero,
-    /// and the remainder has an address rather than a hope: three engine labels about usage
-    /// and unknown jobs belong to T-12, and five hooks labels — the `.py` command shape, the
-    /// script-exists check and the two R-702 launcher checks — belong to T-13, which rewrites
-    /// `hooks.json` to the binary and re-cuts them with their subject (ruling 2026-09-03).
-    /// Merging edition v25 added THREE more (`audit_check18_*`): v25 shipped an eighteenth
-    /// audit check, `tracker-drift`, which this arm does not carry — the spec ports v24
-    /// (R-8205), so the check is new law arriving mid-port rather than a gap in it. Its
-    /// address is T-13, which already owns adding a check to `AuditChecks.Order` and to
-    /// `SKILL.md` § Audit; the case-collision check the T-10 ruling sent there becomes 19,
-    /// v25 having taken 18 (ruling 2026-09-04). T-12 then wrote the three host twins its own
-    /// row owned, so the engine side is clear and eight remain: five hooks labels and the three
-    /// `audit_check18_*`, all of them T-13's, all of them with an address. A
-    /// test left permanently red is not a gate — it hides the next real failure inside the
-    /// expected one — so the ledger is a ratchet instead: the red R-8206 demands was shown
-    /// against an empty implementation and recorded in the case as `parity-red.txt`, and
-    /// from here the ledger's job is to make backsliding impossible.
+    /// The debt is ZERO, and T-13 is where it got there. Every assertion either ruler makes now
+    /// has a named twin. The last eight went two ways: the three `audit_check18_*` labels got the
+    /// port of `tracker-drift`, edition v25's eighteenth check, which arrived mid-port and was
+    /// carried as declared debt rather than ported inside the task it would have derailed
+    /// (ruling 2026-09-04); and the five hooks labels bound to `hooks.json` naming a Python
+    /// script were RE-CUT with the line they described rather than twinned as they stood - five
+    /// became four, the two R-702 launcher checks having collapsed into one assertion, because
+    /// the allow half alone is satisfied by any command that exits 0 and only the pair catches
+    /// removal (H-007).
+    ///
+    /// From here the number is a floor, not a budget: it may only be lowered, and the test below
+    /// bites in both directions so that neither a ruler gaining an assertion nor a twin losing
+    /// its label can pass unseen.
     /// </summary>
-    const int LedgerDebt = 8;
+    const int LedgerDebt = 0;
 
     /// <summary>
     /// Bites in both directions. Upward — a ruler gained an assertion, or a twin lost the

@@ -41,6 +41,19 @@ shift || true
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 SKILL="$REPO/skill"
+
+# v26 (R-8207, T-13.5): the rulers and the grader drive the deterministic arm,
+# not an interpreter. Both are exported here so every stage of a run measures
+# the same binary, and an absent arm stops the run at the top rather than
+# reading as a corpus of failures three stages later.
+ARM="${PARITY_ENGINE_CMD:-$REPO/artifacts/linux-x64/legislator}"
+if [ ! -x "$ARM" ]; then
+  echo "no legislator arm at $ARM — publish one with tools/publish-legislator.sh" >&2
+  echo "or set PARITY_ENGINE_CMD; the rulers and the grader cannot run without it" >&2
+  exit 1
+fi
+export PARITY_ENGINE_CMD="$ARM"
+export PARITY_HOOK_CMD="$ARM"
 RUNNER="${RUNNER:-opencode}"
 MODEL="${MODEL:-}"           # profile default applied after flag parsing
 STALL_SECS=180

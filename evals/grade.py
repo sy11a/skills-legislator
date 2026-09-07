@@ -46,6 +46,26 @@ from pathlib import Path
 EVALS = Path(__file__).resolve().parent
 SKILL = EVALS.parent / "skill"
 
+
+def arm() -> str:
+    """The deterministic arm this grade run drives (v26, R-8207).
+
+    `PARITY_ENGINE_CMD` is what `setup_workspace.py` and `tools/evals-bg.sh`
+    export; the published binary is the fallback for a hand-run grade. An arm
+    that is not there is a stop, never a silent skip: a grader that quietly
+    stops re-running the audit would report a corpus it never checked.
+    """
+    named = os.environ.get("PARITY_ENGINE_CMD")
+    if named:
+        return named
+    published = EVALS.parent / "artifacts" / "linux-x64" / "legislator"
+    if published.is_file():
+        return str(published)
+    raise RuntimeError(
+        "no legislator arm: set PARITY_ENGINE_CMD or publish one with "
+        "tools/publish-legislator.sh — the grader re-runs the audit and "
+        "cannot do it without the binary")
+
 # ---------------------------------------------------------------------------
 # Contract derivation (BL-036 Wave A): every place the grader used to
 # hand-duplicate a skill contract is derived from the skill source at
@@ -447,10 +467,8 @@ def expected_owned() -> dict[str, Path]:
     oc_src = SKILL / "assets" / "templates" / "opencode.json.tpl"
     if oc_src.exists():
         owned["opencode.json"] = oc_src
-    # v20: the constitution's engine, an owned executable delivered like law.
-    eng_src = SKILL / "assets" / "engine" / "engine.py"
-    if eng_src.exists():
-        owned["docs/ai/engine.py"] = eng_src
+    # v20-v25 the package delivered an engine source as an owned file; v26 retired
+    # it with the Python arm (R-8207), so the owned set is law and wiring only.
     return owned
 
 
@@ -987,20 +1005,19 @@ def grade_upgrade(ws: Path) -> Grader:
 
 
 def engine_audit_findings(repo: Path) -> list[str]:
-    """The engine's own mechanical finding lines for `repo`, re-run at grade
+    """The arm's own mechanical finding lines for `repo`, re-run at grade
     time on the same tree (audit is zero-writes, so run-time and grade-time
     trees are identical). v23 BL-066: the report must carry every one."""
     r = subprocess.run(
-        [sys.executable, str(SKILL / "assets/engine/engine.py"), "audit",
-         "--root", str(repo), "--skill", str(SKILL)],
+        [arm(), "audit", "--root", str(repo), "--skill", str(SKILL)],
         capture_output=True, text=True)
     if r.returncode not in (0, 1):
-        raise RuntimeError(f"engine audit re-run failed ({r.returncode}): "
+        raise RuntimeError(f"arm audit re-run failed ({r.returncode}): "
                            f"{r.stderr[:300]}")
     return [l for l in r.stdout.splitlines() if l.startswith("- [")]
 
 
-AUDIT_STAMP = "Emitted by docs/ai/engine.py audit — constitution v"
+AUDIT_STAMP = "Emitted by legislator audit — constitution v"
 
 
 def check_engine_backed_report(g: "Grader", repo: Path, report: str) -> None:
@@ -1035,7 +1052,7 @@ def check_engine_backed_report(g: "Grader", repo: Path, report: str) -> None:
             else f"model findings outside their section: {displaced}",
             artifact=g.report_art)
 
-REPORT_STAMP = "Emitted by docs/ai/engine.py report — constitution v"
+REPORT_STAMP = "Emitted by legislator report — constitution v"
 
 
 def check_report_stamp(g: "Grader", report: str) -> None:
@@ -1069,7 +1086,7 @@ def engine_report_lines(g: "Grader", repo: Path) -> list[str] | None:
     if not rec.exists():
         return None
     r = subprocess.run(
-        [sys.executable, str(SKILL / "assets/engine/engine.py"), "report",
+        [arm(), "report",
          "--root", str(repo), "--skill", str(SKILL), "--record", str(rec)],
         capture_output=True, text=True)
     if r.returncode != 0:
@@ -1756,20 +1773,16 @@ def grade_case_practice(ws: Path) -> Grader:
             "converge statement or append-only gap findings present" if converged
             else "no converge trail — the case cannot lawfully close", artifact=case_art)
 
-    # BL-043 (v22): the delivered engine's sdd-lint judges the agent's case
-    # practice — the analyze gate's mechanical passes, run by the exact
-    # artifact the constitution installed. Exit 0 is the contract: 2 means
-    # the delivered engine predates the job (v21), 1 means the case tree
-    # fails its own law's lint. Red against the v21 law by construction.
-    eng = repo / "docs/ai/engine.py"
-    if eng.exists():
-        r = subprocess.run([sys.executable, "docs/ai/engine.py", "sdd-lint"],
-                           cwd=repo, capture_output=True, text=True, timeout=60)
-        lint_ok, lint_ev = r.returncode == 0, (
-            "delivered engine lints the case tree clean" if r.returncode == 0
-            else f"exit={r.returncode}: {(r.stdout or r.stderr)[:160]}")
-    else:
-        lint_ok, lint_ev = False, "docs/ai/engine.py not delivered"
+    # BL-043 (v22), re-pointed in v26 (R-8207): the arm's sdd-lint judges the
+    # agent's case practice — the analyze gate's mechanical passes, run by the
+    # exact instrument the law names. Exit 0 is the contract; 1 means the case
+    # tree fails its own law's lint. The engine is no longer delivered into the
+    # repository, so the arm is asked from outside it and the repo is its root.
+    r = subprocess.run([arm(), "sdd-lint", "--root", str(repo)],
+                       cwd=repo, capture_output=True, text=True, timeout=60)
+    lint_ok, lint_ev = r.returncode == 0, (
+        "the arm lints the case tree clean" if r.returncode == 0
+        else f"exit={r.returncode}: {(r.stdout or r.stderr)[:160]}")
     g.check("delivered_engine_sdd_lint_clean", lint_ok, lint_ev,
             artifact=g.repo_art)
 

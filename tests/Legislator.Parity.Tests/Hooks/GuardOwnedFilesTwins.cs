@@ -53,16 +53,16 @@ public sealed class GuardOwnedFilesTwins
     }
 
     [Fact]
-    [Parity("hooks", "owned engine.py blocked (exit 2)")]
-    public void Owned_engine_py_blocked()
+    [Parity("hooks", "retired docs/ai/engine.py is an ordinary file (exit 0)")]
+    public void Retired_engine_py_is_an_ordinary_file()
     {
         var fs = RunHooks.LegislatedRepo();
         fs.AddFile($"{RunHooks.Root}/docs/ai/engine.py", new MockFileData("# engine\n"));
 
         var (exit, _, err) = Guard(fs, $"{RunHooks.Root}/docs/ai/engine.py");
 
-        Assert.Equal(2, exit);
-        Assert.Contains("machine-managed law", err, StringComparison.Ordinal);
+        Assert.Equal(0, exit);
+        Assert.Equal(string.Empty, err);
     }
 
     [Fact]

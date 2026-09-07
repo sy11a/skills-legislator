@@ -26,7 +26,11 @@ HOOKS = PLUGIN / "hooks"
 # — on the same payloads (BL-082, R-8205).
 # Out of the LEGISLATOR_* namespace for the reason check_engine.py records: the binary
 # reads that prefix as option keys and refuses an unknown one (BL-082 T-07).
+# Required since T-13: the Python hooks are gone, so an unset variable no longer
+# means "measure the other arm" — it means measure nothing while printing green.
 HOOK_CMD = os.environ.get("PARITY_HOOK_CMD")
+if not HOOK_CMD:
+    sys.exit("set PARITY_HOOK_CMD to the legislator binary — the Python hooks are retired")
 
 failures: list[str] = []
 
@@ -41,7 +45,7 @@ def check(ok: bool, label: str, detail: str = "") -> None:
 
 def _hook_argv(script: Path) -> list[str]:
     """Argv for one hook under test: the binary carries it under the script's own stem."""
-    return [HOOK_CMD, "hook", script.stem] if HOOK_CMD else [sys.executable, str(script)]
+    return [HOOK_CMD, "hook", script.stem]
 
 
 def run_hook_raw(script: Path, text: str):
@@ -123,14 +127,15 @@ with tempfile.TemporaryDirectory() as tmp:
     check(proc.returncode == 0, "non-owned root package.json allowed (exit 0)",
           f"got exit {proc.returncode}, stderr={proc.stderr!r}")
 
-    # Case 5: editing the owned engine file docs/ai/engine.py → blocked.
+    # Case 5: docs/ai/engine.py is an ordinary file from v26 → allowed. The
+    # engine left ownedFiles when the Python arm was retired (R-8207), so the
+    # guard has no branch for it: a repo that keeps a file at that path keeps
+    # its own file, and blocking it would guard law that no longer exists.
     engine_file = repo / "docs" / "ai" / "engine.py"
     engine_file.write_text("# engine\n")
     proc = run_hook(GUARD, edit_payload(str(engine_file)))
-    check(proc.returncode == 2, "owned engine.py blocked (exit 2)",
+    check(proc.returncode == 0, "retired docs/ai/engine.py is an ordinary file (exit 0)",
           f"got exit {proc.returncode}, stderr={proc.stderr!r}")
-    check("machine-managed law" in proc.stderr,
-          "block message mentions machine-managed law", f"stderr={proc.stderr!r}")
 
     # Case 6: editing an unowned file under docs/ai/ → allowed.
     notes_file = repo / "docs" / "ai" / "notes.md"
@@ -477,6 +482,11 @@ print("== hooks.json well-formed ==")
 hooks_json_path = HOOKS / "hooks.json"
 KNOWN_TOOLS = {"Edit", "Write", "MultiEdit", "NotebookEdit", "Bash", "Read",
                "Glob", "Grep", "WebFetch", "WebSearch", "Task", "NotebookRead"}
+# The four names the binary answers to (R-8208, C-11). A fifth would be a hook
+# nothing implements; a misspelling of one of these disables a guard silently,
+# which is why the binary itself exits 2 on an unknown name.
+KNOWN_HOOKS = {"guard_owned_files", "guard_git_conduct",
+               "format_on_edit", "okf_sync_check"}
 
 try:
     hooks_data = json.loads(hooks_json_path.read_text())
@@ -501,37 +511,39 @@ for event_name, entries in events.items():
                   f"unknown: {unknown}")
         for hook in entry.get("hooks", []):
             command = hook.get("command", "")
-            # Extract the script path between the last '/hooks/' and the
-            # trailing quote — matches the ${CLAUDE_PLUGIN_ROOT}/hooks/<x>.py form.
-            found = None
-            for part in command.replace('"', " ").split():
-                if part.endswith(".py") and "/hooks/" in part:
-                    found = part.rsplit("/hooks/", 1)[1]
-                    break
-            check(found is not None, f"{event_name} command references a hooks/*.py script",
+            # per R-8208: the command IS the binary and its hook name — three
+            # words, no interpreter, no shim, no path into the package. The
+            # shape is asserted before the name because a command that is not
+            # this form carries no name to ask about.
+            words = command.split()
+            named = words[:2] == ["legislator", "hook"] and len(words) == 3
+            check(named, f"{event_name} command names the legislator binary per R-8208",
                   f"command={command!r}")
-            if found:
-                script_path = HOOKS / found
-                check(script_path.is_file(), f"{event_name} script exists: {found}",
-                      f"expected at {script_path}")
+            if named:
+                check(words[2] in KNOWN_HOOKS,
+                      f"{event_name} command names a known hook per C-11",
+                      f"{words[2]!r} is not one of {sorted(KNOWN_HOOKS)}")
 
 
 
-# --- BL-070 R-702: the launcher resolves python3 -> py -> python --------
-# Build a PATH where only `python` exists (a Windows-shaped machine), and
-# run the hooks.json PreToolUse guard command through it. The guard must
-# still block an owned-file edit — the shim, not the caller, finds the
-# interpreter.
-print("== hooks.json launcher (R-702) ==")
+# --- R-8208: hooks.json's own command line, resolved through PATH -------
+# R-702 pinned a launcher that resolved python3 -> py -> python. With the
+# interpreter gone there is nothing left to resolve but the binary, so the
+# requirement's TEXT dies here while its coverage does not: what still needs
+# proving is that the command line hooks.json actually carries blocks an owned
+# edit and lets an ordinary one through, found on PATH and nowhere else.
+#
+# The two halves are ONE assertion on purpose. The allow half alone is
+# satisfied by any command that exits 0 — an absent script, a shim that gives
+# up, a guard that was never wired — so a green there proves nothing unless the
+# same command line is also shown to block. Only the pair catches removal.
+print("== hooks.json command line through PATH (R-8208) ==")
 with tempfile.TemporaryDirectory() as tmp:
-    shim = Path(tmp) / "bin"
-    shim.mkdir()
+    binroot = Path(tmp) / "bin"
+    binroot.mkdir()
     import os as _os
-    for tool in ("sh", "env"):
-        real = shutil.which(tool)
-        if real:
-            _os.symlink(real, shim / tool)
-    _os.symlink(sys.executable, shim / "python")  # python, NOT python3
+    _os.symlink(shutil.which("sh"), binroot / "sh")
+    _os.symlink(HOOK_CMD, binroot / "legislator")
 
     repo = Path(tmp) / "legislated"
     rules = repo / "docs" / "ai" / "rules" / "core"
@@ -541,36 +553,40 @@ with tempfile.TemporaryDirectory() as tmp:
     rule.write_text("## X\n")
 
     guard_entry = next(
-        h["command"]
-        for e in events.get("PreToolUse", [])
-        for h in e.get("hooks", [])
-        if "guard_owned_files.py" in h.get("command", ""))
-    cmd = guard_entry.replace("${CLAUDE_PLUGIN_ROOT}", str(PLUGIN))
-    proc = subprocess.run(
-        ["sh", "-c", cmd],
-        input=json.dumps(edit_payload(str(rule))),
-        capture_output=True, text=True, timeout=15,
-        env={"PATH": str(shim)})
-    check(proc.returncode == 2,
-          "guard blocks through the launcher with only `python` on PATH per R-702",
-          f"got exit {proc.returncode}, stderr={proc.stderr!r}")
+        (h["command"]
+         for e in events.get("PreToolUse", [])
+         for h in e.get("hooks", [])
+         if "guard_owned_files" in h.get("command", "")),
+        None)
 
-    proc = subprocess.run(
-        ["sh", "-c", cmd],
-        input=json.dumps(edit_payload(str(repo / "src" / "a.cs"))),
-        capture_output=True, text=True, timeout=15,
-        env={"PATH": str(shim)})
-    check(proc.returncode == 0,
-          "non-owned edit passes through the launcher per R-702",
-          f"got exit {proc.returncode}, stderr={proc.stderr!r}")
+    def through_path(target: Path) -> int:
+        """The exit code hooks.json's guard command gives for an edit of `target`."""
+        return subprocess.run(
+            ["sh", "-c", guard_entry],
+            input=json.dumps(edit_payload(str(target))),
+            capture_output=True, text=True, timeout=15,
+            env={"PATH": str(binroot)}).returncode
+
+    if guard_entry is None:
+        # A missing entry is a finding, never a crash: the ruler that dies here
+        # exits 1 exactly as a FAIL does, and every check below it silently
+        # never runs (the fault this ruler carried until T-13).
+        check(False, "hooks.json's PreToolUse guard blocks owned and allows ordinary per R-8208",
+              "no PreToolUse hook command mentions guard_owned_files")
+    else:
+        blocked = through_path(rule)
+        allowed = through_path(repo / "src" / "a.cs")
+        check(blocked == 2 and allowed == 0,
+              "hooks.json's PreToolUse guard blocks owned and allows ordinary per R-8208",
+              f"owned edit exited {blocked} (want 2), ordinary edit exited {allowed} (want 0)")
 
 
 # per R-641: the Bash matcher entry registering the git-conduct guard exists.
 bash_entries = [e for e in events.get("PreToolUse", [])
                 if e.get("matcher") == "Bash"]
-check(any("guard_git_conduct.py" in h.get("command", "")
+check(any("hook guard_git_conduct" in h.get("command", "")
           for e in bash_entries for h in e.get("hooks", [])),
-      "PreToolUse has a Bash entry running guard_git_conduct.py per R-641")
+      "PreToolUse has a Bash entry running the git-conduct guard per R-641")
 
 
 if failures:

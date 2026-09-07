@@ -49,9 +49,9 @@ public sealed class ApplyTwins
         Assert.Equal(
             fs.File.ReadAllBytes($"{SkillPath}/assets/rules/core/sdd.md"),
             fs.File.ReadAllBytes($"{Root}/docs/ai/rules/core/sdd.md"));
-        Assert.Equal(
-            fs.File.ReadAllBytes($"{SkillPath}/assets/engine/engine.py"),
-            fs.File.ReadAllBytes($"{Root}/docs/ai/engine.py"));
+        // v26 (R-8207): the package ships no engine, so nothing is copied to
+        // docs/ai/engine.py - the path is absent after a fresh apply, not empty.
+        Assert.False(fs.File.Exists($"{Root}/docs/ai/engine.py"));
         Assert.Equal(
             fs.File.ReadAllBytes($"{SkillPath}/assets/templates/opencode.json.tpl"),
             fs.File.ReadAllBytes($"{Root}/opencode.json"));

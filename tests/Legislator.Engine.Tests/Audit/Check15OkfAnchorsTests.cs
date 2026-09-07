@@ -21,16 +21,19 @@ public sealed class Check15OkfAnchorsTests
     }
 
     [Fact]
-    public void Given_the_delivered_engine_is_absent_When_audit_runs_Then_it_is_an_info_line()
+    public void Given_a_leftover_engine_file_When_audit_runs_Then_the_check_neither_consults_nor_reports_it()
     {
-        var fs = AuditFixture.Repo();
-        fs.File.Delete($"{AuditFixture.Root}/docs/ai/engine.py");
+        // v26 (R-8207): the Python engine is retired, so `docs/ai/engine.py` is an ordinary
+        // file a repository may still carry from an earlier edition. The check runs in-process
+        // and says nothing about it - the v25 branch that reported an absent engine as Info
+        // died with the engine it named.
+        var fs = AuditFixture.Repo(new() { ["docs/ai/engine.py"] = "# left over from v25\n" });
 
         var report = AuditFixture.Audit(fs);
 
-        Assert.Contains(
+        Assert.DoesNotContain(
             AuditFixture.Findings(report, "okf-anchors"),
-            f => f.Contains("engine absent (repo below v20)", StringComparison.Ordinal));
+            f => f.Contains("engine", StringComparison.Ordinal));
     }
 
     [Fact]

@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Unit tests for the constitution's engine — no agent, seconds to run.
 
-The engine derives the repository root from its own location
-(<repo>/docs/ai/engine.py), so every case materializes that exact shape in a
-temp directory. Usage: python3 evals/check_engine.py
+Every case materializes a legislated repository shape in a temp directory and
+drives the arm against it. Since v26 the arm is the binary and there is no
+other: `PARITY_ENGINE_CMD` is required.
+Usage: PARITY_ENGINE_CMD=artifacts/<rid>/legislator python3 evals/check_engine.py
 """
 import os
 import shutil
@@ -13,42 +14,37 @@ import tempfile
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
-ENGINE_SRC = REPO / "skill" / "assets" / "engine" / "engine.py"
 
-# The arm under test. Unset, this ruler measures the Python engine; set, it measures
-# the command it names — the .NET binary — on the same fixture trees, which is what
-# makes it a parity ruler and not a test of one implementation (BL-082, R-8205).
+# The arm under test. Required since T-13: the Python engine is retired, so an unset
+# variable no longer means "measure the other arm" — it means measure nothing while
+# printing green (BL-082, R-8205, R-8207).
 #
 # The name stays OUT of the LEGISLATOR_* namespace on purpose: the binary reads every
 # LEGISLATOR_* variable as an option key and refuses an unknown one by name (R-8210), so
 # a ruler variable in that prefix makes the arm exit 2 on every check — measuring the
 # harness instead of the port (BL-082 T-07, operator ruling 2026-09-01).
 ENGINE_CMD = os.environ.get("PARITY_ENGINE_CMD")
+if not ENGINE_CMD:
+    sys.exit("set PARITY_ENGINE_CMD to the legislator binary — the Python engine is retired")
+
+# Check 20 (`arm-integrity`) asks whether the arm is installed WHERE THE HOOKS WILL FIND IT,
+# which is PATH and nothing else. A ruler that drives the binary by absolute path while leaving
+# PATH bare would make every fixture report a true finding about the harness, so the arm under
+# test is put on PATH for the run. The two git-absent cases build their own env and are
+# deliberately unaffected.
+os.environ["PATH"] = f"{Path(ENGINE_CMD).parent}{os.pathsep}{os.environ.get('PATH', '')}"
 
 
-def _engine_argv(program: Path | str, root: Path, *args: str,
-                 python_takes_root: bool = False) -> list[str]:
-    """Argv for one job under test.
-
-    The binary is always told its repository explicitly. The Python engine is told
-    only where the job parses the flag (the --skill/--root family); the rest derive
-    the root from the engine file's own location, and an extra flag is a usage exit.
-    """
-    if ENGINE_CMD:
-        return [ENGINE_CMD, *args, "--root", str(root)]
-    argv = [sys.executable, str(program), *args]
-    if python_takes_root:
-        argv += ["--root", str(root)]
-    return argv
+def _engine_argv(root: Path, *args: str) -> list[str]:
+    """Argv for one job under test — the arm is always told its repository explicitly."""
+    return [ENGINE_CMD, *args, "--root", str(root)]
 
 
 def _bare_argv(*args: str) -> list[str]:
     """Argv with nothing appended - the usage region asks what the process does when it is
     given exactly this and no more, so `_engine_argv`'s implicit `--root` would change the
     question from "no job" into "a --root and no job" (BL-082 T-12)."""
-    if ENGINE_CMD:
-        return [ENGINE_CMD, *args]
-    return [sys.executable, "docs/ai/engine.py", *args]
+    return [ENGINE_CMD, *args]
 
 
 failures: list[str] = []
@@ -66,7 +62,6 @@ def make_repo(docs: dict[str, str], sources: dict[str, str]) -> Path:
     """A repo with docs/okf/<name> files and source files, engine in place."""
     root = Path(tempfile.mkdtemp(prefix="engine-eval-"))
     (root / "docs" / "ai").mkdir(parents=True)
-    shutil.copy2(ENGINE_SRC, root / "docs" / "ai" / "engine.py")
     (root / "docs" / "okf").mkdir(parents=True)
     for name, text in docs.items():
         (root / "docs" / "okf" / name).write_text(text)
@@ -78,7 +73,7 @@ def make_repo(docs: dict[str, str], sources: dict[str, str]) -> Path:
 
 
 def run(root: Path, job: str) -> tuple[int, str]:
-    r = subprocess.run(_engine_argv("docs/ai/engine.py", root, job),
+    r = subprocess.run(_engine_argv(root, job),
                        cwd=root, capture_output=True, text=True)
     return r.returncode, r.stdout
 
@@ -92,7 +87,7 @@ def git(root: Path, *args: str, date: str | None = None) -> None:
                    capture_output=True, env=env)
 
 
-print(f"arm: {ENGINE_CMD or 'python3 docs/ai/engine.py'}")
+print(f"arm: {ENGINE_CMD}")
 print("== anchors: resolving anchors are silent ==")
 root = make_repo(
     {"widgets.md": "# Widgets\n\nSee `src/App/WidgetStore.cs` and `WidgetStore`.\n"},
@@ -175,7 +170,6 @@ check(r.returncode == 2, "no job exits 2", f"exit={r.returncode}")
 print("== no OKF bundle ==")
 root = Path(tempfile.mkdtemp(prefix="engine-eval-"))
 (root / "docs" / "ai").mkdir(parents=True)
-shutil.copy2(ENGINE_SRC, root / "docs" / "ai" / "engine.py")
 code, out = run(root, "anchors")
 check(code == 0 and out == "", "a repo with no docs/okf/ is clean, not an error",
       f"exit={code} out={out!r}")
@@ -271,7 +265,7 @@ with tempfile.TemporaryDirectory() as shim:
     # Through the arm variable like every other check: hardcoding the interpreter here made
     # this label green on the .NET arm without ever running it (BL-082 T-09), which is a
     # verification artifact reporting what it did not measure.
-    r = subprocess.run(_engine_argv("docs/ai/engine.py", root, "okf-debt"),
+    r = subprocess.run(_engine_argv(root, "okf-debt"),
                        cwd=root, capture_output=True, text=True,
                        env={"PATH": shim})
     check(r.returncode not in (0, 1, 2) and "git" in r.stderr.lower(),
@@ -285,7 +279,7 @@ print("== v23 R-665 boundary: no anchored docs needs no git ==")
 root = make_repo({}, {"src/a.py": "x\n"})
 with tempfile.TemporaryDirectory() as shim:
     os.symlink(sys.executable, Path(shim) / "python3")
-    r = subprocess.run(_engine_argv("docs/ai/engine.py", root, "okf-debt"),
+    r = subprocess.run(_engine_argv(root, "okf-debt"),
                        cwd=root, capture_output=True, text=True,
                        env={"PATH": shim})
     check(r.returncode == 0,
@@ -570,7 +564,6 @@ def audit_repo(files: dict[str, str], manifest: str = '{"legislatorVersion": ' +
     (root / "docs" / "ai").mkdir(parents=True)
     if manifest is not None:
         (root / "docs" / "ai" / "manifest.json").write_text(manifest)
-    shutil.copy2(ENGINE_SRC, root / "docs" / "ai" / "engine.py")
     (root / "AGENTS.md").write_text("# Repo\n\n@docs/okf/index.md\n")
     (root / "docs" / "okf").mkdir(parents=True)
     (root / "docs" / "okf" / "index.md").write_text("# OKF\n\nSee `docs/okf/codebase-map.md`.\n")
@@ -585,7 +578,7 @@ def audit_repo(files: dict[str, str], manifest: str = '{"legislatorVersion": ' +
 
 
 def audit(root: Path, *extra: str) -> tuple[int, str, str]:
-    r = subprocess.run(_engine_argv("docs/ai/engine.py", root, "audit",
+    r = subprocess.run(_engine_argv(root, "audit",
                                     "--skill", str(REPO / "skill"), *extra),
                        cwd=root, capture_output=True, text=True)
     return r.returncode, r.stdout, r.stderr
@@ -594,12 +587,20 @@ def audit(root: Path, *extra: str) -> tuple[int, str, str]:
 print("== R-661: a clean repo prints a clean report, exit 0 ==")
 root = audit_repo({})
 code, out, err = audit(root)
-check(code == 0 and "# AI-Layer Audit" in out and "No findings." in out,
+# v26 (T-13.2): the clean shape is "nothing to act on", not "nothing printed".
+# Check 20 prints an Info line on every edition that has not been tagged yet -
+# a true statement about this machine, not a fault of the repository - and Info
+# does not raise the exit code. What "clean" asserts is the absence of the two
+# actionable sections and an exit of 0.
+check(code == 0 and "# AI-Layer Audit" in out
+      and "## Critical" not in out and "## Warning" not in out,
       "audit_clean_repo_clean_report", f"exit={code} out={out[:200]!r} err={err[:200]!r}")
+check("[arm-integrity]" in out and "## Info" in out,
+      "audit_untagged_edition_is_an_info_line_not_a_finding", out[:300])
 check("Clean checks:" in out, "audit_clean_checks_line_present", f"out={out[-300:]!r}")
 
 print("== R-663: the emitter stamp is printed ==")
-check("engine.py audit" in out and "constitution v" in out,
+check("legislator audit" in out and "constitution v" in out,
       "audit_report_carries_engine_stamp", f"out={out[-300:]!r}")
 
 print("== R-661: planted defects are found with their pinned slugs ==")
@@ -653,7 +654,7 @@ check(code not in (0, 1, 2) and out == "",
 print("== R-665: audit without git fails loud ==")
 with tempfile.TemporaryDirectory() as shim:
     os.symlink(sys.executable, Path(shim) / "python3")
-    r = subprocess.run(_engine_argv("docs/ai/engine.py", root, "audit",
+    r = subprocess.run(_engine_argv(root, "audit",
                                     "--skill", str(REPO / "skill")),
                        cwd=root, capture_output=True, text=True, env={"PATH": shim})
     check(r.returncode not in (0, 1, 2) and "git" in r.stderr.lower(),
@@ -835,9 +836,8 @@ SKILL_DIR = REPO / "skill"
 
 
 def eng(root: Path, *args: str, env: dict | None = None) -> tuple[int, str, str]:
-    """Run the SKILL SOURCE engine against `root` (the fresh-scaffold shape:
-    no docs/ai/engine.py exists yet, so --root is the contract)."""
-    r = subprocess.run(_engine_argv(ENGINE_SRC, root, *args, python_takes_root=True),
+    """Run the arm against `root` — the fresh-scaffold shape, where `--root` is the contract."""
+    r = subprocess.run(_engine_argv(root, *args),
                        cwd=root, capture_output=True, text=True, env=env)
     return r.returncode, r.stdout, r.stderr
 
@@ -934,11 +934,11 @@ check(code == 0, "apply_fresh_exit_0", f"exit={code} err={err[:300]!r}")
 def _same(a: Path, b: Path) -> bool:
     return a.is_file() and a.read_bytes() == b.read_bytes()
 owned_ok = all(_same(root / "docs/ai/rules/core" / n, SKILL_DIR / "assets/rules/core" / n) for n in CORE_RULES)
-check(owned_ok and _same(root / "docs/ai/engine.py", ENGINE_SRC)
+check(owned_ok
       and _same(root / "opencode.json", SKILL_DIR / "assets/templates/opencode.json.tpl")
       and (root / "docs/ai/rules/stacks/dotnet").is_dir(),
       "apply_copies_owned_set_byte_for_byte")
-expected_owned = sorted(["docs/ai/engine.py", "opencode.json"]
+expected_owned = sorted(["opencode.json"]
                         + [f"docs/ai/rules/core/{n}" for n in CORE_RULES]
                         + [f"docs/ai/rules/stacks/dotnet/{p.name}" for p in (SKILL_DIR / "assets/rules/stacks/dotnet").glob("*.md")])
 expected_manifest = ('{\n  "legislatorVersion": ' + VERSION + ',\n  "stacks": ["dotnet"],\n  "keep": [],\n  "ownedFiles": [\n'
@@ -1049,7 +1049,7 @@ check(heads == ["## Created", "## Overwritten", "## Deleted", "## Needs your rev
 created = out.split("## Created", 1)[1].split("## Overwritten", 1)[0] if "## Created" in out else ""
 check(f"- `docs/ai/rules/core/okf.md`" in created and "- `docs/cases/README.md`" in created,
       "report_created_lists_owned_files_and_step4_artifacts_from_snapshots", out[:600])
-check(bool(out.strip()) and out.rstrip("\n").splitlines()[-1] == f"Emitted by docs/ai/engine.py report — constitution v{VERSION}.",
+check(bool(out.strip()) and out.rstrip("\n").splitlines()[-1] == f"Emitted by legislator report — constitution v{VERSION}.",
       "report_stamp_is_last_line", out[-200:])
 code2, out2, _ = eng(root, "report", "--skill", str(SKILL_DIR))
 check(out == out2, "report_byte_stable")
@@ -1057,7 +1057,7 @@ check(out == out2, "report_byte_stable")
 root = git_repo({"AGENTS.md": "# P\n\n@docs/ai/rules/core/okf.md\n@docs/ai/rules/core/ghost.md\n", "docs/notes/a.md": "a\n",
                  "docs/ai/rules/core/okf.md": "stale\n",
                  "docs/ai/manifest.json": '{"legislatorVersion": 23, "stacks": [], "keep": [], "ownedFiles": ["docs/ai/rules/core/okf.md"]}'})
-eng(root, "apply", "--skill", str(SKILL_DIR), "--stacks", "", "--keep-add", "docs/notes/a.md::notes", "--keep-add", "docs/ai/engine.py::x")
+eng(root, "apply", "--skill", str(SKILL_DIR), "--stacks", "", "--keep-add", "docs/notes/a.md::notes", "--keep-add", "opencode.json::x")
 scaffold_all(root)
 eng(root, "verify", "--skill", str(SKILL_DIR))
 code, out, err = eng(root, "report", "--skill", str(SKILL_DIR))
@@ -1074,7 +1074,7 @@ check("@docs/ai/rules/core/sdd.md" in review and "remove" in review and "@docs/a
       and "@docs/okf/codebase-map.md" in review and "## Boundaries" in review and "docs/okf/glossary.md" in review,
       "report_review_carries_import_deltas_and_scaffold_wiring", review[:500])
 keep = _sec(out, "## Keep list", "## Health")
-check("docs/notes/a.md" in keep and "docs/ai/engine.py" in keep and "owned" in keep,
+check("docs/notes/a.md" in keep and "opencode.json" in keep and "owned" in keep,
       "report_keep_list_added_and_refused", keep[:300])
 health = out.split("## Health", 1)[1] if "## Health" in out else ""
 check("[imports-resolve]" in health and "ghost.md" in health, "report_health_runs_audit_checks_1_to_6", health[:300])

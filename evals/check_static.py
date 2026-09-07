@@ -120,27 +120,44 @@ if horizon:
                   f"Horizon's {case} is still open",
                   f"backlog says {status} — the closing edition must drop it from the Horizon")
 
-print("== engine is an owned, delivered artifact ==")
-engine_src = SKILL / "assets" / "engine" / "engine.py"
-check(engine_src.exists(), "assets/engine/engine.py exists")
-if engine_src.exists():
-    eng = engine_src.read_text()
-    check(eng.startswith("#!/usr/bin/env python3"), "engine has a python3 shebang")
-    # v22 adds os + tempfile: the baseline job stages its one write in a
-    # sibling temp file and os.replace's it (ADR-0003's atomicity clause).
-    # v24 adds hashlib: the run record's path is derived from the repo root.
-    STDLIB_OK = {"re", "sys", "subprocess", "pathlib", "datetime",
-                 "__future__", "json", "os", "shutil", "tempfile", "hashlib"}
-    imported = set(re.findall(r"^\s*(?:from|import)\s+([a-zA-Z_][\w.]*)", eng, re.M))
-    check(imported <= STDLIB_OK, "engine imports only stdlib modules",
-          f"unexpected: {sorted(imported - STDLIB_OK)}")
-    for job in ("anchors", "okf-debt", "sdd-lint", "baseline",
-                "audit", "detect", "apply", "verify", "report"):
-        check(f'"{job}"' in eng, f"engine declares the {job} job")
-check("assets/engine/engine.py" in skill_md,
-      "SKILL.md Step 3 names the engine source", "Step 3 does not deliver it")
-check("docs/ai/engine.py" in skill_md,
-      "SKILL.md names the delivered engine path")
+print("== the deterministic arm is the binary, and the law says so ==")
+# BL-082 T-13 (R-8207, R-8213): parity is reached, so the Python arm leaves the
+# package and the law names one command per job. These six assertions are the
+# inversion of the thirteen that stood while the engine shipped - they do not
+# extend that section, they replace it.
+check(not (SKILL / "assets" / "engine" / "engine.py").exists(),
+      "no Python engine ships in the package",
+      "assets/engine/engine.py is still delivered")
+check(not list((REPO / "plugin" / "hooks").glob("*.py")),
+      "no Python hooks ship in the plugin",
+      f"still there: {sorted(f.name for f in (REPO / 'plugin' / 'hooks').glob('*.py'))}")
+
+rules_text = "\n".join(f.read_text() for f in sorted((SKILL / "assets" / "rules").rglob("*.md")))
+check("python3 docs/ai/engine.py" not in rules_text,
+      "law names the binary, not the interpreter",
+      "a rule file still spells `python3 docs/ai/engine.py`")
+check("assets/engine/engine.py" not in skill_md,
+      "SKILL.md no longer delivers an engine source",
+      "Step 3 still names assets/engine/engine.py")
+
+# The tag-time digest record ships WITH the law rather than being delivered into
+# a repo: audit already takes `--skill`, and a fleet member has no
+# `evals/benchmarks/` to read (operator ruling 2026-09-04). It carries the
+# edition because a bare two-column digest list cannot be pinned to one, and a
+# record that outlived its edition would pass in silence.
+release = SKILL / "assets" / "release" / "release.json"
+check(release.is_file(), "the release record ships with the package",
+      f"expected at {release.relative_to(REPO)}")
+if release.is_file():
+    try:
+        record = json.loads(release.read_text())
+    except ValueError as exc:
+        record = {}
+        check(False, "the release record parses as JSON", str(exc))
+    edition = (SKILL / "VERSION").read_text().strip()
+    check(str(record.get("edition", "")).split(".")[0] == edition,
+          "the release record pins this edition",
+          f"record says {record.get('edition')!r}, VERSION says {edition!r}")
 
 print("== file authority: one table, no prose rights ==")
 # BL-038: the `## File authority` table is the only place in the skill
@@ -246,12 +263,15 @@ check(not offenders, "no absolute local paths or fleet repo names in tracked fil
 if not names:
     print("  note  fleet-name check skipped — decoding key not on this machine")
 
-print("== BL-051: the engine's callers state its failure and absence branches ==")
-# Checks 15 and 17 are the audit's readers of docs/ai/engine.py. Both read
-# stdout lines only, so an engine that crashes (empty stdout, non-zero exit)
+print("== BL-051: the arm's callers state its failure and absence branches ==")
+# Checks 15 and 17 are the audit's readers of the deterministic arm. Both read
+# stdout lines only, so an arm that crashes (empty stdout, non-zero exit)
 # reads to them as "no findings" — the audit fails open on the one instrument
-# the verification rung fails closed on. Parse each check body out of SKILL.md
-# rather than restating its text here (POLICY.md §8).
+# the verification rung fails closed on. v26 retired the Python engine, so the
+# instrument is `legislator <job>`: the obligation moved with it rather than
+# expiring, because an agent-performed audit still spawns the arm and an arm
+# that is not installed is exactly the absence BL-051 named. Parse each check
+# body out of SKILL.md rather than restating its text here (POLICY.md §8).
 audit_body = skill_md.split("## Audit — read-only health check", 1)[-1]
 check_bodies = {}
 for num in ("15", "16", "17", "18"):
@@ -265,9 +285,9 @@ check(set(check_bodies) >= {"15", "17"},
 
 for num, slug in (("15", "okf-anchors"), ("17", "okf-sync-debt")):
     body = check_bodies.get(num, "")
-    check("python3" in body and re.search(r"python3[^.]{0,80}(absent|missing|not (?:on|available))",
-                                          body, re.I | re.S) is not None,
-          f"check_{num}_has_python3_branch: check {num} ({slug}) states what it does when python3 is absent",
+    check("legislator" in body and re.search(r"legislator[^.]{0,120}(absent|missing|not (?:on|available))",
+                                             body, re.I | re.S) is not None,
+          f"check_{num}_has_absent_arm_branch: check {num} ({slug}) states what it does when the legislator binary is absent",
           "no absent-branch sentence found")
     # Two independent signals rather than one proximity match: the body must
     # talk about the exit code AND declare a bad one not-clean. Requiring them
@@ -277,7 +297,7 @@ for num, slug in (("15", "okf-anchors"), ("17", "okf-sync-debt")):
         r"(check failure|never (?:as )?a clean check|not a clean check|never clean)",
         body, re.I) is not None
     check(names_exit and declares_failure,
-          f"check_{num}_names_nonzero_exit: check {num} ({slug}) states that an engine exit beyond its findings code is a check failure",
+          f"check_{num}_names_nonzero_exit: check {num} ({slug}) states that an arm exit beyond its findings code is a check failure",
           f"names_exit={names_exit} declares_failure={declares_failure}")
 
 print("== BL-051: the keep refusal covers the whole owned set ==")

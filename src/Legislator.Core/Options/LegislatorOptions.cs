@@ -67,7 +67,6 @@ public sealed record LegislatorOptions
     /// <summary>A file past this many bytes is not prose or source, so the symbol scan skips it.</summary>
     public OptionValue<int> MaxFileBytes { get; init; } = new(2_000_000, OptionsLayer.Defaults);
 
-    public OptionValue<string> EngineFile { get; init; } = new("engine.py", OptionsLayer.Defaults); // under docs/ai
 
     public OptionValue<string> StacksDir { get; init; } = new("stacks", OptionsLayer.Defaults); // under docs/ai/rules
 
@@ -118,7 +117,9 @@ public sealed record LegislatorOptions
 
     public OptionValue<string> SkillRulesPath { get; init; } = new("assets/rules", OptionsLayer.Defaults); // under the skill package
 
-    public OptionValue<string> SkillEnginePath { get; init; } = new("assets/engine/engine.py", OptionsLayer.Defaults); // under the skill package
+    public OptionValue<string> ArmExecutable { get; init; } = new("legislator", OptionsLayer.Defaults); // the deterministic arm, resolved through PATH
+
+    public OptionValue<string> SkillReleaseFile { get; init; } = new("assets/release/release.json", OptionsLayer.Defaults); // under the skill package
 
     public OptionValue<string> SkillOpencodeTemplate { get; init; } = new("assets/templates/opencode.json.tpl", OptionsLayer.Defaults); // under the skill package
 
@@ -189,7 +190,6 @@ public sealed record LegislatorOptions
         ["build_dirs"] = nameof(BuildDirs),
         ["human_class_docs"] = nameof(HumanClassDocs),
         ["max_file_bytes"] = nameof(MaxFileBytes),
-        ["engine_file"] = nameof(EngineFile),
         ["stacks_dir"] = nameof(StacksDir),
         ["legislation_marker"] = nameof(LegislationMarker),
         ["skill_version_file"] = nameof(SkillVersionFile),
@@ -223,7 +223,8 @@ public sealed record LegislatorOptions
         ["skill_homes"] = nameof(SkillHomes),
         ["skills_rule_file"] = nameof(SkillsRuleFile),
         ["skill_rules_path"] = nameof(SkillRulesPath),
-        ["skill_engine_path"] = nameof(SkillEnginePath),
+        ["arm_executable"] = nameof(ArmExecutable),
+        ["skill_release_file"] = nameof(SkillReleaseFile),
         ["skill_opencode_template"] = nameof(SkillOpencodeTemplate),
         ["skill_file"] = nameof(SkillFile),
         ["rules_core_dir"] = nameof(RulesCoreDir),
@@ -269,7 +270,6 @@ public sealed record LegislatorOptions
         yield return ("build_dirs", string.Join(ListSeparator, BuildDirs.Value), BuildDirs.Source);
         yield return ("human_class_docs", string.Join(ListSeparator, HumanClassDocs.Value), HumanClassDocs.Source);
         yield return ("max_file_bytes", MaxFileBytes.Value.ToString(CultureInfo.InvariantCulture), MaxFileBytes.Source);
-        yield return ("engine_file", EngineFile.Value, EngineFile.Source);
         yield return ("stacks_dir", StacksDir.Value, StacksDir.Source);
         yield return ("legislation_marker", LegislationMarker.Value, LegislationMarker.Source);
         yield return ("skill_version_file", SkillVersionFile.Value, SkillVersionFile.Source);
@@ -291,7 +291,8 @@ public sealed record LegislatorOptions
         yield return ("skill_homes", string.Join(ListSeparator, SkillHomes.Value), SkillHomes.Source);
         yield return ("skills_rule_file", SkillsRuleFile.Value, SkillsRuleFile.Source);
         yield return ("skill_rules_path", SkillRulesPath.Value, SkillRulesPath.Source);
-        yield return ("skill_engine_path", SkillEnginePath.Value, SkillEnginePath.Source);
+        yield return ("arm_executable", ArmExecutable.Value, ArmExecutable.Source);
+        yield return ("skill_release_file", SkillReleaseFile.Value, SkillReleaseFile.Source);
         yield return ("skill_opencode_template", SkillOpencodeTemplate.Value, SkillOpencodeTemplate.Source);
         yield return ("skill_file", SkillFile.Value, SkillFile.Source);
         yield return ("rules_core_dir", RulesCoreDir.Value, RulesCoreDir.Source);

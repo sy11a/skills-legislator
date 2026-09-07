@@ -33,7 +33,6 @@ public sealed class AuditTwins
         var fs = new MockFileSystem();
         fs.AddDirectory($"{Root}/docs/ai");
         fs.AddFile($"{Root}/docs/ai/manifest.json", new MockFileData(manifest ?? Manifest()));
-        fs.AddFile($"{Root}/docs/ai/engine.py", new MockFileData("# engine\n"));
         fs.AddFile($"{Root}/AGENTS.md", new MockFileData("# Repo\n\n@docs/okf/index.md\n"));
         fs.AddFile($"{Root}/docs/okf/index.md", new MockFileData("# OKF\n\nSee `docs/okf/codebase-map.md`.\n"));
         fs.AddFile(
@@ -46,8 +45,37 @@ public sealed class AuditTwins
         }
 
         fs.AddFile($"{SkillPath}/VERSION", new MockFileData($"{SkillVersion}\n"));
+
+        // The ruler runs on a machine that has the arm installed and an edition that carries no
+        // released digests yet, so check 20 answers with one Info line and no Warning. The twin
+        // has to stand on the same machine or it is measuring the fixture, not the job.
+        fs.AddFile($"{BinDir}/{ArmName}", new MockFileData(""));
+        fs.AddFile(
+            $"{SkillPath}/assets/release/release.json",
+            new MockFileData($"{{\"edition\": \"{SkillVersion}\", \"digests\": {{}}}}"));
         return fs;
     }
+
+    private const string BinDir = "/bin";
+
+    private const string ArmName = "legislator";
+
+    /// <summary>A machine whose PATH holds the directory the fixture installs the arm into.</summary>
+    private static FakeEnvironment Machine()
+    {
+        var env = new FakeEnvironment();
+        env.Vars["PATH"] = BinDir;
+        return env;
+    }
+
+    /// <summary>The given process script, with `legislator version --json` answered by the installed arm.</summary>
+    private static FakeProcessRunner WithArm(IProcessRunner inner) => new()
+    {
+        OnRun = (file, args, dir) =>
+            file.EndsWith(ArmName, StringComparison.Ordinal) && args.Count > 0 && args[0] == "version"
+                ? new ProcessResult(0, $"{{\"version\": \"{SkillVersion}\", \"rid\": \"linux-x64\", \"sha256\": \"deadbeef\"}}", "")
+                : inner.Run(file, args, dir, TimeSpan.FromSeconds(5)),
+    };
 
     /// <summary>A tree that is no git repository: git runs and says so, which is not the same as git being absent.</summary>
     private static FakeProcessRunner NoRepo() => new()
@@ -68,7 +96,7 @@ public sealed class AuditTwins
         var stderr = new StringWriter();
         var exit = Program.Run(
             ["audit", "--skill", SkillPath, "--root", Root, .. extra], JobRegistry.Jobs, HookRegistry.Hooks, fs,
-            TimeProvider.System, new FakeEnvironment(), git ?? NoRepo(), TextReader.Null, stdout, stderr);
+            TimeProvider.System, Machine(), WithArm(git ?? NoRepo()), TextReader.Null, stdout, stderr);
 
         return (exit, stdout.ToString(), stderr.ToString());
     }
@@ -88,9 +116,24 @@ public sealed class AuditTwins
     {
         var (exit, output, _) = Audit(AuditRepo());
 
+        // v26 (T-13.2): clean means nothing actionable, not nothing printed - check 20's
+        // untagged-edition Info line stands in every audit of an edition before its tag, and
+        // Info does not raise the exit code.
         Assert.Equal(0, exit);
         Assert.Contains("# AI-Layer Audit", output, StringComparison.Ordinal);
-        Assert.Contains("No findings.", output, StringComparison.Ordinal);
+        Assert.DoesNotContain("## Critical", output, StringComparison.Ordinal);
+        Assert.DoesNotContain("## Warning", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    [Parity("engine", "audit_untagged_edition_is_an_info_line_not_a_finding")]
+    public void Audit_untagged_edition_is_an_info_line_not_a_finding()
+    {
+        var (exit, output, _) = Audit(AuditRepo());
+
+        Assert.Contains("## Info", output, StringComparison.Ordinal);
+        Assert.Contains("[arm-integrity]", output, StringComparison.Ordinal);
+        Assert.Equal(0, exit);
     }
 
     [Fact]
@@ -108,7 +151,7 @@ public sealed class AuditTwins
     {
         var (_, output, _) = Audit(AuditRepo());
 
-        Assert.Contains("engine.py audit", output, StringComparison.Ordinal);
+        Assert.Contains("legislator audit", output, StringComparison.Ordinal);
         Assert.Contains("constitution v", output, StringComparison.Ordinal);
     }
 
@@ -329,5 +372,52 @@ public sealed class AuditTwins
         var (_, output, _) = Audit(fs, git);
 
         Assert.Contains("newest entry is 2026-01-15", output, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Check 18, `tracker-drift`, arrived with edition v25 while this port was mid-flight and was
+    /// carried as declared debt to this task (ruling 2026-09-04). It is file-local by design: the
+    /// tracker itself is never read, only what `docs/backlog.md` says about its own region.
+    /// </summary>
+    [Fact]
+    [Parity("engine", "audit_check18_item_above_marker")]
+    public void Audit_check18_item_above_marker()
+    {
+        var (_, output, _) = Audit(AuditRepo(new()
+        {
+            ["docs/backlog.md"] = "# r — Backlog\n\n## BL-042 — stray item\n\n"
+                + "<!-- clerk:mirror generated 2026-08-31T00:00:00Z from o/r — do not edit -->\n\n"
+                + "## Ready\n\n- **BL-007 — mirrored** (#7)\n",
+        }));
+
+        Assert.Contains("[tracker-drift]", output, StringComparison.Ordinal);
+        Assert.Contains("BL-042", output, StringComparison.Ordinal);
+        Assert.DoesNotContain("BL-007", output.Split("[tracker-drift]", 2)[1].Split('\n')[0], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    [Parity("engine", "audit_check18_items_while_tracker_recorded")]
+    public void Audit_check18_items_while_tracker_recorded()
+    {
+        var (_, output, _) = Audit(AuditRepo(new()
+        {
+            ["docs/backlog.md"] = "# r — Backlog\n\n## BL-042 — an item\n",
+            ["AGENTS.md"] = "# Repo\n\n- Task tracker: the project's sources note records it\n\n@docs/okf/index.md\n",
+        }));
+
+        Assert.Contains("[tracker-drift]", output, StringComparison.Ordinal);
+        Assert.Contains("two sources of truth", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    [Parity("engine", "audit_check18_quiet_without_tracker")]
+    public void Audit_check18_quiet_without_tracker()
+    {
+        var (_, output, _) = Audit(AuditRepo(new()
+        {
+            ["docs/backlog.md"] = "# r — Backlog\n\n## BL-042 — an item\n",
+        }));
+
+        Assert.DoesNotContain("[tracker-drift]", output, StringComparison.Ordinal);
     }
 }

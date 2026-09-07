@@ -1,9 +1,8 @@
 {
-  "legislatorVersion": 25,
+  "legislatorVersion": 26,
   "stacks": [],
   "keep": [],
   "ownedFiles": [
-    "docs/ai/engine.py",
     "docs/ai/rules/core/adr.md",
     "docs/ai/rules/core/artifact-lifecycle.md",
     "docs/ai/rules/core/changelog.md",

@@ -58,10 +58,10 @@ whether the identifier still exists, not whether its declaration kept its
 shape, and a dotted anchor asks only about the type it names — the member
 half is prose.
 
-- **`python3 docs/ai/engine.py anchors` is the executing arm of this rule** —
+- **`legislator anchors` is the executing arm of this rule** —
   it writes nothing and reports every anchor that no longer resolves.
   `core/verification.md` carries the rung that requires it before "done".
-- **`python3 docs/ai/engine.py okf-debt`** names anchored documents whose
+- **`legislator okf-debt`** names anchored documents whose
   sources moved on without them: an anchored source file with a commit more
   than 30 days newer than the document's own newest commit. A path-anchor
   naming a directory is not a source for this purpose — a directory's history

@@ -20,7 +20,7 @@ public sealed class OwnedSetTests
         var owned = OwnedSet.Of(fs, Package(fs), Layout, Options, []);
 
         Assert.Equal(
-            ["docs/ai/engine.py", "docs/ai/rules/core/okf.md", "docs/ai/rules/core/sdd.md", "opencode.json"],
+            ["docs/ai/rules/core/okf.md", "docs/ai/rules/core/sdd.md", "opencode.json"],
             owned.Keys.Order(StringComparer.Ordinal));
     }
 
@@ -53,9 +53,10 @@ public sealed class OwnedSetTests
         Assert.Equal(
             $"{SkillPath}/assets/rules/core/okf.md",
             OwnedSet.SourceOf("docs/ai/rules/core/okf.md", Package(fs), Layout, Options));
-        Assert.Equal(
-            $"{SkillPath}/assets/engine/engine.py",
-            OwnedSet.SourceOf("docs/ai/engine.py", Package(fs), Layout, Options));
+        // v26 (R-8207): the engine left the owned set with the Python arm. A path the package
+        // no longer ships has no source inside it - which is what makes apply delete the file
+        // that an earlier edition delivered, instead of copying over it.
+        Assert.Null(OwnedSet.SourceOf("docs/ai/engine.py", Package(fs), Layout, Options));
         Assert.Equal(
             $"{SkillPath}/assets/templates/opencode.json.tpl",
             OwnedSet.SourceOf("opencode.json", Package(fs), Layout, Options));

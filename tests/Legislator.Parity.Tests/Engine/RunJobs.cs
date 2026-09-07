@@ -30,7 +30,6 @@ internal static class RunJobs
     /// <summary>The owned set this package delivers when `dotnet` is subscribed, ordinal-sorted as the manifest writes it.</summary>
     public static readonly string[] OwnedWithDotnet =
     [
-        "docs/ai/engine.py",
         "docs/ai/rules/core/okf.md",
         "docs/ai/rules/core/sdd.md",
         "docs/ai/rules/stacks/dotnet/a.md",
@@ -40,7 +39,6 @@ internal static class RunJobs
     /// <summary>The same set with no stack subscribed - what every fixture passing `--stacks ""` delivers.</summary>
     public static readonly string[] OwnedNoStack =
     [
-        "docs/ai/engine.py",
         "docs/ai/rules/core/okf.md",
         "docs/ai/rules/core/sdd.md",
         "opencode.json",
@@ -72,7 +70,6 @@ internal static class RunJobs
         fs.AddFile($"{SkillPath}/assets/rules/stacks/dotnet/a.md", new MockFileData("# dotnet law\n"));
         fs.AddFile($"{SkillPath}/assets/rules/stacks/aurelia/x.md", new MockFileData("# aurelia law\n"));
         fs.AddFile($"{SkillPath}/assets/templates/opencode.json.tpl", new MockFileData("{\"instructions\": []}\n"));
-        fs.AddFile($"{SkillPath}/assets/engine/engine.py", new MockFileData("# engine\n"));
         fs.AddFile(
             $"{SkillPath}/SKILL.md",
             new MockFileData(

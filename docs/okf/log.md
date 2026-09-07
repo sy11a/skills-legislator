@@ -339,3 +339,31 @@ growth. The artifact went 3 445 624 → 5 158 216 bytes across the port and cost
 nothing measurable at start; NativeAOT's price is image size, paid once on disk,
 and a hook pays per invocation.
 
+## 2026-09-07 — BL-082 T-13: the law names one command per job
+
+The Python arm is retired. `skill/assets/engine/engine.py` and the four
+`plugin/hooks/*.py` scripts are deleted, `hooks.json` names the binary, and
+every law sentence that spelled an interpreter now spells `legislator <job>`:
+the static rung in `core/verification.md`, the two executing-arm bullets in
+`core/okf.md`, the analyze gate in `core/sdd.md`, the baseline sentence in
+`core/artifact-lifecycle.md`, and `SKILL.md`'s audit checks 15 and 17.
+Member #0 took the delivery in the same pass — five owned files overwritten,
+`docs/ai/engine.py` deleted by the owned-set diff.
+
+Three things were decided rather than transliterated, each on the owner's
+ruling and each recorded in the case plan. **BL-051's obligation moved with
+the instrument instead of expiring**: checks 15 and 17 had lost their
+absent-branch and non-clean-exit sentences in the rewrite, and they are back
+in the binary's voice — an agent-performed audit still spawns the arm, and an
+arm that is not installed is exactly the absence BL-051 named. **Info no
+longer raises the audit's exit code** — only Warning and above do; check 20
+prints an Info line on every untagged edition, and an audit that exits 1 for
+it teaches its callers to stop reading the exit code. The clean shape
+therefore means "nothing actionable", asserted as the absence of the two
+actionable sections rather than the presence of `No findings.`. **And the
+runner was found broken, not slow**: `dotnet test` discovers zero tests on
+this SDK with the xunit MTP adapter, in a clean checkout as well as in the
+tree, so `evals/check_dotnet.sh` now runs each module's binary directly and
+treats a zero-test module as a named failure. The suite is 656 tests and was
+19 red at the start of the pass.
+

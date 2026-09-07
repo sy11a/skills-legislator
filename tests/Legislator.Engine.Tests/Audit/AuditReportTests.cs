@@ -20,7 +20,8 @@ public sealed class AuditReportTests
 
     private static JobResult Report(IFileSystem fs, params string[] extra) =>
         new AuditJob().Run(new JobContext(
-            fs, new FixedTimeProvider(Day), new FakeEnvironment(), AuditFixture.NoRepo(),
+            fs, new FixedTimeProvider(Day), AuditFixture.Machine(),
+            AuditFixture.WithArm(AuditFixture.NoRepo()),
             new LegislatorOptions(), AuditFixture.Root, ["--skill", AuditFixture.SkillPath, .. extra]));
 
     private static string[] Lines(JobResult report) => report.Stdout.Split('\n');
@@ -45,7 +46,7 @@ public sealed class AuditReportTests
         var report = Report(AuditFixture.Repo());
 
         var lines = Lines(report);
-        Assert.Equal("Emitted by docs/ai/engine.py audit — constitution v25.", lines[^2]);
+        Assert.Equal("Emitted by legislator audit — constitution v25.", lines[^2]);
         Assert.Equal("", lines[^1]);
     }
 
@@ -102,7 +103,12 @@ public sealed class AuditReportTests
         Assert.DoesNotContain("## Critical", report.Stdout, StringComparison.Ordinal);
         Assert.DoesNotContain("## Warning", report.Stdout, StringComparison.Ordinal);
         Assert.Contains("## Info", report.Stdout, StringComparison.Ordinal);
-        Assert.Equal(1, report.ExitCode);
+
+        // v26 (T-13.2): Info alone does not raise the exit code. An Info line is
+        // by construction not a finding to act on - check 20 prints one on every
+        // untagged edition - and an audit that exits 1 for it teaches its callers
+        // to stop reading the code.
+        Assert.Equal(0, report.ExitCode);
     }
 
     [Fact]

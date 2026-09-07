@@ -38,7 +38,6 @@ public static class OwnedSet
         }
 
         owned[options.OpencodeConfig.Value] = $"{skill.Root.TrimEnd('/')}/{options.SkillOpencodeTemplate.Value}";
-        owned[layout.Relative(layout.Engine)] = $"{skill.Root.TrimEnd('/')}/{options.SkillEnginePath.Value}";
         return owned;
     }
 
@@ -55,11 +54,6 @@ public static class OwnedSet
         if (relative.StartsWith(rules, StringComparison.Ordinal))
         {
             return $"{root}/{options.SkillRulesPath.Value}/{relative[rules.Length..]}";
-        }
-
-        if (relative == layout.Relative(layout.Engine))
-        {
-            return $"{root}/{options.SkillEnginePath.Value}";
         }
 
         return relative == options.OpencodeConfig.Value

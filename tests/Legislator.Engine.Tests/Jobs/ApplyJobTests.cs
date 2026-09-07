@@ -45,7 +45,7 @@ public sealed class ApplyJobTests
 
         Assert.Equal(0, result.ExitCode);
         Assert.Equal($"apply: fresh mode, constitution v{SkillVersion}, stacks [\"dotnet\"]", lines[0]);
-        Assert.Equal("  owned: 5 created, 0 overwritten, 0 unchanged, 0 deleted", lines[1]);
+        Assert.Equal("  owned: 4 created, 0 overwritten, 0 unchanged, 0 deleted", lines[1]);
         Assert.Equal("  keep: 0 added, 0 removed, 0 refused", lines[2]);
         Assert.StartsWith("run record: ", lines[^1], StringComparison.Ordinal);
     }
@@ -70,7 +70,7 @@ public sealed class ApplyJobTests
 
         var result = RunApply(fs, null, "--stacks", string.Empty);
 
-        Assert.Contains("  owned: 0 created, 0 overwritten, 4 unchanged, 0 deleted", result.Stdout, StringComparison.Ordinal);
+        Assert.Contains("  owned: 0 created, 0 overwritten, 3 unchanged, 0 deleted", result.Stdout, StringComparison.Ordinal);
     }
 
     [Fact]

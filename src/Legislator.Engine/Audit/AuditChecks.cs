@@ -29,7 +29,7 @@ public sealed partial class AuditChecks(JobContext job, SkillPackage skill)
         "okf-index-links", "codebase-map", "orphan-docs", "journal-recency",
         "foreign-structures", "keep-list", "project-rules", "stray-rulebooks",
         "glossary-vitality", "skill-bindings", "okf-anchors", "legacy-home-violation",
-        "okf-sync-debt",
+        "okf-sync-debt", "tracker-drift", "case-collisions", "arm-integrity",
     ];
 
     /// <summary>A check's place in the pinned order, and the far end for anything the model named that the order does not - an unknown slug prints last rather than crashing the report.</summary>
@@ -77,6 +77,12 @@ public sealed partial class AuditChecks(JobContext job, SkillPackage skill)
     [GeneratedRegex(@"^\|[\s|-]+$")]
     private static partial Regex RuleRow();
 
+    [GeneratedRegex(@"^(?:#{2,}\s+|\s*[-*]\s+)\**\s*([A-Z]{2,}-\d+)")]
+    private static partial Regex WorkItem();
+
+    [GeneratedRegex(@"^\s*<!--.*mirror generated.*-->\s*$", RegexOptions.IgnoreCase)]
+    private static partial Regex MirrorMarker();
+
     public AuditResult Run()
     {
         var result = new AuditResult();
@@ -99,6 +105,9 @@ public sealed partial class AuditChecks(JobContext job, SkillPackage skill)
         result.AddRange(Check14SkillBindings());
         result.AddRange(Check16LegacyHomeViolation());
         result.AddRange(Check15OkfAnchorsAndSyncDebt());
+        result.AddRange(Check18TrackerDrift(entry));
+        result.AddRange(Check19CaseCollisions(read));
+        result.AddRange(Check20ArmIntegrity());
         return result;
     }
 
@@ -420,12 +429,6 @@ public sealed partial class AuditChecks(JobContext job, SkillPackage skill)
             yield break;
         }
 
-        if (!fs.File.Exists(layout.Engine))
-        {
-            yield return new(Severity.Info, "okf-anchors",
-                $"{layout.Relative(layout.Engine)}: engine absent (repo below v20) → re-run /legislator to upgrade");
-        }
-
         foreach (var line in AnchorsJob.Unresolved(job))
         {
             yield return new(Severity.Warning, "okf-anchors",
@@ -436,6 +439,97 @@ public sealed partial class AuditChecks(JobContext job, SkillPackage skill)
         {
             yield return new(Severity.Warning, "okf-sync-debt",
                 $"{line} → update the document or state why it still holds");
+        }
+    }
+
+    /// <summary>
+    /// Check 18, `tracker-drift` (Warning). File-local by design: the tracker itself is never
+    /// read, only what the backlog says about its own shape. Two drifts, and they are mutually
+    /// exclusive - a work item ABOVE the generated mirror marker sits in the region that is
+    /// meant to hold pointers, and a work item in a file with no mirror at all while the entry
+    /// document records a tracker is a second source of truth for the same queue.
+    /// </summary>
+    private IEnumerable<AuditFinding> Check18TrackerDrift(string? entry)
+    {
+        var backlog = $"{layout.Docs}/{options.BacklogFile.Value}";
+        if (!fs.File.Exists(backlog))
+        {
+            yield break;
+        }
+
+        var lines = Read(backlog).Split('\n');
+        int? marker = null;
+        for (var i = 0; i < lines.Length; i++)
+        {
+            if (MirrorMarker().IsMatch(lines[i].TrimEnd('\r')))
+            {
+                marker = i;
+                break;
+            }
+        }
+
+        var tracked = entry is not null
+            && Read($"{layout.Root}/{entry}").Contains("Task tracker:", StringComparison.Ordinal);
+        var where = layout.Relative(backlog);
+
+        for (var i = 0; i < lines.Length; i++)
+        {
+            var item = WorkItem().Match(lines[i]);
+            if (!item.Success)
+            {
+                continue;
+            }
+
+            if (marker is int at && i < at)
+            {
+                yield return new(Severity.Warning, "tracker-drift",
+                    $"{where}:{i + 1}: work item {item.Groups[1].Value} above the generated mirror marker → the pointer region holds no items; move it into the tracker or below the marker");
+            }
+            else if (marker is null && tracked)
+            {
+                yield return new(Severity.Warning, "tracker-drift",
+                    $"{where}:{i + 1}: work item {item.Groups[1].Value} while the entry document records a task tracker and this file carries no generated mirror → two sources of truth; migrate the item or drop the tracker line");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Check 19, `case-collisions` (Warning). An owned name that differs from a file already on
+    /// disk only by case survives on Linux and collides the moment the repository is cloned onto
+    /// a case-insensitive file system. The mechanism is <see cref="OwnedSet.CaseCollisions"/>,
+    /// built in T-10 without a slug because the check set is law and a number was not free then.
+    /// </summary>
+    private IEnumerable<AuditFinding> Check19CaseCollisions(ManifestRead read)
+    {
+        foreach (var finding in OwnedSet.CaseCollisions(
+                     fs, layout, ManifestFile.Strings(read.Node, ManifestFile.OwnedFilesKey)))
+        {
+            yield return new(Severity.Warning, "case-collisions", finding);
+        }
+    }
+
+    /// <summary>
+    /// Check 20, `arm-integrity` (Warning). Is the deterministic arm on this machine the one this
+    /// edition pins, and is its binary the one the edition released? The check asks the BINARY
+    /// rather than the file system, because a name on PATH proves nothing about what runs.
+    ///
+    /// An edition that has not been tagged has released no digests, and that is stated rather
+    /// than passed over: a report that withholds without saying so reads as completeness
+    /// (`core/artifact-lifecycle.md`, no silent caps).
+    /// </summary>
+    private IEnumerable<AuditFinding> Check20ArmIntegrity()
+    {
+        var release = skill.Release;
+        foreach (var finding in ArmIntegrityCheck.Findings(
+                     fs, job.Env, job.Proc, options, release.Edition ?? SkillVersion, release.Digests))
+        {
+            yield return new(Severity.Warning, "arm-integrity", finding);
+        }
+
+        if (release.Digests.Count == 0)
+        {
+            yield return new(Severity.Info, "arm-integrity",
+                $"edition {release.Edition ?? SkillVersion} records no released digests yet → the arm's identity was checked by version alone; the digests arrive with the tag");
         }
     }
 

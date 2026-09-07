@@ -56,7 +56,7 @@ public sealed class ReportTwins
         Run(fs, "apply", null, null,
             "--stacks", string.Empty,
             "--keep-add", "docs/notes/a.md::notes",
-            "--keep-add", "docs/ai/engine.py::x");
+            "--keep-add", "opencode.json::x");
         ScaffoldAll(fs);
         Run(fs, "verify");
         return fs;
@@ -119,7 +119,7 @@ public sealed class ReportTwins
 
         Assert.NotEqual("", report.Trim());
         Assert.Equal(
-            $"Emitted by docs/ai/engine.py report — constitution v{SkillVersion}.",
+            $"Emitted by legislator report — constitution v{SkillVersion}.",
             report.TrimEnd('\n').Split('\n')[^1]);
     }
 
@@ -197,7 +197,7 @@ public sealed class ReportTwins
         var keep = Section(report, "## Keep list", "## Health");
 
         Assert.Contains("docs/notes/a.md", keep, StringComparison.Ordinal);
-        Assert.Contains("docs/ai/engine.py", keep, StringComparison.Ordinal);
+        Assert.Contains("opencode.json", keep, StringComparison.Ordinal);
         Assert.Contains("owned", keep, StringComparison.Ordinal);
     }
 

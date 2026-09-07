@@ -39,7 +39,6 @@ public sealed class GuardOwnedFilesHook : IHook
         var layout = new RepoLayout(ctx.Options, root);
         var owned =
             edited.StartsWith(layout.Rules + "/", StringComparison.Ordinal)
-            || string.Equals(edited, layout.Engine, StringComparison.Ordinal)
             || string.Equals(edited, layout.Opencode, StringComparison.Ordinal);
 
         return owned ? HookResult.Block(BlockMessage(layout)) : HookResult.Allow;
@@ -51,8 +50,8 @@ public sealed class GuardOwnedFilesHook : IHook
     /// asked to tell a sentence of law from a path default (the T-10 precedent).
     /// </summary>
     private static string BlockMessage(RepoLayout layout) =>
-        $"{layout.Relative(layout.Rules)}/**, {layout.Relative(layout.Engine)} and "
-        + $"{layout.Relative(layout.Opencode)} are machine-managed law — edit the legislator "
+        $"{layout.Relative(layout.Rules)}/** and {layout.Relative(layout.Opencode)} "
+        + "are machine-managed law — edit the legislator "
         + "skill source and re-run /legislator instead.";
 
     /// <summary>The edited path, made absolute against the payload's own working directory - the hook runs wherever the editor started it, not where the session stands.</summary>

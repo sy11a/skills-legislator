@@ -204,7 +204,7 @@ public sealed partial class ReportJob : IJob
 
         // The stamp still names the Python entry point: it is the document's own text, which
         // parity pins byte for byte, and T-13 is where the law renames the command.
-        text.Append($"Emitted by docs/ai/engine.py report — constitution v{version}.\n");
+        text.Append($"Emitted by {ctx.Options.ArmExecutable.Value} report — constitution v{version}.\n");
         return new JobResult(0, text.ToString(), "");
     }
 

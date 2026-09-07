@@ -1,5 +1,5 @@
 {
-  "description": "legislator-hooks \u2014 write-guard on owned law, git conduct guard, format-on-edit, OKF-sync reminder",
+  "description": "legislator-hooks — write-guard on owned law, git conduct guard, format-on-edit, OKF-sync reminder",
   "hooks": {
     "PreToolUse": [
       {
@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "sh -c 'for p in python3 py python; do command -v \"$p\" >/dev/null 2>&1 && exec \"$p\" \"$1\"; done; exit 0' hookshim \"${CLAUDE_PLUGIN_ROOT}/hooks/guard_owned_files.py\""
+            "command": "legislator hook guard_owned_files"
           }
         ]
       },
@@ -16,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "sh -c 'for p in python3 py python; do command -v \"$p\" >/dev/null 2>&1 && exec \"$p\" \"$1\"; done; exit 0' hookshim \"${CLAUDE_PLUGIN_ROOT}/hooks/guard_git_conduct.py\""
+            "command": "legislator hook guard_git_conduct"
           }
         ]
       }
@@ -27,7 +27,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "sh -c 'for p in python3 py python; do command -v \"$p\" >/dev/null 2>&1 && exec \"$p\" \"$1\"; done; exit 0' hookshim \"${CLAUDE_PLUGIN_ROOT}/hooks/format_on_edit.py\"",
+            "command": "legislator hook format_on_edit",
             "timeout": 10
           }
         ]
@@ -38,7 +38,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "sh -c 'for p in python3 py python; do command -v \"$p\" >/dev/null 2>&1 && exec \"$p\" \"$1\"; done; exit 0' hookshim \"${CLAUDE_PLUGIN_ROOT}/hooks/okf_sync_check.py\""
+            "command": "legislator hook okf_sync_check"
           }
         ]
       }

@@ -25,7 +25,6 @@ public sealed class RepoLayout
         Adr = Join(Docs, options.AdrDir.Value);
         Journal = Join(Docs, options.JournalDir.Value);
         Changelog = Join(root, options.ChangelogFile.Value);
-        Engine = Join(Ai, options.EngineFile.Value);
         Opencode = Join(root, options.OpencodeConfig.Value);
         RuleStacks = Join(Rules, options.StacksDir.Value);
         RulesCore = Join(Rules, options.RulesCoreDir.Value);
@@ -56,9 +55,6 @@ public sealed class RepoLayout
 
     /// <summary>The opencode host's configuration - an owned file since v20, which is why it is part of the layout rather than a project artifact.</summary>
     public string Opencode { get; }
-
-    /// <summary>The delivered engine script - what a repository below the current edition may still be running, and what an audit reports as absent.</summary>
-    public string Engine { get; }
 
     /// <summary>The stack rule directories; their names are what a manifest-less repository was subscribed to.</summary>
     public string RuleStacks { get; }

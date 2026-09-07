@@ -96,7 +96,7 @@ public sealed record Detection(
                 .Select(f => layout.Relative(f)));
         }
 
-        foreach (var extra in new[] { layout.Opencode, layout.Engine })
+        foreach (var extra in new[] { layout.Opencode })
         {
             if (fs.File.Exists(extra))
             {

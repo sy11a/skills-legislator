@@ -6,6 +6,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Removed
+
+- **The Python arm** (BL-082 T-13). `skill/assets/engine/engine.py` and the four
+  `plugin/hooks/*.py` scripts are gone; `plugin/hooks/hooks.json` names the
+  binary. A repository that still carries `docs/ai/engine.py` from an earlier
+  edition keeps an ordinary file: it left `ownedFiles`, the owned-files guard is
+  silent on it, and an upgrade run deletes it.
+
+### Changed
+
+- **The law names one command per job** (BL-082 T-13). Every rule sentence that
+  spelled `python3 docs/ai/engine.py <job>` now spells `legislator <job>` — the
+  static rung in `core/verification.md`, the executing-arm bullets in
+  `core/okf.md`, the analyze gate in `core/sdd.md`, the baseline sentence in
+  `core/artifact-lifecycle.md`, and audit checks 15 and 17 in `SKILL.md`. Those
+  two checks keep BL-051's obligation in the binary's voice: an arm that is not
+  on the machine is an Info line and never a clean check, and an exit beyond
+  clean-or-findings is a check failure.
+- **An audit's Info findings no longer raise its exit code** (BL-082 T-13) —
+  only Warning and above do. Check 20 prints an Info line on every edition that
+  has not been tagged yet, and an audit that exited 1 for it would teach its
+  callers to stop reading the exit code.
+- **`evals/check_dotnet.sh` runs the test modules directly** (BL-082 T-13) and
+  fails by name when a module reports zero tests. `dotnet test` discovers
+  nothing on this SDK with the xunit MTP adapter — a gate that reports nothing
+  is worse than one that fails.
+
 ### Added
 
 - **`L-2` — task entry defaults to `/autoflow` (Architector Release 0, track

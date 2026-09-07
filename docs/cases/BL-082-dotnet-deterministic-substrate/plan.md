@@ -847,3 +847,177 @@ The label list for this task is the output of `python3 evals/parity_labels.py | 
 | R-8215 | 12 |
 | R-8216 | every task's review step; 14 |
 | R-8217 | 14 (verification of the rule written at case opening) |
+
+---
+
+## T-13 residue — appended 2026-09-07 (append-only, per `core/sdd.md`)
+
+Raised by an audit of the uncommitted T-13 working tree against this plan and
+the spec, at the operator's request, after the branch was pushed and the tree
+snapshotted off-branch as `wip/bl-082-t13-snapshot` (deliberately red: 4
+static, 1 engine, 2 hook assertions). Seven items. Two are law and carry a
+**decision gate** — they are not started until the operator rules. The rest
+are the letter of Task 13 not yet executed.
+
+Verified as **already done** and needing no task: the ledger ratchet
+(`LabelCoverageTests.LedgerDebt` is 0); `docs/philosophy.md` § Horizon (its one
+item is BL-077, which this case does not close, so the edition removes
+nothing). Two `grep` hits are adjudicated, not fixed: `skill/SKILL.md:48`
+names `docs/ai/engine.py` deliberately, as the path that *leaves* `ownedFiles`
+in v26, and `plugin/README.md:202` names `python3 evals/check_hooks.py`, an
+eval instrument exempt by `.claude/rules/dotnet-substrate.md`.
+
+### T-13.1 [DECISION GATE] Checks 15 and 17 lost BL-051's obligation *per R-8207 (contradicts)*
+
+Rewriting the two checks to `legislator anchors` / `legislator okf-debt`
+dropped, rather than translated, what BL-051 put in them: neither body now
+states what the check does when the instrument is absent, nor that an exit
+beyond the findings code is a check failure. The reason BL-051 exists is
+unchanged by the port — both checks read stdout only, so an arm that dies
+reads to them as "no findings", and the audit fails open on the one instrument
+the ladder in `core/verification.md` fails closed on. `check_static.py`'s four
+BL-051 assertions are red because they still match on `python3`; re-cutting
+them to the binary without restoring the sentences would delete the obligation
+and pass.
+
+**The ruling asked for.** Restore both sentences in the binary's voice — check
+20 (`arm-integrity`) already carries the wording this edition settled on ("an
+absent arm is a finding, never a silent pass") — and then re-cut the four
+assertions from `python3` to `legislator`; or declare the obligation retired
+with its reason recorded here. Recommended: restore. Law text, so the edition
+carries it and T-14's benchmark validates it.
+
+### T-13.2 [DECISION GATE] A clean repo exits 1 on an Info-only audit *per R-8205 (contradicts)*
+
+`audit_clean_repo_clean_report` (R-661) is red: since T-12 the clean fixture
+prints `- [arm-integrity] edition 26.0.0 records no released digests yet` into
+**Info** — correct behaviour, the edition has no tag yet — and the job exits 1.
+R-661 says a clean repo prints a clean report and exits 0, and parity is
+byte-identical stdout *and* the same exit code.
+
+**The ruling asked for.** (a) Info does not raise the exit code — only Warning
+and above do; (b) the fixture pins released digests so the line never appears;
+or (c) check 20 stays silent until an edition is tagged. Recommended (a): Info
+is by construction not a finding, and (b) and (c) both hide a true statement to
+satisfy a test. This changes the audit's exit contract, which is law both arms
+spell identically — hence the gate.
+
+### T-13.3 Two hook assertions still assert the removed guard branch *per R-8206 (partial)*
+
+`check_hooks.py`: `owned engine.py blocked (exit 2)` and `block message
+mentions machine-managed law` expect exit 2 and get 0. Correct by design —
+`GuardOwnedFilesHook` lost its `is_owned_engine` branch because no engine file
+is owned any more. Re-cut both to the state this edition ships: `docs/ai/engine.py`
+is an ordinary file and the guard is silent on it. The twin flips with them.
+
+### T-13.4 `grade.py` still resolves the deleted engine source *per R-8205 (missing)*
+
+Two sites point at `skill/assets/engine/engine.py`, which this task deletes:
+the owned-file map (`eng_src`, ~line 451, which also writes the
+`docs/ai/engine.py` owned entry) and `engine_audit_findings()` (~line 994,
+which spawns it with `sys.executable`). Both must call the binary. This is not
+cosmetic — it is the grader T-14's benchmark runs on, and it breaks before a
+single scenario is scored.
+
+### T-13.5 The harness does not export the parity commands *per R-8206 (missing)*
+
+`check_engine.py` and `check_hooks.py` now exit early unless `PARITY_ENGINE_CMD`
+/ `PARITY_HOOK_CMD` name the binary, and neither `evals/setup_workspace.py` nor
+`tools/evals-bg.sh` sets them. Export both from `artifacts/linux-x64/legislator`
+(absent binary → a named failure, never a silent skip). Blocks T-14 Step 2.
+
+### T-13.6 The opencode arm's comments still name the Python hooks *per R-8207 (partial)*
+
+`plugin/opencode/legislator-guard.ts:3` ("the three Claude Code hooks shipped
+at `plugin/hooks/*.py`") and `:161` ("Port of `plugin/hooks/guard_git_conduct.py`"),
+and `evals/check_opencode_plugin.mjs:2` ("which covers the .py hooks"). Named
+in the stage-4 audit amendment above; the files they cite are deleted by this
+task.
+
+### T-13.7 Member #0 is not delivered *per R-8207 (missing)*
+
+Task 13's Step 4 has not run: `legislator apply --skill skill --stacks "" --root .`
+then `legislator verify`, so that `docs/ai/engine.py` leaves this repository by
+the owned-set diff, this repo's own `docs/ai/rules/core/verification.md` reads
+`legislator anchors`, and `legislator anchors` exits 0 on the result. Runs last,
+after T-13.1's law text is settled — delivering before it would deliver the
+wrong sentences.
+
+### T-13.8 The .NET suite is 19 red, not 2 *per R-8206 (missing)* — supersedes T-13.3's scope
+
+T-13.3 was written from the Python rulers alone and understated the work. The
+suite itself, run as the MTP binaries (see T-13.9), is **19 failures**:
+Engine 9 of 214, Hooks 1 of 90, Parity 9 of 201; Core 114 and Cli 36 are clean.
+They are not nineteen problems — they are four, and each is the same fact
+arriving at a different boundary:
+
+- **The engine left `ownedFiles` (8 tests).** `OwnedSetTests` ×2,
+  `ApplyJobTests` ×2, `BaselineJobTests`, and `ApplyTwins` ×4 still count
+  `docs/ai/engine.py` in the declared set, the byte-for-byte copy, the second
+  run, the manifest serialization and the run record. Re-cut to the v26 set.
+- **The emitter stamp (3 tests).** `AuditReportTests…emitter_stamp`,
+  `AuditTwins.Audit_report_carries_engine_stamp`, `ReportTwins.Report_stamp_is_last_line`
+  expect the stamp to name `engine.py audit`; it names the binary now.
+- **The audit's clean shape (3 tests + `ReportTwins.Report_keep_list_added_and_refused`).**
+  All downstream of T-13.2's Info-line ruling — do not touch them until it is made.
+- **The delivered engine's own branches (2 tests).**
+  `Check15OkfAnchorsTests.Given_the_delivered_engine_is_absent_…` and
+  `GuardOwnedFilesHookTests.The_delivered_engine_is_blocked`. The first is
+  BL-051's obligation living in the .NET arm — it is the code half of
+  **T-13.1** and moves with that ruling, not before it; the second is T-13.3's
+  unit-test side.
+
+Order follows the gates: T-13.1 and T-13.2 first (they decide 5 of the 19),
+then the mechanical re-cuts, then T-13.7's delivery.
+
+### T-13.9 `dotnet test` discovers zero tests — the documented runner is broken *per R-8202 (contradicts)*
+
+`evals/check_dotnet.sh` runs `dotnet build` then `dotnet test` from `src/`.
+On this machine (SDK 10.0.106, `Microsoft.Testing.Platform.MSBuild` 2.3.3)
+`dotnet test` reports **"Zero tests ran", exit code 5 per project** — for every
+one of the five test projects, in a clean checkout of `d334265` as well as in
+the working tree, so it is not this task's doing. Running each project's MTP
+binary directly (`tests/Legislator.<P>.Tests/bin/Debug/net10.0/Legislator.<P>.Tests`)
+discovers and runs everything: 655 tests total.
+
+This is an instrument fault of exactly the class the case has been hunting:
+the entry point every gate and every future CI job calls reports nothing rather
+than failing loudly, and `set -euo pipefail` turns it into a stop with no
+finding to read. Fix `check_dotnet.sh` to an invocation that runs the suite —
+and make a zero-test run a named failure, never a pass. The 648/648 recorded on
+2026-09-04 stands as history; it was measured before this appeared.
+
+### T-13.10 [DECISION GATE] The corpus carries a scenario for a branch v26 deletes *per R-8207 (contradicts)*
+
+`audit-engine-absent` is a whole eval scenario — a row in `evals/evals.json`, a
+fixture in `evals/setup_workspace.py`, a grader in `evals/grade.py`, a mutation
+in `evals/mutations.py`, a name in `evals/mutate.py` — built for BL-051 item 5b
+to falsify check 15's *"bundle present, engine absent → Info"* branch. That
+branch is the one T-13 deletes: there is no delivered engine in v26, so the
+fixture's premise (`fixture_state_is_bundle_without_engine`) is now the ordinary
+state of every repository and its Info assert (`check15_engine_absent_info`)
+measures a line the law no longer prints.
+
+The ruling of T-13.1 keeps the *obligation* — an absent instrument is an Info
+line and never a clean check — so the scenario has a translated form: a
+legislated repo whose OKF bundle is present and whose **`legislator` is not on
+PATH**. That is a harness capability the corpus does not have today (the runner
+would have to place the agent on a machine without the arm), which is why this
+is a gate and not a re-cut.
+
+**The ruling asked for.** (a) Translate the scenario to the absent *arm*, and
+give the harness the means to run one scenario with the arm off PATH; (b) retire
+the scenario and cover the obligation at the unit boundary instead
+(`ArmIntegrityCheckTests` plus a check-15 test), recording that the corpus no
+longer falsifies it end-to-end; or (c) keep the fixture and re-point its asserts
+at check 20's absent-arm Warning, which is the same sentence at a different
+check. Either way the corpus count changes and T-14's benchmark is measured
+against the new number, so this is decided before the benchmark runs, never
+during it.
+
+Mechanically done in the same pass, needing no ruling: `evals/grade.py` now
+resolves the arm through one `arm()` helper (`PARITY_ENGINE_CMD`, else the
+published binary, else a loud stop), its two emitter stamps name `legislator`,
+the report re-print and `delivered_engine_sdd_lint_clean` drive the binary, and
+the owned map no longer offers an engine source; `tools/evals-bg.sh` exports
+both parity commands from the published arm and refuses to start without one.
