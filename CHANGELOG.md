@@ -23,6 +23,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- **The mutation manifest follows the renamed emitter stamp** (BL-082 T-14).
+  Six asserts about `Emitted by …` were unfalsifiable: `grade.py` moved to the
+  binary's stamp in T-13 and `evals/mutations.py` did not, so the mutation
+  deleted lines that no longer existed and the assert passed unmoved. Run
+  history cannot find that class — a healthy corpus is green either way.
 - **CI runs the .NET suite through `evals/check_dotnet.sh`** (BL-082 T-14.1) —
   its test step called `dotnet test src`, which discovers nothing on this SDK.
 - **The audit corpus covers the two checks v26 added** (BL-082 T-14.1): the

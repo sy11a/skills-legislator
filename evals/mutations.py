@@ -330,9 +330,9 @@ def mutations_for(ws: Path, scenario: str) -> dict[str, Mutation]:
 
     def stamp_strip() -> None:
         muts["report_carries_engine_stamp"] = Mutation(
-            "remove-lines", REPORT[scenario][1], "Emitted by docs/ai/engine.py report",
+            "remove-lines", REPORT[scenario][1], "Emitted by legislator report",
             fn=lambda ws_, rev, p=rp: _edit(
-                rev, p, lambda t: _drop_lines(t, "Emitted by docs/ai/engine.py report")))
+                rev, p, lambda t: _drop_lines(t, "Emitted by legislator report")))
 
     def zero_writes() -> None:
         muts["zero_writes"] = Mutation(
@@ -516,9 +516,9 @@ def mutations_for(ws: Path, scenario: str) -> dict[str, Mutation]:
             p=repo / "docs/planted-report.md": _write(rev, p, "# report\n"))
         # v23 BL-066: the engine-backed report contracts.
         muts["audit_report_carries_engine_stamp"] = Mutation(
-            "remove-lines", REPORT[scenario][1], "Emitted by docs/ai/engine.py",
+            "remove-lines", REPORT[scenario][1], "Emitted by legislator",
             fn=lambda ws_, rev, p=rp: _edit(
-                rev, p, lambda t: _drop_lines(t, "Emitted by docs/ai/engine.py")))
+                rev, p, lambda t: _drop_lines(t, "Emitted by legislator")))
         muts["audit_mechanical_findings_match_engine"] = Mutation(
             "remove-lines", REPORT[scenario][1], "[staleness]",
             fn=lambda ws_, rev, p=rp: _edit(
