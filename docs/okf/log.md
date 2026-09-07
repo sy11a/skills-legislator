@@ -356,7 +356,7 @@ the instrument instead of expiring**: checks 15 and 17 had lost their
 absent-branch and non-clean-exit sentences in the rewrite, and they are back
 in the binary's voice — an agent-performed audit still spawns the arm, and an
 arm that is not installed is exactly the absence BL-051 named. **Info no
-longer raises the audit's exit code** — only Warning and above do; check 20
+longer raises the audit's exit code** (ADR-0010) — only Warning and above do; check 20
 prints an Info line on every untagged edition, and an audit that exits 1 for
 it teaches its callers to stop reading the exit code. The clean shape
 therefore means "nothing actionable", asserted as the absence of the two

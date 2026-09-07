@@ -51,7 +51,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   two checks keep BL-051's obligation in the binary's voice: an arm that is not
   on the machine is an Info line and never a clean check, and an exit beyond
   clean-or-findings is a check failure.
-- **An audit's Info findings no longer raise its exit code** (BL-082 T-13) —
+- **An audit's Info findings no longer raise its exit code** (BL-082 T-13, ADR-0010) —
   only Warning and above do. Check 20 prints an Info line on every edition that
   has not been tagged yet, and an audit that exited 1 for it would teach its
   callers to stop reading the exit code.

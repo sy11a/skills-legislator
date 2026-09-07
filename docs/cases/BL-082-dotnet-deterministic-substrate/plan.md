@@ -1105,3 +1105,108 @@ not a suppressed finding.
 `.github/workflows/dotnet.yml` ran `dotnet test src`, the command T-13.9 proved
 discovers nothing on this SDK. CI's test step now runs `sh evals/check_dotnet.sh`.
 
+
+---
+
+## Converge — 2026-09-08 (T-14 step 3, first pass)
+
+Judged against the promises, not the diff: R-8201…R-8217, ADR-0008's decisions,
+the constitutional MUSTs of `docs/ai/rules/core/**`, and HC-8201. Verdict:
+**not converged** — three findings, appended below as tasks.
+
+**What was verified and holds.** R-8201 (the solution and one test project per
+source project), R-8202 (`latest-recommended`, nullable, warnings as errors,
+style in build, declared once), R-8203 (the four RIDs live in the release matrix;
+startup median 3.3 ms against 50), R-8204/R-8209 (both static sections green),
+R-8205/R-8206/R-8208 (both rulers green on the binary; the label ledger at 0),
+R-8207 (no law file names an interpreter; member #0 delivered), R-8210…R-8213
+(four layers, loud validation, `config show`, law is not configurable), R-8214
+(the edition pins the tool; check 20 judges a machine against the release
+record), R-8217. **HC-8201 was executed, not read**: a machine file overriding
+`cases_dir` to `matters`, `config show` printing `cases_dir = matters [machine]`,
+and `sdd-lint` reading the overridden directory — the provenance line and the
+job agree.
+
+### F-1 [DECISION GATE] The hooks do not fail open with one warning when the arm is absent *per R-8215 (contradicts)*
+
+R-8215: *"WHILE the binary is absent on a machine, the Claude Code hooks SHALL
+fail open with one warning."* Measured, not reasoned — the delivered command
+line with no arm on `PATH`:
+
+```
+$ env -i PATH=/usr/bin:/bin sh -c 'legislator hook guard_owned_files < payload'
+sh: line 1: legislator: command not found
+exit=127
+```
+
+Exit 127 is not 2, so Claude Code does not block the tool call — the *open* half
+holds by the harness's tolerance rather than by anything this repository wrote.
+The *one warning* half does not hold at all: the message is printed on **every**
+`Edit`, `Write`, `Bash` and `Stop`, forever, on any machine where the arm is not
+installed. Up to v25 the launcher was a shim ending in `exit 0`, which failed
+open silently by construction; v26's bare `legislator hook <name>` dropped that
+property without replacing it.
+
+This ships to the whole fleet: every legislated repository on a machine that has
+not run `tools/install-legislator.sh` gets the noise from the moment the edition
+lands.
+
+**The ruling asked for.** (a) Restore a shim — `command -v legislator >/dev/null
+2>&1 || exit 0; exec legislator hook <name>` — silent fail-open, and amend
+R-8215's "one warning" to "silently", since a per-invocation warning is the
+thing being removed; (b) keep the bare command and amend R-8215 to describe what
+the harness actually does; (c) a shim that warns once per session, which needs
+state a hook has no home for. Recommended (a): the spec line's intent is that a
+missing arm never costs the user their turn, and silence is the only version of
+that which does not degrade every tool call.
+
+### F-2 The audit's exit contract changed without an ADR *per `core/adr.md` (missing) — CRITICAL*
+
+`core/adr.md` requires an ADR when a decision-gate stop is resolved by the user
+**and** when a new architecture invariant is introduced, written *as part of the
+same task*. T-13.2 is both: the operator ruled that Info findings no longer raise
+the audit's exit code, and that rule now binds every arm and every caller that
+reads the code — `verify`, the ladder, and any future host. It is recorded only
+in this plan and in the benchmark record. A constitutional MUST unmet is CRITICAL
+by `core/sdd.md`, regardless of how small the text is.
+
+**Fix:** write `docs/adr/0010-info-does-not-raise-the-audit-exit-code.md` with
+the three options T-13.2 weighed, and link it from the audit's law text.
+
+### F-3 `docs/ontology.md` still describes the Python engine *per R-8207 (contradicts)*
+
+Three sentences outside the OKF bundle, which is why `legislator anchors` cannot
+see them — the anchored class is `index.md`, `codebase-map.md` and the concept
+documents, and `docs/ontology.md` is the deeper narrative the index links to:
+
+- l.62 — the owned (machine) set is given as `docs/ai/rules/**`, `docs/ai/engine.py`
+- l.73 — the baseline is "written by `python3 docs/ai/engine.py baseline`"
+- l.80 — the generated class is "verified by `docs/ai/engine.py anchors`"
+
+All three name a file this edition deletes and a command the law no longer
+spells. **Fix:** re-point the three sentences. Worth recording beyond the fix:
+the reference document most likely to rot is the one the anchors rung cannot
+reach, and this repository has exactly one of those.
+
+#### Converge pass 1 — F-2 and F-3 closed, F-1 gated
+
+**F-2 closed.** `docs/adr/0010-info-does-not-raise-the-audit-exit-code.md`
+records the ruling, the three options weighed, and the consequence taken with it
+(the pinned clean shape is the absence of the actionable sections plus exit 0,
+not the presence of `No findings.`). Linked from the OKF log entry and the
+changelog line. Not linked from `skill/SKILL.md`: that text is fleet law
+delivered into other repositories, whose ADR numbering is their own — an ADR
+reference there would resolve to a different decision in every fleet member.
+
+**F-3 closed.** `docs/ontology.md`'s three sentences re-pointed: the owned
+(machine) set is `docs/ai/rules/**` and `opencode.json`, with the engine named as
+what v26 retired; the baseline's writer is `legislator baseline`; the anchored
+class is verified by `legislator anchors`. The two surviving mentions of the old
+command are deliberate — a concept model records what a class used to be, and
+both are marked "up to v25".
+
+**F-1 stands, and the case cannot close on it.** It is the only finding that
+reaches a user who never opens this repository: a fleet member on a machine
+without the arm gets `sh: legislator: command not found` on every `Edit`,
+`Write`, `Bash` and `Stop` from the moment v26 lands. Waiting on the operator's
+ruling.
