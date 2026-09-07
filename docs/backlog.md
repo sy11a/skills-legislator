@@ -2815,11 +2815,16 @@ Originally: harness hardening, sized from the v23 cycle's two operator-induced i
 
 ## L-2 — Fleet law: task entry defaults to `/autoflow` (Architector Release 0, track E)
 
-**Status: accepted 2026-09-07 — converge clean (✅ Converged; acceptance
-record `docs/cases/L-2-autoflow-entry-line/acceptance.md`).** The branch
-`bl/l2-autoflow-entry-line` carries the delivered work (`f368256`,
-`89ce886`, plus the acceptance records); the draft pull request opens at
-stage 9 delivery, awaiting the operator's merge. Case
+**Status: delivered 2026-09-07 — draft PR #41 open against `master`,
+awaiting the operator's review and merge (acceptance record
+`docs/cases/L-2-autoflow-entry-line/acceptance.md`, benchmark beside it).**
+The branch `bl/l2-autoflow-entry-line` carries the delivered work
+(`f368256`, `89ce886`, `963c935`, `34f0446`, plus the delivery register
+correction); the edition question (v26, batch or alone) travels in the PR
+body as an explicit proposal per DP-1, never a decision of the task.
+Register note: the same work also stands on `master` as `BL-089`
+(PROPOSED, merged in PR #40 after this branch was cut) — reconciling the
+two names is the owner's one-line act at merge. Case
 `docs/cases/L-2-autoflow-entry-line/`,
 ADR-0009. Not a legislator `BL-NNN`: `L-2` is a Release-0 key of
 Architector's ledger (`docs/cases/BL-008-release-cycle/`, epic E-5, story
