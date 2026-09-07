@@ -3,7 +3,7 @@ type: System
 title: Legislator — Domain Glossary
 description: Domain terms mapped to their meaning in this codebase.
 tags: [system, glossary, domain]
-timestamp: 2026-08-29T00:00:00Z
+timestamp: 2026-09-07T00:00:00Z
 status: implemented
 ---
 
@@ -96,3 +96,5 @@ serve: `docs/philosophy.md`.
 | configuration layer | One of the ordered sources that compose effective options — defaults → machine file → instance file → `LEGISLATOR_*` env — each optional, all schema-validated; sub-group overrides join the chain at v27. | coin | `docs/cases/BL-082-dotnet-deterministic-substrate/spec.md`, `docs/adr/0008-dotnet-deterministic-substrate.md` |
 | provenance (config) | The layer an effective option value came from, printed by `legislator config show` next to every value. | coin | `docs/cases/BL-082-dotnet-deterministic-substrate/spec.md` |
 | parity ruler | An existing Python check (`check_engine.py`, `check_hooks.py`) kept as the measure of a port: every assertion gets a named .NET twin shown red first; the Python subject is removed in the edition its twin reaches parity. | coin | `docs/cases/BL-082-dotnet-deterministic-substrate/research.md` |
+| task entry route | Which command opens a task session: `/autoflow` (unattended, the default where installed) or `/flow` (attended, named explicitly by the operator). `core/pair-development.md` states the default; silent, not a violation, in a repository without the skill pair. | coin | `docs/cases/L-2-autoflow-entry-line/spec.md`, `docs/adr/0009-task-entry-defaults-to-autoflow.md` |
+| flow-sessions | The stage-map class (`.claude/rules/skills.md`) holding a repository's task-entry skills — `autoflow` first, wherever installed — distinct from the per-work-stage classes (`pre-plan`, `implement`, `debug`, `review`, `docs/research`). Generated runs derive it from the pinned affinity in `skill/SKILL.md`. | coin | `skill/SKILL.md`, `docs/cases/L-2-autoflow-entry-line/spec.md`, `.claude/rules/skills.md` |

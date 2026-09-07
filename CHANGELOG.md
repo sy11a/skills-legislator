@@ -8,6 +8,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **`L-2` — task entry defaults to `/autoflow` (Architector Release 0, track
+  E; ADR-0009).** `core/pair-development.md` gains one line: a task is
+  opened via `/autoflow` unless the operator names `/flow`, conditioned on
+  that skill pair being installed. This repository's own
+  `.claude/rules/skills.md` gains a `flow-sessions` class naming `autoflow`
+  first, and the generated stage map gains the same class: the
+  `{{SANCTIONED_SKILLS_BY_STAGE}}` derivation in `skill/SKILL.md` pins
+  `flow-sessions` — `autoflow` — as the first stage affinity, so fresh
+  legislated repositories emit it wherever `autoflow` is installed. No
+  `skill/VERSION` bump taken here — proposed in the pull request; editions
+  are assigned at merge, never reserved.
 - **Edition v25 — tracker slots (BL-085 answered; cross-repo case clerk
   BL-016).** A repository may now keep its work items in a task tracker
   instead of `docs/backlog.md`, and the constitution makes room for that

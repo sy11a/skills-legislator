@@ -1,5 +1,6 @@
 ## Pair Development Protocol
 
+- **Task entry defaults to the unattended route** — a task is opened via `/autoflow` unless the operator names `/flow` explicitly for an attended session; applies wherever that skill pair is installed, and is silent where it is not
 - Work one task at a time
 - **Each task gets its own branch** — naming: `feature/<kebab-case-description>` (or this project's task-ticket convention — see this repo's CLAUDE.md; where the entry document records a task tracker, that convention is the tracker item's key)
 - **Integrating is part of the task** — a task is not done until its branch is merged or explicitly parked (parked = the user has recorded a decision, in the PR or backlog, to set that branch aside; never a silent default). Never cut a new task branch from main while an unmerged, unparked task branch exists: surface the pending merge as the blocking next step (merging stays the user's act), stack the new branch on the unmerged one when the work depends on it (merge bottom-up), or batch micro-changes into the open branch. Cut new branches from freshly-pulled main, never from a stale checkout

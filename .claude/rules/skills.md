@@ -3,6 +3,8 @@
 Per `docs/ai/rules/core/skills.md`: law beats skills; outputs redirect to
 constitutional homes. Stage map for this repo — consult at stage boundaries:
 
+- **flow-sessions** — `autoflow` (task entry; unattended default per
+  `core/pair-development.md`)
 - **pre-plan** — `grilling`, `grill-me`, `design-an-interface`, `codebase-design`
 - **implement** — `tdd`
 - **debug** — `diagnosing-bugs`

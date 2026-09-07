@@ -2822,6 +2822,54 @@ Originally: harness hardening, sized from the v23 cycle's two operator-induced i
 
 **Stop condition:** `docs/cases/BL-087-flow-setup-in-legislation/` with the option chosen and its rejection notes, the exact hand-off contract (what is passed, from where, in which window), the affected law/text list (`SKILL.md` step, README "Skill ecosystem setup", dev-flow `flow-setup` §1 pre-fill rules — the dev-flow side is filed in *its* backlog, not done here), and the sized follow-up case. Depends on BL-086 (skill installed by setup) and BL-085 (detection signals); coordinates with dev-flow BL-029's `case home` registry row.
 
+## L-2 — Fleet law: task entry defaults to `/autoflow` (Architector Release 0, track E)
+
+**Status: delivered 2026-09-07 — draft PR #41 open against `master`,
+awaiting the operator's review and merge (acceptance record
+`docs/cases/L-2-autoflow-entry-line/acceptance.md`, benchmark beside it).**
+The branch `bl/l2-autoflow-entry-line` carries the delivered work
+(`f368256`, `89ce886`, `963c935`, `34f0446`, plus the delivery register
+correction); the edition question (v26, batch or alone) travels in the PR
+body as an explicit proposal per DP-1, never a decision of the task.
+Register note: the same work also stands on `master` as `BL-089`
+(PROPOSED, merged in PR #40 after this branch was cut) — reconciling the
+two names is the owner's one-line act at merge. Case
+`docs/cases/L-2-autoflow-entry-line/`,
+ADR-0009. Not a legislator `BL-NNN`: `L-2` is a Release-0 key of
+Architector's ledger (`docs/cases/BL-008-release-cycle/`, epic E-5, story
+S-5.1) — the fifth track of a cross-repository kernel release, run
+unattended under a decision policy the operator signed in advance rather
+than in a live session.
+
+**What:** one line in `core/pair-development.md` — task entry defaults to
+the unattended route (`/autoflow`) unless the operator names `/flow`,
+conditioned on that skill pair being installed. This repository's own
+`.claude/rules/skills.md` gains a `flow-sessions` class naming `autoflow`
+first, since the skill is installed here and has been running daily since
+2026-09-05. The generated stage map is pinned to the same shape on the same
+branch: the `{{SANCTIONED_SKILLS_BY_STAGE}}` derivation in `skill/SKILL.md`
+carries the `flow-sessions` affinity (`autoflow` first), so fresh
+legislated repositories emit the class wherever the skill is installed. No
+`skill/VERSION` bump taken in this task — proposed in the
+pull request per DP-1, since an edition's number is the operator's plan
+(editions are assigned at merge, never reserved).
+
+**Why:** pays half of dev-flow BL-051's ruling 11 (the skill half shipped
+in dev-flow's own repo); the fleet law naming the convention was the half
+still owed. Architector's acceptance scenario A-5.1.1 reads this line
+against a *governed, re-legislated* repository, so this task's own exit is
+narrower: the line lands correctly in the source
+(`skill/assets/rules/**`); delivery into `docs/ai/rules/**` here and across
+the fleet follows the ordinary release runbook once the operator rules on
+the edition.
+
+**Done when:** the line exists in `skill/assets/rules/core/pair-development.md`
+worded to match Architector's A-5.1.1 ("a task is entered by the unattended
+route unless the operator names the attended one"); this repository's
+`flow-sessions` stage-map class exists with `autoflow` first; the edition
+question is an explicit proposal in the pull request, never a decision made
+on this task's own authority.
+
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
 
 A master-agent that reviews an incoming request in a project and decides whether to route it to an existing project-local mini-agent (`.claude/agents/<name>.md`) or create a new fine-grained specialized one (task-appropriate model, scoped MCPs) is being built as its **own, separate skill** — not as part of Legislator. Rationale: Legislator is build-time scaffolding (runs occasionally, evolves via VERSION/manifest); request routing is a runtime concern with its own lifecycle. Folding both into one skill would blur SRP.
