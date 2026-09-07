@@ -2884,7 +2884,9 @@ route unless the operator names the attended one"); this repository's
 `flow-sessions` stage-map class exists with `autoflow` first; the edition
 question is an explicit proposal in the pull request, never a decision made
 on this task's own authority.
-## BL-088 — The roadmap names cases, not edition numbers
+## BL-091 — The roadmap names cases, not edition numbers
+
+**Key note (rebase, 2026-09-07).** Filed on the BL-082 branch as `BL-088`. `master` had meanwhile minted that key for the Release-0 waterflow item, which is referenced from another repository's release ledger, so the key that stays put is the one already published and this row moved. The journal entry of 2026-08-31 names the old key and is left as written — it recorded what was true then.
 
 **Status: PROPOSED 2026-08-31 — raised while BL-082 de-reserved its own number; small, unsequenced.** The v25 merge established the rule — *edition numbers are assigned at merge, never reserved* (`ed5c069`, roadmap §"Out-of-order edition") — because BL-085's answer shipped ahead of the pair that had been holding the v25 slot. BL-082 and BL-077 were brought into line with it on 2026-08-31. The rest of the queue was not.
 
@@ -2894,7 +2896,9 @@ on this task's own authority.
 
 **Done when:** no row in `docs/backlog.md` names an edition number it has not yet merged; the roadmap's ordered steps name cases; the "Out-of-order edition" note becomes the general rule rather than a 2026-08-31 exception. Documentation-only: no `skill/` change, no VERSION, no benchmark.
 
-## BL-089 — An unrecognised `LEGISLATOR_*` variable is fatal to the binary
+## BL-092 — An unrecognised `LEGISLATOR_*` variable is fatal to the binary
+
+**Key note (rebase, 2026-09-07).** Filed on the BL-082 branch as `BL-089`, renumbered for the same reason as BL-091 above. The journal entry of 2026-09-01 and the OKF log name the old key and are left as written.
 
 **Status: PROPOSED 2026-09-01 — raised at BL-082 T-07, when the parity ruler's own control variable bricked the arm it was measuring; small, unsequenced.** The environment layer enumerates: every `LEGISLATOR_*` name in the process environment is admitted as the option key it spells, and an unknown one stops the run with `environment: <key>: unknown key`, exit 2 (R-8210, BL-082 T-05 ruling — the alternative, ignoring what it does not recognise, was rejected as a written-down defect because a typo would then silently do nothing).
 

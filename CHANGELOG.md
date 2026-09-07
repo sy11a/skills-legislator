@@ -171,7 +171,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   holds the coverage ledger against it: a `[Parity(ruler, label)]` twin per
   assertion, with the debt recorded as a number that may not grow.
 
-- **Backlog BL-088 filed** — the roadmap names cases, not edition numbers:
+- **Backlog BL-091 filed** (as `BL-088`, renumbered at the rebase — `master` had
+  minted that key for the Release-0 waterflow item) — the roadmap names cases,
+  not edition numbers:
   every forward reference to an edition version becomes a reference to the
   case that carries it, so a queue reshuffle cannot leave stale version
   claims behind. Backlog entry only.
