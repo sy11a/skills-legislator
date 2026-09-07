@@ -1,0 +1,7 @@
+<Project>
+  <Import Project="../src/Directory.Build.props" />
+  <PropertyGroup>
+    <!-- Test names carry underscores (Given_When_Then), the xUnit convention this fleet follows. -->
+    <NoWarn>$(NoWarn);CA1707</NoWarn>
+  </PropertyGroup>
+</Project>

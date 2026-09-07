@@ -1,0 +1,193 @@
+BL-082 T-11 — the hooks ruler on the published binary, and what the number is worth.
+
+MEASURED ARM. `PARITY_HOOK_CMD=artifacts/linux-x64/legislator python3
+evals/check_hooks.py` — 65 ok / 0 FAIL, exit 0. This is the first time the hooks
+ruler has been driven against the binary at all: it was last measured in T-06 at
+32 ok / 33 FAIL, under the `LEGISLATOR_*` name collision that made that number
+untrustworthy, and the rename to PARITY_HOOK_CMD in T-07 left it unmeasured for
+four tasks. 65 call sites over 59 unique labels.
+
+WHAT THE NUMBER IS NOT. Re-run with a PERMISSIVE arm — `PARITY_HOOK_CMD=/bin/true`,
+a hook that only ever allows — and the ruler reports 44 ok / 21 FAIL. So of the 65
+call sites only 21 assert a refusal and die when the arm stops refusing; the other
+44 are satisfied by a hook that does nothing. Twelve of those 44 never drive the arm
+at all (the hooks.json shape checks, the two R-702 launcher checks which run the
+Python command line through a PATH shim whatever the arm is, and the Bash-entry
+check); the remaining thirty-odd are assertions of ALLOW, and a permissive hook is
+the one thing that satisfies every one of them.
+
+That is not a defect of these twins but the shape of this ruler: a guard is mostly
+silence, and silence is cheap to imitate. What makes the allow-labels non-vacuous is
+the block-label beside them in the same hook — except for format_on_edit, which has
+no block at all: its four labels assert exit 0 and no output, and a hook that runs no
+formatter passes them. That hook's real coverage is its twelve unit tests, which
+assert on FakeProcessRunner.Calls. Named at the red review, measured here.
+
+The dead-arm probe the engine side uses (/bin/false) says nothing here: exit 1 is
+neither allow nor block, so every label fails and the run proves only that the arm
+was reached. /bin/true is this ruler's equivalent question.
+
+TWO LABELS NEVER RUN ON A HEALTHY MACHINE. `git available for guard_git_conduct.py
+tests` and `git available for okf_sync_check.py tests` are asserted only inside the
+`if not have_git` branch, as failures. With git present they print nothing at all,
+which is why their twin asserts the same condition rather than a behaviour.
+
+LEDGER. 8 — three engine labels (T-12) and the five whose subject T-13 removes.
+
+The engine ruler was re-measured on the same binary and is unmoved: 142 ok / 0 FAIL.
+
+========================================================================
+ARM = artifacts/linux-x64/legislator
+
+arm: <repo>/artifacts/linux-x64/legislator
+== guard_owned_files.py ==
+  ok    owned rule file in legislated repo blocked (exit 2)
+  ok    block message mentions machine-managed law
+  ok    non-rules file in legislated repo allowed (exit 0)
+  ok    owned root opencode.json blocked (exit 2)
+  ok    non-owned root package.json allowed (exit 0)
+  ok    owned engine.py blocked (exit 2)
+  ok    block message mentions machine-managed law
+  ok    unowned docs/ai/notes.md allowed (exit 0)
+  ok    rules-shaped path with no manifest allowed (exit 0)
+  ok    guard_owned_files: malformed stdin allowed (exit 0)
+  ok    empty stdin allowed (exit 0)
+== format_on_edit.py ==
+  ok    .cs file with no dotnet project: exit 0
+  ok    .cs file with no dotnet project: no output
+  ok    non-code file: exit 0
+  ok    format_on_edit: malformed stdin allowed (exit 0)
+== okf_sync_check.py ==
+  ok    dirty src/ only: exit 2
+  ok    reminder mentions docs/okf
+  ok    dirty src/ + docs/okf/: exit 0
+  ok    stop_hook_active true: exit 0 (loop-safe)
+  ok    clean tree: exit 0
+  ok    non-legislated git repo: exit 0
+  ok    outside any git repo: exit 0
+  ok    okf_sync_check: malformed stdin allowed (exit 0)
+== guard_git_conduct.py ==
+  ok    merge into default branch blocked (exit 2) per R-641
+  ok    merge block message names the rule per R-641
+  ok    merge INTO a feature branch allowed per R-641
+  ok    push origin master blocked per R-642
+  ok    push HEAD:master blocked per R-642
+  ok    push of a task branch allowed per R-642
+  ok    bare push on default branch blocked per R-642
+  ok    merge inside a compound command blocked per R-641
+  ok    merge --abort allowed per R-641
+  ok    Claude co-author trailer blocked per R-643
+  ok    attribution block message says why per R-643
+  ok    Generated-with footer blocked per R-643
+  ok    human co-author trailer allowed per R-643
+  ok    ordinary commit message allowed per R-643
+  ok    grep for the pattern allowed per R-643
+  ok    attribution in gh pr body blocked per R-644
+  ok    clean gh pr body allowed per R-644
+  ok    gh pr merge blocked per R-645
+  ok    detached HEAD merge allowed (can't tell) per R-646
+  ok    non-legislated repo: merge on default allowed per R-647
+  ok    malformed stdin allowed (exit 0) per R-646
+  ok    non-git command allowed per R-646
+  ok    git.exe merge on default branch blocked per R-701
+  ok    backslashed git.exe path push blocked per R-701
+  ok    GIT.EXE merge blocked per R-701
+  ok    github-named binary not treated as git per R-701
+== hooks.json well-formed ==
+  ok    hooks.json parses as JSON
+  ok    hooks.json has at least one event
+  ok    PreToolUse matcher names real tools ('Edit|Write|MultiEdit|NotebookEdit')
+  ok    PreToolUse command references a hooks/*.py script
+  ok    PreToolUse script exists: guard_owned_files.py
+  ok    PreToolUse matcher names real tools ('Bash')
+  ok    PreToolUse command references a hooks/*.py script
+  ok    PreToolUse script exists: guard_git_conduct.py
+  ok    PostToolUse matcher names real tools ('Edit|Write|MultiEdit')
+  ok    PostToolUse command references a hooks/*.py script
+  ok    PostToolUse script exists: format_on_edit.py
+  ok    Stop command references a hooks/*.py script
+  ok    Stop script exists: okf_sync_check.py
+== hooks.json launcher (R-702) ==
+  ok    guard blocks through the launcher with only `python` on PATH per R-702
+  ok    non-owned edit passes through the launcher per R-702
+  ok    PreToolUse has a Bash entry running guard_git_conduct.py per R-641
+
+all hook checks passed
+
+========================================================================
+ARM = /bin/true (permissive)
+
+arm: /bin/true
+== guard_owned_files.py ==
+  FAIL  owned rule file in legislated repo blocked (exit 2) — got exit 0, stderr=''
+  FAIL  block message mentions machine-managed law — stderr=''
+  ok    non-rules file in legislated repo allowed (exit 0)
+  FAIL  owned root opencode.json blocked (exit 2) — got exit 0, stderr=''
+  ok    non-owned root package.json allowed (exit 0)
+  FAIL  owned engine.py blocked (exit 2) — got exit 0, stderr=''
+  FAIL  block message mentions machine-managed law — stderr=''
+  ok    unowned docs/ai/notes.md allowed (exit 0)
+  ok    rules-shaped path with no manifest allowed (exit 0)
+  ok    guard_owned_files: malformed stdin allowed (exit 0)
+  ok    empty stdin allowed (exit 0)
+== format_on_edit.py ==
+  ok    .cs file with no dotnet project: exit 0
+  ok    .cs file with no dotnet project: no output
+  ok    non-code file: exit 0
+  ok    format_on_edit: malformed stdin allowed (exit 0)
+== okf_sync_check.py ==
+  FAIL  dirty src/ only: exit 2 — got 0, stderr=''
+  FAIL  reminder mentions docs/okf — stderr=''
+  ok    dirty src/ + docs/okf/: exit 0
+  ok    stop_hook_active true: exit 0 (loop-safe)
+  ok    clean tree: exit 0
+  ok    non-legislated git repo: exit 0
+  ok    outside any git repo: exit 0
+  ok    okf_sync_check: malformed stdin allowed (exit 0)
+== guard_git_conduct.py ==
+  FAIL  merge into default branch blocked (exit 2) per R-641 — got exit 0, stderr=''
+  FAIL  merge block message names the rule per R-641 — stderr=''
+  ok    merge INTO a feature branch allowed per R-641
+  FAIL  push origin master blocked per R-642 — got exit 0, stderr=''
+  FAIL  push HEAD:master blocked per R-642 — got exit 0, stderr=''
+  ok    push of a task branch allowed per R-642
+  FAIL  bare push on default branch blocked per R-642 — got exit 0, stderr=''
+  FAIL  merge inside a compound command blocked per R-641 — got exit 0, stderr=''
+  ok    merge --abort allowed per R-641
+  FAIL  Claude co-author trailer blocked per R-643 — got exit 0, stderr=''
+  FAIL  attribution block message says why per R-643 — stderr=''
+  FAIL  Generated-with footer blocked per R-643 — got exit 0, stderr=''
+  ok    human co-author trailer allowed per R-643
+  ok    ordinary commit message allowed per R-643
+  ok    grep for the pattern allowed per R-643
+  FAIL  attribution in gh pr body blocked per R-644 — got exit 0, stderr=''
+  ok    clean gh pr body allowed per R-644
+  FAIL  gh pr merge blocked per R-645 — got exit 0, stderr=''
+  ok    detached HEAD merge allowed (can't tell) per R-646
+  ok    non-legislated repo: merge on default allowed per R-647
+  ok    malformed stdin allowed (exit 0) per R-646
+  ok    non-git command allowed per R-646
+  FAIL  git.exe merge on default branch blocked per R-701 — got exit 0, stderr=''
+  FAIL  backslashed git.exe path push blocked per R-701 — got exit 0, stderr=''
+  FAIL  GIT.EXE merge blocked per R-701 — got exit 0, stderr=''
+  ok    github-named binary not treated as git per R-701
+== hooks.json well-formed ==
+  ok    hooks.json parses as JSON
+  ok    hooks.json has at least one event
+  ok    PreToolUse matcher names real tools ('Edit|Write|MultiEdit|NotebookEdit')
+  ok    PreToolUse command references a hooks/*.py script
+  ok    PreToolUse script exists: guard_owned_files.py
+  ok    PreToolUse matcher names real tools ('Bash')
+  ok    PreToolUse command references a hooks/*.py script
+  ok    PreToolUse script exists: guard_git_conduct.py
+  ok    PostToolUse matcher names real tools ('Edit|Write|MultiEdit')
+  ok    PostToolUse command references a hooks/*.py script
+  ok    PostToolUse script exists: format_on_edit.py
+  ok    Stop command references a hooks/*.py script
+  ok    Stop script exists: okf_sync_check.py
+== hooks.json launcher (R-702) ==
+  ok    guard blocks through the launcher with only `python` on PATH per R-702
+  ok    non-owned edit passes through the launcher per R-702
+  ok    PreToolUse has a Bash entry running guard_git_conduct.py per R-641
+
+21 check(s) FAILED

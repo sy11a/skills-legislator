@@ -1,0 +1,31 @@
+# T-09 red, first half: detect (recorded 2026-09-01)
+
+## Legislator.Engine.Tests — build
+
+<repo>/tests/Legislator.Engine.Tests/Jobs/DetectJobTests.cs(37,13): error CS0246: The type or namespace name 'DetectJob' could not be found (are you missing a using directive or an assembly reference?) [<repo>/tests/Legislator.Engine.Tests/Legislator.Engine.Tests.csproj]
+
+## Legislator.Parity.Tests — run
+
+failed Legislator.Parity.Tests.Engine.DetectTwins.Detect_writes_nothing (54ms)
+  Expected: 0
+  Actual:   2
+failed Legislator.Parity.Tests.Engine.DetectTwins.Detect_migration_claude_and_stack_candidate (0ms)
+  Expected: 0
+  Actual:   2
+failed Legislator.Parity.Tests.Engine.DetectTwins.Detect_upgrade_reads_legacy_profiles (0ms)
+  Expected: 0
+  Actual:   2
+failed Legislator.Parity.Tests.Engine.DetectTwins.Detect_migration_agents (0ms)
+  Expected: 0
+  Actual:   2
+failed Legislator.Parity.Tests.Engine.DetectTwins.Detect_fresh (0ms)
+  Expected: 0
+  Actual:   2
+failed Legislator.Parity.Tests.Engine.DetectTwins.Detect_edge_case_reconstructs_from_disk (5ms)
+  Expected: 0
+  Actual:   2
+failed Legislator.Parity.Tests.LabelCoverageTests.Ruler_labels_without_a_twin_match_the_recorded_debt (65ms)
+  the ledger fell to 116: lower LedgerDebt to that number in the commit that closed the gap, so the record keeps saying what is true.
+  total: 83
+  failed: 7
+  succeeded: 76

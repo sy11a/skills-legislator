@@ -1,0 +1,54 @@
+BL-082 T-07 — the recorded red (R-8206: every twin shown red against an empty implementation).
+Taken 2026-09-01 on 252809f, JobRegistry.Jobs empty.
+
+== solution build (Debug) ==
+    0 Warning(s)
+    24 Error(s)
+Build FAILED.
+tests/Legislator.Core.Tests/Repo/RepoLayoutTests.cs(2,23): error CS0234: The type or namespace name 'Repo' does not exist in the namespace 'Legislator.Core' (are you missing an assembly reference?)
+tests/Legislator.Core.Tests/Text/FindingsTests.cs(1,23): error CS0234: The type or namespace name 'Text' does not exist in the namespace 'Legislator.Core' (are you missing an assembly reference?)
+tests/Legislator.Engine.Tests/Anchors/AnchorClassifierTests.cs(1,25): error CS0234: The type or namespace name 'Anchors' does not exist in the namespace 'Legislator.Engine' (are you missing an assembly reference?)
+tests/Legislator.Engine.Tests/Anchors/AnchorClassifierTests.cs(17,43): error CS0103: The name 'AnchorKind' does not exist in the current context
+tests/Legislator.Engine.Tests/Anchors/AnchorClassifierTests.cs(18,38): error CS0103: The name 'AnchorKind' does not exist in the current context
+tests/Legislator.Engine.Tests/Anchors/AnchorClassifierTests.cs(19,24): error CS0103: The name 'AnchorKind' does not exist in the current context
+tests/Legislator.Engine.Tests/Anchors/AnchorClassifierTests.cs(20,30): error CS0103: The name 'AnchorKind' does not exist in the current context
+tests/Legislator.Engine.Tests/Anchors/AnchorClassifierTests.cs(22,32): error CS0103: The name 'AnchorKind' does not exist in the current context
+tests/Legislator.Engine.Tests/Anchors/AnchorClassifierTests.cs(23,38): error CS0103: The name 'AnchorKind' does not exist in the current context
+tests/Legislator.Engine.Tests/Anchors/AnchorClassifierTests.cs(24,24): error CS0103: The name 'AnchorKind' does not exist in the current context
+tests/Legislator.Engine.Tests/Anchors/AnchorClassifierTests.cs(25,25): error CS0103: The name 'AnchorKind' does not exist in the current context
+tests/Legislator.Engine.Tests/Anchors/AnchorClassifierTests.cs(26,32): error CS0103: The name 'AnchorKind' does not exist in the current context
+tests/Legislator.Engine.Tests/Anchors/AnchorClassifierTests.cs(27,38): error CS0103: The name 'AnchorKind' does not exist in the current context
+tests/Legislator.Engine.Tests/Anchors/AnchorClassifierTests.cs(28,33): error CS0103: The name 'AnchorKind' does not exist in the current context
+tests/Legislator.Engine.Tests/Anchors/AnchorClassifierTests.cs(30,50): error CS0103: The name 'AnchorKind' does not exist in the current context
+tests/Legislator.Engine.Tests/Anchors/AnchorClassifierTests.cs(31,32): error CS0103: The name 'AnchorKind' does not exist in the current context
+tests/Legislator.Engine.Tests/Anchors/AnchorClassifierTests.cs(32,32): error CS0103: The name 'AnchorKind' does not exist in the current context
+tests/Legislator.Engine.Tests/Anchors/AnchorClassifierTests.cs(33,33): error CS0103: The name 'AnchorKind' does not exist in the current context
+tests/Legislator.Engine.Tests/Anchors/AnchorClassifierTests.cs(34,48): error CS0103: The name 'AnchorKind' does not exist in the current context
+tests/Legislator.Engine.Tests/Anchors/AnchorClassifierTests.cs(35,31): error CS0103: The name 'AnchorKind' does not exist in the current context
+tests/Legislator.Engine.Tests/Anchors/AnchorClassifierTests.cs(36,70): error CS0246: The type or namespace name 'AnchorKind' could not be found (are you missing a using directive or an assembly reference?)
+tests/Legislator.Engine.Tests/Anchors/SymbolIndexTests.cs(28,20): error CS0246: The type or namespace name 'SymbolIndex' could not be found (are you missing a using directive or an assembly reference?)
+tests/Legislator.Engine.Tests/Anchors/SymbolIndexTests.cs(4,25): error CS0234: The type or namespace name 'Anchors' does not exist in the namespace 'Legislator.Engine' (are you missing an assembly reference?)
+tests/Legislator.Engine.Tests/Jobs/AnchorsJobTests.cs(4,25): error CS0234: The type or namespace name 'Jobs' does not exist in the namespace 'Legislator.Engine' (are you missing an assembly reference?)
+
+== Legislator.Parity.Tests alone (it compiles; the twins run) ==
+failed Legislator.Parity.Tests.Engine.AnchorsTwins.A_healthy_document_produces_no_findings
+failed Legislator.Parity.Tests.Engine.AnchorsTwins.A_repo_with_no_okf_bundle_is_clean_not_an_error
+failed Legislator.Parity.Tests.Engine.AnchorsTwins.A_symbol_that_exists_only_in_prose_does_not_resolve
+failed Legislator.Parity.Tests.Engine.AnchorsTwins.A_trailing_member_is_stripped_before_the_file_test
+failed Legislator.Parity.Tests.Engine.AnchorsTwins.Crash_exits_distinctly
+failed Legislator.Parity.Tests.Engine.AnchorsTwins.Crash_prints_nothing_to_stdout
+failed Legislator.Parity.Tests.Engine.AnchorsTwins.Exit_codes_unchanged_clean_is_0
+failed Legislator.Parity.Tests.Engine.AnchorsTwins.Exit_codes_unchanged_findings_is_1
+failed Legislator.Parity.Tests.Engine.AnchorsTwins.Front_matter_and_fenced_code_are_skipped
+failed Legislator.Parity.Tests.Engine.AnchorsTwins.Log_and_glossary_are_never_anchored
+failed Legislator.Parity.Tests.Engine.AnchorsTwins.Missing_path_reported_with_document_line_and_token
+failed Legislator.Parity.Tests.Engine.AnchorsTwins.Missing_symbol_reported
+failed Legislator.Parity.Tests.Engine.AnchorsTwins.Nested_build_output_ignored
+failed Legislator.Parity.Tests.Engine.AnchorsTwins.Real_source_still_resolves
+failed Legislator.Parity.Tests.Engine.AnchorsTwins.Removed_doc_not_anchored
+failed Legislator.Parity.Tests.Engine.AnchorsTwins.Removed_doc_not_anchored_control
+failed Legislator.Parity.Tests.Engine.AnchorsTwins.The_closed_definition_excludes_non_anchors
+failed Legislator.Parity.Tests.LabelCoverageTests.Ruler_labels_without_a_twin_match_the_recorded_debt
+  total: 20
+  failed: 18
+  succeeded: 2

@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="TestableIO.System.IO.Abstractions" />
+    <PackageReference Include="YamlDotNet" />
+  </ItemGroup>
+</Project>

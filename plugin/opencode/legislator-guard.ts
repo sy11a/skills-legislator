@@ -1,9 +1,10 @@
 // legislator-guard.ts — opencode enforcement port of the legislator-hooks plugin.
 //
-// Ports the three Claude Code hooks shipped at plugin/hooks/*.py into opencode's
+// Ports three of the Claude Code hooks the legislator binary answers to (`legislator hook
+// <name>`, plugin/hooks/hooks.json) into opencode's
 // plugin event model. Active globally; silently no-op outside legislated repos
 // (a docs/ai/manifest.json found by walking up from the relevant path / at the
-// git worktree toplevel). Mirrors the Python hooks' contract: a bug in this
+// git worktree toplevel). Mirrors the binary hooks' contract: a bug in this
 // plugin must never block the user's work — every non-intentional throw is
 // swallowed.
 //
@@ -158,7 +159,7 @@ function findPrettierConfig(filePath: string): string | null {
 
 
 // --- Git-conduct guard (BL-064) -------------------------------------------
-// Port of plugin/hooks/guard_git_conduct.py. Same fail-open contract; git
+// Port of the binary's `guard_git_conduct` hook. Same fail-open contract; git
 // state is read from the filesystem (.git/HEAD, refs, packed-refs) so the
 // guard needs no shell and the mjs harness can drive it without git.
 

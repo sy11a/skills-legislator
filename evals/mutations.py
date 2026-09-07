@@ -29,7 +29,6 @@ SKILL = Path(__file__).resolve().parent.parent / "skill"
 REPORT = {
     "fresh-scaffold-dotnet": ("fresh-scaffold-dotnet", "scaffold-report.md"),
     "audit": ("rotted-layer", "audit-report.md"),
-    "audit-engine-absent": ("audit-engine-absent", "audit-report.md"),
     "legacy-migration": ("legacy-migration", "migration-report.md"),
     "legacy-migration-agents-first": ("legacy-migration-agents-first",
                                       "migration-report.md"),
@@ -331,9 +330,9 @@ def mutations_for(ws: Path, scenario: str) -> dict[str, Mutation]:
 
     def stamp_strip() -> None:
         muts["report_carries_engine_stamp"] = Mutation(
-            "remove-lines", REPORT[scenario][1], "Emitted by docs/ai/engine.py report",
+            "remove-lines", REPORT[scenario][1], "Emitted by legislator report",
             fn=lambda ws_, rev, p=rp: _edit(
-                rev, p, lambda t: _drop_lines(t, "Emitted by docs/ai/engine.py report")))
+                rev, p, lambda t: _drop_lines(t, "Emitted by legislator report")))
 
     def zero_writes() -> None:
         muts["zero_writes"] = Mutation(
@@ -517,9 +516,9 @@ def mutations_for(ws: Path, scenario: str) -> dict[str, Mutation]:
             p=repo / "docs/planted-report.md": _write(rev, p, "# report\n"))
         # v23 BL-066: the engine-backed report contracts.
         muts["audit_report_carries_engine_stamp"] = Mutation(
-            "remove-lines", REPORT[scenario][1], "Emitted by docs/ai/engine.py",
+            "remove-lines", REPORT[scenario][1], "Emitted by legislator",
             fn=lambda ws_, rev, p=rp: _edit(
-                rev, p, lambda t: _drop_lines(t, "Emitted by docs/ai/engine.py")))
+                rev, p, lambda t: _drop_lines(t, "Emitted by legislator")))
         muts["audit_mechanical_findings_match_engine"] = Mutation(
             "remove-lines", REPORT[scenario][1], "[staleness]",
             fn=lambda ws_, rev, p=rp: _edit(
@@ -534,32 +533,6 @@ def mutations_for(ws: Path, scenario: str) -> dict[str, Mutation]:
             "meta-drop-slug", slug,
             fn=lambda ws_, rev, p=meta_file: _json_edit(
                 rev, p, lambda d: d["check_slugs_covered"].remove(slug)))
-
-    elif scenario == "audit-engine-absent":
-        probe_report("audit_report_saved")
-        zero_writes()
-        muts["audit_report_carries_engine_stamp"] = Mutation(
-            "remove-lines", REPORT[scenario][1], "Emitted by docs/ai/engine.py",
-            fn=lambda ws_, rev, p=rp: _edit(
-                rev, p, lambda t: _drop_lines(t, "Emitted by docs/ai/engine.py")))
-        muts["fixture_state_is_bundle_without_engine"] = Mutation(
-            "plant-engine", "docs/ai/engine.py",
-            fn=lambda ws_, rev,
-            p=repo / "docs/ai/engine.py": _write(rev, p, "# engine\n"))
-        muts["check15_engine_absent_info"] = Mutation(
-            "remove-lines", REPORT[scenario][1], "okf-anchors",
-            fn=lambda ws_, rev, p=rp: _edit(
-                rev, p, lambda t: _drop_lines(t, "okf-anchors")))
-        def warn_anchor(ws_, rev, p=rp):
-            def fn(t):
-                if re.search(r"^## Warning", t, re.M):
-                    return re.sub(r"^(## Warning\s*\n)",
-                                  r"\1- [okf-anchors] planted finding\n",
-                                  t, count=1, flags=re.M)
-                return t + "\n## Warning\n- [okf-anchors] planted finding\n"
-            _edit(rev, p, fn)
-        muts["no_anchor_warning_without_an_engine"] = Mutation(
-            "insert-warning-anchor", fn=warn_anchor)
 
     elif scenario == "case-practice":
         cases_dir = repo / "docs/cases"

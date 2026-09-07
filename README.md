@@ -26,6 +26,24 @@ The symlink name (`legislator`) is what gives the skill its `/legislator`
 invocation in Claude Code. Keeping it a symlink (not a copy) means a
 `git pull` here updates the skill everywhere at once.
 
+### The deterministic arm
+
+From v26 the engine and the four hooks are one binary, and the law names
+`legislator <job>` rather than an interpreter. Build it and put it on `PATH`:
+
+```bash
+sh tools/publish-legislator.sh    # NativeAOT, this machine's RID, into artifacts/<rid>/
+sh tools/install-legislator.sh    # copies it onto PATH
+legislator version --json         # version, RID, SHA-256 of what is running
+```
+
+The arm is not delivered into a legislated repository — it is installed on the
+machine, once, and every repo's law calls the same binary. On Windows, copy
+`artifacts/win-x64/legislator.exe` to a directory on `PATH` yourself; the
+install script is POSIX. Audit check 20 (`arm-integrity`) reports a machine
+whose arm is missing or is not the one the edition released, so a repository
+never silently audits itself with the wrong instrument.
+
 ## Tutorial — your first legislated repo
 
 ### 1. Run it
@@ -158,8 +176,12 @@ law for (no empty placeholder files).
 ## Update the constitution
 
 1. Edit a file under `skill/assets/rules/`.
-2. Bump `skill/VERSION`.
+2. Bump `skill/VERSION` — and `src/Legislator.Cli/Version.props` with it: a
+   static check pins the edition to the tool's major, so the two cannot drift
+   apart in a commit.
 3. Run the eval suite (see below) — required before the change is done.
+   A change to `src/` or `tests/` also runs `sh evals/check_dotnet.sh`
+   (build strict, the whole .NET suite, the AOT publish smoke).
 4. **Deliver to this repo first.** It is fleet member #0 (ADR-0002): run
    `/legislator` here, byte-verify the owned layer against `skill/assets/`,
    and commit. A rule that breaks its own author's repository must never
@@ -167,6 +189,12 @@ law for (no empty placeholder files).
 5. `cd` into each downstream project and run `/legislator`.
 6. Review the `git diff` — only the changed owned file(s) and the manifest
    should appear — then commit.
+7. **At the tag, publish the arm and record its digests.** `sh
+   tools/publish-legislator.sh` on each supported RID writes the binary and its
+   SHA-256 into `artifacts/SHA256SUMS`; the edition's released digests go into
+   `skill/assets/release/release.json`, which is what audit check 20 compares a
+   machine's arm against. An edition with no digests recorded is not a fault —
+   the check says so as Info until the tag exists.
 
 **Version skew is normal on a branch.** While edition v(N+1) is under
 development, this repo stays legislated at v(N): `skill/assets/rules/**`
@@ -258,6 +286,8 @@ Short version:
 ```bash
 # unit layer — every commit, seconds, no agent
 python3 evals/check_static.py
+python3 evals/check_engine.py     # needs PARITY_ENGINE_CMD (the arm)
+sh evals/check_dotnet.sh          # build strict + the .NET suite + publish smoke
 
 # e2e layer — required after ANY behavioral change to skill/
 python3 evals/setup_workspace.py /tmp/legislator-eval-vN

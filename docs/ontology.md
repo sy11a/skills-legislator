@@ -59,8 +59,10 @@ Flow directions:
   asymmetry with `ownedFiles` is deliberate and follows the semantic one:
   inventory vs order.
 - **owned vs project-owned** — the standing distinction for who commands a
-  file. Owned (machine): `docs/ai/rules/**`, `docs/ai/engine.py`,
-  `opencode.json` — never hand-edited, refreshed by re-run. Project-owned:
+  file. Owned (machine): `docs/ai/rules/**` and `opencode.json` — never
+  hand-edited, refreshed by re-run. Up to v25 the set also carried
+  `docs/ai/engine.py`; v26 retired it, and an upgrade deletes the file it
+  once delivered (BL-082, R-8207). Project-owned:
   everything else; the keep list protects named project-owned files from
   restructure.
 - **generated** — the third ownership class (decided 2026-08-20, deep-audit
@@ -70,14 +72,15 @@ Flow directions:
   together with their source; not listed in `ownedFiles` (nothing is
   byte-copied onto them), not keepable. The class's first member is
   `docs/ai/baseline.md` (BL-043, edition v22): the R-NNN ↔ annotated-tests
-  register, written by `python3 docs/ai/engine.py baseline` and by nothing
-  else. `codebase-map.md` and `index.md` are *not* members —
+  register, written by `legislator baseline` and by nothing else (up to v25 the
+  writer was the delivered `python3 docs/ai/engine.py baseline`).
+  `codebase-map.md` and `index.md` are *not* members —
   D2 assumed they were, and the fleet showed otherwise: their rows carry
   judgment a generator would destroy, while their structure is already
   machine-checked (audit checks 6 and 5). They are anchored instead.
 - **anchored** — a reference document bonded to code by its own text: every
   path and PascalCase symbol it backticks resolves in its repository,
-  verified by `docs/ai/engine.py anchors`. The OKF bundle's default class;
+  verified by `legislator anchors`. The OKF bundle's default class;
   `glossary.md` and `log.md` are the human-class exceptions.
 
 ### Work

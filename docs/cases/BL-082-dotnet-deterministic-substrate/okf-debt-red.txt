@@ -1,0 +1,47 @@
+BL-082 T-08 — the recorded red of the okf-debt half (per R-8205, R-8206, R-8209)
+Taken 2026-09-01 on bl/082-dotnet-deterministic-substrate at 50126d8, before any
+production code of the job existed. Two observations: the unit sets cannot compile
+(the types they name are missing), and the twins run against a registry that does not
+know the job, so the host answers exit 2 and every one of them is red.
+
+== 1. Green siblings, measured first (the two carried case-sensitivity tests) ==
+dotnet test --project ../tests/Legislator.Engine.Tests, with the new unit files held aside:
+  total: 53  failed: 0  succeeded: 53
+  including AnchorsJobTests.A_document_whose_name_differs_only_in_case_from_the_human_class_is_anchored
+  and AnchorClassifierTests row "Src/App/WidgetStore.cs" -> AnchorKind.None.
+  Predicted GREEN, seen GREEN: T-07's ordinal comparisons hold, and the fake's own case
+  policy never enters the answer (one document per repository).
+
+== 2. dotnet build — 68 errors, every one naming a type this task creates ==
+     14 error CS0103: The name 'GitLog' does not exist in the current context
+     12 error CS0021: Cannot apply indexing with [] to an expression of type 'LegislatorOptions'
+     10 error CS8130: Cannot infer the type of implicitly-typed deconstruction variable 'iso'.
+     10 error CS8130: Cannot infer the type of implicitly-typed deconstruction variable 'available'.
+      8 error CS0021: Cannot apply indexing with [] to an expression of type 'IFileSystem'
+      4 error CS0144: Cannot create an instance of the abstract type or interface 'IProcessRunner'
+      4 error CS0144: Cannot create an instance of the abstract type or interface 'IFileSystem'
+      4 error CS0021: Cannot apply indexing with [] to an expression of type 'IProcessRunner'
+      2 error CS0246: The type or namespace name 'OkfDebtJob' could not be found (are you missing a using directive or an assembly reference?)
+
+== 3. dotnet test --project ../tests/Legislator.Parity.Tests ==
+  total: 31  failed: 12  succeeded: 19
+  The eleven okf-debt twins, all red:
+    Legislator.Parity.Tests.Engine.OkfDebtTwins.A_directory_anchors_history_never_produces_debt (0ms)
+    Legislator.Parity.Tests.Engine.OkfDebtTwins.A_document_that_moved_with_its_source_is_clean (0ms)
+    Legislator.Parity.Tests.Engine.OkfDebtTwins.An_untracked_tree_yields_no_debt_findings (0ms)
+    Legislator.Parity.Tests.Engine.OkfDebtTwins.A_removed_document_accrues_no_okf_sync_debt (61ms)
+    Legislator.Parity.Tests.Engine.OkfDebtTwins.A_source_59_days_newer_than_its_document_is_debt (0ms)
+    Legislator.Parity.Tests.Engine.OkfDebtTwins.Nineteen_days_is_inside_the_thirty_day_threshold (0ms)
+    Legislator.Parity.Tests.Engine.OkfDebtTwins.Nothing_to_measure_is_clean_even_without_git (0ms)
+    Legislator.Parity.Tests.Engine.OkfDebtTwins.The_live_sibling_still_accrues_debt (0ms)
+    Legislator.Parity.Tests.Engine.OkfDebtTwins.With_git_the_85_day_debt_is_a_finding (0ms)
+    Legislator.Parity.Tests.Engine.OkfDebtTwins.Without_git_no_findings_text_reaches_stdout (0ms)
+    Legislator.Parity.Tests.Engine.OkfDebtTwins.Without_git_the_job_exits_as_a_check_failure (7ms)
+    Legislator.Parity.Tests.LabelCoverageTests.Ruler_labels_without_a_twin_match_the_recorded_debt (64ms)
+
+  The two twins whose ruler assertion is an ABSENCE were strengthened rather than left
+  vacuous (T-07's pattern): Without_git_no_findings_text_reaches_stdout asserts exit 3
+  beside the empty stdout (seen: expected 3, actual 2), and A_removed_document_accrues_no
+  _okf_sync_debt pins the whole of stdout instead of the absence of one name.
+
+  The ledger's downward bite fired as designed: "the ledger fell to 168" (179 - 11).

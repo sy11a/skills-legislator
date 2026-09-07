@@ -41,6 +41,28 @@ shift || true
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 SKILL="$REPO/skill"
+
+# v26 (R-8207, T-13.5): the rulers and the grader drive the deterministic arm,
+# not an interpreter. Both are exported here so every stage of a run measures
+# the same binary, and an absent arm stops the run at the top rather than
+# reading as a corpus of failures three stages later.
+ARM="${PARITY_ENGINE_CMD:-$REPO/artifacts/linux-x64/legislator}"
+if [ ! -x "$ARM" ]; then
+  echo "no legislator arm at $ARM — publish one with tools/publish-legislator.sh" >&2
+  echo "or set PARITY_ENGINE_CMD; the rulers and the grader cannot run without it" >&2
+  exit 1
+fi
+export PARITY_ENGINE_CMD="$ARM"
+export PARITY_HOOK_CMD="$ARM"
+# The scenario agent needs the arm too, and for the same reason the rulers do:
+# from v26 the law names `legislator <job>`, so an agent on a machine that has
+# no `legislator` on PATH cannot obey the law it is being graded against - it
+# hand-writes the manifest and prints an unstamped report, and the run then
+# measures the machine instead of the edition. Put the published arm's
+# directory on PATH for everything this script spawns. (Found the hard way:
+# v26 benchmark, 2026-09-07, fresh-scaffold 19/21 for exactly this.)
+PATH="$(cd "$(dirname "$ARM")" && pwd):$PATH"
+export PATH
 RUNNER="${RUNNER:-opencode}"
 MODEL="${MODEL:-}"           # profile default applied after flag parsing
 STALL_SECS=180
@@ -112,7 +134,7 @@ REPORT_OF() { # <scenario-dir-name> -> relative expected deliverable
   case "$1" in
     legacy-migration|legacy-migration-agents-first) echo "outputs/migration-report.md";;
     upgrade|upgrade-drop-stack) echo "outputs/upgrade-report.md";;
-    rotted-layer|audit-engine-absent) echo "outputs/audit-report.md";;
+    rotted-layer) echo "outputs/audit-report.md";;
     restructure) echo "outputs/restructure-report.md";;
     *) echo "";;
   esac
@@ -196,7 +218,7 @@ msg_block() { # <dir>
     legacy-migration|legacy-migration-agents-first|upgrade|upgrade-drop-stack) report="Write your full Step 7 report (all sections, including Health and any Constitution candidates) to $out/$(basename "$(REPORT_OF "$sc")") — overwrite if it exists.";;
     fresh-scaffold-dotnet) report="Write your full Step 7 report to $out/scaffold-report.md — outside the target repo.";;
     case-practice) report="";;
-    rotted-layer|audit-engine-absent) report="Save your full audit report to $out/audit-report.md — outside the target repo (which you must not touch: zero writes).";;
+    rotted-layer) report="Save your full audit report to $out/audit-report.md — outside the target repo (which you must not touch: zero writes).";;
     restructure) report="Write your final restructure report to $out/restructure-report.md — overwrite if it exists.";;
     *) report="";;
   esac

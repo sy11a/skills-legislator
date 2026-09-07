@@ -1,0 +1,37 @@
+# T-09 red, second half: audit (recorded 2026-09-01; the capture command failed on a relative path and the file was written 2026-09-02 from the session transcript, verbatim)
+
+## Legislator.Engine.Tests — build
+
+<repo>/tests/Legislator.Engine.Tests/Audit/AuditFixture.cs(71,13): error CS0246: The type or namespace name 'AuditJob' could not be found (are you missing a using directive or an assembly reference?) [<repo>/tests/Legislator.Engine.Tests/Legislator.Engine.Tests.csproj]
+<repo>/tests/Legislator.Engine.Tests/Audit/AuditReportTests.cs(22,13): error CS0246: The type or namespace name 'AuditJob' could not be found (are you missing a using directive or an assembly reference?) [<repo>/tests/Legislator.Engine.Tests/Legislator.Engine.Tests.csproj]
+
+## Legislator.Parity.Tests — run
+
+failed Legislator.Parity.Tests.Engine.AuditTwins.Audit_finds_staleness (55ms)
+failed Legislator.Parity.Tests.Engine.AuditTwins.Audit_journal_date_from_prefixed_filename (1ms)
+failed Legislator.Parity.Tests.Engine.AuditTwins.Engine_audit_fails_loud_without_git (13ms)
+failed Legislator.Parity.Tests.Engine.AuditTwins.Audit_keep_key_missing_info (0ms)
+failed Legislator.Parity.Tests.Engine.AuditTwins.Audit_map_missing_row (0ms)
+failed Legislator.Parity.Tests.Engine.AuditTwins.Audit_clean_repo_clean_report (1ms)
+failed Legislator.Parity.Tests.Engine.AuditTwins.Audit_keep_path_missing (1ms)
+failed Legislator.Parity.Tests.Engine.AuditTwins.Audit_severity_sections_present (0ms)
+failed Legislator.Parity.Tests.Engine.AuditTwins.Audit_report_byte_stable (0ms)
+failed Legislator.Parity.Tests.Engine.AuditTwins.Audit_malformed_model_findings_fails_loud (0ms)
+failed Legislator.Parity.Tests.Engine.AuditTwins.Audit_check14_sees_backticked_names (0ms)
+failed Legislator.Parity.Tests.Engine.AuditTwins.Model_findings_in_pinned_sections (0ms)
+failed Legislator.Parity.Tests.Engine.AuditTwins.Audit_map_stale_row (0ms)
+failed Legislator.Parity.Tests.Engine.AuditTwins.Audit_clean_checks_line_present (0ms)
+failed Legislator.Parity.Tests.Engine.AuditTwins.Audit_constitution_header_behind (0ms)
+failed Legislator.Parity.Tests.Engine.AuditTwins.Audit_defects_exit_1 (0ms)
+failed Legislator.Parity.Tests.Engine.AuditTwins.Audit_finds_the_planted_defect(slug: "orphan-docs", needle: "orphan-notes.md") (0ms)
+failed Legislator.Parity.Tests.Engine.AuditTwins.Audit_finds_the_planted_defect(slug: "imports-resolve", needle: "ghost-rule.md") (0ms)
+failed Legislator.Parity.Tests.Engine.AuditTwins.Audit_finds_the_planted_defect(slug: "foreign-structures", needle: ".cursorrules") (0ms)
+failed Legislator.Parity.Tests.Engine.AuditTwins.Audit_finds_the_planted_defect(slug: "unresolved-placeholders", needle: "{{PROJECT_OVERVIEW}}") (0ms)
+failed Legislator.Parity.Tests.Engine.AuditTwins.Audit_report_carries_engine_stamp (0ms)
+failed Legislator.Parity.Tests.Engine.AuditTwins.Model_candidates_appended (0ms)
+failed Legislator.Parity.Tests.Engine.AuditTwins.Engine_audit_writes_nothing (0ms)
+failed Legislator.Parity.Tests.LabelCoverageTests.Ruler_labels_without_a_twin_match_the_recorded_debt (64ms)
+  the ledger fell to 96: lower LedgerDebt to that number in the commit that closed the gap, so the record keeps saying what is true.
+  total: 106
+  failed: 24
+  succeeded: 82

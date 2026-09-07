@@ -1,0 +1,24 @@
+BL-082 T-08 — the recorded red of the sdd-lint half (per R-8205, R-8206, R-8209)
+Taken 2026-09-01 on bl/082-dotnet-deterministic-substrate at 3db8539 (okf-debt already
+green), before any production code of the lint existed.
+
+== 1. dotnet build — the declaration phase stops first ==
+  tests/Legislator.Engine.Tests/Sdd/CaseModelTests.cs(4,25): error CS0234: The type or
+    namespace name 'Sdd' does not exist in the namespace 'Legislator.Engine'
+  tests/Legislator.Engine.Tests/Sdd/CaseModelTests.cs(16,34): error CS0246: The type or
+    namespace name 'CaseFile' could not be found
+
+  Only two, and that is the compiler's shape, not the red's: csc binds method bodies only
+  after a clean declaration phase, so every error inside a method body goes unreported
+  while these two stand. Held CaseModelTests.cs aside and rebuilt to see the rest:
+  tests/Legislator.Engine.Tests/Jobs/SddLintJobTests.cs(32,13) and (251,77): error CS0246:
+    The type or namespace name 'SddLintJob' could not be found
+
+== 2. dotnet test --project ../tests/Legislator.Parity.Tests ==
+  total: 69  failed: 39  succeeded: 30
+  All 38 sdd-lint twins red on the host's exit 2 for an unknown job, plus the ledger:
+  "the ledger fell to 130" (168 - 38).
+
+  One twin's ruler assertion is an ABSENCE — sdd_lint_writes_nothing compares the file set
+  before and after — and was strengthened rather than left vacuous: the twin asserts exit 1
+  beside the unchanged tree, so a job that never ran cannot satisfy it (T-07's pattern).

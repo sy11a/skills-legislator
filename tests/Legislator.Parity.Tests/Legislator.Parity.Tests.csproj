@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
+    <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
+    <IsAotCompatible>false</IsAotCompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" />
+    <PackageReference Include="TestableIO.System.IO.Abstractions.TestingHelpers" />
+    <ProjectReference Include="../../src/Legislator.Cli/Legislator.Cli.csproj" />
+    <ProjectReference Include="../Legislator.TestSupport/Legislator.TestSupport.csproj" />
+  </ItemGroup>
+</Project>

@@ -47,7 +47,7 @@ from proc import acquire_lock, release_lock            # noqa: E402
 SCENARIO_DIRS = grade_mod.SCENARIO_DIRS
 CORPUS = ["fresh-scaffold-dotnet", "legacy-migration",
           "legacy-migration-agents-first", "upgrade", "upgrade-drop-stack",
-          "case-practice", "audit", "audit-engine-absent", "restructure"]
+          "case-practice", "audit", "restructure"]
 
 
 def git(repo: Path, *args: str) -> str:
@@ -65,7 +65,6 @@ def grade_scenario(ws: Path, name: str) -> list[dict]:
           "upgrade-drop-stack": grade_mod.grade_upgrade_drop_stack,
           "case-practice": grade_mod.grade_case_practice,
           "audit": grade_mod.grade_audit,
-          "audit-engine-absent": grade_mod.grade_audit_engine_absent,
           "restructure": grade_mod.grade_restructure}[name]
     return fn(ws).exps
 

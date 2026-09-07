@@ -6,6 +6,67 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Removed
+
+- **The `audit-engine-absent` eval scenario** (BL-082 T-13.10, owner's ruling).
+  It falsified check 15's *"bundle present, engine absent → Info"* branch, which
+  the retirement above deletes. `evals.json` carries 9 entries and the graded
+  scenario set is 8 directories. The obligation itself
+  survives at the unit boundary (`ArmIntegrityCheckTests`, plus `check_static.py`
+  asserting that checks 15 and 17 state the absent-arm branch); what is no longer
+  measured end-to-end is whether a model audits honestly on a machine with no arm.
+- **The Python arm** (BL-082 T-13). `skill/assets/engine/engine.py` and the four
+  `plugin/hooks/*.py` scripts are gone; `plugin/hooks/hooks.json` names the
+  binary. A repository that still carries `docs/ai/engine.py` from an earlier
+  edition keeps an ordinary file: it left `ownedFiles`, the owned-files guard is
+  silent on it, and an upgrade run deletes it.
+
+### Changed
+
+- **The hooks fail open silently when the arm is absent** (BL-082, ADR-0011).
+  `hooks.json` runs `command -v legislator >/dev/null 2>&1 || exit 0; exec
+  legislator hook <name>`: a machine that has not installed the binary gets
+  exit 0 and no output instead of `command not found` on every tool call. Up to
+  v25 the Python launcher had this property by accident; v26's first form lost
+  it. Audit check 20 is where an absent arm is said out loud — once per audit,
+  not once per keystroke.
+- **The mutation manifest follows the renamed emitter stamp** (BL-082 T-14).
+  Six asserts about `Emitted by …` were unfalsifiable: `grade.py` moved to the
+  binary's stamp in T-13 and `evals/mutations.py` did not, so the mutation
+  deleted lines that no longer existed and the assert passed unmoved. Run
+  history cannot find that class — a healthy corpus is green either way.
+- **CI runs the .NET suite through `evals/check_dotnet.sh`** (BL-082 T-14.1) —
+  its test step called `dotnet test src`, which discovers nothing on this SDK.
+- **The audit corpus covers the two checks v26 added** (BL-082 T-14.1): the
+  rotted fixture plants a case-collision against an owned rule, and
+  `arm-integrity` is declared environment-relative in the grader with its
+  reason — its subject is the machine, which no repository fixture can plant.
+- **The eval runner puts the arm on the scenario agent's `PATH`** (BL-082 T-14)
+  and `setup_workspace.py` stops copying a Python engine into two fixtures.
+  From v26 the law names a binary; a harness that does not put it in front of
+  the agent measures the machine instead of the edition — the v26 benchmark's
+  first attempt lost two asserts to exactly that.
+- **README documents the arm's install path** (BL-082 T-14) — publish with
+  `tools/publish-legislator.sh`, install with `tools/install-legislator.sh`,
+  verify with `legislator version --json`; the release runbook gains the digest
+  recording that audit check 20 reads, and the Windows copy is named as manual.
+- **The law names one command per job** (BL-082 T-13). Every rule sentence that
+  spelled `python3 docs/ai/engine.py <job>` now spells `legislator <job>` — the
+  static rung in `core/verification.md`, the executing-arm bullets in
+  `core/okf.md`, the analyze gate in `core/sdd.md`, the baseline sentence in
+  `core/artifact-lifecycle.md`, and audit checks 15 and 17 in `SKILL.md`. Those
+  two checks keep BL-051's obligation in the binary's voice: an arm that is not
+  on the machine is an Info line and never a clean check, and an exit beyond
+  clean-or-findings is a check failure.
+- **An audit's Info findings no longer raise its exit code** (BL-082 T-13, ADR-0010) —
+  only Warning and above do. Check 20 prints an Info line on every edition that
+  has not been tagged yet, and an audit that exited 1 for it would teach its
+  callers to stop reading the exit code.
+- **`evals/check_dotnet.sh` runs the test modules directly** (BL-082 T-13) and
+  fails by name when a module reports zero tests. `dotnet test` discovers
+  nothing on this SDK with the xunit MTP adapter — a gate that reports nothing
+  is worse than one that fails.
+
 ### Added
 
 - **`L-2` — task entry defaults to `/autoflow` (Architector Release 0, track
@@ -36,6 +97,113 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   sources through `/flow-setup`, hands over what it already established,
   invokes nothing on its own authority, and skips the offer when the skill
   is not installed.
+- **The release path for the deterministic arm** (BL-082 T-12):
+  `tools/publish-legislator.sh` publishes a NativeAOT binary for the host's RID
+  and refuses any other by name — the AOT toolchain does not cross-compile
+  between operating systems, so the edition's other three RIDs come from the
+  matrix in `.github/workflows/dotnet.yml`, which is now part of the edition
+  rather than incidental configuration. `tools/install-legislator.sh` copies the
+  result onto `PATH`. Every publish records the binary's SHA-256 in
+  `artifacts/SHA256SUMS`.
+- **`legislator version --json`** (BL-082 T-12) — the version, the RID the binary
+  was built for, and the SHA-256 of the executable that is running, taken by the
+  binary itself rather than of a path a caller names. The plain `legislator
+  version` is unchanged, and an unknown flag is now a usage error rather than a
+  silently ignored argument.
+- **Edition 26 pins the tool** (BL-082 T-12): `skill/VERSION` and
+  `src/Legislator.Cli/Version.props` carry the same number, and a static check
+  makes them impossible to move apart. The number was assigned from
+  freshly-fetched `master`, never reserved.
+
+- **The four Claude Code hooks, ported** (BL-082 T-11): `guard_owned_files`,
+  `guard_git_conduct`, `format_on_edit` and `okf_sync_check` run as
+  `legislator hook <name>`, reading the hook payload on stdin and answering exit 0
+  to allow or exit 2 to block — never another code, and never an exception
+  escaping: the host wraps every hook in a catch-all, so a bug in a guard cannot
+  stop the user's work. A misspelled hook name is a loud usage error rather than a
+  silent no-op, because a guard disabled by a typo is the failure nobody notices.
+  `plugin/hooks/hooks.json` still names the Python scripts; it is rewritten to the
+  binary in the task that retires them.
+
+- **`legislator apply`, `verify` and `report` — the write path, ported** (BL-082
+  T-10): Step 3 whole (byte-for-byte copies of the owned set, retirement of files
+  the package no longer delivers, the keep rules with their three named refusals,
+  the pinned manifest and the v14 file model), Step 6's byte-verify with exactly
+  one re-copy per diverged file, and Step 7's report printed from the run record
+  rather than from the tree. The record is written outside the repository by
+  construction and refuses any path inside it. Two real entry documents stop the
+  run at exit 4 before the first write, so the promise that nothing was written
+  rests on nothing having been written yet. All thirty-six `check_engine.py`
+  assertions the three answer carry a named `[Parity]` twin, five of them
+  strengthened past the ruler because the ruler's own assertion is satisfied by an
+  engine that does nothing; the label ledger fell from 96 to 60, and the full
+  engine ruler is green on the published binary.
+
+- **Case-collision detection beside the owned set** (BL-082 T-10): a file whose
+  path differs from an owned path only by letter case is named with the path it
+  collides with. It is one file on a case-insensitive checkout and two on this
+  one, which is why nothing else notices it.
+
+- **`legislator audit` — the read-only health check, ported** (BL-082 T-09):
+  fourteen mechanical checks and the pinned report printed from them, byte-stable
+  over an unchanged repository and writing nothing. The audit is the second
+  caller of the anchors and okf-debt jobs rather than a second derivation of
+  them, and it fails loud where git cannot be run at all instead of reporting a
+  clean layer. All twenty `check_engine.py` assertions it answers carry a named
+  `[Parity]` twin; the label ledger fell from 116 to 96.
+
+- **`legislator detect` — the mode decision, ported** (BL-082 T-09): Step 1's
+  decision tree and Step 2's stack signals as JSON on stdout, writing nothing —
+  `fresh` / `migration` / `upgrade`, the entry document (an alias that is the
+  symlink is not one), the subscription read from the modern `stacks` key or the
+  legacy `profiles`, and the owned set reconstructed off disk when the manifest
+  is gone but the layer is plainly installed. All six `check_engine.py`
+  assertions it answers carry a named `[Parity]` twin; the label ledger fell from
+  122 to 116.
+
+- **`legislator baseline` — the requirement-to-test register, ported** (BL-082
+  T-08): the engine's one write, deterministic over an unchanged repository and
+  destroying any hand edit, byte-identical to the Python's on the same tree
+  (30 747 bytes over this repository). All eight `check_engine.py` assertions it
+  answers carry a named `[Parity]` twin; the label ledger fell from 130 to 122.
+
+- **`legislator sdd-lint` — the analyze gate's mechanical passes, ported**
+  (BL-082 T-08): coverage of requirement to task, dangling `per R-NNN`
+  references, unresolved placeholders, and the case, ADR, journal, changelog and
+  OKF-front-matter shapes, byte-identically to the Python job. All thirty-eight
+  `check_engine.py` assertions it answers carry a named `[Parity]` twin; the
+  label ledger fell from 168 to 130.
+
+- **`legislator okf-debt` — the staleness job, ported** (BL-082 T-08): it names
+  anchored documents whose sources moved on without them, byte-identically to
+  `python3 docs/ai/engine.py okf-debt`, and fails loud where git cannot be run
+  at all instead of reporting clean. All eleven `check_engine.py` assertions it
+  answers carry a named `[Parity]` twin; the label ledger fell from 179 to 168.
+
+- **`legislator anchors` — the first ported engine job** (BL-082 T-07): the
+  OKF link-hardness check runs from the published binary with byte-identical
+  findings and the same exit codes as `python3 docs/ai/engine.py anchors`, and
+  the seventeen `check_engine.py` assertions it answers each carry a named
+  `[Parity]` twin. The label ledger fell from 196 to 179. The options model
+  gained `max_file_bytes`, the ceiling past which a file is not scanned for
+  symbols.
+
+- **The parity rulers can measure either arm** (BL-082 T-06):
+  `evals/check_engine.py` and `evals/check_hooks.py` run the command named by
+  `PARITY_ENGINE_CMD` / `PARITY_HOOK_CMD` when it is set — the
+  published `legislator` binary — and the Python engine and hook scripts when
+  it is not, on identical fixture trees; each ruler prints the arm it is
+  measuring before its first check. `evals/parity_labels.py` reads every
+  assertion label out of both rulers, and `tests/Legislator.Parity.Tests`
+  holds the coverage ledger against it: a `[Parity(ruler, label)]` twin per
+  assertion, with the debt recorded as a number that may not grow.
+
+- **Backlog BL-091 filed** (as `BL-088`, renumbered at the rebase — `master` had
+  minted that key for the Release-0 waterflow item) — the roadmap names cases,
+  not edition numbers:
+  every forward reference to an edition version becomes a reference to the
+  case that carries it, so a queue reshuffle cannot leave stale version
+  claims behind. Backlog entry only.
 
 - **Spike BL-085 filed** — the legislator inherits the host repository's
   work-tracking discipline (Jira, GitHub Issues, Linear … via their MCP
@@ -53,18 +221,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   with the next edition.
 - **The deterministic substrate becomes .NET from v25** (ADR-0008, BL-082):
   BL-072 is pulled forward to step zero of edition v25 — one `src/`
+- **The parity rulers' arm variables left the `LEGISLATOR_*` namespace**
+  (BL-082 T-07): they are `PARITY_ENGINE_CMD` and `PARITY_HOOK_CMD`. The binary
+  reads every `LEGISLATOR_*` variable as an option key and refuses an unknown
+  one, so a ruler variable in that prefix stopped the arm it was measuring.
+
+- **Edition numbers are assigned at merge, never reserved** (BL-082,
+  applying the roadmap ruling made at the v25 merge). The .NET tool pin
+  `src/Legislator.Cli/Version.props` holds `0.0.0` until the edition is
+  merged; BL-082 Task 12 reads the number that is free then, bumps
+  `skill/VERSION` to it and sets the pin's major to the same, with the
+  static check binding the two from that commit on. BL-082 and BL-077 no
+  longer claim v25 — that number went to BL-085/BL-087.
+
+- **The deterministic substrate becomes .NET** (ADR-0008, BL-082):
+  BL-072 is pulled forward to step zero of the edition — one `src/`
   solution (Core, Engine, Hooks, CLI), the engine and hooks ported
   red-first against the Python checks, an options model with four
   configuration layers and `config show` provenance; Python becomes
-  prototype-only; the MCP host (BL-084, v27) and the complete
-  configuration layer (BL-083, v26) are queued behind it. Project law
+  prototype-only; the MCP host (BL-084) and the complete
+  configuration layer (BL-083) are queued behind it. Project law
   `.claude/rules/dotnet-substrate.md`. Docs only — no `skill/` change in
   this commit.
 
 - **The outer-only pivot is decided and specified** (ADR-0007, BL-077):
-  from edition v25 the AI layer leaves the code repository for an external
-  control directory; the backlog is re-prioritised around it (v25 BL-077 →
-  v26 BL-078 migration → v27 BL-079 layering; fleet-obs prerequisites
+  the AI layer leaves the code repository for an external control
+  directory; the backlog is re-prioritised around it (BL-077 → BL-078
+  migration → BL-079 layering; fleet-obs prerequisites
   BL-080 first; semver BL-081 deferred), and BL-027/044/045/052/071 are
   absorbed. Docs only — no `skill/` change in this commit.
 
@@ -205,5 +388,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   all 48 terms carried, under `core/okf.md`'s sync checklist.
 
 ### Fixed
+
+- **The engine parity ruler measured Python where it claimed to measure the arm
+  under test** (BL-082 T-09): four checks — the three `okf_debt_git_absent`
+  labels and `engine_audit_fails_loud_without_git` — hardcoded the interpreter
+  instead of going through `_engine_argv`, so they were green on the .NET arm
+  without ever running it. They now follow `PARITY_ENGINE_CMD` like every other
+  check. The two `usage`-family labels keep the same fault by the T-07 ruling
+  that assigned them to the CLI task.
 
 ### Removed

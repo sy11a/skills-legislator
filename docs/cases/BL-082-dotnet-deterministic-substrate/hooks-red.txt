@@ -1,0 +1,105 @@
+BL-082 T-11 — the red set for the four Claude Code hooks (per R-8208, R-8206).
+
+Two reds, both predicted before the run and both seen.
+
+RED 1 — the compile, `dotnet build -warnaserror` from `src/`. Predicted: the
+tests name types this task must create, so the build fails and every error
+names one of them. Seen: 54 errors, and nothing else — 26 CS0103, 18 CS0246,
+8 CS0234, 2 CS0122, spread over the four test projects (Core 44, Hooks 29,
+Cli 24, Parity 12 lines). By name: ExecutableLookup 14, LegislatedRepo 10,
+HookResult 10, the namespace `Legislator.Hooks.Hooks` 8, IHook 4,
+HookContext 4, HookRegistry 2, and SystemEnvironment twice as inaccessible
+rather than absent — it is `internal` in the CLI and the parity harness twin
+needs it. The four hook classes themselves are NOT named: their namespace
+does not exist yet, so the `using` fails first and hides them, and the same
+shape hides the `Program.Run` arity change every twin makes. That is T-08's
+"declaration errors hiding the rest" again, expected here and named.
+
+RED 2 — the coverage ledger. The three `malformed stdin allowed (exit 0)`
+call sites were renamed to carry their hook (operator ruling 2026-09-03), so
+the hooks ruler now prints 59 labels rather than 57 and the ledger reads 62
+against a ratchet of 60. It bites upward, which is the ratchet doing its job:
+a ruler that gained assertions demands twins before the number may move. The
+ledger cannot RUN until red 1 is fixed; the arithmetic is recorded here and
+the test states it after green.
+
+Ledger at the close of this task: 8 — the three engine labels T-12 owns, and
+the five hooks.json / R-702 launcher labels T-13 owns with their subject
+(ruling 2026-09-03, option a-prime).
+
+========================================================================
+
+  Determining projects to restore...
+  Restored <repo>/src/Legislator.Core/Legislator.Core.csproj (in 994 ms).
+  Restored <repo>/src/Legislator.Hooks/Legislator.Hooks.csproj (in 994 ms).
+  Restored <repo>/src/Legislator.Engine/Legislator.Engine.csproj (in 994 ms).
+  Restored <repo>/src/Legislator.Cli/Legislator.Cli.csproj (in 994 ms).
+  Restored <repo>/tests/Legislator.Hooks.Tests/Legislator.Hooks.Tests.csproj (in 994 ms).
+  5 of 10 projects are up-to-date for restore.
+  Legislator.Core -> <repo>/src/Legislator.Core/bin/Debug/net10.0/Legislator.Core.dll
+  Legislator.TestSupport -> <repo>/tests/Legislator.TestSupport/bin/Debug/net10.0/Legislator.TestSupport.dll
+  Legislator.Hooks -> <repo>/src/Legislator.Hooks/bin/Debug/net10.0/Legislator.Hooks.dll
+<repo>/tests/Legislator.Hooks.Tests/Hooks/FormatOnEditHookTests.cs(4,24): error CS0234: The type or namespace name 'Hooks' does not exist in the namespace 'Legislator.Hooks' (are you missing an assembly reference?) [<repo>/tests/Legislator.Hooks.Tests/Legislator.Hooks.Tests.csproj]
+<repo>/tests/Legislator.Hooks.Tests/Hooks/GuardGitConductHookTests.cs(4,24): error CS0234: The type or namespace name 'Hooks' does not exist in the namespace 'Legislator.Hooks' (are you missing an assembly reference?) [<repo>/tests/Legislator.Hooks.Tests/Legislator.Hooks.Tests.csproj]
+<repo>/tests/Legislator.Hooks.Tests/Hooks/GuardOwnedFilesHookTests.cs(3,24): error CS0234: The type or namespace name 'Hooks' does not exist in the namespace 'Legislator.Hooks' (are you missing an assembly reference?) [<repo>/tests/Legislator.Hooks.Tests/Legislator.Hooks.Tests.csproj]
+<repo>/tests/Legislator.Hooks.Tests/Hooks/OkfSyncCheckHookTests.cs(4,24): error CS0234: The type or namespace name 'Hooks' does not exist in the namespace 'Legislator.Hooks' (are you missing an assembly reference?) [<repo>/tests/Legislator.Hooks.Tests/Legislator.Hooks.Tests.csproj]
+<repo>/tests/Legislator.Hooks.Tests/Hooks/GuardGitConductHookTests.cs(56,20): error CS0246: The type or namespace name 'HookResult' could not be found (are you missing a using directive or an assembly reference?) [<repo>/tests/Legislator.Hooks.Tests/Legislator.Hooks.Tests.csproj]
+<repo>/tests/Legislator.Hooks.Tests/Hooks/GuardOwnedFilesHookTests.cs(31,20): error CS0246: The type or namespace name 'HookResult' could not be found (are you missing a using directive or an assembly reference?) [<repo>/tests/Legislator.Hooks.Tests/Legislator.Hooks.Tests.csproj]
+<repo>/tests/Legislator.Hooks.Tests/Hooks/OkfSyncCheckHookTests.cs(41,20): error CS0246: The type or namespace name 'HookResult' could not be found (are you missing a using directive or an assembly reference?) [<repo>/tests/Legislator.Hooks.Tests/Legislator.Hooks.Tests.csproj]
+<repo>/tests/Legislator.Core.Tests/Repo/LegislatedRepoTests.cs(28,28): error CS0103: The name 'LegislatedRepo' does not exist in the current context [<repo>/tests/Legislator.Core.Tests/Legislator.Core.Tests.csproj]
+<repo>/tests/Legislator.Core.Tests/Abstractions/ExecutableLookupTests.cs(36,41): error CS0103: The name 'ExecutableLookup' does not exist in the current context [<repo>/tests/Legislator.Core.Tests/Legislator.Core.Tests.csproj]
+<repo>/tests/Legislator.Core.Tests/Repo/LegislatedRepoTests.cs(34,28): error CS0103: The name 'LegislatedRepo' does not exist in the current context [<repo>/tests/Legislator.Core.Tests/Legislator.Core.Tests.csproj]
+<repo>/tests/Legislator.Core.Tests/Repo/LegislatedRepoTests.cs(40,21): error CS0103: The name 'LegislatedRepo' does not exist in the current context [<repo>/tests/Legislator.Core.Tests/Legislator.Core.Tests.csproj]
+<repo>/tests/Legislator.Core.Tests/Abstractions/ExecutableLookupTests.cs(44,39): error CS0103: The name 'ExecutableLookup' does not exist in the current context [<repo>/tests/Legislator.Core.Tests/Legislator.Core.Tests.csproj]
+<repo>/tests/Legislator.Core.Tests/Abstractions/ExecutableLookupTests.cs(52,21): error CS0103: The name 'ExecutableLookup' does not exist in the current context [<repo>/tests/Legislator.Core.Tests/Legislator.Core.Tests.csproj]
+<repo>/tests/Legislator.Core.Tests/Abstractions/ExecutableLookupTests.cs(61,21): error CS0103: The name 'ExecutableLookup' does not exist in the current context [<repo>/tests/Legislator.Core.Tests/Legislator.Core.Tests.csproj]
+<repo>/tests/Legislator.Core.Tests/Repo/LegislatedRepoTests.cs(50,38): error CS0103: The name 'LegislatedRepo' does not exist in the current context [<repo>/tests/Legislator.Core.Tests/Legislator.Core.Tests.csproj]
+<repo>/tests/Legislator.Core.Tests/Repo/LegislatedRepoTests.cs(60,21): error CS0103: The name 'LegislatedRepo' does not exist in the current context [<repo>/tests/Legislator.Core.Tests/Legislator.Core.Tests.csproj]
+<repo>/tests/Legislator.Core.Tests/Abstractions/ExecutableLookupTests.cs(70,41): error CS0103: The name 'ExecutableLookup' does not exist in the current context [<repo>/tests/Legislator.Core.Tests/Legislator.Core.Tests.csproj]
+<repo>/tests/Legislator.Core.Tests/Abstractions/ExecutableLookupTests.cs(79,45): error CS0103: The name 'ExecutableLookup' does not exist in the current context [<repo>/tests/Legislator.Core.Tests/Legislator.Core.Tests.csproj]
+  Legislator.Engine -> <repo>/src/Legislator.Engine/bin/Debug/net10.0/Legislator.Engine.dll
+  Legislator.Cli -> <repo>/src/Legislator.Cli/bin/Debug/net10.0/legislator.dll
+  Legislator.Engine.Tests -> <repo>/tests/Legislator.Engine.Tests/bin/Debug/net10.0/Legislator.Engine.Tests.dll
+<repo>/tests/Legislator.Cli.Tests/HookCommandTests.cs(35,44): error CS0246: The type or namespace name 'IHook' could not be found (are you missing a using directive or an assembly reference?) [<repo>/tests/Legislator.Cli.Tests/Legislator.Cli.Tests.csproj]
+<repo>/tests/Legislator.Cli.Tests/HookCommandTests.cs(24,85): error CS0246: The type or namespace name 'IHook' could not be found (are you missing a using directive or an assembly reference?) [<repo>/tests/Legislator.Cli.Tests/Legislator.Cli.Tests.csproj]
+<repo>/tests/Legislator.Cli.Tests/HookCommandTests.cs(24,53): error CS0246: The type or namespace name 'HookContext' could not be found (are you missing a using directive or an assembly reference?) [<repo>/tests/Legislator.Cli.Tests/Legislator.Cli.Tests.csproj]
+<repo>/tests/Legislator.Cli.Tests/HookCommandTests.cs(24,66): error CS0246: The type or namespace name 'HookResult' could not be found (are you missing a using directive or an assembly reference?) [<repo>/tests/Legislator.Cli.Tests/Legislator.Cli.Tests.csproj]
+<repo>/tests/Legislator.Cli.Tests/HookCommandTests.cs(28,31): error CS0246: The type or namespace name 'HookContext' could not be found (are you missing a using directive or an assembly reference?) [<repo>/tests/Legislator.Cli.Tests/Legislator.Cli.Tests.csproj]
+<repo>/tests/Legislator.Cli.Tests/HookCommandTests.cs(28,16): error CS0246: The type or namespace name 'HookResult' could not be found (are you missing a using directive or an assembly reference?) [<repo>/tests/Legislator.Cli.Tests/Legislator.Cli.Tests.csproj]
+<repo>/tests/Legislator.Parity.Tests/Hooks/RunHooks.cs(30,47): error CS0103: The name 'HookRegistry' does not exist in the current context [<repo>/tests/Legislator.Parity.Tests/Legislator.Parity.Tests.csproj]
+<repo>/tests/Legislator.Parity.Tests/Hooks/HooksHarnessTwins.cs(27,21): error CS0103: The name 'ExecutableLookup' does not exist in the current context [<repo>/tests/Legislator.Parity.Tests/Legislator.Parity.Tests.csproj]
+<repo>/tests/Legislator.Parity.Tests/Hooks/HooksHarnessTwins.cs(28,35): error CS0122: 'SystemEnvironment' is inaccessible due to its protection level [<repo>/tests/Legislator.Parity.Tests/Legislator.Parity.Tests.csproj]
+
+Build FAILED.
+
+<repo>/tests/Legislator.Hooks.Tests/Hooks/FormatOnEditHookTests.cs(4,24): error CS0234: The type or namespace name 'Hooks' does not exist in the namespace 'Legislator.Hooks' (are you missing an assembly reference?) [<repo>/tests/Legislator.Hooks.Tests/Legislator.Hooks.Tests.csproj]
+<repo>/tests/Legislator.Hooks.Tests/Hooks/GuardGitConductHookTests.cs(4,24): error CS0234: The type or namespace name 'Hooks' does not exist in the namespace 'Legislator.Hooks' (are you missing an assembly reference?) [<repo>/tests/Legislator.Hooks.Tests/Legislator.Hooks.Tests.csproj]
+<repo>/tests/Legislator.Hooks.Tests/Hooks/GuardOwnedFilesHookTests.cs(3,24): error CS0234: The type or namespace name 'Hooks' does not exist in the namespace 'Legislator.Hooks' (are you missing an assembly reference?) [<repo>/tests/Legislator.Hooks.Tests/Legislator.Hooks.Tests.csproj]
+<repo>/tests/Legislator.Hooks.Tests/Hooks/OkfSyncCheckHookTests.cs(4,24): error CS0234: The type or namespace name 'Hooks' does not exist in the namespace 'Legislator.Hooks' (are you missing an assembly reference?) [<repo>/tests/Legislator.Hooks.Tests/Legislator.Hooks.Tests.csproj]
+<repo>/tests/Legislator.Hooks.Tests/Hooks/GuardGitConductHookTests.cs(56,20): error CS0246: The type or namespace name 'HookResult' could not be found (are you missing a using directive or an assembly reference?) [<repo>/tests/Legislator.Hooks.Tests/Legislator.Hooks.Tests.csproj]
+<repo>/tests/Legislator.Hooks.Tests/Hooks/GuardOwnedFilesHookTests.cs(31,20): error CS0246: The type or namespace name 'HookResult' could not be found (are you missing a using directive or an assembly reference?) [<repo>/tests/Legislator.Hooks.Tests/Legislator.Hooks.Tests.csproj]
+<repo>/tests/Legislator.Hooks.Tests/Hooks/OkfSyncCheckHookTests.cs(41,20): error CS0246: The type or namespace name 'HookResult' could not be found (are you missing a using directive or an assembly reference?) [<repo>/tests/Legislator.Hooks.Tests/Legislator.Hooks.Tests.csproj]
+<repo>/tests/Legislator.Core.Tests/Repo/LegislatedRepoTests.cs(28,28): error CS0103: The name 'LegislatedRepo' does not exist in the current context [<repo>/tests/Legislator.Core.Tests/Legislator.Core.Tests.csproj]
+<repo>/tests/Legislator.Core.Tests/Abstractions/ExecutableLookupTests.cs(36,41): error CS0103: The name 'ExecutableLookup' does not exist in the current context [<repo>/tests/Legislator.Core.Tests/Legislator.Core.Tests.csproj]
+<repo>/tests/Legislator.Core.Tests/Repo/LegislatedRepoTests.cs(34,28): error CS0103: The name 'LegislatedRepo' does not exist in the current context [<repo>/tests/Legislator.Core.Tests/Legislator.Core.Tests.csproj]
+<repo>/tests/Legislator.Core.Tests/Repo/LegislatedRepoTests.cs(40,21): error CS0103: The name 'LegislatedRepo' does not exist in the current context [<repo>/tests/Legislator.Core.Tests/Legislator.Core.Tests.csproj]
+<repo>/tests/Legislator.Core.Tests/Abstractions/ExecutableLookupTests.cs(44,39): error CS0103: The name 'ExecutableLookup' does not exist in the current context [<repo>/tests/Legislator.Core.Tests/Legislator.Core.Tests.csproj]
+<repo>/tests/Legislator.Core.Tests/Abstractions/ExecutableLookupTests.cs(52,21): error CS0103: The name 'ExecutableLookup' does not exist in the current context [<repo>/tests/Legislator.Core.Tests/Legislator.Core.Tests.csproj]
+<repo>/tests/Legislator.Core.Tests/Abstractions/ExecutableLookupTests.cs(61,21): error CS0103: The name 'ExecutableLookup' does not exist in the current context [<repo>/tests/Legislator.Core.Tests/Legislator.Core.Tests.csproj]
+<repo>/tests/Legislator.Core.Tests/Repo/LegislatedRepoTests.cs(50,38): error CS0103: The name 'LegislatedRepo' does not exist in the current context [<repo>/tests/Legislator.Core.Tests/Legislator.Core.Tests.csproj]
+<repo>/tests/Legislator.Core.Tests/Repo/LegislatedRepoTests.cs(60,21): error CS0103: The name 'LegislatedRepo' does not exist in the current context [<repo>/tests/Legislator.Core.Tests/Legislator.Core.Tests.csproj]
+<repo>/tests/Legislator.Core.Tests/Abstractions/ExecutableLookupTests.cs(70,41): error CS0103: The name 'ExecutableLookup' does not exist in the current context [<repo>/tests/Legislator.Core.Tests/Legislator.Core.Tests.csproj]
+<repo>/tests/Legislator.Core.Tests/Abstractions/ExecutableLookupTests.cs(79,45): error CS0103: The name 'ExecutableLookup' does not exist in the current context [<repo>/tests/Legislator.Core.Tests/Legislator.Core.Tests.csproj]
+<repo>/tests/Legislator.Cli.Tests/HookCommandTests.cs(35,44): error CS0246: The type or namespace name 'IHook' could not be found (are you missing a using directive or an assembly reference?) [<repo>/tests/Legislator.Cli.Tests/Legislator.Cli.Tests.csproj]
+<repo>/tests/Legislator.Cli.Tests/HookCommandTests.cs(24,85): error CS0246: The type or namespace name 'IHook' could not be found (are you missing a using directive or an assembly reference?) [<repo>/tests/Legislator.Cli.Tests/Legislator.Cli.Tests.csproj]
+<repo>/tests/Legislator.Cli.Tests/HookCommandTests.cs(24,53): error CS0246: The type or namespace name 'HookContext' could not be found (are you missing a using directive or an assembly reference?) [<repo>/tests/Legislator.Cli.Tests/Legislator.Cli.Tests.csproj]
+<repo>/tests/Legislator.Cli.Tests/HookCommandTests.cs(24,66): error CS0246: The type or namespace name 'HookResult' could not be found (are you missing a using directive or an assembly reference?) [<repo>/tests/Legislator.Cli.Tests/Legislator.Cli.Tests.csproj]
+<repo>/tests/Legislator.Cli.Tests/HookCommandTests.cs(28,31): error CS0246: The type or namespace name 'HookContext' could not be found (are you missing a using directive or an assembly reference?) [<repo>/tests/Legislator.Cli.Tests/Legislator.Cli.Tests.csproj]
+<repo>/tests/Legislator.Cli.Tests/HookCommandTests.cs(28,16): error CS0246: The type or namespace name 'HookResult' could not be found (are you missing a using directive or an assembly reference?) [<repo>/tests/Legislator.Cli.Tests/Legislator.Cli.Tests.csproj]
+<repo>/tests/Legislator.Parity.Tests/Hooks/RunHooks.cs(30,47): error CS0103: The name 'HookRegistry' does not exist in the current context [<repo>/tests/Legislator.Parity.Tests/Legislator.Parity.Tests.csproj]
+<repo>/tests/Legislator.Parity.Tests/Hooks/HooksHarnessTwins.cs(27,21): error CS0103: The name 'ExecutableLookup' does not exist in the current context [<repo>/tests/Legislator.Parity.Tests/Legislator.Parity.Tests.csproj]
+<repo>/tests/Legislator.Parity.Tests/Hooks/HooksHarnessTwins.cs(28,35): error CS0122: 'SystemEnvironment' is inaccessible due to its protection level [<repo>/tests/Legislator.Parity.Tests/Legislator.Parity.Tests.csproj]
+    0 Warning(s)
+    27 Error(s)
+
+Time Elapsed 00:00:10.40

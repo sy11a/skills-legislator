@@ -77,13 +77,13 @@
 | R-606 | Mutations SHALL be applied and reverted in place (byte-restore of | `docs/cases/BL-063-mutation-manifest` | — |
 | R-607 | The pass SHALL print and record one summary — total, killed, | `docs/cases/BL-063-mutation-manifest` | — |
 | R-608 | `evals/POLICY.md` §1c SHALL name the command and the cadence | `docs/cases/BL-063-mutation-manifest` | — |
-| R-641 | WHEN the agent invokes Bash with a `git merge` command WHILE | `docs/cases/BL-064-git-conduct-guard` | — |
-| R-642 | WHEN the agent invokes Bash with a `git push` command whose | `docs/cases/BL-064-git-conduct-guard` | — |
-| R-643 | WHEN a `git commit` (or `git commit --amend`) command's | `docs/cases/BL-064-git-conduct-guard` | — |
-| R-644 | WHEN a `gh pr create` / `gh pr edit` command's title/body | `docs/cases/BL-064-git-conduct-guard` | — |
-| R-645 | WHEN the agent invokes Bash with a `gh pr merge` command, in | `docs/cases/BL-064-git-conduct-guard` | — |
-| R-646 | WHILE the input is malformed, the command is not a git/gh | `docs/cases/BL-064-git-conduct-guard` | — |
-| R-647 | WHILE the working directory is not inside a legislated repo | `docs/cases/BL-064-git-conduct-guard` | — |
+| R-641 | WHEN the agent invokes Bash with a `git merge` command WHILE | `docs/cases/BL-064-git-conduct-guard` | `tests/Legislator.Parity.Tests/Hooks/GuardGitConductTwins.cs` |
+| R-642 | WHEN the agent invokes Bash with a `git push` command whose | `docs/cases/BL-064-git-conduct-guard` | `tests/Legislator.Parity.Tests/Hooks/GuardGitConductTwins.cs` |
+| R-643 | WHEN a `git commit` (or `git commit --amend`) command's | `docs/cases/BL-064-git-conduct-guard` | `tests/Legislator.Parity.Tests/Hooks/GuardGitConductTwins.cs` |
+| R-644 | WHEN a `gh pr create` / `gh pr edit` command's title/body | `docs/cases/BL-064-git-conduct-guard` | `tests/Legislator.Parity.Tests/Hooks/GuardGitConductTwins.cs` |
+| R-645 | WHEN the agent invokes Bash with a `gh pr merge` command, in | `docs/cases/BL-064-git-conduct-guard` | `tests/Legislator.Parity.Tests/Hooks/GuardGitConductTwins.cs` |
+| R-646 | WHILE the input is malformed, the command is not a git/gh | `docs/cases/BL-064-git-conduct-guard` | `tests/Legislator.Parity.Tests/Hooks/GuardGitConductTwins.cs` |
+| R-647 | WHILE the working directory is not inside a legislated repo | `docs/cases/BL-064-git-conduct-guard` | `tests/Legislator.Parity.Tests/Hooks/GuardGitConductTwins.cs` |
 | R-648 | The opencode plugin SHALL mirror R-641–R-645 for its bash | `docs/cases/BL-064-git-conduct-guard` | — |
 | R-649 | Every new check in the two harnesses SHALL be shown failing | `docs/cases/BL-064-git-conduct-guard` | — |
 | R-651 | WHEN a case spec under `docs/cases/*/spec.md` lacks a | `docs/cases/BL-065-case-shape-lints` | — |
@@ -105,13 +105,42 @@
 | R-667 | The zero-writes contract SHALL hold and be verified: the | `docs/cases/BL-066-audit-job-and-emitter` | — |
 | R-668 | Every new corpus assert SHALL be shown red against the v22 | `docs/cases/BL-066-audit-job-and-emitter` | — |
 | R-669 | WHILE inputs are identical, the printed report SHALL be | `docs/cases/BL-066-audit-job-and-emitter` | — |
-| R-701 | WHEN a Bash command invokes git or gh via a Windows-style | `docs/cases/BL-070-portability-patch-set` | — |
-| R-702 | The hooks.json command lines SHALL resolve the interpreter | `docs/cases/BL-070-portability-patch-set` | — |
+| R-701 | WHEN a Bash command invokes git or gh via a Windows-style | `docs/cases/BL-070-portability-patch-set` | `tests/Legislator.Parity.Tests/Hooks/GuardGitConductTwins.cs` |
+| R-702 | The hooks.json command lines SHALL resolve the interpreter | `docs/cases/BL-070-portability-patch-set` | `tests/Legislator.Parity.Tests/Labels.cs` |
 | R-703 | The two link scripts SHALL be Python (`tools/link_skills.py`, | `docs/cases/BL-070-portability-patch-set` | — |
 | R-704 | WHILE running on Windows (`os.name == "nt"`), check_engine's | `docs/cases/BL-070-portability-patch-set` | — |
 | R-705 | WHEN `ps` is absent or fails, the dashboard SHALL treat the | `docs/cases/BL-070-portability-patch-set` | — |
 | R-706 | `check_opencode_plugin.mjs` SHALL assert node ≥ 22.6 before | `docs/cases/BL-070-portability-patch-set` | — |
 | R-707 | Every changed behavior with an existing harness SHALL show | `docs/cases/BL-070-portability-patch-set` | — |
+| R-731 | WHEN an instrument acquires the workspace lock THEN it | `docs/cases/BL-073-eval-workspace-lock` | — |
+| R-732 | WHILE `<ws>/.lock` names a live process, WHEN a second | `docs/cases/BL-073-eval-workspace-lock` | — |
+| R-733 | WHEN `<ws>/.lock` names a process that no longer exists | `docs/cases/BL-073-eval-workspace-lock` | — |
+| R-734 | `evals-bg.sh` SHALL hold the lock from before its first | `docs/cases/BL-073-eval-workspace-lock` | — |
+| R-735 | `mutate.py` SHALL hold the lock for the whole pass and | `docs/cases/BL-073-eval-workspace-lock` | — |
+| R-736 | WHEN a full `evals-bg.sh` run starts THEN its | `docs/cases/BL-073-eval-workspace-lock` | — |
+| R-737 | Every new check SHALL be shown red against the unchanged | `docs/cases/BL-073-eval-workspace-lock` | — |
+| R-751 | WHEN `apply` runs THEN it SHALL write one run record — a | `docs/cases/BL-075-engine-apply-and-report` | — |
+| R-752 | The run record SHALL live outside the target repository | `docs/cases/BL-075-engine-apply-and-report` | — |
+| R-753 | WHEN `engine.py detect --skill <p>` runs THEN it SHALL print | `docs/cases/BL-075-engine-apply-and-report` | — |
+| R-754 | WHEN `engine.py apply --skill <p> --stacks <a,b>` runs THEN | `docs/cases/BL-075-engine-apply-and-report` | — |
+| R-755 | WHEN a path in the old `ownedFiles` list is absent from the | `docs/cases/BL-075-engine-apply-and-report` | — |
+| R-756 | `apply` SHALL carry the manifest's `keep` list forward | `docs/cases/BL-075-engine-apply-and-report` | — |
+| R-757 | `apply` SHALL write `docs/ai/manifest.json` in the pinned | `docs/cases/BL-075-engine-apply-and-report` | — |
+| R-758 | `apply` SHALL ensure the v14 file model: a real `CLAUDE.md` | `docs/cases/BL-075-engine-apply-and-report` | — |
+| R-759 | `apply` SHALL write nothing but the owned set, the | `docs/cases/BL-075-engine-apply-and-report` | — |
+| R-760 | WHEN `engine.py verify --skill <p>` runs THEN it SHALL | `docs/cases/BL-075-engine-apply-and-report` | — |
+| R-761 | `verify` SHALL append its result and the post-run Step-4 | `docs/cases/BL-075-engine-apply-and-report` | — |
+| R-762 | WHEN `engine.py report --skill <p>` runs THEN it SHALL print | `docs/cases/BL-075-engine-apply-and-report` | — |
+| R-763 | The `Needs your review` section SHALL carry the derivable | `docs/cases/BL-075-engine-apply-and-report` | — |
+| R-764 | WHERE `--model-findings <json>` is passed THEN `report` | `docs/cases/BL-075-engine-apply-and-report` | — |
+| R-765 | WHILE the mode is upgrade, `report` SHALL append `## Health` | `docs/cases/BL-075-engine-apply-and-report` | — |
+| R-766 | `## Keep list` SHALL appear only when the record carries a | `docs/cases/BL-075-engine-apply-and-report` | — |
+| R-767 | WHILE the record and the tree are identical, the printed | `docs/cases/BL-075-engine-apply-and-report` | — |
+| R-768 | SKILL.md Steps 1, 3, 6 and 7 SHALL instruct the model to | `docs/cases/BL-075-engine-apply-and-report` | — |
+| R-769 | The scaffold run's report SHALL be a persisted, graded | `docs/cases/BL-075-engine-apply-and-report` | — |
+| R-770 | Every new engine behavior SHALL land with a red-first unit | `docs/cases/BL-075-engine-apply-and-report` | — |
+| R-771 | WHERE a real `CLAUDE.md` and a real `AGENTS.md` both exist | `docs/cases/BL-075-engine-apply-and-report` | — |
+| R-772 | Every new corpus assert SHALL be shown red against the v23 | `docs/cases/BL-075-engine-apply-and-report` | — |
 
 ## Uncovered — requirements no test carries
 
@@ -184,13 +213,6 @@
 - R-606 — Mutations SHALL be applied and reverted in place (byte-restore of (`docs/cases/BL-063-mutation-manifest`)
 - R-607 — The pass SHALL print and record one summary — total, killed, (`docs/cases/BL-063-mutation-manifest`)
 - R-608 — `evals/POLICY.md` §1c SHALL name the command and the cadence (`docs/cases/BL-063-mutation-manifest`)
-- R-641 — WHEN the agent invokes Bash with a `git merge` command WHILE (`docs/cases/BL-064-git-conduct-guard`)
-- R-642 — WHEN the agent invokes Bash with a `git push` command whose (`docs/cases/BL-064-git-conduct-guard`)
-- R-643 — WHEN a `git commit` (or `git commit --amend`) command's (`docs/cases/BL-064-git-conduct-guard`)
-- R-644 — WHEN a `gh pr create` / `gh pr edit` command's title/body (`docs/cases/BL-064-git-conduct-guard`)
-- R-645 — WHEN the agent invokes Bash with a `gh pr merge` command, in (`docs/cases/BL-064-git-conduct-guard`)
-- R-646 — WHILE the input is malformed, the command is not a git/gh (`docs/cases/BL-064-git-conduct-guard`)
-- R-647 — WHILE the working directory is not inside a legislated repo (`docs/cases/BL-064-git-conduct-guard`)
 - R-648 — The opencode plugin SHALL mirror R-641–R-645 for its bash (`docs/cases/BL-064-git-conduct-guard`)
 - R-649 — Every new check in the two harnesses SHALL be shown failing (`docs/cases/BL-064-git-conduct-guard`)
 - R-651 — WHEN a case spec under `docs/cases/*/spec.md` lacks a (`docs/cases/BL-065-case-shape-lints`)
@@ -212,10 +234,37 @@
 - R-667 — The zero-writes contract SHALL hold and be verified: the (`docs/cases/BL-066-audit-job-and-emitter`)
 - R-668 — Every new corpus assert SHALL be shown red against the v22 (`docs/cases/BL-066-audit-job-and-emitter`)
 - R-669 — WHILE inputs are identical, the printed report SHALL be (`docs/cases/BL-066-audit-job-and-emitter`)
-- R-701 — WHEN a Bash command invokes git or gh via a Windows-style (`docs/cases/BL-070-portability-patch-set`)
-- R-702 — The hooks.json command lines SHALL resolve the interpreter (`docs/cases/BL-070-portability-patch-set`)
 - R-703 — The two link scripts SHALL be Python (`tools/link_skills.py`, (`docs/cases/BL-070-portability-patch-set`)
 - R-704 — WHILE running on Windows (`os.name == "nt"`), check_engine's (`docs/cases/BL-070-portability-patch-set`)
 - R-705 — WHEN `ps` is absent or fails, the dashboard SHALL treat the (`docs/cases/BL-070-portability-patch-set`)
 - R-706 — `check_opencode_plugin.mjs` SHALL assert node ≥ 22.6 before (`docs/cases/BL-070-portability-patch-set`)
 - R-707 — Every changed behavior with an existing harness SHALL show (`docs/cases/BL-070-portability-patch-set`)
+- R-731 — WHEN an instrument acquires the workspace lock THEN it (`docs/cases/BL-073-eval-workspace-lock`)
+- R-732 — WHILE `<ws>/.lock` names a live process, WHEN a second (`docs/cases/BL-073-eval-workspace-lock`)
+- R-733 — WHEN `<ws>/.lock` names a process that no longer exists (`docs/cases/BL-073-eval-workspace-lock`)
+- R-734 — `evals-bg.sh` SHALL hold the lock from before its first (`docs/cases/BL-073-eval-workspace-lock`)
+- R-735 — `mutate.py` SHALL hold the lock for the whole pass and (`docs/cases/BL-073-eval-workspace-lock`)
+- R-736 — WHEN a full `evals-bg.sh` run starts THEN its (`docs/cases/BL-073-eval-workspace-lock`)
+- R-737 — Every new check SHALL be shown red against the unchanged (`docs/cases/BL-073-eval-workspace-lock`)
+- R-751 — WHEN `apply` runs THEN it SHALL write one run record — a (`docs/cases/BL-075-engine-apply-and-report`)
+- R-752 — The run record SHALL live outside the target repository (`docs/cases/BL-075-engine-apply-and-report`)
+- R-753 — WHEN `engine.py detect --skill <p>` runs THEN it SHALL print (`docs/cases/BL-075-engine-apply-and-report`)
+- R-754 — WHEN `engine.py apply --skill <p> --stacks <a,b>` runs THEN (`docs/cases/BL-075-engine-apply-and-report`)
+- R-755 — WHEN a path in the old `ownedFiles` list is absent from the (`docs/cases/BL-075-engine-apply-and-report`)
+- R-756 — `apply` SHALL carry the manifest's `keep` list forward (`docs/cases/BL-075-engine-apply-and-report`)
+- R-757 — `apply` SHALL write `docs/ai/manifest.json` in the pinned (`docs/cases/BL-075-engine-apply-and-report`)
+- R-758 — `apply` SHALL ensure the v14 file model: a real `CLAUDE.md` (`docs/cases/BL-075-engine-apply-and-report`)
+- R-759 — `apply` SHALL write nothing but the owned set, the (`docs/cases/BL-075-engine-apply-and-report`)
+- R-760 — WHEN `engine.py verify --skill <p>` runs THEN it SHALL (`docs/cases/BL-075-engine-apply-and-report`)
+- R-761 — `verify` SHALL append its result and the post-run Step-4 (`docs/cases/BL-075-engine-apply-and-report`)
+- R-762 — WHEN `engine.py report --skill <p>` runs THEN it SHALL print (`docs/cases/BL-075-engine-apply-and-report`)
+- R-763 — The `Needs your review` section SHALL carry the derivable (`docs/cases/BL-075-engine-apply-and-report`)
+- R-764 — WHERE `--model-findings <json>` is passed THEN `report` (`docs/cases/BL-075-engine-apply-and-report`)
+- R-765 — WHILE the mode is upgrade, `report` SHALL append `## Health` (`docs/cases/BL-075-engine-apply-and-report`)
+- R-766 — `## Keep list` SHALL appear only when the record carries a (`docs/cases/BL-075-engine-apply-and-report`)
+- R-767 — WHILE the record and the tree are identical, the printed (`docs/cases/BL-075-engine-apply-and-report`)
+- R-768 — SKILL.md Steps 1, 3, 6 and 7 SHALL instruct the model to (`docs/cases/BL-075-engine-apply-and-report`)
+- R-769 — The scaffold run's report SHALL be a persisted, graded (`docs/cases/BL-075-engine-apply-and-report`)
+- R-770 — Every new engine behavior SHALL land with a red-first unit (`docs/cases/BL-075-engine-apply-and-report`)
+- R-771 — WHERE a real `CLAUDE.md` and a real `AGENTS.md` both exist (`docs/cases/BL-075-engine-apply-and-report`)
+- R-772 — Every new corpus assert SHALL be shown red against the v23 (`docs/cases/BL-075-engine-apply-and-report`)

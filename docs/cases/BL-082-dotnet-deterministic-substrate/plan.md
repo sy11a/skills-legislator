@@ -1,6 +1,6 @@
 # BL-082 — The .NET deterministic substrate — Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **Execution:** by the owner under dev-flow — stage 6 (build), one task per session, red → green → owned, review with the owner per R-8216; the flow tracker in the KB (`Tasks/BL-082/`) is the single record of build progress. Steps use checkbox (`- [ ]`) syntax for tracking. *(Header rewritten 2026-08-30, stage 4 audit — the original named an agent sub-skill; superseded by the owner-executes ruling of 2026-08-29.)*
 
 **Goal:** Replace the Python engine and the four Python hooks with one tested .NET core behind a NativeAOT `legislator` CLI, byte-parity-proven against the existing Python checks, with every default in one options model composed from four configuration layers.
 
@@ -8,7 +8,7 @@
 
 **Tech Stack:** .NET 10 SDK (10.0.106 on the reference machine), C# 14, xUnit v3 on Microsoft.Testing.Platform, `TestableIO.System.IO.Abstractions` (+ TestingHelpers), `YamlDotNet` with its static (source-generated) context for AOT, NativeAOT publish per RID.
 
-**Spec:** `docs/cases/BL-082-dotnet-deterministic-substrate/spec.md` (R-8201–R-8217). Read it first; every task below traces `per R-NNN`. Every task is class **[D]** — deterministic, no agent needed to execute its deliverable.
+**Spec:** `docs/cases/BL-082-dotnet-deterministic-substrate/spec.md` (R-8201–R-8217). **Contracts:** `contracts.md` (C-01–C-12) — tasks cite them, never restate them. Read both first; every task below traces `per R-NNN`. Every task is class **[D]** — deterministic, no agent needed to execute its deliverable.
 
 ## Global Constraints
 
@@ -82,8 +82,8 @@ tests/
   Legislator.Cli.Tests/               golden runs on evals/fixtures
   Legislator.Parity.Tests/            the label meta-test + one twin per check label
 evals/
-  check_engine.py                     gains LEGISLATOR_ENGINE_CMD
-  check_hooks.py                      gains LEGISLATOR_HOOK_CMD
+  check_engine.py                     gains PARITY_ENGINE_CMD
+  check_hooks.py                      gains PARITY_HOOK_CMD
   check_static.py                     gains src/ discipline checks
   check_dotnet.sh                     build + test + publish smoke, one entry point
 tools/
@@ -103,8 +103,11 @@ plugin/hooks/hooks.json               names the binary
 - Modify: `evals/check_static.py` (append a section)
 - Modify: `.gitignore` (add `src/**/bin/`, `src/**/obj/`, `tests/**/bin/`, `tests/**/obj/`, `artifacts/`)
 
-**Interfaces:**
-- Produces: the project names above; test projects reference their source project; `Legislator.Parity.Tests` references `Legislator.Cli`.
+**Interfaces:** produces **C-01** (`contracts.md`).
+
+**Amendments (2026-08-30, stage 4 audit — operator-approved):**
+- AOT-first: `evals/check_dotnet.sh` also runs `dotnet publish Legislator.Cli -c Release -r linux-x64 -o ../artifacts/linux-x64` from this task on, so trim/AOT warnings (`IL2026`/`IL3050`) surface in the task that causes them; Task 12 keeps only the per-RID loop and checksums.
+- R-8202 scope: the "does not restate" check covers `tests/**/*.csproj` too; `IsAotCompatible=false` in test projects is the ONE permitted override (the static check's list excludes that key by design) — say so in the check's message.
 
 - [ ] **Step 1: Write the failing static check** — append to `evals/check_static.py`:
 
@@ -230,19 +233,7 @@ dotnet test --nologo
 - Test: `tests/Legislator.Core.Tests/Abstractions/FakeEnvironmentTests.cs`
 - Modify: `evals/check_static.py` (statics-in-core check)
 
-**Interfaces:**
-- Produces:
-  ```csharp
-  public interface IEnvironment { string? GetVariable(string name); string CurrentDirectory { get; } string HomeDirectory { get; } }
-  public sealed record ProcessResult(int ExitCode, string Stdout, string Stderr);
-  public interface IProcessRunner { ProcessResult Run(string fileName, IReadOnlyList<string> args, string workingDirectory, TimeSpan timeout); }
-  ```
-  `System.IO.Abstractions.IFileSystem` and `System.TimeProvider` are used as-is.
-- Test helper (in Core.Tests, `public`, reused by every later test project via `InternalsVisibleTo` is *not* used — it is a `TestSupport` project-less folder copied by `<Compile Include>` link in each test csproj):
-  ```csharp
-  public sealed class FakeEnvironment : IEnvironment { public Dictionary<string,string> Vars {get;} = new(); public string CurrentDirectory {get;set;} = "/work"; public string HomeDirectory {get;set;} = "/fake-home"; public string? GetVariable(string n) => Vars.GetValueOrDefault(n); }
-  public sealed class FakeProcessRunner : IProcessRunner { public Func<string, IReadOnlyList<string>, string, ProcessResult> OnRun {get;set;} = (_,_,_) => new(0,"",""); public List<(string,IReadOnlyList<string>,string)> Calls {get;} = new(); public ProcessResult Run(string f, IReadOnlyList<string> a, string d, TimeSpan t){ Calls.Add((f,a,d)); return OnRun(f,a,d);} }
-  ```
+**Interfaces:** produces **C-02** (`contracts.md`).
 
 - [ ] **Step 1: Write the failing static check** — append to `evals/check_static.py`:
 
@@ -284,7 +275,7 @@ public class FakeEnvironmentTests
 
 - [ ] **Step 4: Run, expect compile FAIL** — `dotnet test tests/Legislator.Core.Tests` → `IEnvironment` not found.
 
-- [ ] **Step 5: Implement** the three interfaces and the two fakes as specified in *Interfaces*; `Composition.cs` in Cli:
+- [ ] **Step 5: Implement** the three interfaces and the two fakes as specified in C-02; `Composition.cs` in Cli:
 
 ```csharp
 internal sealed class SystemEnvironment : IEnvironment
@@ -320,45 +311,7 @@ internal sealed class SystemProcessRunner : IProcessRunner
 - Test: `tests/Legislator.Core.Tests/Options/LegislatorOptionsTests.cs`
 - Modify: `evals/check_static.py` (literal-outside-options check)
 
-**Interfaces:**
-- Produces:
-  ```csharp
-  public enum OptionsLayer { Defaults, Machine, Instance, Environment }
-  public sealed record OptionValue<T>(T Value, OptionsLayer Source);
-  public sealed class LegislatorOptions
-  {
-      // every member: a default here and nowhere else. Keys are the YAML/env names.
-      public OptionValue<string> DocsDir { get; init; } = new("docs", OptionsLayer.Defaults);               // key: docs_dir
-      public OptionValue<string> AiDir { get; init; } = new("ai", OptionsLayer.Defaults);                   // ai_dir     (under docs)
-      public OptionValue<string> RulesDir { get; init; } = new("rules", OptionsLayer.Defaults);             // rules_dir  (under docs/ai)
-      public OptionValue<string> OkfDir { get; init; } = new("okf", OptionsLayer.Defaults);                 // okf_dir
-      public OptionValue<string> CasesDir { get; init; } = new("cases", OptionsLayer.Defaults);             // cases_dir
-      public OptionValue<string> AdrDir { get; init; } = new("adr", OptionsLayer.Defaults);                 // adr_dir
-      public OptionValue<string> JournalDir { get; init; } = new("journal", OptionsLayer.Defaults);         // journal_dir
-      public OptionValue<string> ManifestFile { get; init; } = new("manifest.json", OptionsLayer.Defaults); // manifest_file
-      public OptionValue<string> BaselineFile { get; init; } = new("baseline.md", OptionsLayer.Defaults);   // baseline_file
-      public OptionValue<string> EntryDocument { get; init; } = new("AGENTS.md", OptionsLayer.Defaults);    // entry_document
-      public OptionValue<string> EntryAlias { get; init; } = new("CLAUDE.md", OptionsLayer.Defaults);       // entry_alias
-      public OptionValue<string> OpencodeConfig { get; init; } = new("opencode.json", OptionsLayer.Defaults);
-      public OptionValue<string> ProjectRulesDir { get; init; } = new(".claude/rules", OptionsLayer.Defaults);
-      public OptionValue<string> BacklogFile { get; init; } = new("backlog.md", OptionsLayer.Defaults);
-      public OptionValue<string> ChangelogFile { get; init; } = new("CHANGELOG.md", OptionsLayer.Defaults);
-      public OptionValue<int> OkfDebtDays { get; init; } = new(30, OptionsLayer.Defaults);                  // okf_debt_days
-      public OptionValue<string> BranchPattern { get; init; } = new("bl/{nnn}-{slug}", OptionsLayer.Defaults);
-      public OptionValue<string> EditionTagPattern { get; init; } = new("v{n}", OptionsLayer.Defaults);
-      public OptionValue<string> MachineConfigFile { get; init; } = new(".config/legislator/legislator.yaml", OptionsLayer.Defaults); // relative to home
-      public OptionValue<string> InstanceConfigFile { get; init; } = new("legislator.yaml", OptionsLayer.Defaults);
-      public OptionValue<string> RunRecordDir { get; init; } = new("legislator-runs", OptionsLayer.Defaults); // under the system temp dir
-      public OptionValue<string> GitExecutable { get; init; } = new("git", OptionsLayer.Defaults);
-      public OptionValue<int> GitTimeoutSeconds { get; init; } = new(10, OptionsLayer.Defaults);
-      public OptionValue<IReadOnlyList<string>> SourceExtensions { get; init; } = new([".cs", ".ts", ".tsx", ".js", ".jsx", ".py", ".go", ".rs", ".java", ".kt", ".rb", ".php", ".sql", ".html", ".css"], OptionsLayer.Defaults);
-      public OptionValue<IReadOnlyList<string>> BuildDirs { get; init; } = new(["bin", "obj", "node_modules", "dist"], OptionsLayer.Defaults);
-      public OptionValue<IReadOnlyList<string>> HumanClassDocs { get; init; } = new(["glossary.md", "log.md"], OptionsLayer.Defaults);
-      public static IReadOnlyDictionary<string, string> KeyMap { get; }  // "docs_dir" → nameof(DocsDir) … generated by hand, asserted complete by test
-      public IEnumerable<(string Key, string Value, OptionsLayer Source)> Enumerate();
-  }
-  ```
-  The list above is the v24 engine's constant surface (`ROOT/docs/okf`, `docs/cases`, `HUMAN_CLASS`, `BUILD_DIRS`, `SOURCE_EXTS`, `DEBT_DAYS`, the audit checks' file names). Add a member whenever a port in Tasks 6–10 meets another literal — never the literal.
+**Interfaces:** produces **C-03** (`contracts.md`).
 
 - [ ] **Step 1: Write the failing static check** — append to `evals/check_static.py`:
 
@@ -402,7 +355,7 @@ public class LegislatorOptionsTests
 (The reflection test runs in the test project only — `IsAotCompatible=false` there; `Enumerate` and `KeyMap` themselves are hand-written, no reflection in Core.)
 
 - [ ] **Step 4: Run, expect FAIL** (types missing).
-- [ ] **Step 5: Implement** `LegislatorOptions` exactly as in *Interfaces*, with a hand-written `KeyMap` dictionary and `Enumerate()` switch over every member (lists joined with `,`).
+- [ ] **Step 5: Implement** `LegislatorOptions` exactly as in C-03, with a hand-written `KeyMap` dictionary and `Enumerate()` switch over every member (lists joined with `,`).
 - [ ] **Step 6: Run** — green; `check_static.py` ok.
 - [ ] **Step 7: Commit** — `"BL-082: the options model — every default in one place, static check for literals"`.
 - [ ] **Step 8: Review with the owner.**
@@ -415,21 +368,7 @@ public class LegislatorOptionsTests
 - Create: `src/Legislator.Core/Options/YamlLayerReader.cs`, `EnvLayerReader.cs`, `OptionsValidator.cs`, `OptionsComposer.cs`, `OptionsError.cs`, `YamlStaticContext.cs`
 - Test: `tests/Legislator.Core.Tests/Options/OptionsComposerTests.cs`, `OptionsValidatorTests.cs`, `EnvLayerReaderTests.cs`
 
-**Interfaces:**
-- Produces:
-  ```csharp
-  public sealed record OptionsError(OptionsLayer Layer, string Key, string Reason);
-  public sealed class OptionsException(IReadOnlyList<OptionsError> errors) : Exception { public IReadOnlyList<OptionsError> Errors {get;} = errors; }
-  public static class OptionsComposer
-  {
-      // machineFile/instanceFile: absolute paths or null (layer absent). Throws OptionsException (all errors, first layer first).
-      public static LegislatorOptions Compose(IFileSystem fs, IEnvironment env, string? machineFile, string? instanceFile);
-  }
-  public static class YamlLayerReader { public static IReadOnlyDictionary<string,string> Read(IFileSystem fs, string path); } // flat top-level scalars and sequences only
-  public static class EnvLayerReader  { public static IReadOnlyDictionary<string,string> Read(IEnvironment env, IEnumerable<string> knownKeys); } // LEGISLATOR_DOCS_DIR → docs_dir
-  public static class OptionsValidator { public static IReadOnlyList<OptionsError> Validate(OptionsLayer layer, IReadOnlyDictionary<string,string> raw); } // unknown key; int keys parse ≥ 1; non-empty strings; no path separator '..' segments
-  ```
-  Precedence low→high: Defaults, Machine, Instance, Environment. A key set in a higher layer overrides and stamps its `Source`.
+**Interfaces:** produces **C-04** (`contracts.md`).
 
 - [ ] **Step 1: Write the failing tests**:
 
@@ -501,20 +440,13 @@ public class EnvLayerReaderTests
 **Files:**
 - Create: `src/Legislator.Engine/IJob.cs`, `JobContext.cs`, `JobResult.cs`, `JobRegistry.cs`
 - Create: `src/Legislator.Cli/Program.cs`, `Commands/JobCommand.cs`, `Commands/ConfigCommand.cs`, `Commands/VersionCommand.cs`
-- Create: `src/Legislator.Cli/Properties/launchSettings.json` (none — omit), `src/Legislator.Cli/Version.props` (`<Version>25.0.0</Version>`, imported by the csproj)
+- Create: `src/Legislator.Cli/Properties/launchSettings.json` (none — omit), `src/Legislator.Cli/Version.props` (`<Version>0.0.0</Version>` — the un-assigned pin; the edition number is assigned at Task 12, imported by the csproj)
 - Test: `tests/Legislator.Cli.Tests/ProgramTests.cs`, `tests/Legislator.Engine.Tests/JobRegistryTests.cs`
 
-**Interfaces:**
-- Produces:
-  ```csharp
-  public sealed record JobResult(int ExitCode, string Stdout, string Stderr);
-  public sealed class JobContext(IFileSystem fs, TimeProvider clock, IEnvironment env, IProcessRunner proc, LegislatorOptions options, string root, IReadOnlyList<string> args, TextWriter? log = null) { /* properties of the same names */ }
-  public interface IJob { string Name { get; } string Usage { get; } JobResult Run(JobContext ctx); }
-  public static class JobRegistry { public static IReadOnlyDictionary<string, Func<IJob>> Jobs { get; } public static IReadOnlyList<string> Names => Jobs.Keys.Order().ToList(); }
-  // Cli
-  public static class Program { public static int Main(string[] args); }   // exit codes 0/1/2/3/4 as Global Constraints
-  ```
-  `legislator <job> [--root <dir>] [job args…]` — `--root` defaults to `env.CurrentDirectory`. `legislator config show [--json] [--root <dir>]`. `legislator version` prints `Version.props`'s value. Unknown job → usage on stderr, exit 2. Any exception escaping a job → `engine failed: <Type>: <message>` on stderr, exit 3 — mirrors the Python `main`.
+**Interfaces:** produces **C-05** (`contracts.md`).
+
+**Amendments (2026-08-30, stage 4 audit — operator-approved):**
+- AOT-first: `Legislator.Cli.Tests` golden runs spawn the PUBLISHED binary (`artifacts/linux-x64/legislator`, built by `check_dotnet.sh`), never `dotnet run` — what is measured is what ships.
 
 - [ ] **Step 1: Write the failing tests**:
 
@@ -581,10 +513,11 @@ public class JobRegistryTests
 - Create: `tests/Legislator.Parity.Tests/Labels.cs`, `tests/Legislator.Parity.Tests/LabelCoverageTests.cs`, `tests/Legislator.Parity.Tests/ParityAttribute.cs`
 - Create: `evals/parity_labels.py` (prints every `check(...)` label of both rulers, one per line — the source of truth the meta-test reads)
 
-**Interfaces:**
-- `LEGISLATOR_ENGINE_CMD` — when set, `run()`/`audit()`/`eng()` execute `[$LEGISLATOR_ENGINE_CMD, <job>, "--root", <root>, …]` instead of `python3 docs/ai/engine.py`; the fixture repos still copy `engine.py` in (until Task 12 removes it), so both arms are measured on identical trees.
-- `LEGISLATOR_HOOK_CMD` — when set, `run_hook(script, …)` executes `[$LEGISLATOR_HOOK_CMD, "hook", <script.stem>]`.
-- `[Parity("engine", "anchors_clean_repo_exit_0")]` — attribute naming the ruler (`engine`|`hooks`) and label a .NET test twins.
+**Interfaces:** produces **C-06** (`contracts.md`).
+
+**Amendments (2026-08-30, stage 4 audit — operator-approved):**
+- AOT-first: the parity meta-test and every twin execute the published binary via `PARITY_ENGINE_CMD`/`PARITY_HOOK_CMD` pointing at `artifacts/linux-x64/legislator` (renamed out of the `LEGISLATOR_*` namespace at T-07 — see contracts.md C-06's 2026-09-01 amendment).
+- `Legislator.Parity.Tests` stays a fifth test project — a deliberate departure from R-8201's letter, recorded in spec.md `## Clarifications` (2026-08-30).
 
 - [ ] **Step 1: Write `evals/parity_labels.py`**:
 
@@ -631,7 +564,7 @@ public class LabelCoverageTests
 - [ ] **Step 4: Parameterise the rulers** — in `check_engine.py`:
 
 ```python
-ENGINE_CMD = os.environ.get("LEGISLATOR_ENGINE_CMD")
+ENGINE_CMD = os.environ.get("PARITY_ENGINE_CMD")
 
 def _engine_argv(job: str, root: Path, *extra: str) -> list[str]:
     if ENGINE_CMD:
@@ -645,7 +578,7 @@ def run(root: Path, job: str) -> tuple[int, str]:
 `audit()` and `eng()` route through `_engine_argv` the same way (`eng` already passes `--root`; with `ENGINE_CMD` it drops `ENGINE_SRC`). In `check_hooks.py`:
 
 ```python
-HOOK_CMD = os.environ.get("LEGISLATOR_HOOK_CMD")
+HOOK_CMD = os.environ.get("PARITY_HOOK_CMD")
 def run_hook(script: Path, payload: dict, cwd: Path | None = None):
     argv = [HOOK_CMD, "hook", script.stem] if HOOK_CMD else [sys.executable, str(script)]
     return subprocess.run(argv, input=json.dumps(payload), capture_output=True, text=True, cwd=str(cwd) if cwd else None, timeout=15)
@@ -665,17 +598,10 @@ Print the arm under test at the top of each ruler: `print(f"arm: {ENGINE_CMD or 
 - Test: `tests/Legislator.Engine.Tests/Anchors/AnchorClassifierTests.cs`, `tests/Legislator.Engine.Tests/Jobs/AnchorsJobTests.cs`, `tests/Legislator.Parity.Tests/Engine/AnchorsTwins.cs`
 - Reference: `skill/assets/engine/engine.py:60-220` (the Python `classify`, `path_target`, `resolve_symbols`, `anchored_docs`, `scannable_lines`, `TOKEN`), `docs/ai/rules/core/okf.md` §Link hardness (the closed definition).
 
-**Interfaces:**
-- Produces:
-  ```csharp
-  public sealed class RepoLayout(LegislatorOptions o, string root) { public string Docs {get;} public string Okf {get;} public string Cases {get;} public string Ai {get;} public string Rules {get;} public string Manifest {get;} /* joined with '/' — never Path.Combine on a real disk */ }
-  public enum AnchorKind { None, Path, Symbol }
-  public static class AnchorClassifier { public static AnchorKind Classify(string token, IReadOnlySet<string> topLevelDirs); public static string PathTarget(string token); /* strips trailing .Member() */ }
-  public sealed class SymbolIndex { public static SymbolIndex Build(IFileSystem fs, string root, LegislatorOptions o); public bool Contains(string leadingSegment); }
-  public sealed class AnchorsJob : IJob { public string Name => "anchors"; … }
-  public static class Findings { public static JobResult AsResult(IEnumerable<string> findings) => new(findings.Any() ? 1 : 0, string.Join("", findings.Order(StringComparer.Ordinal).Select(f => f + "\n")), ""); }
-  ```
-  Finding text is byte-identical to the Python: `"{rel}:{lineno}: path-anchor: {token} → no such file"` and `"{rel}:{lineno}: symbol-anchor: {token} → not found in {roots}"`, sorted ordinal.
+**Interfaces:** produces **C-07** (`contracts.md`).
+
+**Amendments (2026-08-30, stage 4 audit — operator-approved):**
+- AOT-first: every regex in `AnchorClassifier` (and any later Core/Engine regex) is a `[GeneratedRegex]` partial method — never `new Regex(...)`, whose AOT fallback is the interpreter.
 
 - [ ] **Step 1: Write the failing classifier tests** (from `core/okf.md`'s closed definition):
 
@@ -755,7 +681,7 @@ public class AnchorsTwins
 ```
 The label list for this task is the output of `python3 evals/parity_labels.py | grep -E '^engine\t(anchor|symbol|path|human|scannable)'` on the day; write one twin per line.
 
-- [ ] **Step 10: Parity run** — `dotnet publish src/Legislator.Cli -c Release -o artifacts && LEGISLATOR_ENGINE_CMD=$PWD/artifacts/legislator python3 evals/check_engine.py 2>&1 | grep -E '^(  ok|  FAIL)' | grep -i anchor` — every anchors line `ok`, byte-identical stdout (the ruler asserts stdout, not just exit). Any `FAIL` is a port defect: fix the .NET side, never the ruler.
+- [ ] **Step 10: Parity run** — `dotnet publish src/Legislator.Cli -c Release -o artifacts && PARITY_ENGINE_CMD=$PWD/artifacts/legislator python3 evals/check_engine.py 2>&1 | grep -E '^(  ok|  FAIL)' | grep -i anchor` — every anchors line `ok`, byte-identical stdout (the ruler asserts stdout, not just exit). Any `FAIL` is a port defect: fix the .NET side, never the ruler.
 - [ ] **Step 11: Commit** — `"BL-082: anchors ported — pilot job, parity green on the ruler"`.
 - [ ] **Step 12: Review with the owner** — this is the review that sets the pattern for Tasks 8–10; agree the twin style here.
 
@@ -768,14 +694,7 @@ The label list for this task is the output of `python3 evals/parity_labels.py | 
 - Test: `tests/Legislator.Engine.Tests/Jobs/{OkfDebtJobTests,SddLintJobTests,BaselineJobTests}.cs`, `tests/Legislator.Parity.Tests/Engine/{OkfDebtTwins,SddLintTwins,BaselineTwins}.cs`
 - Reference: `skill/assets/engine/engine.py:221-560` and the sdd-lint helpers up to `job_baseline`.
 
-**Interfaces:**
-- Produces:
-  ```csharp
-  public static class GitLog { /* newest commit ISO date for rel path, or null when untracked / no git; NoGit flag when the git call itself fails */ public static (string? Iso, bool GitAvailable) NewestCommit(IProcessRunner proc, LegislatorOptions o, string root, string rel); }
-  public sealed record CaseFile(string Dir, string Spec, string? Plan, string Header, IReadOnlyList<string> RequirementIds, bool Converged);
-  public static class CaseModel { public static IReadOnlyList<CaseFile> Load(IFileSystem fs, RepoLayout l); }
-  ```
-  `okf-debt` **without git is a loud finding** (`"okf-debt: git unavailable — debt cannot be computed"`, exit 1) — the BL-069 F1 fix, already in the Python since BL-070; the twin asserts it.
+**Interfaces:** produces **C-08** (`contracts.md`).
 
 - [ ] **Step 1** For each job, in this order (`okf-debt` → `sdd-lint` → `baseline`): write the unit tests for every branch of the Python function (the Python's section comments are the branch list: `DEBT_DAYS` threshold from `OkfDebtDays`, directory anchors not sources, untracked docs skipped, `sdd-lint`'s coverage R↔task, dangling `per R-NNN`, unresolved `{{TOKEN}}` outside the ADR template, one-SHALL EARS bullets, ADR name/sequence/sections/status closed set, journal day-names, changelog Unreleased section, OKF front-matter status, quoted tokens are quotation, converged cases skipped; `baseline` writes exactly `docs/ai/baseline.md` and nothing else, content byte-equal to the Python's on the same tree).
 - [ ] **Step 2** Run, expect FAIL. **Step 3** Implement by transliteration, directory names via `RepoLayout`, thresholds via options, git via `GitLog` over `IProcessRunner`. **Step 4** Run, green.
@@ -792,14 +711,13 @@ The label list for this task is the output of `python3 evals/parity_labels.py | 
 - Test: `tests/Legislator.Engine.Tests/Audit/*.cs` (one file per check), `Jobs/DetectJobTests.cs`, `tests/Legislator.Parity.Tests/Engine/{AuditTwins,DetectTwins}.cs`
 - Reference: `skill/assets/engine/engine.py:560-1222`; `skill/references/audit-checks.md` (the pinned report shape the checks print).
 
-**Interfaces:**
-- `legislator audit --skill <path> [--root <dir>] [--model-findings <json>]` — exit 1 when any finding, 0 clean; report on stdout starts `# AI-Layer Audit`, clean report contains `No findings.`.
-- `legislator detect --skill <path> [--root <dir>]` — JSON (`indent=1, sort_keys` in Python → `JsonSerializerOptions { WriteIndented = true }` gives 2-space indent: **the twin asserts the parsed object, and the ruler's `detect` checks parse JSON too — confirm by reading them; if any compares raw text, emit with a custom 1-space writer to stay byte-identical**).
-- `--skill` missing or not a directory → stderr `"{job} requires --skill <skill-path> (the legislator package root)"`, exit 2 (verbatim).
+**Interfaces:** produces **C-09** (`contracts.md`).
 
-- [ ] **Step 1** Unit tests per audit check (the Python names them by number and slug; the test class names match: `Check02OwnedIntegrityTests` …), on `MockFileSystem` repos built like `audit_repo()` in the ruler. **Step 2** FAIL. **Step 3** Implement, one check per commit if a check exceeds ~80 lines. **Step 4** Green.
-- [ ] **Step 5** Twins for every `engine` label in the audit/detect sections (`grep -E '^engine\t(audit|check_|detect|R-6)'`). **Step 6** Parity run: `LEGISLATOR_ENGINE_CMD=… python3 evals/check_engine.py | grep -E 'audit|detect'` all ok; the report text `diff`-clean against the Python on `evals/fixtures/upgrade-base`.
-- [ ] **Step 7** Commit `"BL-082: audit and detect ported, parity green"`. **Step 8** Review with the owner.
+- [x] **Step 1** Unit tests per audit check (the Python names them by number and slug; the test class names match: `Check02OwnedIntegrityTests` …), on `MockFileSystem` repos built like `audit_repo()` in the ruler. **Step 2** FAIL. **Step 3** Implement, one check per commit if a check exceeds ~80 lines. **Step 4** Green.
+- [x] **Step 5** Twins for every `engine` label in the audit/detect sections (`grep -E '^engine\t(audit|check_|detect|R-6)'`). **Step 6** Parity run: `PARITY_ENGINE_CMD=… python3 evals/check_engine.py | grep -E 'audit|detect'` all ok; the report text `diff`-clean against the Python on `evals/fixtures/upgrade-base`.
+- [x] **Step 7** Commit `"BL-082: audit and detect ported, parity green"`. **Step 8** Review with the owner.
+
+> **Amended 2026-09-02 (T-09 close, operator ruling).** Executed as two commits, `detect` first (`2b08cfb`) then `audit` (`b409efd`), by the operator's session-shape ruling. Departures from the letter, owned as built: `skill/references/audit-checks.md` does not exist — `skill/SKILL.md` § Audit was the reference; checks 1, 2, 4, 6, 14 and 17 have no unit file of their own, their twins already driving the ruler's fixture (H-007); the manifest is `JsonNode` data on `ManifestFile`, not a typed `Manifest.cs`; the Step-5 selector was not used — ownership re-derived by ruler section (20 audit + 6 detect labels). Four ruler checks that hardcoded the interpreter were routed through `_engine_argv` in the same commit (decision gate, option a); the two `usage` labels stay with Task 12.
 
 ---
 
@@ -810,19 +728,29 @@ The label list for this task is the output of `python3 evals/parity_labels.py | 
 - Test: `tests/Legislator.Engine.Tests/Apply/*.cs`, `Jobs/{ApplyJobTests,VerifyJobTests,ReportJobTests}.cs`, `tests/Legislator.Parity.Tests/Engine/{ApplyTwins,VerifyTwins,ReportTwins}.cs`
 - Reference: `skill/assets/engine/engine.py:1222-1483`, ADR-0006, `SKILL.md` Steps 3/6/7.
 
-**Interfaces:**
-- `apply --skill <p> --stacks <a,b> [--keep-add <path>::<reason>]* [--keep-remove <path>]* [--record <file>] [--root <dir>]` — stdout lines exactly as `_run_job` prints (`apply: {mode} mode, constitution v{version}, stacks [...]`, the `owned:`/`keep:`/`file model:` lines, `run record: {path}`); exit 4 with `apply stopped: {reason}` on stderr when two real entry documents exist, **having written nothing**; `--keep-add` without `::` → usage, exit 2.
-- `verify [--record <file>]` — failures one per line, exit 1; appends the post snapshot to the record.
-- `report [--record <file>] [--model-findings <json>]` — the Step-7 report from the record.
-- Record path default: `RunRecordDir` under the system temp dir (`ctx.Fs.Path.GetTempPath()` — an `IFileSystem` call, permitted).
+**Interfaces:** produces **C-10** (`contracts.md`).
 
-- [ ] **Step 1** Unit tests: owned-set copy/overwrite/unchanged/delete classification, keep rules (add/remove/refused), manifest regeneration (`ownedFiles` sorted), the v14 file model events, the decision-gate stop writes nothing (assert `MockFileSystem` unchanged), verify's one re-copy on byte-diff, report's pinned model slots. **Step 2** FAIL. **Step 3** Implement. **Step 4** Green.
-- [ ] **Step 5** Twins for the `engine` labels of the v24 sections (`grep -E '^engine\t(apply|verify|report|record|owned|keep|step|R-7[5])'`). **Step 6** Parity run — full `check_engine.py` against the binary is now **all ok**; save the output as `docs/cases/BL-082-dotnet-deterministic-substrate/parity-engine-green.txt`.
-- [ ] **Step 7** Commit `"BL-082: apply/verify/report ported — check_engine.py fully green on the binary"`. **Step 8** Review with the owner.
+- [x] **Step 1** Unit tests: owned-set copy/overwrite/unchanged/delete classification, keep rules (add/remove/refused), manifest regeneration (`ownedFiles` sorted), the v14 file model events, the decision-gate stop writes nothing (assert `MockFileSystem` unchanged), verify's one re-copy on byte-diff, report's pinned model slots. **Step 2** FAIL. **Step 3** Implement. **Step 4** Green.
+- [x] **Step 5** Twins for the `engine` labels of the v24 sections (`grep -E '^engine\t(apply|verify|report|record|owned|keep|step|R-7[5])'`). **Step 6** Parity run — full `check_engine.py` against the binary is now **all ok**; save the output as `docs/cases/BL-082-dotnet-deterministic-substrate/parity-engine-green.txt`.
+- [x] **Step 7** Commit `"BL-082: apply/verify/report ported — check_engine.py fully green on the binary"`. **Step 8** Review with the owner.
+
+> **Amended 2026-09-02 (T-09 close, operator ruling).** Carries the case-sensitivity item's half (a), open since T-06: an audit check for case-collision variants of owned names (`Changelog.md` beside `CHANGELOG.md`), material on case-insensitive checkouts (ADR-0005). It lands here rather than in T-09 because `apply` is where the owned set is written and a collision becomes observable; the check itself is an audit check added in this task, with its own unit test and — where the ruler has no label for it — a twin-less test recorded as such in the ledger's notes. Option (i) of three (T-10 / backlog row / drop).
+
+> **Amended 2026-09-03 (T-10 close, operator rulings).** Executed as one commit. The case-collision item landed as a MECHANISM beside the owned set (`OwnedSet.CaseCollisions`, three unit tests, no audit slug, no twin) and its wiring into `AuditChecks.Order` and `SKILL.md` § Audit as check 18 moved to T-13 — decision gate, option (a) of three: the audit's check set is law both arms must spell identically, and an eighteenth check only the .NET arm knows makes them unequal in the audit and in `report`'s `## Health`; adding it honestly to both arms means editing `skill/SKILL.md` and the Python engine mid-port, dragging a VERSION bump and the full e2e benchmark out of order (option b), and shipping the divergence with a note (option c) is the drift this case has refused three tasks running.
+>
+> Thirteen departures from this task's letter, owned as built: `SkillArguments` keeps flags as an ordered list, not a map (`--keep-add`/`--keep-remove` repeat); `ApplyStop` is not an exception — the job returns exit 4 and the zero-writes promise rests on deciding before the first write, so `Apply/ApplyStop.cs` does not exist; `GitLog` gained `Succeeded` because `Ask` cannot tell a silent success from a refusal, and renaming the type to `Git` is a stage-7 candidate (A-006); the namespace is `Legislator.Engine.Runs`, not `RunRecord`, and the record is `JsonNode` data (the `ManifestFile` precedent); `HEALTH_CHECKS` is derived from `AuditChecks.Order`, not copied; `OwnedSet` owns the delivery map in both directions and `Check03OwnedIntegrity` is its second consumer, its private `SkillSourceOf` deleted; two new options (`SkillFile`, `RulesCoreDir`) over a generic mirror of `assets/rules/`; the five vacuously-green labels strengthened, not cut; the case-collision mechanism twin-less; the git-mv twin proven at git's interface; `report_malformed_findings_is_a_loud_exit` naming exit 3 exactly; CA5350 suppressed with a reason on the record-path digest; and, surfacing in green by the second-consumer rule, `Detection` extracted out of `DetectJob` so `apply` reads the mode exactly as `detect` reads it.
+>
+> Step 6's `parity-engine-green.txt` says what the green number does not prove: with `PARITY_ENGINE_CMD=/bin/false`, nineteen of the 142 stay green — the two `usage` labels T-12 owns, and seventeen assertions of absence that hold vacuously. Four of the nineteen are this task's and each carries a twin asserting more than the ruler does.
 
 ---
 
 ### Task 11 [D]: Port the four Claude Code hooks (per R-8208, R-8206)
+
+**Amendments (2026-09-03, T-11 — operator-approved):**
+- **Step 7 moves to Task 13.** Rewriting `plugin/hooks/hooks.json` to the binary removes the subject of five `check_hooks.py` assertions — `{} command references a hooks/*.py script`, `{} script exists: {}`, `PreToolUse has a Bash entry running guard_git_conduct.py per R-641`, and the two R-702 launcher checks — and one of them does not merely fail but crashes the ruler (`guard_entry = next(...)`, an uncaught `StopIteration` once no command names `guard_owned_files.py`). Task 13 already owns `check_hooks.py` and the deletion of `plugin/hooks/*.py`, and the T-06 journal had already placed the launcher tests there. Step 7's `hooks.json` shape checks therefore stay green here because the file is untouched.
+- **Those five labels are not twinned in Task 11 either** (option a′ of four). The ledger falls 62 → **8**, not to 3: three engine labels belong to Task 12 and these five to Task 13, held as declared debt with an address rather than as twins written to be deleted.
+- **Step 6's two claims are stale and are struck.** There is no test named `Every_ruler_label_has_a_named_twin`: T-06 replaced it with the ratchet `Ruler_labels_without_a_twin_match_the_recorded_debt`, which is green whenever the number is truthful and so never "goes green". And `evals/check_dotnet.sh` carries no `--filter-not-trait` to drop — the ratchet removed the need for an exclusion before one was ever added.
+- The three `malformed stdin allowed (exit 0)` call sites in `check_hooks.py` (lines 156, 186, 286) are renamed to carry their hook: one label over three different hooks let a single twin claim three defensive paths. Hooks labels 57 → 59, twins in scope 54.
 
 **Files:**
 - Create: `src/Legislator.Hooks/IHook.cs`, `HookPayload.cs` (+ source-generated JSON context), `HookResult.cs`, `HookRegistry.cs`, `Hooks/GuardOwnedFilesHook.cs`, `Hooks/GuardGitConductHook.cs`, `Hooks/FormatOnEditHook.cs`, `Hooks/OkfSyncCheckHook.cs`, `src/Legislator.Cli/Commands/HookCommand.cs`
@@ -830,13 +758,10 @@ The label list for this task is the output of `python3 evals/parity_labels.py | 
 - Test: `tests/Legislator.Hooks.Tests/Hooks/*.cs`, `tests/Legislator.Parity.Tests/Hooks/*Twins.cs`
 - Reference: `plugin/hooks/*.py` (each file's docstring is its contract), `evals/check_hooks.py`.
 
-**Interfaces:**
-- `legislator hook <guard_owned_files|guard_git_conduct|format_on_edit|okf_sync_check>` reads one JSON object on stdin; exit `0` allow, `2` block with the message on stderr; **never** another exit code, **never** an exception escaping — malformed input → 0 (the hook contract: a crash must not stop the user's work). `HookCommand` wraps every hook in a catch-all returning 0.
-- `hooks.json` commands become `"legislator hook guard_owned_files"` etc. (the binary is on PATH by Task 12's installer); `format_on_edit` keeps its `timeout: 10`.
-- The registry predicate (walk up to `docs/ai/manifest.json`) is the v24 one; BL-077 replaces it with the machine registry on this same code.
+**Interfaces:** produces **C-11** (`contracts.md`).
 
 - [ ] **Step 1** For each hook, transliterate its Python into a hook class with one unit test per documented branch (`guard_owned_files`: rules dir, `opencode.json`, `engine.py`, manifest not guarded, not legislated → 0, malformed → 0; `guard_git_conduct`: the command-head parser incl. `git.exe` and backslash heads from BL-070, the blocked verbs, warnings; `format_on_edit`: best-effort formatter absent → 0; `okf_sync_check`: `stop_hook_active` guard). **Step 2** FAIL. **Step 3** Implement. **Step 4** Green.
-- [ ] **Step 5** Twins for every `hooks` label (`python3 evals/parity_labels.py | grep '^hooks'`). **Step 6** Parity: `LEGISLATOR_HOOK_CMD=$PWD/artifacts/legislator python3 evals/check_hooks.py` all ok. Now run the meta-test: `dotnet test tests/Legislator.Parity.Tests` — `Every_ruler_label_has_a_named_twin` **green**; drop the `--filter-not-trait` from `check_dotnet.sh`.
+- [ ] **Step 5** Twins for every `hooks` label (`python3 evals/parity_labels.py | grep '^hooks'`). **Step 6** Parity: `PARITY_HOOK_CMD=$PWD/artifacts/legislator python3 evals/check_hooks.py` all ok. Now run the meta-test: `dotnet test tests/Legislator.Parity.Tests` — `Every_ruler_label_has_a_named_twin` **green**; drop the `--filter-not-trait` from `check_dotnet.sh`.
 - [ ] **Step 7** Rewrite `plugin/hooks/hooks.json` to the binary; `python3 evals/check_hooks.py` (its hooks.json shape checks) and `node evals/check_opencode_plugin.mjs` ok.
 - [ ] **Step 8** Commit `"BL-082: hooks ported, hooks.json names the binary, parity meta-test green"`. **Step 9** Review with the owner.
 
@@ -846,37 +771,40 @@ The label list for this task is the output of `python3 evals/parity_labels.py | 
 
 **Files:**
 - Create: `tools/install-legislator.sh`, `tools/publish-legislator.sh`, `.github/workflows/dotnet.yml` (or the repo's CI home — check `ls .github` first; create if absent)
-- Create: `src/Legislator.Engine/Audit/ArmIntegrityCheck.cs` (new audit check: installed version vs edition pin, checksum vs `evals/benchmarks/v25.md`'s recorded per-RID sums), `src/Legislator.Cli/Commands/VersionCommand.cs` (`--json` adds `rid` and `sha256` of the running executable)
+- Create: `src/Legislator.Engine/Audit/ArmIntegrityCheck.cs` (new audit check: installed version vs edition pin, checksum vs `evals/benchmarks/v<N>.md`'s recorded per-RID sums), `src/Legislator.Cli/Commands/VersionCommand.cs` (`--json` adds `rid` and `sha256` of the running executable)
 - Test: `tests/Legislator.Cli.Tests/StartupBudgetTests.cs`, `tests/Legislator.Engine.Tests/Audit/ArmIntegrityCheckTests.cs`
 - Modify: `evals/check_static.py` (the edition pin: `skill/VERSION` == major of `src/Legislator.Cli/Version.props`)
 
-**Interfaces:**
-- `tools/publish-legislator.sh` → `artifacts/<rid>/legislator[.exe]` + `artifacts/SHA256SUMS` for `linux-x64 win-x64 osx-x64 osx-arm64`.
-- `tools/install-legislator.sh [--from artifacts/<rid>]` → copies to `~/.local/bin/legislator` (Linux/macOS) — the operator-side script (declared operator-side-Linux/macOS in the register; the Windows install is `Copy-Item` documented in README, per BL-068's declaration rule).
-- `legislator version --json` → `{"version":"25.0.0","rid":"linux-x64","sha256":"…"}`.
-- Audit check `arm-integrity`: **absent binary or mismatch is a finding** (verification fails loud); the *hooks* never depend on this — they are the binary.
+**Interfaces:** produces **C-12** (`contracts.md`).
 
 - [ ] **Step 1** Failing test `StartupBudgetTests`: publishes once per test run (`[assembly: AssemblyFixture]`), runs `legislator version` 20× via `Process`, asserts median wall time < 50 ms (skip with a reason when `LEGISLATOR_STARTUP_BUDGET_SKIP=1` — CI runners vary; the reference machine is the gate). **Step 2** FAIL (no publish script). **Step 3** Write `publish-legislator.sh` (`dotnet publish src/Legislator.Cli -c Release -r $rid -o artifacts/$rid` in a loop; `sha256sum` into `SHA256SUMS`); `IsAotCompatible` warnings must be zero — fix any `IL2026`/`IL3050` by source-generated JSON/YAML event parsing (already the design). **Step 4** Green; record the measured median in the case's `research.md` §2.
 - [ ] **Step 5** Failing tests for `ArmIntegrityCheck` (version match, mismatch, absent) and `version --json`. **Step 6** Implement. **Step 7** Green.
-- [ ] **Step 8** Static check: edition pin — `check(Path("skill/VERSION").read_text().strip() == version_props_major, "edition pins the tool major")`. Bump `skill/VERSION` to `25` in this commit (the constitution-source rule: a `skill/` change bumps VERSION) — the benchmark (Task 14) validates the edition.
+- [ ] **Step 8** Static check: edition pin — `check(Path("skill/VERSION").read_text().strip() == version_props_major, "edition pins the tool major")`. **Assign the edition number here, do not reserve it earlier** (amended 2026-08-31: v25 went to BL-085/BL-087 at merge, and the roadmap rule is that numbers are assigned at merge, never reserved). Read the highest `evals/benchmarks/v*.md` on freshly-fetched `master`, take the next integer `N`, bump `skill/VERSION` to it (the constitution-source rule: a `skill/` change bumps VERSION) and set `Version.props` to `<N>.0.0` in the same commit — the static check above is what makes the two impossible to separate, and the benchmark (Task 14) validates the edition.
 - [ ] **Step 9** Commit `"BL-082: NativeAOT publish per RID, install script, arm integrity audit, startup budget test"`. **Step 10** Review with the owner.
 
 ---
 
 ### Task 13 [D]: Law text names one command per job; retire the Python engine and hooks (per R-8207, R-8213)
 
+**Amendments (2026-09-03, T-11 — operator-approved):**
+- **Inherits Task 11's Step 7:** rewrite `plugin/hooks/hooks.json` to `"legislator hook <name>"` (keeping `format_on_edit`'s `timeout: 10`), and re-cut in the same commit the five `check_hooks.py` assertions whose subject it removes — the `.py` command shape and the script-exists check become the binary's form, the Bash-entry check names the binary's `guard_git_conduct`, and the two R-702 launcher checks are re-pointed to drive the rewritten command line through a PATH shim carrying `artifacts/linux-x64` (a stronger test than the interpreter-resolution one, whose subject the rewrite deletes). R-702's requirement text is what dies, not its coverage; `docs/ai/baseline.md` follows on the next regeneration.
+- Lower `LedgerDebt` from 8 to 3 in the same commit, and to 0 with Task 12's three.
+
+**Amendments (2026-08-30, stage 4 audit — operator-approved):**
+- Also update the comments that name the Python hooks: `plugin/opencode/legislator-guard.ts` lines 3 and 161, `evals/check_opencode_plugin.mjs` line 2 — they reference `plugin/hooks/*.py`, deleted by this task.
+
 **Files:**
 - Modify: `skill/assets/rules/core/verification.md` (the static rung: `python3 docs/ai/engine.py anchors` → `legislator anchors`; the "where python3 is absent" sentence → "where the `legislator` binary is absent the rung cannot run — a gap to close"), `skill/assets/rules/core/okf.md` (the two engine sentences), `skill/assets/rules/core/sdd.md` (`sdd-lint`, `baseline`), `skill/assets/rules/core/artifact-lifecycle.md` (`baseline`)
 - Modify: `skill/SKILL.md` (Step 3 no longer delivers `assets/engine/engine.py`; every `python3 docs/ai/engine.py <job>` → `legislator <job> --skill … --root …`; Step 1 `detect`, Step 6 `verify`, Step 7 `report`), `skill/references/audit-checks.md` (checks 15/17 read `legislator anchors` / `legislator okf-debt`; the new `arm-integrity` check)
 - Modify: `skill/assets/templates/**` wherever `engine.py` is named (`grep -rn "engine.py" skill/`)
 - Delete: `skill/assets/engine/engine.py`, `plugin/hooks/*.py`
-- Modify: `evals/check_static.py:123-143` (the engine-source section becomes: engine source absent; SKILL.md names `legislator`; no `python3` in any rule file — `grep -c python3 skill/assets/rules` == 0), `evals/check_engine.py` (`ENGINE_CMD` becomes **required**: `sys.exit("set LEGISLATOR_ENGINE_CMD")` when unset; fixture repos no longer copy `engine.py`), `evals/check_hooks.py` (same for `HOOK_CMD`), `evals/grade.py` (its engine re-print helper from BL-075 calls the binary), `evals/setup_workspace.py` and `tools/evals-bg.sh` (export the two env vars from `artifacts/linux-x64/legislator`)
+- Modify: `evals/check_static.py:123-143` (the engine-source section becomes: engine source absent; SKILL.md names `legislator`; no `python3` in any rule file — `grep -c python3 skill/assets/rules` == 0), `evals/check_engine.py` (`ENGINE_CMD` becomes **required**: `sys.exit("set PARITY_ENGINE_CMD")` when unset; fixture repos no longer copy `engine.py`), `evals/check_hooks.py` (same for `HOOK_CMD`), `evals/grade.py` (its engine re-print helper from BL-075 calls the binary), `evals/setup_workspace.py` and `tools/evals-bg.sh` (export the two env vars from `artifacts/linux-x64/legislator`)
 - Modify: `src/Legislator.Hooks/Hooks/GuardOwnedFilesHook.cs` — `is_owned_engine` branch removed (no engine file is owned any more); its test flips to "docs/ai/engine.py is an ordinary file"
 - Modify: `docs/philosophy.md` §Horizon (remove any item this closes; `check_static.py` enforces)
 
 - [ ] **Step 1** Red first: extend `check_static.py` with `check(not (SKILL/"assets/engine/engine.py").exists(), "no Python engine ships in the package")` and `check("python3 docs/ai/engine.py" not in rules_text, "law names the binary, not the interpreter")` → FAIL.
 - [ ] **Step 2** Make every edit above; `grep -rn "engine.py\|python3" skill/ plugin/` returns only the `evals`-side mentions in `SKILL.md`'s eval note, if any (decide each hit: rename or delete).
-- [ ] **Step 3** Run all four static checks with the env vars set (`export LEGISLATOR_ENGINE_CMD=$PWD/artifacts/linux-x64/legislator LEGISLATOR_HOOK_CMD=$LEGISLATOR_ENGINE_CMD`): all ok.
+- [ ] **Step 3** Run all four static checks with the env vars set (`export PARITY_ENGINE_CMD=$PWD/artifacts/linux-x64/legislator PARITY_HOOK_CMD=$PARITY_ENGINE_CMD`): all ok.
 - [ ] **Step 4** Deliver member #0: `legislator apply --skill skill --stacks "" --root .` then `legislator verify` — `docs/ai/engine.py` is deleted here by the owned-set diff (it left `ownedFiles`); `python3 docs/ai/engine.py anchors` in this repo's `docs/ai/rules/core/verification.md` now reads `legislator anchors`; `legislator anchors` exits 0.
 - [ ] **Step 5** Commit `"BL-082: law names legislator <job>; Python engine and hooks retired; member #0 delivered"`. **Step 6** Review with the owner.
 
@@ -889,12 +817,12 @@ The label list for this task is the output of `python3 evals/parity_labels.py | 
 - Modify: `README.md` (install section: `tools/install-legislator.sh`, Windows copy; release runbook gains `tools/publish-legislator.sh` and checksum recording), `evals/README.md` (the two env vars; `check_dotnet.sh`), `CHANGELOG.md`, `docs/journal/<day>.md`
 - Modify: `.claude/rules/dotnet-substrate.md` — already written at case opening; verify each bullet has an enforcing check and name it in the bullet (`(check_static.py)`).
 - Modify: `docs/backlog.md` BL-082 status; `docs/cases/BL-069-dependency-register/register.md` — **no**: converged history; instead a new row set lands in `docs/okf/` only if the register was promoted to reference (check its header; if lifecycle, note the delta in the journal).
-- Create: `evals/benchmarks/v25.md` (with BL-077's half when that lands — this task records the BL-082 checkpoint: static rulers green on the binary, per-RID checksums, startup medians).
+- Create: `evals/benchmarks/v<N>.md`, `N` being the number Task 12 assigned (with BL-077's half when that lands — this task records the BL-082 checkpoint: static rulers green on the binary, per-RID checksums, startup medians).
 
 - [ ] **Step 1** `python3 docs/ai/engine.py anchors` → now `legislator anchors`: clean after the map edits (the `src/` rows resolve now). `legislator sdd-lint` clean; `legislator okf-debt` clean.
-- [ ] **Step 2** Run the full e2e benchmark per `evals/README.md` (`python3 evals/setup_workspace.py <ws>`, `tools/evals-bg.sh <ws>`), grade, idempotency ×3, mutation pass — record in `evals/benchmarks/v25.md` against `v24.md`. A drop is a regression: classify (law/grader/harness/model), fix, re-run; never commit over it.
+- [ ] **Step 2** Run the full e2e benchmark per `evals/README.md` (`python3 evals/setup_workspace.py <ws>`, `tools/evals-bg.sh <ws>`), grade, idempotency ×3, mutation pass — record in `evals/benchmarks/v<N>.md` against the previous edition's file. A drop is a regression: classify (law/grader/harness/model), fix, re-run; never commit over it.
 - [ ] **Step 3** Converge (`core/sdd.md`): judge the tree against R-8201–R-8217 and ADR-0008; append any gap as `per R-NNN (<gap>)` tasks here, append-only; loop until "✅ Converged" — then BL-077's plan takes over on this branch.
-- [ ] **Step 4** Commit `"BL-082: docs, benchmark v25 checkpoint, converge"`. **Step 5** Final review session with the owner.
+- [ ] **Step 4** Commit `"BL-082: docs, benchmark checkpoint, converge"`. **Step 5** Final review session with the owner.
 
 ---
 
@@ -919,3 +847,405 @@ The label list for this task is the output of `python3 evals/parity_labels.py | 
 | R-8215 | 12 |
 | R-8216 | every task's review step; 14 |
 | R-8217 | 14 (verification of the rule written at case opening) |
+
+---
+
+## T-13 residue — appended 2026-09-07 (append-only, per `core/sdd.md`)
+
+Raised by an audit of the uncommitted T-13 working tree against this plan and
+the spec, at the operator's request, after the branch was pushed and the tree
+snapshotted off-branch as `wip/bl-082-t13-snapshot` (deliberately red: 4
+static, 1 engine, 2 hook assertions). Seven items. Two are law and carry a
+**decision gate** — they are not started until the operator rules. The rest
+are the letter of Task 13 not yet executed.
+
+Verified as **already done** and needing no task: the ledger ratchet
+(`LabelCoverageTests.LedgerDebt` is 0); `docs/philosophy.md` § Horizon (its one
+item is BL-077, which this case does not close, so the edition removes
+nothing). Two `grep` hits are adjudicated, not fixed: `skill/SKILL.md:48`
+names `docs/ai/engine.py` deliberately, as the path that *leaves* `ownedFiles`
+in v26, and `plugin/README.md:202` names `python3 evals/check_hooks.py`, an
+eval instrument exempt by `.claude/rules/dotnet-substrate.md`.
+
+### T-13.1 [DECISION GATE] Checks 15 and 17 lost BL-051's obligation *per R-8207 (contradicts)*
+
+Rewriting the two checks to `legislator anchors` / `legislator okf-debt`
+dropped, rather than translated, what BL-051 put in them: neither body now
+states what the check does when the instrument is absent, nor that an exit
+beyond the findings code is a check failure. The reason BL-051 exists is
+unchanged by the port — both checks read stdout only, so an arm that dies
+reads to them as "no findings", and the audit fails open on the one instrument
+the ladder in `core/verification.md` fails closed on. `check_static.py`'s four
+BL-051 assertions are red because they still match on `python3`; re-cutting
+them to the binary without restoring the sentences would delete the obligation
+and pass.
+
+**The ruling asked for.** Restore both sentences in the binary's voice — check
+20 (`arm-integrity`) already carries the wording this edition settled on ("an
+absent arm is a finding, never a silent pass") — and then re-cut the four
+assertions from `python3` to `legislator`; or declare the obligation retired
+with its reason recorded here. Recommended: restore. Law text, so the edition
+carries it and T-14's benchmark validates it.
+
+### T-13.2 [DECISION GATE] A clean repo exits 1 on an Info-only audit *per R-8205 (contradicts)*
+
+`audit_clean_repo_clean_report` (R-661) is red: since T-12 the clean fixture
+prints `- [arm-integrity] edition 26.0.0 records no released digests yet` into
+**Info** — correct behaviour, the edition has no tag yet — and the job exits 1.
+R-661 says a clean repo prints a clean report and exits 0, and parity is
+byte-identical stdout *and* the same exit code.
+
+**The ruling asked for.** (a) Info does not raise the exit code — only Warning
+and above do; (b) the fixture pins released digests so the line never appears;
+or (c) check 20 stays silent until an edition is tagged. Recommended (a): Info
+is by construction not a finding, and (b) and (c) both hide a true statement to
+satisfy a test. This changes the audit's exit contract, which is law both arms
+spell identically — hence the gate.
+
+### T-13.3 Two hook assertions still assert the removed guard branch *per R-8206 (partial)*
+
+`check_hooks.py`: `owned engine.py blocked (exit 2)` and `block message
+mentions machine-managed law` expect exit 2 and get 0. Correct by design —
+`GuardOwnedFilesHook` lost its `is_owned_engine` branch because no engine file
+is owned any more. Re-cut both to the state this edition ships: `docs/ai/engine.py`
+is an ordinary file and the guard is silent on it. The twin flips with them.
+
+### T-13.4 `grade.py` still resolves the deleted engine source *per R-8205 (missing)*
+
+Two sites point at `skill/assets/engine/engine.py`, which this task deletes:
+the owned-file map (`eng_src`, ~line 451, which also writes the
+`docs/ai/engine.py` owned entry) and `engine_audit_findings()` (~line 994,
+which spawns it with `sys.executable`). Both must call the binary. This is not
+cosmetic — it is the grader T-14's benchmark runs on, and it breaks before a
+single scenario is scored.
+
+### T-13.5 The harness does not export the parity commands *per R-8206 (missing)*
+
+`check_engine.py` and `check_hooks.py` now exit early unless `PARITY_ENGINE_CMD`
+/ `PARITY_HOOK_CMD` name the binary, and neither `evals/setup_workspace.py` nor
+`tools/evals-bg.sh` sets them. Export both from `artifacts/linux-x64/legislator`
+(absent binary → a named failure, never a silent skip). Blocks T-14 Step 2.
+
+### T-13.6 The opencode arm's comments still name the Python hooks *per R-8207 (partial)*
+
+`plugin/opencode/legislator-guard.ts:3` ("the three Claude Code hooks shipped
+at `plugin/hooks/*.py`") and `:161` ("Port of `plugin/hooks/guard_git_conduct.py`"),
+and `evals/check_opencode_plugin.mjs:2` ("which covers the .py hooks"). Named
+in the stage-4 audit amendment above; the files they cite are deleted by this
+task.
+
+### T-13.7 Member #0 is not delivered *per R-8207 (missing)*
+
+Task 13's Step 4 has not run: `legislator apply --skill skill --stacks "" --root .`
+then `legislator verify`, so that `docs/ai/engine.py` leaves this repository by
+the owned-set diff, this repo's own `docs/ai/rules/core/verification.md` reads
+`legislator anchors`, and `legislator anchors` exits 0 on the result. Runs last,
+after T-13.1's law text is settled — delivering before it would deliver the
+wrong sentences.
+
+### T-13.8 The .NET suite is 19 red, not 2 *per R-8206 (missing)* — supersedes T-13.3's scope
+
+T-13.3 was written from the Python rulers alone and understated the work. The
+suite itself, run as the MTP binaries (see T-13.9), is **19 failures**:
+Engine 9 of 214, Hooks 1 of 90, Parity 9 of 201; Core 114 and Cli 36 are clean.
+They are not nineteen problems — they are four, and each is the same fact
+arriving at a different boundary:
+
+- **The engine left `ownedFiles` (8 tests).** `OwnedSetTests` ×2,
+  `ApplyJobTests` ×2, `BaselineJobTests`, and `ApplyTwins` ×4 still count
+  `docs/ai/engine.py` in the declared set, the byte-for-byte copy, the second
+  run, the manifest serialization and the run record. Re-cut to the v26 set.
+- **The emitter stamp (3 tests).** `AuditReportTests…emitter_stamp`,
+  `AuditTwins.Audit_report_carries_engine_stamp`, `ReportTwins.Report_stamp_is_last_line`
+  expect the stamp to name `engine.py audit`; it names the binary now.
+- **The audit's clean shape (3 tests + `ReportTwins.Report_keep_list_added_and_refused`).**
+  All downstream of T-13.2's Info-line ruling — do not touch them until it is made.
+- **The delivered engine's own branches (2 tests).**
+  `Check15OkfAnchorsTests.Given_the_delivered_engine_is_absent_…` and
+  `GuardOwnedFilesHookTests.The_delivered_engine_is_blocked`. The first is
+  BL-051's obligation living in the .NET arm — it is the code half of
+  **T-13.1** and moves with that ruling, not before it; the second is T-13.3's
+  unit-test side.
+
+Order follows the gates: T-13.1 and T-13.2 first (they decide 5 of the 19),
+then the mechanical re-cuts, then T-13.7's delivery.
+
+### T-13.9 `dotnet test` discovers zero tests — the documented runner is broken *per R-8202 (contradicts)*
+
+`evals/check_dotnet.sh` runs `dotnet build` then `dotnet test` from `src/`.
+On this machine (SDK 10.0.106, `Microsoft.Testing.Platform.MSBuild` 2.3.3)
+`dotnet test` reports **"Zero tests ran", exit code 5 per project** — for every
+one of the five test projects, in a clean checkout of `d334265` as well as in
+the working tree, so it is not this task's doing. Running each project's MTP
+binary directly (`tests/Legislator.<P>.Tests/bin/Debug/net10.0/Legislator.<P>.Tests`)
+discovers and runs everything: 655 tests total.
+
+This is an instrument fault of exactly the class the case has been hunting:
+the entry point every gate and every future CI job calls reports nothing rather
+than failing loudly, and `set -euo pipefail` turns it into a stop with no
+finding to read. Fix `check_dotnet.sh` to an invocation that runs the suite —
+and make a zero-test run a named failure, never a pass. The 648/648 recorded on
+2026-09-04 stands as history; it was measured before this appeared.
+
+### T-13.10 [DECISION GATE] The corpus carries a scenario for a branch v26 deletes *per R-8207 (contradicts)*
+
+`audit-engine-absent` is a whole eval scenario — a row in `evals/evals.json`, a
+fixture in `evals/setup_workspace.py`, a grader in `evals/grade.py`, a mutation
+in `evals/mutations.py`, a name in `evals/mutate.py` — built for BL-051 item 5b
+to falsify check 15's *"bundle present, engine absent → Info"* branch. That
+branch is the one T-13 deletes: there is no delivered engine in v26, so the
+fixture's premise (`fixture_state_is_bundle_without_engine`) is now the ordinary
+state of every repository and its Info assert (`check15_engine_absent_info`)
+measures a line the law no longer prints.
+
+The ruling of T-13.1 keeps the *obligation* — an absent instrument is an Info
+line and never a clean check — so the scenario has a translated form: a
+legislated repo whose OKF bundle is present and whose **`legislator` is not on
+PATH**. That is a harness capability the corpus does not have today (the runner
+would have to place the agent on a machine without the arm), which is why this
+is a gate and not a re-cut.
+
+**The ruling asked for.** (a) Translate the scenario to the absent *arm*, and
+give the harness the means to run one scenario with the arm off PATH; (b) retire
+the scenario and cover the obligation at the unit boundary instead
+(`ArmIntegrityCheckTests` plus a check-15 test), recording that the corpus no
+longer falsifies it end-to-end; or (c) keep the fixture and re-point its asserts
+at check 20's absent-arm Warning, which is the same sentence at a different
+check. Either way the corpus count changes and T-14's benchmark is measured
+against the new number, so this is decided before the benchmark runs, never
+during it.
+
+Mechanically done in the same pass, needing no ruling: `evals/grade.py` now
+resolves the arm through one `arm()` helper (`PARITY_ENGINE_CMD`, else the
+published binary, else a loud stop), its two emitter stamps name `legislator`,
+the report re-print and `delivered_engine_sdd_lint_clean` drive the binary, and
+the owned map no longer offers an engine source; `tools/evals-bg.sh` exports
+both parity commands from the published arm and refuses to start without one.
+
+#### T-13.10 — ruled 2026-09-07, option (b): the scenario is retired
+
+The owner ruled (b). `audit-engine-absent` is gone from the corpus — its row in
+`evals/evals.json`, its fixture in `evals/setup_workspace.py`, its grader and
+dispatch arm in `evals/grade.py`, its mutation block in `evals/mutations.py`,
+its name in `evals/mutate.py`, and the two report-path arms in
+`tools/evals-bg.sh`. **`evals.json` carries 9 entries where it carried 10, and the graded
+scenario set falls from 9 directories to 8** (`idempotency` is an entry with no
+directory of its own); T-14's benchmark is read against those numbers; the v21–v25 records keep the scenario because they
+recorded what was true then (`core/artifact-lifecycle.md`: completed lifecycle
+artifacts are history).
+
+**What still falsifies the obligation, stated so the loss is visible rather than
+assumed.** Two assertions at the unit boundary, neither of them end-to-end:
+
+- `ArmIntegrityCheckTests.Given_no_binary_on_the_path_When_audited_Then_the_absence_is_the_finding`
+  — an arm that is not on the machine is a finding, never a silent pass.
+- `check_static.py`'s four BL-051 assertions — checks 15 and 17 *state* the
+  absent-arm branch and the non-clean exit. That is the law text asserted, not
+  the behaviour of an agent facing a machine without the arm.
+
+**What is no longer measured:** whether a model performing the audit by hand, on
+a machine with no `legislator`, actually writes the Info line instead of
+reporting the check clean. That was the scenario's whole subject and no unit
+test can reach it — it needs a harness that can run one scenario with the arm
+off PATH. Recorded here as a known gap rather than left to be discovered in a
+later edition's benchmark diff.
+
+### T-14.1 Two audit checks this edition added are unmeasured end-to-end *per R-8206 (missing)*
+
+Raised by the v26 benchmark's own meta-assert, which is what it exists for:
+
+```
+parity_every_check_has_a_defect — checks with no planted defect: ['arm-integrity', 'case-collisions']
+```
+
+`rotted-layer` plants one defect per audit check so the corpus can prove each
+check fires. v26 added check 19 (`case-collisions`, T-10's mechanism wired in
+T-13) and check 20 (`arm-integrity`, T-12) and planted nothing for either, so
+both are covered only by unit tests — `OwnedSet.CaseCollisions`' three tests and
+`ArmIntegrityCheckTests`' six. Neither has ever fired in a report an agent read.
+
+**What to plant.** For `case-collisions`, an owned path with a case-variant
+sibling in the fixture (`Changelog.md` beside the owned `CHANGELOG.md`) — the
+pair is lawful on this file system and is exactly what breaks a checkout on a
+case-insensitive one. For `arm-integrity`, the fixture cannot uninstall the
+machine's arm, so the reachable defect is the **version** half: a fixture whose
+`release.json` pins an edition the installed arm does not report. The absent-arm
+branch stays a unit test until the harness can run one scenario with the arm off
+PATH (the same capability T-13.10 named as missing).
+
+Grader rows follow the existing shape: the report names the slug and the
+offending path. Until this lands, `v26.md` states both checks as measured at the
+unit boundary only — a benchmark that let the meta-assert stay red without
+saying so would be the silent cap `core/artifact-lifecycle.md` forbids.
+
+#### T-14.1 — closed 2026-09-07, and it split in two
+
+**`case-collisions` got its defect.** The rotted fixture now plants
+`docs/ai/rules/core/Verification.md` beside the owned `verification.md` — a copy,
+not a stub, so no other check reads it as a stray document — with the pinned slug
+and the colliding name as report markers. Verified before it was believed: the
+arm was run against the fixture first and printed exactly one collision finding
+with every other slug's count unmoved, then the scenario was re-measured on the
+same model and came back **52/52 clean**, `parity_every_check_has_a_defect`
+included.
+
+**`arm-integrity` cannot be planted, and the grader now says so.** The probe that
+proved the collision also showed why: run from a shell without the binary, check
+20 answers *"`legislator` is not on this machine"*. Its subject is the machine and
+the edition's release record — neither lives in a repository fixture, so a
+fixture can no more plant a defect for it than it can uninstall a binary.
+`grade.py` carries `ENVIRONMENTAL = {"arm-integrity"}` with that reason and a
+pointer to its real coverage (`ArmIntegrityCheckTests`, six cases). The assert
+fails if the slug ever appears in `check_slugs_covered` while the exemption
+stands, so the declaration cannot quietly outlive the fact. This is the mechanical
+exclusion `core/artifact-lifecycle.md` requires of a class that yields no action —
+not a suppressed finding.
+
+**Also closed in the same pass, found while listing what was still broken:**
+`.github/workflows/dotnet.yml` ran `dotnet test src`, the command T-13.9 proved
+discovers nothing on this SDK. CI's test step now runs `sh evals/check_dotnet.sh`.
+
+
+---
+
+## Converge — 2026-09-08 (T-14 step 3, first pass)
+
+Judged against the promises, not the diff: R-8201…R-8217, ADR-0008's decisions,
+the constitutional MUSTs of `docs/ai/rules/core/**`, and HC-8201. Verdict:
+**not converged** — three findings, appended below as tasks.
+
+**What was verified and holds.** R-8201 (the solution and one test project per
+source project), R-8202 (`latest-recommended`, nullable, warnings as errors,
+style in build, declared once), R-8203 (the four RIDs live in the release matrix;
+startup median 3.3 ms against 50), R-8204/R-8209 (both static sections green),
+R-8205/R-8206/R-8208 (both rulers green on the binary; the label ledger at 0),
+R-8207 (no law file names an interpreter; member #0 delivered), R-8210…R-8213
+(four layers, loud validation, `config show`, law is not configurable), R-8214
+(the edition pins the tool; check 20 judges a machine against the release
+record), R-8217. **HC-8201 was executed, not read**: a machine file overriding
+`cases_dir` to `matters`, `config show` printing `cases_dir = matters [machine]`,
+and `sdd-lint` reading the overridden directory — the provenance line and the
+job agree.
+
+### F-1 [DECISION GATE] The hooks do not fail open with one warning when the arm is absent *per R-8215 (contradicts)*
+
+R-8215: *"WHILE the binary is absent on a machine, the Claude Code hooks SHALL
+fail open with one warning."* Measured, not reasoned — the delivered command
+line with no arm on `PATH`:
+
+```
+$ env -i PATH=/usr/bin:/bin sh -c 'legislator hook guard_owned_files < payload'
+sh: line 1: legislator: command not found
+exit=127
+```
+
+Exit 127 is not 2, so Claude Code does not block the tool call — the *open* half
+holds by the harness's tolerance rather than by anything this repository wrote.
+The *one warning* half does not hold at all: the message is printed on **every**
+`Edit`, `Write`, `Bash` and `Stop`, forever, on any machine where the arm is not
+installed. Up to v25 the launcher was a shim ending in `exit 0`, which failed
+open silently by construction; v26's bare `legislator hook <name>` dropped that
+property without replacing it.
+
+This ships to the whole fleet: every legislated repository on a machine that has
+not run `tools/install-legislator.sh` gets the noise from the moment the edition
+lands.
+
+**The ruling asked for.** (a) Restore a shim — `command -v legislator >/dev/null
+2>&1 || exit 0; exec legislator hook <name>` — silent fail-open, and amend
+R-8215's "one warning" to "silently", since a per-invocation warning is the
+thing being removed; (b) keep the bare command and amend R-8215 to describe what
+the harness actually does; (c) a shim that warns once per session, which needs
+state a hook has no home for. Recommended (a): the spec line's intent is that a
+missing arm never costs the user their turn, and silence is the only version of
+that which does not degrade every tool call.
+
+### F-2 The audit's exit contract changed without an ADR *per `core/adr.md` (missing) — CRITICAL*
+
+`core/adr.md` requires an ADR when a decision-gate stop is resolved by the user
+**and** when a new architecture invariant is introduced, written *as part of the
+same task*. T-13.2 is both: the operator ruled that Info findings no longer raise
+the audit's exit code, and that rule now binds every arm and every caller that
+reads the code — `verify`, the ladder, and any future host. It is recorded only
+in this plan and in the benchmark record. A constitutional MUST unmet is CRITICAL
+by `core/sdd.md`, regardless of how small the text is.
+
+**Fix:** write `docs/adr/0010-info-does-not-raise-the-audit-exit-code.md` with
+the three options T-13.2 weighed, and link it from the audit's law text.
+
+### F-3 `docs/ontology.md` still describes the Python engine *per R-8207 (contradicts)*
+
+Three sentences outside the OKF bundle, which is why `legislator anchors` cannot
+see them — the anchored class is `index.md`, `codebase-map.md` and the concept
+documents, and `docs/ontology.md` is the deeper narrative the index links to:
+
+- l.62 — the owned (machine) set is given as `docs/ai/rules/**`, `docs/ai/engine.py`
+- l.73 — the baseline is "written by `python3 docs/ai/engine.py baseline`"
+- l.80 — the generated class is "verified by `docs/ai/engine.py anchors`"
+
+All three name a file this edition deletes and a command the law no longer
+spells. **Fix:** re-point the three sentences. Worth recording beyond the fix:
+the reference document most likely to rot is the one the anchors rung cannot
+reach, and this repository has exactly one of those.
+
+#### Converge pass 1 — F-2 and F-3 closed, F-1 gated
+
+**F-2 closed.** `docs/adr/0010-info-does-not-raise-the-audit-exit-code.md`
+records the ruling, the three options weighed, and the consequence taken with it
+(the pinned clean shape is the absence of the actionable sections plus exit 0,
+not the presence of `No findings.`). Linked from the OKF log entry and the
+changelog line. Not linked from `skill/SKILL.md`: that text is fleet law
+delivered into other repositories, whose ADR numbering is their own — an ADR
+reference there would resolve to a different decision in every fleet member.
+
+**F-3 closed.** `docs/ontology.md`'s three sentences re-pointed: the owned
+(machine) set is `docs/ai/rules/**` and `opencode.json`, with the engine named as
+what v26 retired; the baseline's writer is `legislator baseline`; the anchored
+class is verified by `legislator anchors`. The two surviving mentions of the old
+command are deliberate — a concept model records what a class used to be, and
+both are marked "up to v25".
+
+**F-1 stands, and the case cannot close on it.** It is the only finding that
+reaches a user who never opens this repository: a fleet member on a machine
+without the arm gets `sh: legislator: command not found` on every `Edit`,
+`Write`, `Bash` and `Stop` from the moment v26 lands. Waiting on the operator's
+ruling.
+
+#### Converge pass 2 — F-1 closed on option (a), and the case converges
+
+The operator ruled **(a)**. `plugin/hooks/hooks.json` now carries
+`command -v legislator >/dev/null 2>&1 || exit 0; exec legislator hook <name>`
+on all four registrations (`format_on_edit` keeps its `timeout: 10`), and both
+requirement texts moved with it: R-8215's *"one warning"* is now *"silently —
+exit 0, nothing on stderr"*, and R-8208's *"never an interpreter"* is now *"the
+hook lives in the binary and in no interpreter, behind a shell guard"*. The
+clarification is written into the spec's `## Clarifications`, the reasoning into
+**ADR-0011**, and the old text is replaced rather than duplicated.
+
+Red first, as the law requires and as the finding deserved. The new ruler
+assertion was shown red against the unchanged `hooks.json`:
+
+```
+FAIL  hooks.json's guard fails open and silent with no arm on PATH per R-8215
+      — exit=127 stderr='sh: line 1: legislator: command not found\n'
+```
+
+and four shape assertions with it. Its .NET twin drives the same command line as
+a real process through a `PATH` holding a shell and no arm — the property lives
+in the command line, not in a hook this suite can call in-process. A broken pipe
+on stdin is caught and treated as the property working: the guard gave up before
+reading, which is the point.
+
+**No benchmark re-run.** `.claude/rules/evals.md` scopes the e2e requirement to
+edits under `skill/`; this change touches `plugin/`, `evals/` and `tests/`, and
+`grep -rn 'legislator hook' skill/` is empty — the package never named the
+command shape. The four static gates and the full .NET suite are the boundary
+this change has, and they are green.
+
+**Verdict: ✅ Converged.** Every R-line judged against the tree rather than the
+diff, HC-8201 executed, three findings raised and three closed — two in pass 1
+(ADR-0010, `docs/ontology.md`), one here. What remains unmeasured is stated in
+`evals/benchmarks/v26.md` and owed to no promise this case made: the absent-arm
+branch of checks 15/17/20 end to end, and the frozen opencode profile.
+
+Per the plan's own Step 3, BL-077's plan takes over on this branch from here.

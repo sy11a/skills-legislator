@@ -147,13 +147,11 @@ def materialize_case_practice(dest: Path) -> None:
         shutil.copy2(f, rules_dst / "stacks/dotnet" / f.name)
         owned.append(f"docs/ai/rules/stacks/dotnet/{f.name}")
 
-    # v20: the engine is an owned file. The delivered law now tells an
-    # agent to run `python3 docs/ai/engine.py anchors` before reporting
-    # done (core/verification.md's rung) — this scenario's feature-work
-    # task must be able to obey that, so the engine ships here too.
+    # v20-v25 the engine was an owned file and the fixture carried it so the
+    # scenario's task could obey the static rung. v26 retired it (R-8207): the
+    # rung names `legislator anchors`, an arm installed on the machine, so no
+    # repository is delivered an executable and this fixture ships none.
     (dest / "docs/ai").mkdir(parents=True, exist_ok=True)
-    shutil.copy2(SKILL / "assets/engine/engine.py", dest / "docs/ai/engine.py")
-    owned.append("docs/ai/engine.py")
 
     version = int((SKILL / "VERSION").read_text().strip())
     owned_sorted = sorted(owned)
@@ -169,50 +167,12 @@ def materialize_case_practice(dest: Path) -> None:
     shutil.copy2(SKILL / "assets/templates/cases-README.md.tpl",
                  dest / "docs/cases/README.md")
 
-    # The engine is owned but never @-imported (SKILL.md's import block is
-    # rules only), so it is excluded here even though it is in the
-    # manifest's ownedFiles.
-    imports = "\n".join(
-        f"@{p}" for p in owned_sorted if p != "docs/ai/engine.py")
+    imports = "\n".join(f"@{p}" for p in owned_sorted)
     (dest / "AGENTS.md").write_text(
         "# BillingApi\n\n" + imports +
         "\n\n## Project notes\n\nBillingApi handles invoice generation and "
         "payment webhooks. Fully legislated.\n")
     import os
-    os.symlink("AGENTS.md", dest / "CLAUDE.md")
-
-
-def materialize_audit_engine_absent(dest: Path) -> None:
-    """BL-051 item 5b: the one state check 15's Info branch describes and no
-    fixture reached — an OKF bundle present with `docs/ai/engine.py` absent.
-
-    The real-world shape of it is a repo legislated below v20: the engine
-    became an owned file in v20, so a v19 delivery has the bundle and no
-    engine. Building it that way keeps every other check honest — the engine
-    is not in `ownedFiles`, so check 3 (owned-integrity) stays clean rather
-    than reporting a missing owned file, which would be a different finding
-    wearing this one's clothes."""
-    shutil.copytree(EVALS / "fixtures" / "upgrade-base", dest)
-    rules_dst = dest / "docs/ai/rules/core"
-    rules_dst.mkdir(parents=True)
-    owned: list[str] = []
-    for f in sorted((SKILL / "assets/rules/core").glob("*.md")):
-        shutil.copy2(f, rules_dst / f.name)
-        owned.append(f"docs/ai/rules/core/{f.name}")
-    # Deliberately NO docs/ai/engine.py, and it is absent from ownedFiles.
-    (dest / "docs/ai/manifest.json").write_text(
-        "{\n"
-        '  "legislatorVersion": 19,\n'
-        '  "stacks": [],\n'
-        '  "keep": [],\n'
-        '  "ownedFiles": [\n'
-        + ",\n".join(f'    "{p}"' for p in sorted(owned))
-        + "\n  ]\n}\n")
-    imports = "\n".join(f"@{p}" for p in sorted(owned))
-    (dest / "AGENTS.md").write_text(
-        "# BillingApi\n\n" + imports +
-        "\n\n## Project notes\n\nBillingApi handles invoice generation and "
-        "payment webhooks. Legislated at v19 — before the engine existed.\n")
     os.symlink("AGENTS.md", dest / "CLAUDE.md")
 
 
@@ -302,12 +262,18 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
         shutil.copy2(f, rules_dst / "stacks/dotnet" / f.name)
         owned.append(f"docs/ai/rules/stacks/dotnet/{f.name}")
 
-    # v20: the engine is an owned file. The fixture carries it (checks 15
-    # and 17 need a runnable engine); defect 4 is about the manifest's
-    # version field, not about which files were delivered.
+    # v26 (R-8207): no engine is delivered any more, so the rotted fixture
+    # carries none either. Checks 15 and 17 run in-process in the arm; defect 4
+    # is about the manifest's version field, not about which files exist.
     (dest / "docs/ai").mkdir(parents=True, exist_ok=True)
-    shutil.copy2(SKILL / "assets/engine/engine.py", dest / "docs/ai/engine.py")
-    owned.append("docs/ai/engine.py")
+
+    # Defect 17 (check 19, v26) — a case-collision against an owned path: a
+    # hand-made copy of an owned rule whose name differs by case alone. Lawful
+    # on this file system; on a case-insensitive checkout the two are one file
+    # and the clone cannot be completed. Planted as a copy rather than a stub so
+    # no other check reads it as a stray rulebook or a broken document.
+    shutil.copy2(rules_dst / "core" / "verification.md",
+                 rules_dst / "core" / "Verification.md")
 
     # Defect 3 — owned-file drift: one appended line differs from source.
     with open(rules_dst / "core" / "okf.md", "a") as fh:
@@ -328,11 +294,8 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
         + ",\n".join(f'    "{p}"' for p in sorted(owned))
         + "\n  ]\n}\n")
 
-    # Defect 1 — broken import (ghost-rule.md does not exist). The engine is
-    # owned but never @-imported (SKILL.md's import block is rules only), so
-    # it is excluded here even though it is in the manifest's ownedFiles.
-    imports = "\n".join(
-        f"@{p}" for p in sorted(owned) if p != "docs/ai/engine.py")
+    # Defect 1 — broken import (ghost-rule.md does not exist).
+    imports = "\n".join(f"@{p}" for p in sorted(owned))
     (dest / "CLAUDE.md").write_text(
         "# LegacyBilling\n\n" + imports +
         "\n@docs/ai/rules/core/ghost-rule.md\n@docs/okf/codebase-map.md\n\n"
@@ -568,6 +531,8 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
             "ArchivedInvoiceSweeper",        # defect 16c: the dead symbol named
             "tracker-drift]",                # defect 18a: pinned slug
             "BL-001",                        # defect 18b: the stray item named
+            "case-collisions]",              # defect 19a: pinned slug
+            "Verification.md",               # defect 19b: the colliding name
             "okf-sync-debt]",                # defect 17a: pinned slug
             "docs/okf/endpoints.md",         # defect 17b: the document named
             "dry-run mode before a real import",  # harvest: candidate quoted
@@ -597,6 +562,7 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
             "okf-anchors",              # importer.md names a dead path and symbol
             "okf-sync-debt",            # endpoints.md's source moved on 167 days later
             "tracker-drift",            # BL-001 left above the generated mirror marker
+            "case-collisions",          # Verification.md beside the owned verification.md
         ],
         # BL-025 item 2: Critical findings must sit under the Critical
         # severity heading, not merely appear somewhere in the report
@@ -719,10 +685,6 @@ def main() -> None:
     repo = ws / "case-practice" / "repo"
     materialize_case_practice(repo)
     init_commit(repo, "fixture: case-practice (clean legislated repo)")
-
-    repo = ws / "audit-engine-absent" / "repo"
-    materialize_audit_engine_absent(repo)
-    init_commit(repo, "fixture: audit-engine-absent (v19 layer, bundle present, no engine)")
 
     repo = ws / "rotted-layer" / "repo"
     materialize_rotted(repo)

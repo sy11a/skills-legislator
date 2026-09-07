@@ -1,0 +1,92 @@
+BL-082 T-12 — the red set, recorded 2026-09-04
+==============================================
+Publish per RID, the startup budget, the machine install, `version --json`, the
+arm-integrity mechanism and the edition pin (R-8203, R-8214, R-8215; C-12).
+
+1. evals/check_static.py — the edition pin
+------------------------------------------
+  FAIL  edition pins the tool major — skill/VERSION='25' but Version.props
+        major='0' (<Version>0.0.0</Version>) - bump both in one commit
+  (predicted and seen: `0.0.0` is the un-assigned pin, and the check is what
+   makes the two numbers impossible to move separately from here on.)
+
+2. src build — the missing type, alone
+--------------------------------------
+  tests/Legislator.Engine.Tests/Audit/ArmIntegrityCheckTests.cs(44,9):
+    error CS0103: The name 'ArmIntegrityCheck' does not exist in the current context
+  (predicted and seen: exactly one error, naming exactly the missing type. Four
+   errors before it were MINE, not the red — a non-constant const expression, a
+   `Path` property shadowing System.IO.Path in my own helper, and a char/string
+   overload — fixed before the red was recorded.)
+
+  A minimal declaration returning no findings was then written inside the red
+  step, per the T-08 precedent: without it the assembly does not compile and the
+  other twelve drivers are not observable.
+
+3. dotnet test — 648 total, 13 failed, 635 succeeded
+----------------------------------------------------
+  ArmIntegrityCheckTests (5 of 6 red)
+    failed  Given_a_binary_of_another_edition_When_audited_Then_the_finding_names_both_versions
+    failed  Given_a_checksum_the_edition_never_released_When_audited_Then_the_finding_names_the_rid
+    failed  Given_no_binary_on_the_path_When_audited_Then_the_absence_is_the_finding
+    failed  Given_a_binary_whose_version_json_is_unusable_When_audited_Then_it_is_a_finding
+    failed  Given_a_rid_the_edition_did_not_release_When_audited_Then_the_finding_names_it_unreleased
+    PASSED  Given_the_pinned_version_and_the_released_checksum_When_audited_Then_there_is_no_finding
+            — VACUOUS against an empty implementation, and left standing on
+              purpose: it is the only driver that pins "clean means silent", and
+              the five above are what make the silence mean something.
+
+  VersionCommandTests (3 of 5 red)
+    failed  Given_version_json_When_run_Then_it_carries_the_version_the_rid_and_a_sha256
+    failed  Given_version_json_When_run_twice_Then_the_sha256_is_the_running_executable_and_stable
+    failed  Given_version_with_an_unknown_flag_When_run_Then_it_is_a_usage_error
+    passed  Given_version_without_the_flag_When_run_Then_it_prints_one_bare_line  (T-05's contract, unmoved)
+
+  StartupBudgetTests (1 of 1 red)
+    failed  Given_the_published_binary_When_version_is_run_twenty_times_Then_the_median_is_within_the_budget
+            — tools/publish-legislator.sh does not exist (plan Step 2's predicted red)
+
+  PublishScriptTests (4 of 4 red)
+    failed  Given_a_rid_of_another_operating_system_When_the_script_is_asked_for_it_Then_it_refuses_by_name
+    failed  Given_a_rid_of_another_operating_system_When_the_script_refuses_Then_it_did_not_reach_the_sdk
+    failed  Given_a_rid_the_edition_does_not_release_When_the_script_is_asked_for_it_Then_it_refuses
+    failed  Given_the_hosts_own_rid_When_the_script_runs_Then_the_binary_and_its_recorded_sum_exist
+
+    The second of these was GREEN on its first run and was strengthened before
+    this record was written: it timed the refusal only, and an absent script
+    refuses instantly too (bash exits 127 in 3 ms). It now asserts exit 2 and the
+    RID on stderr as well — an assert that is green before the change measures
+    nothing, and reading it would not have said so.
+
+  LabelCoverageTests (1 of 2 red)
+    failed  Ruler_labels_without_a_twin_match_the_recorded_debt
+            — "the ledger fell to 8: lower LedgerDebt to that number in the commit
+              that closed the gap". Three twins written here (HostTwins), so 11 → 8.
+
+4. The two ruler sites T-09 left addressed to this task
+-------------------------------------------------------
+Until this commit, `an unknown job exits 2` and `no job exits 2` invoked
+`[sys.executable, "docs/ai/engine.py", ...]` directly: on the .NET arm they ran
+the Python engine and reported its exit code as the binary's. They go through a
+new `_bare_argv` — nothing appended, because `_engine_argv`'s implicit `--root`
+would turn "no job" into "a --root and no job", which is a different question.
+
+Proof they now consult the arm (PARITY_ENGINE_CMD=/bin/false):
+  FAIL  an unknown job exits 2 — exit=1
+  FAIL  no job exits 2 — exit=1
+  FAIL  exit_codes_unchanged: usage error is 2 — exit=1
+All three follow the arm; before the change the first two would have followed
+Python and passed against any arm at all.
+
+5. What is NOT in this red set, and why
+----------------------------------------
+- `arm-integrity` is a MECHANISM here, with no slug in `AuditChecks.Order`, no
+  article in `SKILL.md` § Audit and no twin — the T-10 precedent for
+  `OwnedSet.CaseCollisions`. The audit's check set is law both arms must spell
+  identically; the wiring is T-13's, together with `SKILL.md`'s switch to the
+  binary. v25 having taken 18 (`tracker-drift`), the two checks queued for T-13
+  are 18 and 19.
+- The three non-linux RIDs are not published here and cannot be: the toolchain
+  answers `error : Cross-OS native compilation is not supported`. They come from
+  the CI matrix (operator ruling 2026-09-04, option a), and C-12's "in a loop"
+  sentence is amended accordingly.
