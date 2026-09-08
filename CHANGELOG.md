@@ -21,6 +21,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   edition keeps an ordinary file: it left `ownedFiles`, the owned-files guard is
   silent on it, and an upgrade run deletes it.
 
+### Fixed
+
+- **CI can start the .NET gate** — the workflow invoked it through `sh`, which
+  overrides the script's `#!/usr/bin/env bash` shebang; on a runner whose
+  `/bin/sh` is dash it died at `set -o pipefail` before the first test, on every
+  job of every v26 run. It runs `bash evals/check_dotnet.sh` now, and
+  `check_static.py` fails on any live file that calls the gate the old way.
+
 ### Changed
 
 - **The hooks fail open silently when the arm is absent** (BL-082, ADR-0011).

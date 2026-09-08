@@ -28,7 +28,7 @@ Each bullet ends with what enforces it. Where that is a person, it says so.
 - **Tests at the boundary, red first** — every ruler assertion gets a named .NET
   twin shown red before green. *(`LabelCoverageTests` ratchet, 0 since v26;
   red-first is a person's.)*
-- **The suite runs through `sh evals/check_dotnet.sh`**, which drives each test
+- **The suite runs through `bash evals/check_dotnet.sh`**, which drives each test
   module's binary and fails by name on a zero-test module — never `dotnet test`,
   which discovers nothing on this SDK.
 - **Every PR touching `src/` or `tests/` is reviewed with the owner** before
