@@ -45,7 +45,7 @@ jobs:
       - name: Test
         env:
           STARTUP_BUDGET_SKIP: '1'
-        run: sh evals/check_dotnet.sh
+        run: bash evals/check_dotnet.sh
 
       - name: Publish ${{ matrix.rid }}
         shell: bash

@@ -180,7 +180,7 @@ law for (no empty placeholder files).
    static check pins the edition to the tool's major, so the two cannot drift
    apart in a commit.
 3. Run the eval suite (see below) — required before the change is done.
-   A change to `src/` or `tests/` also runs `sh evals/check_dotnet.sh`
+   A change to `src/` or `tests/` also runs `bash evals/check_dotnet.sh`
    (build strict, the whole .NET suite, the AOT publish smoke).
 4. **Deliver to this repo first.** It is fleet member #0 (ADR-0002): run
    `/legislator` here, byte-verify the owned layer against `skill/assets/`,
@@ -287,7 +287,7 @@ Short version:
 # unit layer — every commit, seconds, no agent
 python3 evals/check_static.py
 python3 evals/check_engine.py     # needs PARITY_ENGINE_CMD (the arm)
-sh evals/check_dotnet.sh          # build strict + the .NET suite + publish smoke
+bash evals/check_dotnet.sh        # build strict + the .NET suite + publish smoke
 
 # e2e layer — required after ANY behavioral change to skill/
 python3 evals/setup_workspace.py /tmp/legislator-eval-vN

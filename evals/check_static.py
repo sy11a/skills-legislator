@@ -389,6 +389,34 @@ if workflow.is_file():
     check("-warnaserror" in body, "the release workflow builds strict",
           "the matrix must build under the same discipline as the gate (R-8202)")
 
+print("== BL-082: the .NET gate is invoked by a shell that can run it ==")
+# The gate declares `#!/usr/bin/env bash` and uses arrays and `pipefail`.
+# Invoking it as `sh <script>` overrides the shebang, and on a runner whose
+# /bin/sh is dash it dies at `set -o pipefail` before the first test - which is
+# what CI did on every job of the v26 workflow while a developer machine whose
+# /bin/sh is bash saw nothing. A gate that cannot start is worse than one that
+# fails, so the invocation is checked rather than remembered.
+gate_callers = []
+for path in sorted(REPO.rglob("*")):
+    if not path.is_file() or ".git/" in str(path):
+        continue
+    if path.suffix not in {".md", ".yml", ".yaml", ".sh"}:
+        continue
+    rel = path.relative_to(REPO).as_posix()
+    # Records say what was true when they were written; they are not callers.
+    if rel.startswith(("docs/journal/", "docs/cases/", "evals/benchmarks/")):
+        continue
+    try:
+        text = path.read_text(encoding="utf-8", errors="ignore")
+    except OSError:
+        continue
+    for n, line in enumerate(text.splitlines(), 1):
+        if re.search(r"(?<![-\w/])sh\s+\S*evals/check_dotnet\.sh", line):
+            gate_callers.append(f"{rel}:{n}")
+check(not gate_callers,
+      "the .NET gate is never invoked through `sh` (it declares bash)",
+      f"offenders: {gate_callers}")
+
 print("== BL-082: the edition pins the tool (R-8214, C-12) ==")
 # One number, two homes, and neither may move without the other: `skill/VERSION` is the
 # edition and `src/Legislator.Cli/Version.props` is what `legislator version` prints back.

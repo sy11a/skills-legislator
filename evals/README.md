@@ -221,7 +221,7 @@ than reading as a corpus of failures three stages later. Publish one first with
 `check_engine.py` and `check_hooks.py` require when run by hand; `grade.py`
 falls back to the published binary so a hand-run grade needs no environment.
 
-**The .NET gate (v26).** `sh evals/check_dotnet.sh` builds strict, runs every
+**The .NET gate (v26).** `bash evals/check_dotnet.sh` builds strict, runs every
 test project's Microsoft.Testing.Platform binary directly and publishes the AOT
 smoke. It does **not** use `dotnet test`: on SDK 10.0.106 with the xunit MTP
 adapter that command discovers nothing — "Zero tests ran", exit 5, per project
