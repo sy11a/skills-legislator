@@ -296,11 +296,16 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
 
     # Defect 1 — broken import (ghost-rule.md does not exist).
     imports = "\n".join(f"@{p}" for p in sorted(owned))
+    # Defect 21 (check 21, waterflow-mode): the entry declares the waterflow
+    # mode and names no release branch — the mode-line plant the report
+    # markers and slug-coverage rows below record (C-7). The law states both
+    # modes (T-03), so the declaration contradicts nothing (research §3).
     (dest / "CLAUDE.md").write_text(
         "# LegacyBilling\n\n" + imports +
         "\n@docs/ai/rules/core/ghost-rule.md\n@docs/okf/codebase-map.md\n\n"
         "- Domain glossary: `docs/okf/glossary.md` — check it when a term is "
-        "unclear; add terms as they emerge\n\n"
+        "unclear; add terms as they emerge\n"
+        "- Development law mode: waterflow\n\n"
         "## Boundaries\n\nGenerated build output only (`bin/`, `obj/`, "
         "`node_modules/`) — do not edit generated files.\n\n"
         "## Project notes\n\nLegacyBilling processes archived invoices.\n\n"
@@ -535,6 +540,12 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
             "Verification.md",               # defect 19b: the colliding name
             "okf-sync-debt]",                # defect 17a: pinned slug
             "docs/okf/endpoints.md",         # defect 17b: the document named
+            # Defect 21 (check 21, waterflow-mode). Two order-independent
+            # markers, the same hidden lesson as defect 15's: the finding
+            # line names the slug and the entry separately, so the grader
+            # must not assume their order on the line.
+            "waterflow-mode]",               # defect 21a: pinned slug
+            "CLAUDE.md",                     # defect 21b: the entry named verbatim
             "dry-run mode before a real import",  # harvest: candidate quoted
             "must be reversible",  # harvest: stray-rulebook generic line quoted
             "## Constitution candidates",  # harvest appendix present with pinned heading
@@ -563,6 +574,7 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
             "okf-sync-debt",            # endpoints.md's source moved on 167 days later
             "tracker-drift",            # BL-001 left above the generated mirror marker
             "case-collisions",          # Verification.md beside the owned verification.md
+            "waterflow-mode",           # CLAUDE.md declares waterflow, names no release branch
         ],
         # BL-025 item 2: Critical findings must sit under the Critical
         # severity heading, not merely appear somewhere in the report
