@@ -420,4 +420,49 @@ public sealed class AuditTwins
 
         Assert.DoesNotContain("[tracker-drift]", output, StringComparison.Ordinal);
     }
+
+    /// <summary>
+    /// Check 21, `waterflow-mode` (design C-6, per R-003/R-004/R-005): a waterflow declaration
+    /// without a named release branch is a Warning naming the entry; with the convention, and
+    /// for an explicit pair declaration, the check stays silent. This trio is the plan's one
+    /// expected-red commit - the labels and their twins land before the check exists, so the
+    /// without-convention half is red until T-05 greens it. The "declares nothing" half of
+    /// R-005 rides the clean-audit labels (a misfiring check 21 would fail them).
+    /// </summary>
+    [Fact]
+    [Parity("engine", "audit_check21_waterflow_without_convention")]
+    public void Audit_check21_waterflow_without_convention()
+    {
+        var (_, output, _) = Audit(AuditRepo(new()
+        {
+            ["AGENTS.md"] = "# Repo\n\n- Development law mode: waterflow\n\n@docs/okf/index.md\n",
+        }));
+
+        Assert.Contains("[waterflow-mode]", output, StringComparison.Ordinal);
+        Assert.Contains("AGENTS.md", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    [Parity("engine", "audit_check21_quiet_with_convention")]
+    public void Audit_check21_quiet_with_convention()
+    {
+        var (_, output, _) = Audit(AuditRepo(new()
+        {
+            ["AGENTS.md"] = "# Repo\n\n- Development law mode: waterflow\n- Release branch: release/0\n\n@docs/okf/index.md\n",
+        }));
+
+        Assert.DoesNotContain("[waterflow-mode]", output, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    [Parity("engine", "audit_check21_quiet_pair")]
+    public void Audit_check21_quiet_pair()
+    {
+        var (_, output, _) = Audit(AuditRepo(new()
+        {
+            ["AGENTS.md"] = "# Repo\n\n- Development law mode: pair\n\n@docs/okf/index.md\n",
+        }));
+
+        Assert.DoesNotContain("[waterflow-mode]", output, StringComparison.Ordinal);
+    }
 }
