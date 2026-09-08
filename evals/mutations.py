@@ -223,7 +223,7 @@ def _scaffold(repo: Path) -> dict[str, Mutation]:
         def fn(t):
             lines, out, in_table, seen_rows = t.splitlines(), [], False, 0
             for l in lines:
-                if l.lstrip().startswith("|") and "Term" in l:
+                if re.match(r"^\|\s*Term\s*\|", l.lstrip()):
                     in_table = True
                     out.append(l)
                     continue

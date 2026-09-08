@@ -3,7 +3,7 @@ type: Changelog
 title: OKF Bundle Changelog
 description: Chronological record of significant changes to the OKF knowledge bundle.
 tags: [changelog, okf]
-timestamp: 2026-09-03T00:00:00Z
+timestamp: 2026-09-08T00:00:00Z
 ---
 
 # OKF Bundle Changelog
@@ -386,4 +386,18 @@ otherwise is worse than one that admits it. README gains the arm's install path
 (publish, install, `version --json`) and the runbook gains the digest recording
 that audit check 20 reads; `evals/README.md` gains the two parity variables and
 the reason `check_dotnet.sh` does not call `dotnet test`.
+
+## 2026-09-08 — L-1: the law reads by mode
+
+The glossary gains `mode`, `waterflow` and `release branch`, the three terms
+the mode-reading law mints (ADR-0012; case `docs/cases/L-1-law-reads-by-mode/`).
+The entry worth recording is the concept's shape: a repository's own entry
+document selects which reading its development law takes — `pair`, today's
+text, the default; `waterflow`, the second mode — and audit check 21
+(`waterflow-mode`) keeps the selection honest, reporting a `waterflow`
+repository that names no release branch and nothing for one that does, or for
+any `pair` or undecorated repository. `docs/okf/index.md`'s mapping table
+already routes new domain terms to `glossary.md`, so no index change was
+needed; `AGENTS.md.tpl` and `core/pair-development.md` carry the rest of the
+concept, and the fixture plant makes the omission a measurable defect.
 

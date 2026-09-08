@@ -30,6 +30,7 @@ public sealed partial class AuditChecks(JobContext job, SkillPackage skill)
         "foreign-structures", "keep-list", "project-rules", "stray-rulebooks",
         "glossary-vitality", "skill-bindings", "okf-anchors", "legacy-home-violation",
         "okf-sync-debt", "tracker-drift", "case-collisions", "arm-integrity",
+        "waterflow-mode",
     ];
 
     /// <summary>A check's place in the pinned order, and the far end for anything the model named that the order does not - an unknown slug prints last rather than crashing the report.</summary>
@@ -108,6 +109,7 @@ public sealed partial class AuditChecks(JobContext job, SkillPackage skill)
         result.AddRange(Check18TrackerDrift(entry));
         result.AddRange(Check19CaseCollisions(read));
         result.AddRange(Check20ArmIntegrity());
+        result.AddRange(Check21WaterflowMode(entry));
         return result;
     }
 
@@ -530,6 +532,31 @@ public sealed partial class AuditChecks(JobContext job, SkillPackage skill)
         {
             yield return new(Severity.Info, "arm-integrity",
                 $"edition {release.Edition ?? SkillVersion} records no released digests yet → the arm's identity was checked by version alone; the digests arrive with the tag");
+        }
+    }
+
+    /// <summary>
+    /// Check 21, `waterflow-mode` (Warning). The development law reads by the mode a
+    /// repository's entry document declares (`core/pair-development.md`): a `waterflow`
+    /// declaration names its release-branch convention, and one that names none is a mode
+    /// announced but not honored. The read is check 18's tolerant read (IO failure → empty
+    /// text, no false finding), and the markers are options members (R-8209), never literals
+    /// here. It is a repository-fact check: mechanical, never a model check, never in Health.
+    /// </summary>
+    private IEnumerable<AuditFinding> Check21WaterflowMode(string? entry)
+    {
+        if (entry is null)
+        {
+            yield break;
+        }
+
+        var text = Read($"{layout.Root}/{entry}");
+        var declaresWaterflow = text.Contains(options.WaterflowModeMarker.Value, StringComparison.Ordinal);
+        var namesConvention = text.Contains(options.ReleaseBranchMarker.Value, StringComparison.Ordinal);
+        if (declaresWaterflow && !namesConvention)
+        {
+            yield return new(Severity.Warning, "waterflow-mode",
+                $"{entry}: declares the waterflow mode but names no release branch → add a line naming it, e.g. \"- Release branch: release/0\"");
         }
     }
 

@@ -709,6 +709,24 @@ code, out, err = audit(root)
 check("[tracker-drift]" not in out, "audit_check18_quiet_without_tracker", f"out={out[:600]!r}")
 
 
+print("== R-003/R-004/R-005: check 21 waterflow-mode (the quartet, red first) ==")
+# (a) waterflow declared, no release branch named -> a Warning naming the entry
+root = audit_repo({"AGENTS.md": "# Repo\n\n- Development law mode: waterflow\n\n@docs/okf/index.md\n"})
+code, out, err = audit(root)
+check("[waterflow-mode]" in out and "AGENTS.md" in out,
+      "audit_check21_waterflow_without_convention", f"out={out[:600]!r}")
+
+# (b) waterflow with its release branch named -> silent (R-004)
+root = audit_repo({"AGENTS.md": "# Repo\n\n- Development law mode: waterflow\n- Release branch: release/0\n\n@docs/okf/index.md\n"})
+code, out, err = audit(root)
+check("[waterflow-mode]" not in out, "audit_check21_quiet_with_convention", f"out={out[:600]!r}")
+
+# (c) pair declared -> silent; the no-mode-line half of R-005 rides the clean-audit labels
+root = audit_repo({"AGENTS.md": "# Repo\n\n- Development law mode: pair\n\n@docs/okf/index.md\n"})
+code, out, err = audit(root)
+check("[waterflow-mode]" not in out, "audit_check21_quiet_pair", f"out={out[:600]!r}")
+
+
 print("== v23 defect fixes: check 14 sees backticked names; journal dates from prefix+content ==")
 root = audit_repo({".claude/rules/skills.md": "# Skills\n\n- **implement:** `made-up-skill-zz`\n"})
 code, out, err = audit(root)

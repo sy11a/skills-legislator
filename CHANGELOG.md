@@ -81,6 +81,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **`L-1` — the development law reads by mode: `pair` and `waterflow`
+  (Architector Release 0, track E; ADR-0012).** The constitution's development
+  law gains a mode: a repository's entry document declares which reading its
+  law takes — `pair`, today's text, the default — or `waterflow`, the second
+  mode spelled for each cornerstone rule; the entry-document template declares
+  the default (`- Development law mode: pair`). Audit check 21 `waterflow-mode`
+  (Warning) reports a repository that declares `waterflow` without naming its
+  release branch, and stays silent for one that names a convention — and for
+  every `pair` or undecorated repository. The eval fixture plants the omission
+  in the rotted-layer entry, so the finding is demonstrably caught. No
+  `skill/VERSION` bump taken here — proposed in the pull request; editions are
+  assigned at merge, never reserved.
 - **`L-2` — task entry defaults to `/autoflow` (Architector Release 0, track
   E; ADR-0009).** `core/pair-development.md` gains one line: a task is
   opened via `/autoflow` unless the operator names `/flow`, conditioned on

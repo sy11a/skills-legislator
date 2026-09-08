@@ -3,7 +3,7 @@ type: System
 title: Legislator — Domain Glossary
 description: Domain terms mapped to their meaning in this codebase.
 tags: [system, glossary, domain]
-timestamp: 2026-09-07T00:00:00Z
+timestamp: 2026-09-08T00:00:00Z
 status: implemented
 ---
 
@@ -118,3 +118,6 @@ serve: `docs/philosophy.md`.
 | permissive arm | The probe that tells a guard's ruler what its green is worth: an arm that only ever allows (`PARITY_HOOK_CMD=/bin/true`). Every label it leaves green is an assertion of silence, which a hook doing nothing also satisfies. The hooks-side counterpart of the dead-arm probe, which says nothing here because a dead arm's exit code is neither allow nor block. | coin | `docs/cases/BL-082-dotnet-deterministic-substrate/parity-hooks-green.txt` |
 | arm integrity | Audit check 20: is the arm on this machine the one the edition pins, and is its binary the one the edition released? It asks the binary (`legislator version --json`), never the file system — a name on PATH proves nothing about what runs. An absent arm is a finding; an edition with no tag yet has released no digests and says so as Info. | coin | `src/Legislator.Engine/Audit/ArmIntegrityCheck.cs`; `skill/SKILL.md` § Audit (BL-082 T-12/T-13) |
 | startup budget | The wall-clock ceiling a hook may spend being started, measured as the median of twenty `legislator version` runs against the published binary: 50 ms. It exists because a hook pays the price per invocation, where image size is paid once on disk — the reason NativeAOT was chosen and the number that keeps the choice honest. | coin | `tests/Legislator.Cli.Tests/StartupBudgetTests.cs` (BL-082 T-12) |
+| mode | The named reading of the development law a repository's entry document declares: `pair` (the default) or `waterflow`; absent a declaration the law reads as `pair`. | home | `core/pair-development.md`; `skill/assets/templates/AGENTS.md.tpl` |
+| waterflow | The second mode of the development law: one task per track with tracks in parallel, the release kernel merging into the release branch on the reviewer's and the gates' green, approvals per release. | coin | `docs/backlog.md` `## BL-088`; Architector ADR 0007; `core/pair-development.md` |
+| release branch | The branch a `waterflow` repository names in its entry document as its release-branch convention; check 21 requires the naming. | industry | `core/pair-development.md`; `src/Legislator.Engine/Audit/AuditChecks.cs` (check 21 `waterflow-mode`) |

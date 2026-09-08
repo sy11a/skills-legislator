@@ -73,6 +73,12 @@ public sealed record LegislatorOptions
     /// <summary>The import whose presence in the entry document says the layer is already installed, so a manifest-less repository is an upgrade to reconstruct rather than a migration.</summary>
     public OptionValue<string> LegislationMarker { get; init; } = new("core/okf.md", OptionsLayer.Defaults); // under docs/ai/rules
 
+    /// <summary>The closed substring whose presence in the entry text declares the waterflow mode; pair is the default and needs no declaration (design C-2).</summary>
+    public OptionValue<string> WaterflowModeMarker { get; init; } = new("Development law mode: waterflow", OptionsLayer.Defaults);
+
+    /// <summary>The closed substring whose presence names the release-branch convention; check 21 requires it of a waterflow repository (design C-3).</summary>
+    public OptionValue<string> ReleaseBranchMarker { get; init; } = new("Release branch:", OptionsLayer.Defaults);
+
     public OptionValue<string> SkillVersionFile { get; init; } = new("VERSION", OptionsLayer.Defaults); // under the skill package
 
     /// <summary>The stack a project file of one of <see cref="DotnetProjectPatterns"/> makes a candidate for; also the name of its directory under the skill's rule stacks.</summary>
@@ -192,6 +198,8 @@ public sealed record LegislatorOptions
         ["max_file_bytes"] = nameof(MaxFileBytes),
         ["stacks_dir"] = nameof(StacksDir),
         ["legislation_marker"] = nameof(LegislationMarker),
+        ["waterflow_mode_marker"] = nameof(WaterflowModeMarker),
+        ["release_branch_marker"] = nameof(ReleaseBranchMarker),
         ["skill_version_file"] = nameof(SkillVersionFile),
         ["dotnet_stack"] = nameof(DotnetStack),
         ["aurelia_stack"] = nameof(AureliaStack),
@@ -272,6 +280,8 @@ public sealed record LegislatorOptions
         yield return ("max_file_bytes", MaxFileBytes.Value.ToString(CultureInfo.InvariantCulture), MaxFileBytes.Source);
         yield return ("stacks_dir", StacksDir.Value, StacksDir.Source);
         yield return ("legislation_marker", LegislationMarker.Value, LegislationMarker.Source);
+        yield return ("waterflow_mode_marker", WaterflowModeMarker.Value, WaterflowModeMarker.Source);
+        yield return ("release_branch_marker", ReleaseBranchMarker.Value, ReleaseBranchMarker.Source);
         yield return ("skill_version_file", SkillVersionFile.Value, SkillVersionFile.Source);
         yield return ("dotnet_stack", DotnetStack.Value, DotnetStack.Source);
         yield return ("aurelia_stack", AureliaStack.Value, AureliaStack.Source);
