@@ -60,93 +60,22 @@ file-disjoint from all of it. Background agents can't pause to ask questions,
 so anything dispatched to Track B must have its design fully settled at
 Gate 0/1 — that ordering is what makes the parallelism safe.
 
-## Agreed order after v24 (revised 2026-08-29 evening) — the outer-only pivot on a .NET substrate
+## Queue — lives in Architector since 2026-09-08
 
-**Out-of-order edition (2026-08-31): v25 is the tracker-slots edition.**
-BL-085's answer shipped ahead of the pair below — BL-082 was parked at the
-time (it is in progress since 2026-08-30, see item 2) and BL-077 is built on
-it, while the slots block another product's
-whole migration line (cross-repo case: clerk `docs/cases/BL-016-legislator-slots/`,
-its invariant "law before migration"). Edition numbers are assigned at merge,
-never reserved: the pair keeps its content and its order, not its number.
+This repository's backlog holds only the tasks of the release that is running: **BL-088** (Release 0's `L-1`, the waterflow mode edition — the owner's). Everything else that was open here moved on 2026-09-08 to Architector's tracker under Architector ADR 0009 (case BL-011, `~/Repository/Architector/docs/cases/BL-011-fleet-backlog-review/review.md` § 6): the **idea backlog** (`Idea:` issues) and the **pre-release backlog** (`frozen` issues) at https://github.com/sy11a/Architector/issues — the operator places items from there into the next release. The "Agreed order after v24" roadmap that stood here (the outer-only pivot on a .NET substrate; step 2, BL-082, shipped as edition v26) is superseded by that window; its steps are now these items, each section below carrying its pointer:
 
-Settled with the owner in the 2026-08-29 brainstorm (ADR-0007; case
-`docs/cases/BL-077-outer-only-control-directory/`). The legislator becomes
-the installer of a developer-experience framework — legislator (laws),
-kbl (the knowledge fund), fleet-obs (practice observability), a dev-flow
-tool — whose shared property is that **no AI-layer file is ever committed
-into a code repository**. Revised the same evening (ADR-0008, case
-`docs/cases/BL-082-dotnet-deterministic-substrate/`): every deterministic
-surface, present and future, is built on .NET; Python is prototype-only;
-environment and placement are configuration; an MCP host follows once
-the core is proven. Everything below is ordered by dependency.
+| Roadmap step | Architector item |
+|---|---|
+| BL-077 → BL-078 + BL-076 + BL-083 + BL-080 (the pivot and the edition after it) | [#61](https://github.com/sy11a/Architector/issues/61) |
+| BL-084 (the MCP host) | [#64](https://github.com/sy11a/Architector/issues/64) |
+| BL-079 + BL-046 (layering, context-scope law) | [#34](https://github.com/sy11a/Architector/issues/34) |
+| BL-008 + BL-081 + the CLI shell-init (distribution, versioning) | [#33](https://github.com/sy11a/Architector/issues/33) |
+| BL-039 (the eval suite in its own repository) | [#35](https://github.com/sy11a/Architector/issues/35) |
+| BL-040 (redact history) · BL-074 (glossary extraction at scale) · BL-086 (skill tooling, both harnesses) | [#62](https://github.com/sy11a/Architector/issues/62) · [#63](https://github.com/sy11a/Architector/issues/63) · [#53](https://github.com/sy11a/Architector/issues/53) |
+| BL-090 + BL-092 (BL-082's residue defects) | [#65](https://github.com/sy11a/Architector/issues/65) |
+| BL-067 · BL-031 · BL-091 | absorbed by Architector #28, ADR 0009, ADR 0009 |
 
-1. **fleet-obs prerequisites (its repo, parallel with v25, must merge
-   first)** — registry from an external source without crashing on
-   unknown keys (its ADR-0041), note roles from the node manifest instead
-   of path literals, `@import` expansion in the adapters. Tracked here as
-   **BL-080**; a generated registry lands on an unpatched fleet-obs and
-   takes it down.
-2. **The edition after v25 — BL-082 + BL-077** *(BL-082 IN PROGRESS since
-   2026-08-30 — the park of 2026-08-29 ended when the owner took the case up
-   himself under dev-flow, which is what the park was for; he executes it,
-   agents do not start or continue it. Branch `bl/082-dotnet-deterministic-substrate`,
-   pushed 2026-09-07: T-01…T-12 delivered in 19 commits, T-13 in flight on the
-   off-branch snapshot `wip/bl-082-t13-snapshot` (deliberately red), T-14 —
-   docs, benchmark, converge — remaining. The edition number this ships under
-   is unassigned: the branch carries `skill/VERSION` 26 as a working value,
-   and numbers are assigned at merge)*: step zero is the substrate
-   (BL-082, absorbing BL-072): the `src/` solution, the engine port as
-   pilot red-first against `check_engine.py`, the hooks port, the options
-   model with its four layers and `config show`, the machine install and
-   version/checksum audit. On it, BL-077's content written in .NET: the
-   machine registry, the instance repository, link/stub/restore +
-   sentinel, the two-root engine, the registry predicate in all four
-   arms, fleet enumeration, D/A step classes, paired MRs, member #0
-   migrated by hand, the corpus re-cut, three spikes. Absorbs BL-027,
-   BL-044, BL-045, BL-052, BL-071, BL-072.
-3. **Edition v26 — BL-083 + BL-078 + BL-076**: the configuration layer
-   complete (every path the registry and the arms read moved into the
-   options model), inner→outer migration with rule reconciliation
-   (operator decides, the installer drives), the restructure emitter and
-   the fidelity job re-targeted to the control tree; the fleet sweep
-   happens here, not after v25.
-4. **Edition v27 — BL-084 + BL-079**: the MCP host over the proven core
-   (gates: Core+Engine coverage ≥ 90 %, `check_engine.py` parity, Python
-   engine gone from law), and sub-group layering inside an instance —
-   inheritance, stack tags as orthogonal selectors, per-node skills/MCP
-   scoping — and the kbl module contract's first real member.
-5. **After v27, in this order:** BL-067 (analyzer binding — unblocked by
-   config-is-code), BL-046 (context-scope law — the eager-import loss of
-   v25 is its strongest motivation), the `legislator` CLI shell-init
-   (M3 env-attach; carrier of BL-008's distribution question — the CLI
-   itself exists from v25), BL-081 (semver and version sync across the
-   four tools).
-6. **Off the edition track, unchanged:** BL-031 (backlog split — do it
-   *after* BL-078 moves the file), BL-039, BL-040 (more urgent: instance
-   repositories of work projects carry employer names by construction —
-   R-7706), BL-074.
-7. **Spike, unscheduled (raised 2026-08-30):** BL-085 — the legislator
-   inherits the host repository's work-tracking discipline (Jira, GitHub
-   Issues, Linear … through their MCP servers) instead of imposing the
-   text backlog, which becomes the lowest-priority home with a standing
-   migration recommendation. Its follow-ups land on BL-082/BL-083; it
-   may absorb BL-031.
-8. **Raised 2026-09-06 by Architector BL-008 (the release cycle):** BL-088
-   (the waterflow mode of `core/pair-development.md`, Architector ADR 0007)
-   and BL-089 (the `/autoflow` entry line of dev-flow BL-051 ruling 11).
-   Not on the edition track's critical path: Release 0 runs under the
-   current law with the operator merging into the release branch by hand
-   (Architector's `docs/cases/BL-008-release-cycle/release-0-protocol.md`
-   § 5); both ship in the first edition the owner cuts after v25. **Track-E
-   ordering ruled by the owner 2026-09-07: BL-088 (Release-0 key `L-1`) waits
-   for BL-082's merge** — it adds an audit check, and a check written against
-   the Python engine would land in a repository whose engine BL-082's T-13
-   removes; run after the substrate, it is written against the arm that will
-   exist. BL-089's law half is already delivered (`L-2`, PR #41, merged
-   2026-09-07). The third
-   ask of that case — legislating `sy11a/foundry` as a fleet member — was
-   done the same day from `master` (edition v25), no item needed.
+Case sections below are the register — history, never rewritten; a section's first line after its heading says where its item went.
 
 ## Edition plan (agreed 2026-08-22, after v17 closed at 177/177) — *superseded 2026-08-29 by "Agreed order after v24"; kept as history*
 
@@ -375,6 +304,8 @@ updates).
 
 ## BL-008 — Package the toolchain as a plugin in a private marketplace
 
+**Moved 2026-09-08 → Architector [#33](https://github.com/sy11a/Architector/issues/33) — Idea: Distribution and versioning of the framework's tools** (Architector ADR 0009, case BL-011: a product backlog holds only the running release's tasks). This section stays as the record.
+
 **Note 2026-08-29:** the entry's premise ("the constitution travels with each repo") is the sentence ADR-0007 deletes; its subject — capabilities travelling with the *machine* — is the singleton legislator of BL-077. Re-read through that lens when picked up; the marketplace is one candidate distribution channel for BL-072's arm.
 
 **What:** extend BL-007's plugin skeleton into the full capability bundle:
@@ -418,6 +349,8 @@ measurement loop nobody else has.
 "Steward duties" section added to README.md.
 
 ## BL-010 — Migration-mode v2 wiring + two SKILL.md/migration.md wording touch-ups
+
+**Closed 2026-09-08 by Architector's fleet backlog review (BL-011): moot — under outer-only placement migration is rewritten; there is no v2 wiring to inline.**
 
 Small follow-ups from BL-006's v7 benchmark and final review — ride along
 with the next cycle that edits `skill/**` anyway (its mandatory benchmark
@@ -996,6 +929,8 @@ PRs.
 
 ## BL-025 — Stage-routing follow-ups from the v13 final review (skill-file items)
 
+**Closed 2026-09-08 by Architector's fleet backlog review (BL-011): delivered — items 2–5 shipped (`evals/grade.py`, `link_skills.py`, BL-070, `core/skills.md`).**
+
 Ride along with the next benchmarked `skill/**` cycle:
 
 1. **Unprompted heading-pin evidence (Important).** The counted v13
@@ -1022,6 +957,8 @@ Ride along with the next benchmarked `skill/**` cycle:
    skill names in the scaffolded stage map against `~/.claude/skills/`.
 
 ## BL-026 — SDD gap harvest: execute the G1–G9 decisions from the landscape research
+
+**Closed 2026-09-08 by Architector's fleet backlog review (BL-011): delivered — its done-when ("BL-032 and BL-033 ship green") is met (v17, v20); the section is a decision record.**
 
 **Status: REVISED 2026-08-20** — the deep audit D0–D5
 (`docs/superpowers/specs/2026-08-20-deep-audit-d0-d5.md`, second pass over
@@ -1215,6 +1152,8 @@ but the rules corpus @ VERSION; benchmark green with zero behavioral
 diffs beyond the expected prose changes.
 
 ## BL-031 — Split backlog.md into queue + case register sections
+
+**Closed 2026-09-08 by Architector's fleet backlog review (BL-011): absorbed — Architector ADR 0009 is the split: the queue lives in Architector, this file keeps the case register as history.**
 
 **Not absorbed by BL-085 (ruled 2026-08-31).** The tracker slots make the *register* row a tracker item wherever a repo records a tracker — but this repository records none, its 86-entry file still smears queue and register, and `backlog.md.tpl` still ships a queue body for the no-tracker case. The split stays a real case here.
 
@@ -1600,6 +1539,8 @@ README section landed.
 
 ## Note — OKF content-accuracy check is an open idea, not yet a backlog item
 
+**Closed 2026-09-08 (Architector BL-011): resolved into BL-033 (anchors + okf-debt), shipped in v20; an origin record.**
+
 The fleet-api v11 backfill (2026-07-12) found six `docs/okf/domain/*.md`
 files still describing a domain model an ADR had removed — no audit check
 covers OKF *content accuracy against source* (check 5 covers links, check 6
@@ -1675,6 +1616,8 @@ is only done when the prose is gone.
 
 ## BL-039 — Split the eval suite into its own repo
 
+**Moved 2026-09-08 → Architector [#35](https://github.com/sy11a/Architector/issues/35) — Idea: The eval suite as legislator's acceptance stand, in its own repository** (Architector ADR 0009, case BL-011: a product backlog holds only the running release's tasks). This section stays as the record.
+
 **Status: PROPOSED 2026-08-22 — raised while hardening the artifact boundary
 in the v17 cycle.**
 
@@ -1738,6 +1681,8 @@ in writing; and a full edition cycle has been driven end-to-end across the
 two repos at least once.
 
 ## BL-040 — Redact git history, not just the working tree
+
+**Moved 2026-09-08 → Architector [#62](https://github.com/sy11a/Architector/issues/62) — Redact git history before the repository leaves the owner's control (pre-release)** (Architector ADR 0009, case BL-011: a product backlog holds only the running release's tasks). This section stays as the record.
 
 **Status: PROPOSED 2026-08-22 — the other half of the redaction done that
 day; deliberately deferred because it rewrites every commit hash.**
@@ -1934,6 +1879,8 @@ Three questions, each answered by a reproducible probe:
 **Done when:** `docs/ai/rules/index.md` ships as an owned file and appears in `ownedFiles`; `AGENTS.md.tpl` carries one import line in place of the block; adding or dropping a stack changes the eager set in both harnesses with no owner action; the static check derives both projections from one source; and the corpus carries an assert that a stack added during an upgrade is loaded by both wirings without any applied proposal.
 
 ## BL-046 — Context-scope law: four classes, enforced and advisory, proven by canary
+
+**Moved 2026-09-08 → Architector [#34](https://github.com/sy11a/Architector/issues/34) — Idea: Context as a governed resource: scope classes and layering** (Architector ADR 0009, case BL-011: a product backlog holds only the running release's tasks). This section stays as the record.
 
 **Status: PROPOSED 2026-08-23** — behavioral, its own edition. Depends on BL-044's findings and is cleanest after BL-045's single declaration. Recommended **before** BL-043: that case introduces a new artifact class into every repository, and without this law the question "is the baseline eager?" gets answered in passing — which is exactly how the glossary divergence happened.
 
@@ -2437,6 +2384,8 @@ files through the new logic: old verdict GREEN, new verdict FAIL.
 
 ## BL-059 — The .NET runtime leaks into `/tmp` until the quota kills every eval run
 
+**Closed 2026-09-08 by Architector's fleet backlog review (BL-011): delivered — both halves shipped and converged (`docs/cases/BL-059-tmp-quota-prevention/`); the header was never flipped.**
+
 **Status: PROPOSED 2026-08-25** — evals/tooling, no `skill/` change, no VERSION,
 no benchmark. Found by losing three consecutive v21 corpus runs to it.
 
@@ -2489,6 +2438,8 @@ to the probe unchanged. First real pass: 457 files, 1.88 GB reclaimed, the
 user quota back from 3.3 GB to 1.45 GB. Both halves of the done-when hold.
 
 ## BL-060 — The eval suite's false green, and pruning what measures nothing
+
+**Closed 2026-09-08 by Architector's fleet backlog review (BL-011): delivered — D1–D3 shipped as BL-062/063, D4 closed empty.**
 
 **Status: ANALYSIS DONE 2026-08-25** — exploration; findings recorded in
 `evals/POLICY.md` §§1b and 1c, full record in
@@ -2648,6 +2599,8 @@ still `measured`.
 
 ## BL-067 — The analyzer binding: stack law adjudicated by the repo's own build
 
+**Closed 2026-09-08 by Architector's fleet backlog review (BL-011): absorbed — Architector idea #28 decision 5: the .NET stack law becomes a NuGet analyzer package the legislator references.**
+
 **Status: PROPOSED 2026-08-26 — unblocked 2026-08-29 by ADR-0007's config-is-code rule; implement after v26.** The delivery channel is decided: build configuration is code, generated deterministically from stack law (one clause ↔ analyzer-rule table per stack) and *proposed* through the code repository's own MR — never owned, never byte-verified; an audit check then judges the build's configuration against the law semantically (a repo may tighten). Native analyzers, generators and compilers before agents, for every stack. Originally: design-first; sized from BL-047's ranked list (group 2), the biggest single bucket-(b) mass.
 
 **The finding:** 25 of 28 stack clauses (dotnet coding-standards, architecture, data-access) are classic analyzer / architecture-test / msbuild-property territory — enforcement exists off the shelf; nothing needs the engine. What does not exist is the **binding**: the legislator neither ships nor verifies any of it, so the fleet's stack law is adjudicated by session judgement at every-edit cadence.
@@ -2717,6 +2670,8 @@ Originally: harness hardening, sized from the v23 cycle's two operator-induced i
 
 ## BL-074 — Glossary extraction at scale: is the one small-model job real?
 
+**Moved 2026-09-08 → Architector [#63](https://github.com/sy11a/Architector/issues/63) — Per-job model floor: glossary extraction measured at scale (pre-release)** (Architector ADR 0009, case BL-011: a product backlog holds only the running release's tasks). This section stays as the record.
+
 **Status: PROPOSED 2026-08-28** — the positive half of BL-048, sized to be measured before anything is routed. BL-048 found every candidate model — two 3B locals included — extracting the migration fixture's glossary terms at 100% recall with zero extras in under a second; the evidence is two terms from one text.
 
 **The probe:** a labelled extraction set an order of magnitude larger — every fixture's domain notes, this repository's own glossary history (rows and the source sections they were carved from), and the fleet's `docs/okf/glossary.md` files as labels; precision and recall per model; the `{{GLOSSARY_TABLE}}` derivation rule as the prompt. **What it decides:** whether `{{GLOSSARY_TABLE}}` seeding becomes an engine-invoked local extractor with model review (the first per-job floor), or whether small models only look good on bolded-noun fixtures. Stop: the table; routing is its own case, gated on the numbers and on BL-069's dependency policy (a local model runtime is a new `best-effort` dependency with a declared absence behavior).
@@ -2727,9 +2682,13 @@ Originally: harness hardening, sized from the v23 cycle's two operator-induced i
 
 ## BL-076 — The restructure emitter and the fidelity job (v26, re-targeted)
 
+**Moved 2026-09-08 → Architector [#61](https://github.com/sy11a/Architector/issues/61) — legislator: outer-only placement and the edition after it (pre-release)** (Architector ADR 0009, case BL-011: a product backlog holds only the running release's tasks). This section stays as the record.
+
 **Status: PROPOSED 2026-08-28 — re-targeted 2026-08-29 to v26 alongside BL-078:** the v25 slot is the pivot (BL-077), and restructure's subject becomes "extract an inner repository's AI layer into the control tree", which is BL-078's migration; the fidelity job is that migration's moved/merged inventory. Originally — the other half of BL-066's v24 composition, split off at BL-075's clarify because it is a second contract (plan skeleton from audit findings via the closed action mapping, model slots for merge/move/decision items, outcomes, the fidelity line) and a second job (`fidelity`: the moved/merged line inventory as a grep pass, sk-38). Reads BL-075's run record. Sized L; gated on v24 shipping so the record shape is stable.
 
 ## BL-077 — Outer-only placement: the AI layer leaves the code repository (the edition after v25)
+
+**Moved 2026-09-08 → Architector [#61](https://github.com/sy11a/Architector/issues/61) — legislator: outer-only placement and the edition after it (pre-release)** (Architector ADR 0009, case BL-011: a product backlog holds only the running release's tasks). This section stays as the record.
 
 **Status: OPEN 2026-08-29 — spec written, awaiting plan; built on the .NET substrate of BL-082 (ADR-0008), same edition, same branch `bl/082-dotnet-deterministic-substrate`** — case `docs/cases/BL-077-outer-only-control-directory/` (tier 2, feature, R-7701–R-7726, ADR-0007). Behavioral: `skill/` changes, a VERSION bump, full e2e on a re-cut corpus. The edition number is assigned at merge, never reserved (roadmap ruling at the v25 merge): v25 went to BL-085/BL-087, and this pair keeps its content and its order, not its number.
 
@@ -2741,6 +2700,8 @@ Originally: harness hardening, sized from the v23 cycle's two operator-induced i
 
 ## BL-078 — Inner→outer migration with rule reconciliation (edition v26)
 
+**Moved 2026-09-08 → Architector [#61](https://github.com/sy11a/Architector/issues/61) — legislator: outer-only placement and the edition after it (pre-release)** (Architector ADR 0009, case BL-011: a product backlog holds only the running release's tasks). This section stays as the record.
+
 **Status: PROPOSED 2026-08-29** — sized by BL-077; rides with BL-076 (restructure emitter + fidelity job) as one edition. Behavioral, VERSION 26, full e2e.
 
 **What:** `legislator migrate <clone>`: `detect` recognises the inner layout (BL-077's `unmigrated` finding), `apply` moves `docs/ai/**`, `docs/okf`, `docs/cases`, `docs/adr`, `docs/journal`, `docs/backlog.md`, `.claude/rules`, the entry documents and `opencode.json` into `<instance>/<project>/`, deletes them from the clone in a proposed commit, links the clone. **Rule reconciliation** is the one agent step of the flow (class A: two prose rule sets with overlapping intent cannot be merged mechanically): project rules are matched against instance rules, and the operator decides per rule — keep in project, lift to instance, drop — the installer drives the dialogue and records the decisions in the case. The fidelity job (BL-076) inventories every moved/merged line. Fleet sweep: every legislated repository migrates in this edition, one paired MR per repo + one per instance.
@@ -2749,6 +2710,8 @@ Originally: harness hardening, sized from the v23 cycle's two operator-induced i
 
 ## BL-079 — Sub-group layering inside an instance (edition v27)
 
+**Moved 2026-09-08 → Architector [#34](https://github.com/sy11a/Architector/issues/34) — Idea: Context as a governed resource: scope classes and layering** (Architector ADR 0009, case BL-011: a product backlog holds only the running release's tasks). This section stays as the record.
+
 **Status: PROPOSED 2026-08-29** — sized by BL-077's clarify ("layering is a headline feature: rule flexibility without context pollution").
 
 **What:** an instance tree may nest **sub-groups** between the group node and projects, each a node with its own `legislator.yaml` and `rules/`. Resolution for a project = machine layer (via `knowledge_root`, read-only here) → instance `rules/` → every sub-group on the path → project `.claude/rules/`; the rendered `CLAUDE.md` import list is generated from that path (one declaration, N projections). **Stacks stay orthogonal tags**, not tree nodes — a project selects stacks, a node may set defaults; the tree is organisation, tags are technology. Nodes may scope skills, commands and MCP servers (e.g. front-end tooling only for projects on that branch) through the module contract. Open for the case's own brainstorm: whether per-node scoping renders into the stub or waits for M3 env-attach (BL-072 / the CLI), and the kbl module's first real content.
@@ -2756,6 +2719,8 @@ Originally: harness hardening, sized from the v23 cycle's two operator-induced i
 **Done when:** a three-level fixture (instance → sub-group → project) resolves the expected import list red-first; adding a rule at a sub-group changes exactly the projects beneath it; `audit` reports a rule duplicated across levels as a lift candidate.
 
 ## BL-080 — The fleet-obs module and its fleet-obs-side prerequisites
+
+**Moved 2026-09-08 → Architector [#61](https://github.com/sy11a/Architector/issues/61) — legislator: outer-only placement and the edition after it (pre-release)** (Architector ADR 0009, case BL-011: a product backlog holds only the running release's tasks). This section stays as the record.
 
 **Status: PROPOSED 2026-08-29** — cross-repo case; the fleet-obs half lives in fleet-obs's own backlog (reference rows here, per `sdd.md` cross-repo rule). Must merge **before** v25 ships.
 
@@ -2766,6 +2731,8 @@ Originally: harness hardening, sized from the v23 cycle's two operator-induced i
 **Done when:** a generated registry plus overlay round-trips through the fleet-obs `registry show` command with zero hand edits; the spec-before-code panel and the constitution fleet line are non-zero on a migrated repository; the `fleet-obs-module` corpus scenario is green.
 
 ## BL-081 — Semver and version sync across the four tools
+
+**Moved 2026-09-08 → Architector [#33](https://github.com/sy11a/Architector/issues/33) — Idea: Distribution and versioning of the framework's tools** (Architector ADR 0009, case BL-011: a product backlog holds only the running release's tasks). This section stays as the record.
 
 **Status: PROPOSED 2026-08-29 — deferred, after v27.** The integer edition is bonded to `check_static.py`, fleet-obs's `ConstitutionFleet` (bare integer or exception) and the `vNN` tags; moving to semver and synchronising legislator / kbl / fleet-obs / dev-flow versions is its own case with its own compatibility matrix. Recorded now so the pivot's version policy is a known deferral, not an omission.
 
@@ -2781,11 +2748,15 @@ Originally: harness hardening, sized from the v23 cycle's two operator-induced i
 
 ## BL-083 — The configuration layer, complete (edition v26)
 
+**Moved 2026-09-08 → Architector [#61](https://github.com/sy11a/Architector/issues/61) — legislator: outer-only placement and the edition after it (pre-release)** (Architector ADR 0009, case BL-011: a product backlog holds only the running release's tasks). This section stays as the record.
+
 **Status: PROPOSED 2026-08-29 — v26, with BL-078 + BL-076 (ADR-0008 §4).** v25 ships the options model and its layers; v26 finishes the move: every path the machine registry, the instance repository, the stub renderer, the sentinel and the four arms read becomes an option (cases/journal/OKF directory names, stub file names, `.git/info/exclude` wiring, hook names, the arms list, cadence and thresholds for `okf-debt` and audit, dependency version floors), each with its default in the model and nowhere else; the static-check finding for a literal outside the model is extended to cover `skill/assets/templates/**` tokens that the renderer fills from options. Adds `legislator config validate` (all layers, no side effects) and the instance-level file's schema to the instance template (R-7704). Sub-group overrides (v27, BL-079) become one more layer in this chain, which is why it lands before them. S–M on top of v25; VERSION 26 shared.
 
 **Done when:** grep for a path or name literal in `src/` outside the options model and its tests returns nothing; every option prints a provenance line; the fleet sweep of v26 runs with a machine file overriding at least one directory name on one machine and every arm honours it.
 
 ## BL-084 — The MCP host: the agent calls the core, not a script (edition v27)
+
+**Moved 2026-09-08 → Architector [#64](https://github.com/sy11a/Architector/issues/64) — The MCP host over the legislator core (pre-release)** (Architector ADR 0009, case BL-011: a product backlog holds only the running release's tasks). This section stays as the record.
 
 **Status: PROPOSED 2026-08-29 — v27, with BL-079; gated (ADR-0008 §2).** `Legislator.Mcp`, a stdio MCP server in the same solution, whose tools are exactly the engine's jobs (`anchors`, `okf-debt`, `sdd-lint`, `baseline`, `audit`, `detect`, `apply`, `verify`, `report`, `config show`) — one method each, no logic of its own; registered globally per machine by the installer (the same channel as the hooks), scoped per instance/sub-group by BL-079's per-node MCP list. Law text: the verification rung and the audit checks name the MCP tool as the sanctioned way for an agent to run a job, with the CLI as the human's way; an agent invoking the binary through Bash is a conduct-guard warning, not a block. **Gates, all measured before the case opens:** Core+Engine line coverage ≥ 90 % in CI; every `check_engine.py` assertion twinned; `python3 docs/ai/engine.py` absent from every law file; the edition adds an eval scenario where the agent runs `anchors` through MCP and never through Bash. M; VERSION 27 shared.
 
@@ -2810,6 +2781,8 @@ Originally: harness hardening, sized from the v23 cycle's two operator-induced i
 **Stop condition:** the deliverable is `docs/cases/BL-085-inherit-work-tracking/` with the detection-signal table, the tracker × capability matrix (create / number / read / link, via which MCP server), the recommended law wording for `sdd.md` and `pair-development.md`, and a sized list of follow-up cases (the options-model section, the export job, the audit line). No tracker integration is written inside the spike. Depends on nothing; its follow-ups land on the BL-082 substrate and the BL-083 options model.
 
 ## BL-086 — Skill tooling learns the dev-flow family: multi-source, both harnesses, any OS
+
+**Moved 2026-09-08 → Architector [#53](https://github.com/sy11a/Architector/issues/53) — Host readiness for unattended stages (pre-release)** (Architector ADR 0009, case BL-011: a product backlog holds only the running release's tasks). This section stays as the record.
 
 **Status: PROPOSED 2026-08-30 — unsequenced; to be placed in the queue after the more current cases (BL-077/082 line, BL-085 spike) once their order is settled.** Raised by the owner: initializing the legislator on a machine must also make the dev-flow skills available to both harnesses, on any operating system — today that step is manual and Linux-only.
 
@@ -2886,6 +2859,8 @@ question is an explicit proposal in the pull request, never a decision made
 on this task's own authority.
 ## BL-091 — The roadmap names cases, not edition numbers
 
+**Closed 2026-09-08 by Architector's fleet backlog review (BL-011): absorbed — the roadmap it would rewrite leaves this file under Architector ADR 0009; the pre-release backlog orders by case, never by a reserved number.**
+
 **Key note (rebase, 2026-09-07).** Filed on the BL-082 branch as `BL-088`. `master` had meanwhile minted that key for the Release-0 waterflow item, which is referenced from another repository's release ledger, so the key that stays put is the one already published and this row moved. The journal entry of 2026-08-31 names the old key and is left as written — it recorded what was true then.
 
 **Status: PROPOSED 2026-08-31 — raised while BL-082 de-reserved its own number; small, unsequenced.** The v25 merge established the rule — *edition numbers are assigned at merge, never reserved* (`ed5c069`, roadmap §"Out-of-order edition") — because BL-085's answer shipped ahead of the pair that had been holding the v25 slot. BL-082 and BL-077 were brought into line with it on 2026-08-31. The rest of the queue was not.
@@ -2897,6 +2872,8 @@ on this task's own authority.
 **Done when:** no row in `docs/backlog.md` names an edition number it has not yet merged; the roadmap's ordered steps name cases; the "Out-of-order edition" note becomes the general rule rather than a 2026-08-31 exception. Documentation-only: no `skill/` change, no VERSION, no benchmark.
 
 ## BL-092 — An unrecognised `LEGISLATOR_*` variable is fatal to the binary
+
+**Moved 2026-09-08 → Architector [#65](https://github.com/sy11a/Architector/issues/65) — BL-082 residue defects (pre-release)** (Architector ADR 0009, case BL-011: a product backlog holds only the running release's tasks). This section stays as the record.
 
 **Key note (rebase, 2026-09-07).** Filed on the BL-082 branch as `BL-089`, renumbered for the same reason as BL-091 above. The journal entry of 2026-09-01 and the OKF log name the old key and are left as written.
 
@@ -2910,6 +2887,8 @@ on this task's own authority.
 
 ## BL-090 — An annotation the baseline counts cannot be told from a quotation
 
+**Moved 2026-09-08 → Architector [#65](https://github.com/sy11a/Architector/issues/65) — BL-082 residue defects (pre-release)** (Architector ADR 0009, case BL-011: a product backlog holds only the running release's tasks). This section stays as the record.
+
 **Status: PROPOSED 2026-09-01 — raised at BL-082 T-08, when the ported baseline was regenerated and the port's own fixtures entered the register as annotations; small, unsequenced.** `core/artifact-lifecycle.md` says a test is annotated for a requirement by carrying the literal marker `per R-NNN`, and `baseline` counts every such literal in any file whose path contains "test". A twin whose fixture *is* a plan file — `"1. store layer, per R-001"` — therefore claims to test R-001 of every case that defines that id.
 
 **What:** decide how an annotation is distinguished from a quotation of one, and write the answer where the marker is defined. The parallel already exists elsewhere in the same engine: `sdd-lint` and audit check 2 agree that a token inside a fence or backticks is quotation, not content (`prose_only`, BL-057) — the annotation scan has no such rule. Candidates: require the marker in a comment; require a declared form the fixture cannot collide with; or exclude string literals per language. Whatever wins applies to both arms and gets a `check_engine.py` assertion and a .NET twin.
@@ -2919,6 +2898,8 @@ on this task's own authority.
 **Done when:** the rule is stated in `core/artifact-lifecycle.md`, both arms implement it, the workaround in BL-082's fixtures is removed, and a regenerated baseline over this repository claims no coverage that is not real. Behavioral (`skill/` law text changes): VERSION bump and full e2e.
 
 ## Note — master-agent / mini-agent routing system is a separate skill, not a Legislator feature
+
+**Closed 2026-09-08 (Architector BL-011): absorbed by Architector ideas #25 (the model broker: role → runner+model pair) and #24 (the supervising flow); no separate skill is needed.**
 
 A master-agent that reviews an incoming request in a project and decides whether to route it to an existing project-local mini-agent (`.claude/agents/<name>.md`) or create a new fine-grained specialized one (task-appropriate model, scoped MCPs) is being built as its **own, separate skill** — not as part of Legislator. Rationale: Legislator is build-time scaffolding (runs occasionally, evolves via VERSION/manifest); request routing is a runtime concern with its own lifecycle. Folding both into one skill would blur SRP.
 
@@ -2937,6 +2918,8 @@ Legislator has **no involvement** here — no convention hook, no `.claude/agent
 **Stop condition.** The edition ships; `sy11a/foundry` and `sy11a/dev-flow` declare `waterflow` in their entry documents on their own word; every other fleet repository still reads `pair` and its audit is unchanged. Depended on BL-082 for its start (the ordering above, discharged); lands in the first edition after v26 the owner cuts. Two numbers are taken by v26 — 19 `case-collisions` and 20 `arm-integrity` — so the waterflow check is **21**, it is written in `src/Legislator.Engine/Audit/` and wired into `AuditChecks.Order` and `SKILL.md` § Audit, and the `rotted-layer` fixture owes it a planted defect (the meta-assert reddens without one).
 
 ## BL-089 — The `/autoflow` entry line: task entry is autoflow unless the operator names `/flow`
+
+**Closed 2026-09-08 by Architector's fleet backlog review (BL-011): delivered — the same work as L-2 (PR #41, merged 2026-09-07).**
 
 **Status: PROPOSED 2026-09-06** — the fleet-law half of dev-flow BL-051 ruling 11 (`sy11a/dev-flow#47`, merged 2026-09-05), carried here by Architector BL-008 since dev-flow's item said "the skill in dev-flow first, then the legislator task" and the skill has shipped. Behavioral change to `assets/rules/core/skills.md` (or the stage map it generates): VERSION bump, full benchmark.
 
