@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- `docs/backlog.md` — the queue moved to Architector's idea and pre-release backlogs (Architector ADR 0009, case BL-011, 2026-09-08): the "Agreed order after v24" roadmap is replaced by a pointer table to Architector #33–#35, #53, #61–#65; sixteen open sections carry a moved-to line, eleven a closed line (delivered, moot or absorbed); BL-088 (Release 0's L-1) is the one task that stays.
+
 ### Removed
 
 - **The `audit-engine-absent` eval scenario** (BL-082 T-13.10, owner's ruling).
