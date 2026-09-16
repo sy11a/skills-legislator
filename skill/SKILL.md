@@ -112,6 +112,7 @@ This table is the only statement of what an invocation mode may do to a file in 
 | `docs/adr/0001-record-architecture-decisions.md` | `adr-0001.md.tpl` | Used verbatim, no placeholders |
 | `docs/adr/template.md` | `adr-template.md.tpl` | Copied verbatim — its `{{...}}` tokens are intentional and must NOT be filled in (see the note above the table) |
 | `docs/journal/README.md` | `journal-README.md.tpl` | Used verbatim, no placeholders |
+| `docs/changes/README.md` | `changes-README.md.tpl` | Used verbatim, no placeholders — the fragment home (`docs/changes/<case>.md`, per `core/changelog.md`) |
 | `CHANGELOG.md` | `changelog.md.tpl` | Used verbatim, no placeholders |
 | `docs/cases/README.md` | `cases-README.md.tpl` | Used verbatim, no placeholders — the case home (`docs/cases/BL-NNN/`, per `core/sdd.md`) |
 | `.claude/rules/` | (empty directory) | Create the directory if absent; no file — project-specific rules live here (see `core/project-rules.md`); migration mode may populate it per Step 5 |
@@ -191,6 +192,37 @@ the facts this run already established — project name, the case home
 them twice. Skip the offer entirely when the skill is not installed on this
 machine (name it in the report instead, the way check 14 names a missing
 skill): an offer to run something absent is noise, not help.
+
+## Render — post-merge view assembly
+
+The three views — `CHANGELOG.md`'s `[Unreleased]` section, `docs/okf/log.md`, and
+`docs/journal/YYYY-MM-DD.md` — are **not hand-edited**. A task branch adds one
+change fragment (`docs/changes/<case>.md`, per `core/changelog.md`) and never
+touches the views directly. On the default branch, after a merge:
+
+```
+legislator render --root .
+```
+
+It reads every `docs/changes/*.md`, validates each fragment's front matter
+(`case`, `issue`, `kind ∈ {Added, Changed, Fixed, Removed}`, `date`) and three
+sections (`## changelog`, `## okf-log`, `## journal`), and writes the views.
+A malformed fragment is refused naming the defect and the file — never skipped,
+never rendered half.
+
+**Idempotent by case key:** each rendered entry carries a
+`<!-- rendered: <case> -->` marker on the line before it. On re-run, fragments
+whose case key already appears in any view are skipped, and nothing else is
+touched. Pre-fragment content survives byte-for-byte. Running `render` twice in
+a row changes nothing the second time.
+
+**Refused on a non-default branch.** The run exits 3 with a refusal line naming
+the branch — the views are built from the merged tree, never from a task branch.
+`sdd-lint` checks fragment shape (front matter, kind, case matching branch)
+where it used to check the `[Unreleased]` section by hand.
+
+At a release cut the `[Unreleased]` section folds under a `## [vN]` heading and
+the fragments whose entries it consumed are deleted.
 
 ## Audit — read-only health check
 
