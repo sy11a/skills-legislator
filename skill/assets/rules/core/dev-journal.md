@@ -2,6 +2,11 @@
 
 `docs/journal/` holds one file per working day: `docs/journal/YYYY-MM-DD.md`.
 
+A task branch adds the journal paragraph through its change fragment
+(`docs/changes/<case>.md` `## journal` section) and never edits the day file
+directly; `legislator render` assembles each day's file from the fragments that
+name that day.
+
 ### What goes in an entry
 
 - What was worked on and why
@@ -11,6 +16,9 @@
 
 ### When to write
 
-- Append at task boundaries — when a task completes, or when work pauses for the day
-- Not a running log of every action; write a summary paragraph per completed unit of work, not a line per tool call
-- Create the day's file using `docs/journal/README.md`'s format if it doesn't exist yet
+- Write a summary paragraph in the `## journal` section of the case's change
+  fragment — one paragraph per case, at task boundaries
+- Not a running log of every action; write a summary paragraph per completed
+  unit of work
+- Create the day's file using `docs/journal/README.md`'s format if it doesn't
+  exist yet

@@ -21,6 +21,7 @@ public sealed class RepoLayout
         Manifest = Join(Ai, options.ManifestFile.Value);
         Baseline = Join(Ai, options.BaselineFile.Value);
         Okf = Join(Docs, options.OkfDir.Value);
+        Changes = Join(Docs, options.ChangesDir.Value);
         Cases = Join(Docs, options.CasesDir.Value);
         Adr = Join(Docs, options.AdrDir.Value);
         Journal = Join(Docs, options.JournalDir.Value);
@@ -44,6 +45,8 @@ public sealed class RepoLayout
     public string Baseline { get; }
 
     public string Okf { get; }
+
+    public string Changes { get; }
 
     public string Cases { get; }
 

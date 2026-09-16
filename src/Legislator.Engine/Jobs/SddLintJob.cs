@@ -71,6 +71,7 @@ public sealed class SddLintJob : IJob
         findings.AddRange(AdrLint.Findings(fs, layout));
         findings.AddRange(JournalLint.Findings(fs, layout));
         findings.AddRange(ChangelogLint.Findings(fs, layout));
+        findings.AddRange(FragmentLint.Findings(fs, layout, ctx.Proc, ctx.Root, ctx.Options));
         findings.AddRange(OkfFrontMatterLint.Findings(fs, layout, ctx.Options.HumanClassDocs.Value));
 
         return Findings.AsResult(findings);

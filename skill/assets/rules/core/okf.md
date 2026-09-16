@@ -14,7 +14,7 @@ See this project's `docs/okf/index.md` for the category-to-file mapping table sp
 - [ ] `timestamp` field updated to today's date (ISO 8601)
 - [ ] New cross-links added where relevant (`[text](../path/to/doc.md)`)
 - [ ] New or renamed domain terms have a row in `docs/okf/glossary.md`; meanings of changed terms updated
-- [ ] `docs/okf/log.md` has a new entry describing what changed and why
+- [ ] `docs/okf/log.md` is updated through the case's change fragment (`docs/changes/<case>.md` `## okf-log` section) — a branch adds a fragment, never edits `docs/okf/log.md` directly; `legislator render` assembles it
 
 ### When to update
 
