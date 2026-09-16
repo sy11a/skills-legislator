@@ -67,6 +67,7 @@ public static class OptionsComposer
             nameof(LegislatorOptions.DocsDir) => o with { DocsDir = new(value, layer) },
             nameof(LegislatorOptions.AiDir) => o with { AiDir = new(value, layer) },
             nameof(LegislatorOptions.RulesDir) => o with { RulesDir = new(value, layer) },
+            nameof(LegislatorOptions.ChangesDir) => o with { ChangesDir = new(value, layer) },
             nameof(LegislatorOptions.OkfDir) => o with { OkfDir = new(value, layer) },
             nameof(LegislatorOptions.CasesDir) => o with { CasesDir = new(value, layer) },
             nameof(LegislatorOptions.AdrDir) => o with { AdrDir = new(value, layer) },
