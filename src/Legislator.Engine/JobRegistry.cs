@@ -13,6 +13,7 @@ public static class JobRegistry
         ["baseline"] = () => new BaselineJob(),
         ["detect"] = () => new DetectJob(),
         ["okf-debt"] = () => new OkfDebtJob(),
+        ["render"] = () => new RenderJob(),
         ["report"] = () => new ReportJob(),
         ["sdd-lint"] = () => new SddLintJob(),
         ["verify"] = () => new VerifyJob(),

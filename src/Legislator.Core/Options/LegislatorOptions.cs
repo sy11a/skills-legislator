@@ -24,6 +24,8 @@ public sealed record LegislatorOptions
 
     public OptionValue<string> AdrDir { get; init; } = new("adr", OptionsLayer.Defaults);
 
+    public OptionValue<string> ChangesDir { get; init; } = new("changes", OptionsLayer.Defaults);
+
     public OptionValue<string> JournalDir { get; init; } = new("journal", OptionsLayer.Defaults);
 
     public OptionValue<string> ManifestFile { get; init; } = new("manifest.json", OptionsLayer.Defaults);
@@ -172,6 +174,7 @@ public sealed record LegislatorOptions
         ["docs_dir"] = nameof(DocsDir),
         ["ai_dir"] = nameof(AiDir),
         ["rules_dir"] = nameof(RulesDir),
+        ["changes_dir"] = nameof(ChangesDir),
         ["okf_dir"] = nameof(OkfDir),
         ["cases_dir"] = nameof(CasesDir),
         ["adr_dir"] = nameof(AdrDir),
@@ -254,6 +257,7 @@ public sealed record LegislatorOptions
         yield return ("docs_dir", DocsDir.Value, DocsDir.Source);
         yield return ("ai_dir", AiDir.Value, AiDir.Source);
         yield return ("rules_dir", RulesDir.Value, RulesDir.Source);
+        yield return ("changes_dir", ChangesDir.Value, ChangesDir.Source);
         yield return ("okf_dir", OkfDir.Value, OkfDir.Source);
         yield return ("cases_dir", CasesDir.Value, CasesDir.Source);
         yield return ("adr_dir", AdrDir.Value, AdrDir.Source);
