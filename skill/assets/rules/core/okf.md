@@ -14,7 +14,7 @@ See this project's `docs/okf/index.md` for the category-to-file mapping table sp
 - [ ] `timestamp` field updated to today's date (ISO 8601)
 - [ ] New cross-links added where relevant (`[text](../path/to/doc.md)`)
 - [ ] New or renamed domain terms have a row in `docs/okf/glossary.md`; meanings of changed terms updated
-- [ ] `docs/okf/log.md` is updated through the case's change fragment (`docs/changes/<case>.md` `## okf-log` section) — a branch adds a fragment, never edits `docs/okf/log.md` directly; `legislator render` assembles it
+- [ ] `docs/okf/log.md` — **owed only where a concept document's meaning changed and no case summary records it.** Inside a case the record is `docs/cases/<case>/summary.md` and nothing is owed here; a concept change made outside any case is written straight into `docs/okf/log.md`, because nothing else holds it. Where it is owed inside a case, it goes through the change fragment (`docs/changes/<case>.md` `## okf-log` section) — a branch never edits `docs/okf/log.md` directly; `legislator render` assembles it. The file is kept as history and never rewritten; what was dropped is the per-task duty, not the log.
 
 ### When to update
 
