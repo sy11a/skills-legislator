@@ -49,14 +49,19 @@ public sealed class PublishScriptTests
     {
         Assert.SkipUnless(HasBash, "POSIX arm only.");
 
+        // "Another operating system" is relative to the host. The test named osx-arm64 outright,
+        // which is the host's own RID on one macOS runner and a same-OS publish on the other -
+        // so it published, exit 0, the first time the release matrix ever reached it (BL-370).
+        var foreign = OperatingSystem.IsMacOS() ? "linux-x64" : "osx-arm64";
+
         var clock = Stopwatch.StartNew();
-        var (exit, _, err) = Script("osx-arm64");
+        var (exit, _, err) = Script(foreign);
         clock.Stop();
 
         // Both halves, or the assert is vacuous: an absent script also refuses instantly, and
         // timing alone cannot tell that apart from the refusal this test exists to pin.
         Assert.Equal(2, exit);
-        Assert.Contains("osx-arm64", err, StringComparison.Ordinal);
+        Assert.Contains(foreign, err, StringComparison.Ordinal);
         Assert.True(clock.Elapsed.TotalSeconds < 10, $"the refusal took {clock.Elapsed.TotalSeconds:F1}s — it reached the SDK.");
     }
 
