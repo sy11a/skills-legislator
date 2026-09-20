@@ -73,3 +73,26 @@ now `<repo>` and `<fleet>/<alias>`; every claim, date and conclusion is
 untouched.
 
 A gate is only as good as the last commit it ran on.
+
+## The refutation round
+
+Run on `bailian-cli/deepseek-v4-pro` in its own checkout against the whole diff
+(`refutation-brief.md` is what it was given; `refutation.md` is what it returned,
+both redacted of absolute local paths per `records.md`'s carve-out). Five claims
+and four named weaknesses were put to it; it confirmed three claims and returned
+two SERIOUS findings, both acted on.
+
+| Finding | Verdict after my own check | Act |
+|---|---|---|
+| SERIOUS — *"no verification bindings that name a real gate beyond `legislator anchors`"* parses as "there are no verification bindings" | Upheld. A fresh scaffold writes `.claude/rules/verification.md` with one row, so the sentence a reader takes away is false about the file they will open | Reworded with the verb positive: *"verification bindings that name no gate beyond `legislator anchors`"* |
+| SERIOUS — `{{STACKS}}` is underspecified in format, in its `none` literal, and duplicates `{{STACK_SUMMARY}}` | Upheld, and checked against the file: `{{STACK_SUMMARY}}` (SKILL.md's derivation rules) already defines the human-readable form, and `{{TODAY}}` is `{{TODAY_ISO_DATE}}` under another name | Both placeholders replaced by the existing tokens; the bolded-`none` field replaced by an instruction to drop the sentence when no stack is confirmed |
+| MINOR — `{{EDITION}}` is declared only in the journal row's notes cell | Upheld: it is the one genuinely new token, and the derivation-rules list is where a future editor looks | Declared in the derivation rules — the `VERSION` file's value, verified to be `26` in `skill/VERSION` |
+| Claim 1, the audit mechanism | Confirmed independently, with the `lastCode is null` and the older-code edge cases both walked | — |
+| Weakness C, the computed filename | No finding: `JournalLint`'s `^\d{4}-\d{2}-\d{2}\.md$`, check 8's reader and `RenderJob`'s writer all agree on the shape | — |
+| Weakness D, BL-357's redaction | Lawful and claim-preserving, checked line by line against `records.md`'s carve-out | — |
+
+What it did **not** overturn is the choice itself: it argued the other side of
+option 2 (exempt the scaffold's commit from check 8) as asked, and concluded the
+split is defensible, calling the upgrade-writes-no-entry exclusion *"a difference
+of degree, not kind"* while granting the difference is real. That is the weakest
+point of this case and it stays stated rather than resolved.
