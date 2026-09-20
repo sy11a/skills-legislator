@@ -51,7 +51,7 @@ Everything behind `Test` had never executed. Walked on real runners, in order:
 | 35522288742 | the names: one test on macOS (above), **71 on Windows across 24 classes** |
 | 35522537537 | a marked one-run probe let `win-x64` past `Test`: **all four RIDs build, publish and upload** (2.2–2.5 MB each). Withdrawn in the next commit |
 
-## What is left, and it is not this case's to decide
+## What is left — ruled 2026-09-20: port
 
 **legislator has never been exercised on Windows, and it is not portable there.**
 The 71 are not one cause. Some are the tests' own assumptions (`/usr/bin/dotnet`
@@ -63,8 +63,13 @@ releases `win-x64` ships a binary whose audit is wrong there.
 
 So `dotnet` is now red for a reason, on one job, and says which tests. Whether
 `win-x64` is ported, dropped from the released RIDs, or built without being held
-to the suite is a ruling on what the edition releases (operator ruling
+to the suite was a ruling on what the edition releases (operator ruling
 2026-09-04 made it four RIDs; `evals/check_static.py` holds the matrix to them).
+
+**The operator ruled the same day: port.** The four-RID ruling stands, and the
+Windows job stays held to the suite — red, honestly, until the port lands. That
+work is BL-372 (`sy11a/Architector#436`), and this case closes without it: its
+promise was a red that means something, and this one names 71 tests.
 
 ## Verification
 
