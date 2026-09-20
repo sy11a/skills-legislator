@@ -12,6 +12,41 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+# read_figure <name>: the last `<name>: N` line of a Microsoft.Testing.Platform summary
+# on standard input, or nothing.
+#
+# Colour and line endings are the terminal's, not the summary's: a runner's terminal wraps
+# the line in SGR sequences and a Windows one ends it in CR, and a reader anchored to the
+# bare line reads neither. Both are removed before the line is read. The expressions are
+# the portable ones - BSD sed on a macOS runner has no `\+` and no `\x1b`.
+read_figure() {
+  local esc; esc="$(printf '\033')"
+  tr -d '\r' | sed "s/${esc}\[[0-9;]*[A-Za-z]//g" | sed -n "s/^ *$1: \([0-9][0-9]*\) *\$/\1/p" | tail -1
+}
+
+# The reader is checked before it is believed (BL-370). A summary it cannot read is
+# reported as "zero tests ran", so a reader that is wrong reddens a green suite - and did,
+# on every runner, for every run of the release matrix from the day it was written.
+self_test() {
+  local esc cr bad=0 got
+  esc="$(printf '\033')"; cr="$(printf '\r')"
+  expect() { # <label> <want> <summary text>
+    got="$(printf '%s\n' "$3" | read_figure total)"
+    if [ "$got" = "$2" ]; then echo "ok    reader: $1"; else echo "FAIL  reader: $1 - want '$2', read '$got'"; bad=1; fi
+  }
+  expect "a plain summary"                          36 "  total: 36"
+  expect "a coloured summary (a runner's terminal)" 36 "${esc}[m  total: 36"
+  expect "colour on both sides"                     36 "${esc}[32m  total: 36${esc}[m"
+  expect "a CRLF summary (a Windows runner)"        36 "  total: 36${cr}"
+  expect "the last count wins"                      7  "  total: 36
+  total: 7"
+  expect "no count is read as no count"             "" "Test run summary: Passed!"
+  expect "a count inside prose is not a count"      "" "the total: 36 of them"
+  return $bad
+}
+if [ "${1:-}" = "--self-test" ]; then self_test; exit $?; fi
+self_test >/dev/null || { self_test || true; echo "FAIL  the summary reader failed its own controls - nothing it reports can be believed"; exit 1; }
+
 dotnet build src/Legislator.slnx -warnaserror --nologo
 
 total=0
@@ -24,8 +59,8 @@ for proj in tests/*.Tests; do
 
   out="$(dotnet exec "$dll" 2>&1)" || true
   echo "$out" | tail -6
-  count="$(printf '%s\n' "$out" | sed -n 's/^ *total: \([0-9]\+\)$/\1/p' | tail -1)"
-  fails="$(printf '%s\n' "$out" | sed -n 's/^ *failed: \([0-9]\+\)$/\1/p' | tail -1)"
+  count="$(printf '%s\n' "$out" | read_figure total)"
+  fails="$(printf '%s\n' "$out" | read_figure failed)"
 
   # A run that names no count, or names zero, is an instrument fault — never a
   # pass. This is the whole reason the discovery layer was taken out.
@@ -44,4 +79,6 @@ if [ ${#failed_projects[@]} -gt 0 ]; then
 fi
 echo "all $total .NET tests passed"
 
-dotnet publish src/Legislator.Cli -c Release -r linux-x64 -o artifacts/linux-x64 --nologo
+# The AOT smoke publishes THIS host's RID. It named linux-x64 outright, which no Windows or
+# macOS job of the release matrix can build - unseen, because no job had ever got this far.
+tools/publish-legislator.sh
