@@ -579,7 +579,19 @@ public sealed partial class AuditChecks(JobContext job, SkillPackage skill)
         var path = $"{layout.Root}/{relative}";
         if (!Exists(path))
         {
-            yield break;   // absent is the ladder's own declared fallback (core/verification.md)
+            // ABSENT IS SILENT, and the reasoning is worth keeping because the refutation round
+            // argued the other way. It proposed an Info line noting that the kernel's merge queue
+            // throws on an absent bindings file rather than parking (sy11a/Architector#398), so an
+            // operator reading an all-clean audit gets no signal. The point is right; the line is
+            // wrong. Absence is the ladder's own declared fallback, five repositories of this fleet
+            // are in that state today, and a note on every audit of every one of them is a class of
+            // item that yields no action — which core/artifact-lifecycle.md requires be excluded
+            // mechanically rather than left for a human to filter. A worklist that is mostly noise
+            // gets ignored, and this check's one real finding would be ignored with it.
+            //
+            // The signal belongs where it is actionable: the kernel issue, and core/verification.md,
+            // which now states the form.
+            yield break;
         }
 
         var rows = 0;
@@ -604,7 +616,11 @@ public sealed partial class AuditChecks(JobContext job, SkillPackage skill)
 
         if (rows == 0)
         {
-            yield return new(Severity.Warning, "bindings-form",
+            // CRITICAL, not Warning. A gate set the kernel reads as empty means every task in
+            // this repository merges with its gate stage passing — a silent bypass of the whole
+            // gate system, the release's primary quality control. Warning is the audit's middle
+            // severity and would read as "noted, will fix later".
+            yield return new(Severity.Critical, "bindings-form",
                 $"{relative}: declares no gate row a machine can read \u2014 a gate is one row of a "
                 + "three-column table `| name | command | what it proves |`, and prose declares nothing. "
                 + "Zero rows is read as no gates at all, and a gate set with no rows is not one that passed "

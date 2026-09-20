@@ -17,9 +17,9 @@ A task is not done when the code compiles — it is done when the change has bee
 
 So the form is law, and it is deliberately the smallest form that can be read:
 
-- A gate is **one row of a three-column Markdown table**: `| <name> | <command> | <what it proves> |`. Exactly three cells between four pipes; a leading and a trailing pipe are required.
+- A gate is **one row of a three-column Markdown table**: `| name | command | what it proves |`. Exactly three cells between four pipes; a leading and a trailing pipe are required. (Those three words are the columns' meaning, not required text.)
 - The **first** cell is the gate's name, the **second** is the command (run from the repository root, backticks optional), the **third** is what it proves or what binds it.
-- A row whose first cell is literally `Gate`, or is only dashes and colons, is a header or separator and is skipped. **A header is optional**; the reader does not require one and does not read the heading text.
+- A row whose first cell is literally `Gate`, or is only dashes and colons, is a header or separator and is skipped. **A header is optional**; the reader does not require one and **never reads the heading text at all** — which is why the third column is called *what it proves* here, *Bound by* in the kernel's own record, and something else again in some repositories, with no consequence. The third cell is free prose for a human; only its presence is read.
 - **A `|` inside a command breaks its row.** Where a command needs one, bind it in a script and name the script.
 - Prose, bullets, and fenced blocks are **not** gate rows. A file made of them declares nothing, however carefully it is written.
 

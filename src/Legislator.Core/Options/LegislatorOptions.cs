@@ -81,7 +81,8 @@ public sealed record LegislatorOptions
     /// <summary>The closed substring whose presence names the release-branch convention; check 21 requires it of a waterflow repository (design C-3).</summary>
     public OptionValue<string> ReleaseBranchMarker { get; init; } = new("Release branch:", OptionsLayer.Defaults);
 
-    /// <summary>The repository's gate declaration, parsed into rows by the kernel's merge queue and checked for readability by check 22 (sy11a/Architector#398).</summary>
+    /// <summary>The repository's gate declaration, parsed into rows by the kernel's merge queue and checked for readability by check 22 (sy11a/Architector#398).
+    /// <para>THIS MUST MATCH THE PATH THE KERNEL READS. foundry hardcodes it (<c>GateAdapter.BindingsPath</c>); this check is the kernel's proxy, so changing the option here certifies a file the kernel does not read.</para></summary>
     public OptionValue<string> BindingsFile { get; init; } = new(".claude/rules/verification.md", OptionsLayer.Defaults);
 
     public OptionValue<string> SkillVersionFile { get; init; } = new("VERSION", OptionsLayer.Defaults); // under the skill package

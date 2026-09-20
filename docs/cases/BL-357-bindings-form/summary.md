@@ -60,7 +60,7 @@ And it is silent on Architector, foundry and dev-flow, which declare real tables
 
 | Gate | Result |
 |---|---|
-| `bash evals/check_dotnet.sh` | **703 tests pass** — 6 added, plus the theory case the new option adds |
+| `bash evals/check_dotnet.sh` | **705 tests pass** — 8 added, plus the theory case the new option adds |
 | `python3 evals/check_static.py` | all static checks pass — **after it caught two of this case's own violations** |
 | `legislator audit` over this repository | `bindings-form` among the clean checks |
 
@@ -112,3 +112,59 @@ is two edits and looks like one.
 It is also the reason the red mattered: the pull request had already been opened
 when the suite failed, so the failure is stated here rather than quietly amended
 away. The arm is added and the suite is green at 703.
+
+## The refutation round, run late and said so
+
+The pull request was opened **before** this round, against the standing rule, and
+its suite was red when it went up. The brief told the refuter both. **No
+BLOCKING; two SERIOUS and five MINOR.**
+
+**The claim that mattered held.** It diffed the check's parse against the
+kernel's rule by rule and found them **byte-for-byte equivalent** — no case where
+the check says *readable* and the kernel reads zero, or the reverse. That is the
+one claim whose failure would have been dangerous, because it would be a green
+the reader will not honour.
+
+**SERIOUS — the template asserted a universal the law contradicts.** It said the
+`legislator anchors` row is *"runnable in every repository that carries this
+constitution"*. `core/verification.md` says, on its own line 10: *"Where the
+`legislator` binary is absent the rung cannot run at all."* Qualified, and
+pointed at the better answer — keep the row and say so in its third cell, because
+**a gate that cannot run is a different thing from a gate nobody declared, and
+only one of them is visible**.
+
+**SERIOUS — the severity was wrong.** A gate set the kernel reads as empty means
+every task in that repository merges with its gate stage passing: a silent bypass
+of the release's primary quality control. Warning is the audit's middle severity
+and reads as *noted, will fix later*. It is **Critical** now.
+
+**MINOR, taken:** the angle brackets in the form invited a literal reading; the
+third column is called three different things across the law, the template and
+the kernel's own record, so the law now says plainly that **the header is never
+read and the third cell is free prose**; the option's doc comment names its
+coupling to the path foundry hardcodes; and two tests were missing — a `|` inside
+a command (the one form rule with its own bullet and no test) and the real
+migration shape, one row beside leftover prose.
+
+## Where the round was half right, and the half I did not take
+
+It proposed an **Info line on an absent file**, so an operator reading an
+all-clean audit would know the kernel's merge queue throws on absence rather than
+parking. The point is right. The line is wrong: **five repositories of this fleet
+have no bindings file**, so it would print on every audit of every one of them —
+a class of item that yields no action, which `core/artifact-lifecycle.md`
+requires be excluded mechanically rather than left for a human to filter. A
+worklist that is mostly noise gets ignored, and this check's one real finding
+would be ignored with it.
+
+Implemented, then reverted when the pinned clean-report test went red — which is
+how the cost showed itself. The reasoning is now a comment in the check and a
+test that pins it, so the next person to have the same good idea meets the
+argument rather than the silence.
+
+## And a mistake of my own, in the fixing
+
+The first attempt to write that reasoning spliced on `if (!Exists(path))` — a
+line that occurs in more than one check — and **cut the keep-list check in half**.
+The build caught it. Re-applied anchored on lines that are unique. An index into
+a file is a position, not a meaning.

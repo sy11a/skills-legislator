@@ -91,10 +91,55 @@ public sealed class Check22BindingsFormTests
     }
 
     /// <summary>
-    /// An absent file is the ladder's own declared fallback (`core/verification.md`: "When that
-    /// file is absent, the ladder still applies with repo defaults"), so this check says nothing
-    /// about it. That it is a *worse* state for the merge queue than zero rows is a kernel defect,
-    /// filed separately, and not this check's to report.
+    /// The one form rule that got its own bullet in the law, and had no test: a `|` inside a
+    /// command breaks its row. The kernel splits on `|` and demands five pieces, so a sixth piece
+    /// skips the row — silently, there and here.
+    /// </summary>
+    [Fact]
+    public void Given_a_pipe_inside_the_command_When_audit_runs_Then_that_row_does_not_count()
+    {
+        var report = AuditFixture.Over(new()
+        {
+            [Path] = "| Gate | Command | What it proves |\n"
+                   + "|---|---|---|\n"
+                   + "| test | `dotnet test | tail -1` | it runs |\n",
+        });
+
+        Assert.NotEmpty(AuditFixture.Findings(report, Slug));
+    }
+
+    /// <summary>
+    /// The real migration shape: one gate converted to a table row, the rest left as prose. The
+    /// check is silent — correctly, because the file **does** declare a readable row — and the
+    /// prose gates are invisible to the kernel. The check answers *is anything readable*, never
+    /// *is everything here readable*, and this test pins that boundary so nobody reads a green as
+    /// the second thing.
+    /// </summary>
+    [Fact]
+    public void Given_one_real_row_beside_prose_gates_When_audit_runs_Then_it_is_silent()
+    {
+        var report = AuditFixture.Over(new()
+        {
+            [Path] = "# Verification Bindings\n\n"
+                   + "- build: run `dotnet build -warnaserror` from the root.\n"
+                   + "- e2e: drive the app through Playwright.\n\n"
+                   + "| anchors | `legislator anchors` | it resolves |\n",
+        });
+
+        Assert.Empty(AuditFixture.Findings(report, Slug));
+    }
+
+    /// <summary>
+    /// An absent file is silent — and this test pins the reasoning, because the refutation round
+    /// argued for an Info note here and the argument was half right. Absence is the ladder's own
+    /// declared fallback (`core/verification.md`: "When that file is absent, the ladder still
+    /// applies with repo defaults"), five repositories of this fleet are in that state, and a note
+    /// on every audit of every one of them is a class of item that yields no action —
+    /// `core/artifact-lifecycle.md` requires such a class to be excluded mechanically. A worklist
+    /// that is mostly noise gets ignored, and this check's one real finding would go with it.
+    ///
+    /// That the kernel handles absence *worse* than zero rows — it throws rather than parking —
+    /// is true and is filed as a kernel defect. It is not reportable here without paying that cost.
     /// </summary>
     [Fact]
     public void Given_no_bindings_file_at_all_When_audit_runs_Then_this_check_says_nothing()

@@ -18,6 +18,12 @@ run, a corpus check, a self-test. A row whose command contains a `|` breaks: bin
 such a command in a script and name the script here.
 
 **A repository with no build and no tests still declares.** The row above is
-runnable in every repository that carries this constitution, so there is always
-at least one. Never leave this file absent to mean "no gates": absent and empty
-are different states to the machine, and the worse one is silent.
+runnable wherever the `legislator` binary is on `PATH`, which is where this
+constitution is worked — and `core/verification.md` is explicit that **where the
+binary is absent the rung cannot run at all**, which is a gap to close, not a
+reason to write prose here instead. If that is your situation, keep the row and
+say so in its third cell; a gate that cannot run is a different thing from a gate
+nobody declared, and only one of them is visible.
+
+Never leave this file absent to mean "no gates": absent and empty are different
+states to the machine, and the worse one is silent.
