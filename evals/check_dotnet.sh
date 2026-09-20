@@ -58,13 +58,16 @@ for proj in tests/*.Tests; do
   [ -f "$dll" ] || { echo "FAIL  $name: no test module at $dll — it did not build"; exit 1; }
 
   out="$(dotnet exec "$dll" 2>&1)" || true
-  echo "$out" | tail -6
-  count="$(printf '%s\n' "$out" | read_figure total)"
   fails="$(printf '%s\n' "$out" | read_figure failed)"
+  # A red module prints everything it said: a count of failures with no names is a red
+  # nobody can act on, and on a runner the log is the only thing that survives the job.
+  if [ "${fails:-0}" -eq 0 ]; then echo "$out" | tail -6; else echo "$out"; fi
+  count="$(printf '%s\n' "$out" | read_figure total)"
 
   # A run that names no count, or names zero, is an instrument fault — never a
   # pass. This is the whole reason the discovery layer was taken out.
   if [ -z "$count" ] || [ "$count" -eq 0 ]; then
+    [ "${fails:-0}" -eq 0 ] && echo "$out"
     echo "FAIL  $name: zero tests ran — the module reported no count; the runner is broken, not the suite"
     exit 1
   fi
