@@ -30,7 +30,7 @@ public sealed partial class AuditChecks(JobContext job, SkillPackage skill)
         "foreign-structures", "keep-list", "project-rules", "stray-rulebooks",
         "glossary-vitality", "skill-bindings", "okf-anchors", "legacy-home-violation",
         "okf-sync-debt", "tracker-drift", "case-collisions", "arm-integrity",
-        "waterflow-mode",
+        "waterflow-mode", "bindings-form",
     ];
 
     /// <summary>A check's place in the pinned order, and the far end for anything the model named that the order does not - an unknown slug prints last rather than crashing the report.</summary>
@@ -110,6 +110,7 @@ public sealed partial class AuditChecks(JobContext job, SkillPackage skill)
         result.AddRange(Check19CaseCollisions(read));
         result.AddRange(Check20ArmIntegrity());
         result.AddRange(Check21WaterflowMode(entry));
+        result.AddRange(Check22BindingsForm());
         return result;
     }
 
@@ -557,6 +558,57 @@ public sealed partial class AuditChecks(JobContext job, SkillPackage skill)
         {
             yield return new(Severity.Warning, "waterflow-mode",
                 $"{entry}: declares the waterflow mode but names no release branch → add a line naming it, e.g. \"- Release branch: release/0\"");
+        }
+    }
+
+    /// <summary>
+    /// 22 — the gate declaration a machine reads. `.claude/rules/verification.md` carries the
+    /// repository's gates as rows of a three-column table, and the kernel's merge queue reads it
+    /// that way. A file written as prose parses to ZERO rows, and zero rows is not a gate set that
+    /// passed: two products shipped a whole release in that state, honestly written and unreadable
+    /// (sy11a/Architector#398). Nothing said the file had a form until `core/verification.md` was
+    /// given one; this is the act that says so where it costs nothing to hear.
+    ///
+    /// It mirrors the kernel's own parse deliberately — exactly three cells between four pipes,
+    /// the `Gate` header and the separator skipped — because a check that is kinder than the
+    /// reader it stands in for reports a green the reader will not honour.
+    /// </summary>
+    private IEnumerable<AuditFinding> Check22BindingsForm()
+    {
+        var relative = ".claude/rules/verification.md";
+        var path = $"{layout.Root}/{relative}";
+        if (!Exists(path))
+        {
+            yield break;   // absent is the ladder's own declared fallback (core/verification.md)
+        }
+
+        var rows = 0;
+        foreach (var line in Read(path).ReplaceLineEndings("\n").Split('\n'))
+        {
+            var cells = line.Split('|');
+            if (cells.Length != 5)
+            {
+                continue;
+            }
+
+            var name = cells[1].Trim();
+            if (name.Length == 0
+                || string.Equals(name, "Gate", StringComparison.Ordinal)
+                || name.All(c => c is '-' or ':'))
+            {
+                continue;
+            }
+
+            rows++;
+        }
+
+        if (rows == 0)
+        {
+            yield return new(Severity.Warning, "bindings-form",
+                $"{relative}: declares no gate row a machine can read \u2014 a gate is one row of a "
+                + "three-column table `| name | command | what it proves |`, and prose declares nothing. "
+                + "Zero rows is read as no gates at all, and a gate set with no rows is not one that passed "
+                + "\u2192 write the gates as table rows (core/verification.md)");
         }
     }
 
