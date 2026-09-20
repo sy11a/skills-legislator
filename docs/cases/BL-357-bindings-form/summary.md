@@ -60,7 +60,7 @@ And it is silent on Architector, foundry and dev-flow, which declare real tables
 
 | Gate | Result |
 |---|---|
-| `bash evals/check_dotnet.sh` | **702 tests pass** — 6 added |
+| `bash evals/check_dotnet.sh` | **703 tests pass** — 6 added, plus the theory case the new option adds |
 | `python3 evals/check_static.py` | all static checks pass — **after it caught two of this case's own violations** |
 | `legislator audit` over this repository | `bindings-form` among the clean checks |
 
@@ -94,3 +94,21 @@ parking. That is foundry's case, and `#398` stays open for it.
 Neither would have been caught by reading. Both were caught by a gate this
 repository wrote against itself — which is the argument of the whole case, paid
 inside it.
+
+## And the trap this repository had already paid for once
+
+Adding `options.BindingsFile` put the key in the option map and **not** in
+`OptionsComposer.Apply`. The suite went red at once:
+
+```
+BindingsFile is in KeyMap but not applied
+```
+
+That is `Every_key_is_settable_from_a_layer`, a theory over every key in the map
+— and it is the **same trap** this repository fixed four days ago in commit
+`c17ca65`, *"fix: missing ChangesDir arm in OptionsComposer.Apply"*. A new option
+is two edits and looks like one.
+
+It is also the reason the red mattered: the pull request had already been opened
+when the suite failed, so the failure is stated here rather than quietly amended
+away. The arm is added and the suite is green at 703.
