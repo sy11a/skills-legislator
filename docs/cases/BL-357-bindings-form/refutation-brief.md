@@ -20,10 +20,10 @@ every task in a zero-row repository merges with its gate stage passing.
 This change is the **law and scaffold half**: a form in `core/verification.md`, a
 template the skill had never shipped, and audit check 22 `bindings-form`.
 
-The work is in `/home/admin/Repository/legislator-357` (branch
+The work is in `<repo>` (branch
 `bl/357-bindings-form`) — **read it, do not write to it.** Its whole diff is also
 `.refutation/legislator-bl-357.patch`. legislator's master is
-`/home/admin/Repository/custom_skills/legislator`.
+`<repo>`.
 
 ## The claims to check rather than inherit
 
@@ -44,9 +44,9 @@ The work is in `/home/admin/Repository/legislator-357` (branch
    now claims?
 4. **"It fires on the two products and is silent on the three."** Run it
    yourself: `legislator audit --root <repo> --skill
-   /home/admin/Repository/legislator-357/skill` over `aidispatcher`, `runpool`,
+   <repo>/skill` over `aidispatcher`, `runpool`,
    `Architector`, `foundry`, `dev-flow`. Use the binary at
-   `/home/admin/Repository/legislator-357/artifacts/linux-x64/legislator`.
+   `<repo>/artifacts/linux-x64/legislator`.
    **Do not run `dotnet`.**
 5. **"Absence is deliberately silent."** The case argues an absent file is a
    lawful fallback by `core/verification.md`'s own last clause, and that the

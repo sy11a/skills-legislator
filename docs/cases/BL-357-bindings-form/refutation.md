@@ -61,7 +61,7 @@ The template declares exactly one gate row. The kernel reads it correctly.
 
 ## Claim 4 — "It fires on the two products and is silent on the three"
 
-**Confirmed.** Ran the binary at `/home/admin/Repository/legislator-357/artifacts/linux-x64/legislator` against all five repos:
+**Confirmed.** Ran the binary at `<repo>/artifacts/linux-x64/legislator` against all five repos:
 
 | Repository | Result |
 |-----------|--------|

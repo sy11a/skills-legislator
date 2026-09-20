@@ -112,6 +112,7 @@ This table is the only statement of what an invocation mode may do to a file in 
 | `docs/adr/0001-record-architecture-decisions.md` | `adr-0001.md.tpl` | Used verbatim, no placeholders |
 | `docs/adr/template.md` | `adr-template.md.tpl` | Copied verbatim — its `{{...}}` tokens are intentional and must NOT be filled in (see the note above the table) |
 | `docs/journal/README.md` | `journal-README.md.tpl` | Used verbatim, no placeholders |
+| `docs/journal/<today>.md` | `journal-scaffold-entry.md.tpl` | `{{TODAY}}` is today's date in `YYYY-MM-DD`, and the file is named for it; `{{EDITION}}` the constitution version; `{{STACKS}}` Step 2's confirmed list, or `none` where there is none. **Fresh-scaffold mode only** — an upgrade writes no entry, because the day's work is the upgrading repository's to record. Without it a freshly scaffolded repository fails its own audit on the day it is created: the scaffold commits paths outside `docs/` and `journal-recency` reads exactly that (`sy11a/Architector#364`, found independently by two unattended runs on two subscriptions) |
 | `docs/changes/README.md` | `changes-README.md.tpl` | Used verbatim, no placeholders — the fragment home (`docs/changes/<case>.md`, per `core/changelog.md`) |
 | `CHANGELOG.md` | `changelog.md.tpl` | Used verbatim, no placeholders |
 | `docs/cases/README.md` | `cases-README.md.tpl` | Used verbatim, no placeholders — the case home (`docs/cases/BL-NNN/`, per `core/sdd.md`) |
