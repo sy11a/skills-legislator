@@ -51,9 +51,6 @@ jobs:
       # measured locally. The variable stays outside the LEGISLATOR_* namespace, which the
       # binary reads as option keys and refuses by name (R-8210).
       - name: Test
-        # PROBE (BL-370) - reverted before review: lets the Windows job past its red suite once,
-        # to see whether Publish and the upload work there at all.
-        continue-on-error: ${{ matrix.rid == 'win-x64' }}
         env:
           STARTUP_BUDGET_SKIP: '1'
         run: bash evals/check_dotnet.sh
