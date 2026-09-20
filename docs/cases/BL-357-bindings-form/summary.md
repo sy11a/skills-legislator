@@ -61,7 +61,7 @@ And it is silent on Architector, foundry and dev-flow, which declare real tables
 | Gate | Result |
 |---|---|
 | `bash evals/check_dotnet.sh` | **702 tests pass** — 6 added |
-| `python3 evals/check_static.py` | all static checks pass |
+| `python3 evals/check_static.py` | all static checks pass — **after it caught two of this case's own violations** |
 | `legislator audit` over this repository | `bindings-form` among the clean checks |
 
 The six tests are the shapes that matter: prose is a finding; a three-column
@@ -75,3 +75,22 @@ nothing.
 **The kernel.** `MergeQueueDriver` still reports green over zero rows where
 `ReleaseEndDriver` refuses, and still throws on an absent file instead of
 parking. That is foundry's case, and `#398` stays open for it.
+
+
+## What this repository's own static law caught, in this case's work
+
+`check_static.py` failed twice on the first draft, and both were real:
+
+- **`AuditChecks.cs` carried a path literal.** I hardcoded
+  `.claude/rules/verification.md` in the check. Repo law C-03 says add an option
+  instead, and every neighbouring check reads one. It is now
+  `options.BindingsFile`, declared, named in the option map, and printed by
+  `config show` like the rest.
+- **`SKILL.md` carried authority-shaped prose outside the File authority table.**
+  My scaffold note said the file is *"the repository's own and is never
+  overwritten"* — which is an authority claim, and authority claims live in one
+  table. Reworded to state the Step 4 rule that already covers it.
+
+Neither would have been caught by reading. Both were caught by a gate this
+repository wrote against itself — which is the argument of the whole case, paid
+inside it.

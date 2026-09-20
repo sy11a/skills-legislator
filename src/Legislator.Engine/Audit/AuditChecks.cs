@@ -575,7 +575,7 @@ public sealed partial class AuditChecks(JobContext job, SkillPackage skill)
     /// </summary>
     private IEnumerable<AuditFinding> Check22BindingsForm()
     {
-        var relative = ".claude/rules/verification.md";
+        var relative = options.BindingsFile.Value;
         var path = $"{layout.Root}/{relative}";
         if (!Exists(path))
         {

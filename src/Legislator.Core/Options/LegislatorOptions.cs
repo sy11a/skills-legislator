@@ -81,6 +81,9 @@ public sealed record LegislatorOptions
     /// <summary>The closed substring whose presence names the release-branch convention; check 21 requires it of a waterflow repository (design C-3).</summary>
     public OptionValue<string> ReleaseBranchMarker { get; init; } = new("Release branch:", OptionsLayer.Defaults);
 
+    /// <summary>The repository's gate declaration, parsed into rows by the kernel's merge queue and checked for readability by check 22 (sy11a/Architector#398).</summary>
+    public OptionValue<string> BindingsFile { get; init; } = new(".claude/rules/verification.md", OptionsLayer.Defaults);
+
     public OptionValue<string> SkillVersionFile { get; init; } = new("VERSION", OptionsLayer.Defaults); // under the skill package
 
     /// <summary>The stack a project file of one of <see cref="DotnetProjectPatterns"/> makes a candidate for; also the name of its directory under the skill's rule stacks.</summary>
@@ -202,6 +205,7 @@ public sealed record LegislatorOptions
         ["stacks_dir"] = nameof(StacksDir),
         ["legislation_marker"] = nameof(LegislationMarker),
         ["waterflow_mode_marker"] = nameof(WaterflowModeMarker),
+        ["bindings_file"] = nameof(BindingsFile),
         ["release_branch_marker"] = nameof(ReleaseBranchMarker),
         ["skill_version_file"] = nameof(SkillVersionFile),
         ["dotnet_stack"] = nameof(DotnetStack),
@@ -285,6 +289,7 @@ public sealed record LegislatorOptions
         yield return ("stacks_dir", StacksDir.Value, StacksDir.Source);
         yield return ("legislation_marker", LegislationMarker.Value, LegislationMarker.Source);
         yield return ("waterflow_mode_marker", WaterflowModeMarker.Value, WaterflowModeMarker.Source);
+        yield return ("bindings_file", BindingsFile.Value, BindingsFile.Source);
         yield return ("release_branch_marker", ReleaseBranchMarker.Value, ReleaseBranchMarker.Source);
         yield return ("skill_version_file", SkillVersionFile.Value, SkillVersionFile.Source);
         yield return ("dotnet_stack", DotnetStack.Value, DotnetStack.Source);
