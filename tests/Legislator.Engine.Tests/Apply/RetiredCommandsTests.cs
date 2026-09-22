@@ -407,4 +407,118 @@ public sealed class RetiredCommandsTests
         Assert.Empty(plan.Refusals);
         Assert.Equal("legislator anchors  # see docs/ai/engine.py.bak", Assert.Single(plan.Rewrites).After);
     }
+
+    [Theory]
+    // `#` is a comment in a script and a heading in Markdown. Applying shell grammar to an entry
+    // document exempted a heading and an issue line, and the tool was deleted under them.
+    [InlineData("AGENTS.md", "# Gates: `python3 docs/ai/engine.py anchors`")]
+    [InlineData("AGENTS.md", "#142 replaced `python3 docs/ai/engine.py anchors` with the binary")]
+    [InlineData(".claude/rules/verification.md", "# `python3 docs/ai/engine.py anchors`")]
+    public void Given_a_hash_line_in_a_markdown_declaration_When_swept_Then_it_is_not_exempt(string home, string line)
+    {
+        var plan = Plan((home, line + "\n"));
+
+        Assert.True(plan.Rewrites.Count + plan.Refusals.Count == 1, "a markdown '#' line is not a comment");
+        Assert.Empty(plan.Mentions);
+    }
+
+    [Theory]
+    [InlineData("    # python3 docs/ai/engine.py anchors was the gate")]
+    [InlineData("#!/usr/bin/env -S python3 docs/ai/engine.py")]
+    public void Given_a_script_line_When_asked_whether_it_is_a_comment_Then_indentation_and_a_shebang_are_read(string line)
+    {
+        // An indented comment is a comment; a shebang is not, and dropping either bound let a
+        // comment be falsified or a live interpreter line be waved through.
+        var plan = Plan(("tools/gate.sh", line + "\n"));
+
+        if (line.StartsWith("#!", StringComparison.Ordinal))
+        {
+            Assert.Single(plan.Refusals);
+        }
+        else
+        {
+            Assert.Empty(plan.Rewrites);
+            Assert.Empty(plan.Refusals);
+        }
+    }
+
+    [Fact]
+    public void Given_a_line_naming_both_a_retired_rule_and_a_retired_tool_When_swept_Then_the_tool_decides()
+    {
+        // Picking the first path a line names made the split depend on manifest sort order: a
+        // tool sorting after the rules directory was deleted under a live command at exit 0.
+        var fs = ApplyFixture.Repo(new Dictionary<string, string>
+        {
+            ["AGENTS.md"] = "`docs/ai/rules/core/old.md` binds `python3 docs/ai/zz-tool.py check`.\n",
+        });
+
+        var plan = RetiredCommands.Of(
+            fs, ApplyFixture.Options, ApplyFixture.Layout,
+            ["docs/ai/rules/core/old.md", "docs/ai/zz-tool.py"]);
+
+        Assert.Single(plan.Refusals);
+        Assert.Empty(plan.Mentions);
+    }
+
+    [Fact]
+    public void Given_a_real_alias_that_is_a_symlink_When_swept_Then_it_is_not_a_second_declaration()
+    {
+        // All four repositories have a real `CLAUDE.md → AGENTS.md`; taking the link as a home
+        // would report and rewrite the same line twice.
+        //
+        // **This control does not pin the `LinkTarget` bound, and says so rather than pretending.**
+        // The fake file system does not resolve a link on read, so with the bound removed the
+        // alias is read as empty and nothing changes here — a mutation of that line survives this
+        // test and every other in the suite. What pins it is the dry run over the four
+        // repositories, each of which has a real symlinked alias and each of which reports its
+        // one rewrite against `AGENTS.md` alone; that evidence is in the case record, not in this
+        // file, and the gap is named because an unpinned bound a reader believes is pinned is
+        // worse than one they know to check by hand.
+        var fs = ApplyFixture.Repo(new Dictionary<string, string>
+        {
+            ["AGENTS.md"] = $"- `python3 {Retired} anchors`\n",
+        });
+        fs.File.CreateSymbolicLink($"{ApplyFixture.Root}/CLAUDE.md", "AGENTS.md");
+
+        var plan = RetiredCommands.Of(fs, ApplyFixture.Options, ApplyFixture.Layout, [Retired]);
+
+        Assert.Equal("AGENTS.md", Assert.Single(plan.Rewrites).Relative);
+    }
+
+    [Theory]
+    [InlineData("tools/tests/snapshot.md")]
+    [InlineData("tools/fixtures/snapshot.md")]
+    public void Given_a_document_under_one_frozen_path_When_swept_Then_that_clause_alone_makes_it_a_record(string home)
+    {
+        // The two clauses had one control between them, on a path containing both segments.
+        var plan = Plan((home, $"the gate was `python3 {Retired} anchors`\n"));
+
+        Assert.Empty(plan.Mentions);
+        Assert.Equal(1, plan.Records);
+    }
+
+    [Fact]
+    public void Given_a_CRLF_file_When_a_line_is_rewritten_Then_the_reported_number_is_the_line_it_is()
+    {
+        // Splitting `\r\n` as two endings kept the bytes right and made every reported line
+        // number on a CRLF file off by the lines above it.
+        var fs = ApplyFixture.Repo(new Dictionary<string, string>
+        {
+            ["tools/gate.sh"] = $"#!/bin/sh\r\nrun anchors python3 {Retired} anchors\r\n",
+        });
+        var plan = RetiredCommands.Of(fs, ApplyFixture.Options, ApplyFixture.Layout, [Retired]);
+
+        Assert.Equal(2, Assert.Single(plan.Rewrites).Line);
+    }
+
+    [Fact]
+    public void Given_a_different_file_whose_name_extends_the_retired_one_with_a_hyphen_When_swept_Then_it_is_not_named()
+    {
+        // Under a default of refusal, dropping `-` from the name bound turns this into a false
+        // refusal that blocks the upgrade.
+        var plan = Plan(("tools/gate.sh", $"cp {Retired}-old /tmp/x\n"));
+
+        Assert.Empty(plan.Refusals);
+        Assert.Empty(plan.Rewrites);
+    }
 }

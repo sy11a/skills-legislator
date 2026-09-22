@@ -93,7 +93,12 @@ public static partial class RetiredCommands
             for (var i = 0; i < lines.Count; i++)
             {
                 var line = lines[i].Text;
-                var named = retiring.FirstOrDefault(path => Names(line, path));
+                // **Every path the line names, not the first.** Picking one made the law/tool
+                // split depend on manifest sort order: a line naming both a retired rule and a
+                // retired tool was classified by whichever sorted earlier, and a tool sorting
+                // after the rules directory was deleted under a live command at exit 0.
+                var namedTool = tools.FirstOrDefault(path => Names(line, path));
+                var named = namedTool ?? retiring.FirstOrDefault(path => Names(line, path));
                 if (named is null)
                 {
                     continue;
@@ -101,12 +106,12 @@ public static partial class RetiredCommands
 
                 // A comment is neither rewritten nor refused: rewriting one falsifies a record
                 // of what the gate used to be, and refusing offers a remedy that would.
-                var rewritten = isDeclaration && !IsComment(line) ? Rewrite(line, named) : null;
+                var rewritten = isDeclaration && !IsComment(relative, line) ? Rewrite(line, named) : null;
                 if (rewritten is not null)
                 {
                     rewrites.Add(new Edit(relative, i + 1, line, rewritten));
                 }
-                else if (isDeclaration && tools.Contains(named, StringComparer.Ordinal) && !IsComment(line))
+                else if (isDeclaration && namedTool is not null && !IsComment(relative, line))
                 {
                     // Refusal is the default here, whether or not the rewrite could read the
                     // line: the shapes it cannot read are the ones a migration must not guess at.
@@ -199,13 +204,27 @@ public static partial class RetiredCommands
     }
 
     /// <summary>
-    /// A shell comment. A fixture script that <em>describes</em> the old gate in a comment is not
+    /// A comment <b>in a script</b>. A fixture script that <em>describes</em> the old gate is not
     /// a gate, and stopping an upgrade over one offers a remedy — edit it by hand — that would
-    /// rewrite a record. A comment is the one shape in a declaration home that is not refused.
+    /// rewrite a record.
     /// </summary>
-    public static bool IsComment(string line)
+    /// <remarks>
+    /// <b>`#` is shell grammar, not Markdown's.</b> The first version applied it to every
+    /// declaration home, so a heading or an issue line in an entry document — `# Gates` above the
+    /// command, `#142 removed the old gate` — exempted itself and the tool was deleted under it
+    /// at exit 0. A script is where a `#` line is a comment; in Markdown it is a heading, and a
+    /// heading naming a retired tool is as much a declaration as the line below it. A shebang is
+    /// not a comment in either.
+    /// </remarks>
+    public static bool IsComment(string relative, string line)
     {
+        ArgumentNullException.ThrowIfNull(relative);
         ArgumentNullException.ThrowIfNull(line);
+
+        if (!relative.EndsWith(".sh", StringComparison.Ordinal))
+        {
+            return false;
+        }
 
         var trimmed = line.TrimStart();
         return trimmed.StartsWith('#') && !trimmed.StartsWith("#!", StringComparison.Ordinal);
