@@ -606,4 +606,69 @@ public sealed class RetiredCommandsTests
 
         Assert.Equal("legislator anchors", Assert.Single(plan.Rewrites).After);
     }
+
+    [Fact]
+    public void Given_a_script_home_that_is_a_link_out_of_the_repository_When_swept_Then_it_is_not_read()
+    {
+        // A recursive enumeration follows a directory link and yields a file link as a file, so a
+        // `scripts` link to another repository had that repository's gate rewritten at exit 0 —
+        // the write leaving no trace in the tree the run was pointed at.
+        var fs = ApplyFixture.Repo(new Dictionary<string, string> { ["AGENTS.md"] = "# Entry\n" });
+        fs.AddFile("/outside/gate.sh", new System.IO.Abstractions.TestingHelpers.MockFileData(
+            $"python3 {Retired} anchors\n"));
+        fs.Directory.CreateDirectory($"{ApplyFixture.Root}/tools");
+        fs.File.CreateSymbolicLink($"{ApplyFixture.Root}/tools/gate.sh", "/outside/gate.sh");
+
+        var plan = RetiredCommands.Of(fs, ApplyFixture.Options, ApplyFixture.Layout, [Retired]);
+
+        Assert.Empty(plan.Rewrites);
+        Assert.Empty(plan.Refusals);
+        Assert.Equal($"python3 {Retired} anchors\n", fs.File.ReadAllText("/outside/gate.sh"));
+    }
+
+    [Theory]
+    // A `#` line is a comment in every shape a gate is written in except Markdown.
+    [InlineData("tools/gate.py")]
+    [InlineData("tools/gate.bash")]
+    [InlineData(".github/workflows/ci.yml")]
+    [InlineData("Makefile")]
+    public void Given_a_comment_in_a_script_that_is_not_sh_When_swept_Then_it_is_not_rewritten(string home)
+    {
+        var plan = Plan((home, $"# was: python3 {Retired} anchors\n"));
+
+        Assert.Empty(plan.Rewrites);
+        Assert.Empty(plan.Refusals);
+    }
+
+    [Theory]
+    // "Runnable" as a five-extension denylist made every other retired file a tool, and a bare
+    // mention of one refused the upgrade.
+    [InlineData("docs/ai/diagram.png")]
+    [InlineData("docs/ai/data.csv")]
+    [InlineData("docs/ai/NOTES.MD")]
+    public void Given_a_retired_file_of_a_shape_nothing_runs_When_named_Then_it_is_a_mention(string retired)
+    {
+        var fs = ApplyFixture.Repo(new Dictionary<string, string>
+        {
+            ["AGENTS.md"] = $"The layer carried `{retired}`.\n",
+        });
+
+        var plan = RetiredCommands.Of(fs, ApplyFixture.Options, ApplyFixture.Layout, [retired]);
+
+        Assert.Empty(plan.Refusals);
+        Assert.Equal("AGENTS.md:1", Assert.Single(plan.Mentions));
+    }
+
+    [Fact]
+    public void Given_a_retired_file_with_no_extension_When_named_in_a_declaration_Then_it_is_a_tool()
+    {
+        var fs = ApplyFixture.Repo(new Dictionary<string, string>
+        {
+            ["AGENTS.md"] = "Run `docs/ai/gate` before done.\n",
+        });
+
+        var plan = RetiredCommands.Of(fs, ApplyFixture.Options, ApplyFixture.Layout, ["docs/ai/gate"]);
+
+        Assert.Single(plan.Refusals);
+    }
 }

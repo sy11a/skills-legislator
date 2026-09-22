@@ -229,12 +229,21 @@ public static partial class RetiredCommands
     /// data file are read, never invoked: naming one is a mention, and refusing an upgrade over
     /// the sentence "never hand-edit `docs/ai/manifest.json`" helps nobody.
     /// </summary>
-    private static bool IsRunnable(string path) =>
-        !path.EndsWith(".md", StringComparison.Ordinal)
-        && !path.EndsWith(".json", StringComparison.Ordinal)
-        && !path.EndsWith(".yaml", StringComparison.Ordinal)
-        && !path.EndsWith(".yml", StringComparison.Ordinal)
-        && !path.EndsWith(".txt", StringComparison.Ordinal);
+    private static bool IsRunnable(string path)
+    {
+        // **An allowlist, not a denylist.** Five excluded extensions made every other retired
+        // file a tool — a `.png`, a `.csv`, a `.MD` in another case — and a bare mention of one
+        // refused the upgrade. A tool is a shape something is written in to be run, or a file
+        // with no extension at all.
+        var name = path[(path.LastIndexOf('/') + 1)..];
+        var dot = name.LastIndexOf('.');
+        if (dot < 0)
+        {
+            return true;
+        }
+
+        return RunnableExtensions.Contains(name[dot..], StringComparer.OrdinalIgnoreCase);
+    }
 
     /// <summary>
     /// A comment <b>in a script</b>. A fixture script that <em>describes</em> the old gate is not
@@ -254,7 +263,10 @@ public static partial class RetiredCommands
         ArgumentNullException.ThrowIfNull(relative);
         ArgumentNullException.ThrowIfNull(line);
 
-        if (!relative.EndsWith(".sh", StringComparison.Ordinal))
+        // A `#` line is a comment in every shape a gate is written in except Markdown, where it
+        // opens a heading. Keying the exemption on `.sh` while the homes grew to seven shapes
+        // left a comment in a `.py`, a workflow or a `Makefile` rewritten.
+        if (relative.EndsWith(".md", StringComparison.Ordinal))
         {
             return false;
         }
@@ -318,22 +330,70 @@ public static partial class RetiredCommands
 
     private static bool IsNameCharacter(char c) => char.IsLetterOrDigit(c) || c is '.' or '-' or '_';
 
+    /// <summary>Whether a path is a symbolic link — a thing that is not the file it names.</summary>
+    private static bool IsLink(IFileSystem fs, string path)
+    {
+        try
+        {
+            return fs.FileInfo.New(path).LinkTarget is not null
+                || fs.DirectoryInfo.New(path).LinkTarget is not null;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// Every file under one directory, one level at a time, entering no link and leaving no
+    /// directory it cannot read. A recursive enumeration does both, and each cost an upgrade:
+    /// one wrote into another repository, one failed the run on `/usr/share`.
+    /// </summary>
+    private static List<string> Walk(IFileSystem fs, RepoLayout layout, string directory)
+    {
+        List<string> found = [], pending = [directory];
+        while (pending.Count > 0)
+        {
+            var at = pending[^1];
+            pending.RemoveAt(pending.Count - 1);
+            string[] files, directories;
+            try
+            {
+                files = fs.Directory.GetFiles(at);
+                directories = fs.Directory.GetDirectories(at);
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+                // A directory this run cannot read is named by nothing it can check; refusing the
+                // whole upgrade over one is a worse answer than reading what is readable.
+                continue;
+            }
+
+            foreach (var file in files)
+            {
+                var normalised = file.Replace('\\', '/');
+                if (!IsLink(fs, file) && normalised.StartsWith(layout.Root + "/", StringComparison.Ordinal))
+                {
+                    found.Add(normalised);
+                }
+            }
+
+            pending.AddRange(directories.Where(d => !IsLink(fs, d)));
+        }
+
+        found.Sort(StringComparer.Ordinal);
+        return found;
+    }
+
     /// <summary>Whether a file is something a gate is written in: a known script shape, a workflow, or an executable.</summary>
     private static bool IsScript(IFileSystem fs, string file)
     {
         var name = file.Replace('\\', '/');
-        foreach (var extension in new[] { ".sh", ".bash", ".zsh", ".py", ".ps1", ".yml", ".yaml" })
+        var leaf = name[(name.LastIndexOf('/') + 1)..];
+        var dot = leaf.LastIndexOf('.');
+        if (dot >= 0)
         {
-            if (name.EndsWith(extension, StringComparison.OrdinalIgnoreCase))
-            {
-                return true;
-            }
-        }
-
-        if (name.Contains('.', StringComparison.Ordinal)
-            && name[(name.LastIndexOf('/') + 1)..].Contains('.', StringComparison.Ordinal))
-        {
-            return false;
+            return ScriptExtensions.Contains(leaf[dot..]);
         }
 
         // No extension: on a POSIX host, read it only where the repository marked it runnable.
@@ -352,6 +412,18 @@ public static partial class RetiredCommands
 
         return false;
     }
+
+    /// <summary>The shapes something written to be run is written in.</summary>
+    private static readonly HashSet<string> RunnableExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".sh", ".bash", ".zsh", ".py", ".rb", ".pl", ".ps1", ".js", ".mjs", ".cjs", ".exe",
+    };
+
+    /// <summary>The shapes a gate is written in, beside an executable with no extension at all.</summary>
+    private static readonly HashSet<string> ScriptExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".sh", ".bash", ".zsh", ".py", ".ps1", ".yml", ".yaml",
+    };
 
     /// <summary>One line and the ending it was written with.</summary>
     private readonly record struct Line(string Text, string Ending);
@@ -411,18 +483,25 @@ public static partial class RetiredCommands
         // foundry's `gate.sh` and nothing else: a `Makefile`, a workflow, a `scripts/` directory
         // or a `gate.bash` each ran the retired file and was neither rewritten, refused nor
         // mentioned. A file with no extension is read only where it is marked executable.
+        //
+        // **Never through a link, and never outside the root.** A recursive enumeration follows
+        // a directory symlink and yields a file symlink as a file, so a `scripts` link to another
+        // repository had that repository's gate rewritten at exit 0 — the write leaving no trace
+        // in the tree the run was pointed at — and a link into `/usr/share` or a dangling one
+        // failed the whole upgrade with an unhandled exception. A migration writes inside the
+        // repository it was given, or it does not write.
         foreach (var directory in new[] { $"{layout.Root}/tools", $"{layout.Root}/scripts", $"{layout.Root}/.github" })
         {
-            if (!fs.Directory.Exists(directory))
+            if (!fs.Directory.Exists(directory) || IsLink(fs, directory))
             {
                 continue;
             }
 
-            foreach (var file in fs.Directory.EnumerateFiles(directory, "*", SearchOption.AllDirectories))
+            foreach (var file in Walk(fs, layout, directory))
             {
                 if (IsScript(fs, file))
                 {
-                    yield return file.Replace('\\', '/');
+                    yield return file;
                 }
             }
         }
@@ -430,7 +509,7 @@ public static partial class RetiredCommands
         foreach (var name in new[] { "Makefile", "makefile", "Justfile", "justfile" })
         {
             var path = $"{layout.Root}/{name}";
-            if (fs.File.Exists(path))
+            if (fs.File.Exists(path) && !IsLink(fs, path))
             {
                 yield return path;
             }
