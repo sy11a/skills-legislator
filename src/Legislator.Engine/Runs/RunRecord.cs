@@ -37,6 +37,13 @@ public static class RunRecord
 
     public const string PreKey = "pre";
 
+    /// <summary>What this run did about commands naming a file the edition retired (BL-397).</summary>
+    public const string RetiredCommandsKey = "retiredCommands";
+
+    public const string RewrittenField = "rewritten";
+
+    public const string MentionedField = "mentioned";
+
     public const string PostKey = "post";
 
     public const string CreatedField = "created";
