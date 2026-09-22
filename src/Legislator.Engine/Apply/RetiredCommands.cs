@@ -81,8 +81,13 @@ public static partial class RetiredCommands
             return new Plan(rewrites, refusals, mentions, 0);
         }
 
-        var law = $"{layout.Relative(layout.Rules)}/";
-        var tools = retiring.Where(p => !p.StartsWith(law, StringComparison.Ordinal)).ToList();
+        // **A tool is something a repository could be asked to run.** "Everything that is not
+        // law" made a retired README, a hand-listed manifest and a rules directory under another
+        // name into tools, so a bare mention of one refused the upgrade — and a `rules_dir` the
+        // options model accepts with a trailing slash produced a prefix no path starts with,
+        // which turned every future rule retirement on that repository into a refusal.
+        var law = layout.Relative(layout.Rules).TrimEnd('/');
+        var tools = retiring.Where(p => IsRunnable(p) && !StartsWith(p, law)).ToList();
         var declarations = Declarations(fs, options, layout).ToHashSet(StringComparer.Ordinal);
         foreach (var file in Candidates(fs, layout, declarations))
         {
@@ -97,8 +102,13 @@ public static partial class RetiredCommands
                 // split depend on manifest sort order: a line naming both a retired rule and a
                 // retired tool was classified by whichever sorted earlier, and a tool sorting
                 // after the rules directory was deleted under a live command at exit 0.
-                var namedTool = tools.FirstOrDefault(path => Names(line, path));
-                var named = namedTool ?? retiring.FirstOrDefault(path => Names(line, path));
+                // **Every retired tool the line names.** Passing one to the rewrite let a second
+                // ride through on the first's clean bill: `legislator anchors && python3
+                // docs/ai/zz-tool.py check` came out rewritten, at exit 0, with `zz-tool.py`
+                // deleted under the half that still runs it.
+                var namedTools = tools.Where(path => Names(line, path)).ToList();
+                var named = namedTools.FirstOrDefault()
+                    ?? retiring.FirstOrDefault(path => Names(line, path));
                 if (named is null)
                 {
                     continue;
@@ -106,12 +116,14 @@ public static partial class RetiredCommands
 
                 // A comment is neither rewritten nor refused: rewriting one falsifies a record
                 // of what the gate used to be, and refusing offers a remedy that would.
-                var rewritten = isDeclaration && !IsComment(relative, line) ? Rewrite(line, named) : null;
+                var rewritten = isDeclaration && !IsComment(relative, line)
+                    ? Rewrite(line, namedTools)
+                    : null;
                 if (rewritten is not null)
                 {
                     rewrites.Add(new Edit(relative, i + 1, line, rewritten));
                 }
-                else if (isDeclaration && namedTool is not null && !IsComment(relative, line))
+                else if (isDeclaration && namedTools.Count > 0 && !IsComment(relative, line))
                 {
                     // Refusal is the default here, whether or not the rewrite could read the
                     // line: the shapes it cannot read are the ones a migration must not guess at.
@@ -176,14 +188,23 @@ public static partial class RetiredCommands
     /// invocations on one line; a rewrite that took the first and then saw the path still there
     /// refused every one of them.
     /// </remarks>
-    public static string? Rewrite(string line, string retired)
+    public static string? Rewrite(string line, string retired) => Rewrite(line, [retired]);
+
+    /// <summary>The same, over every retired tool the line names: all of them must come out clean.</summary>
+    public static string? Rewrite(string line, IReadOnlyCollection<string> retired)
     {
         ArgumentNullException.ThrowIfNull(line);
+        ArgumentNullException.ThrowIfNull(retired);
+
+        if (retired.Count == 0)
+        {
+            return null;
+        }
 
         var any = false;
         var rewritten = Invocation().Replace(line, m =>
         {
-            if (!PathNames(m.Groups["path"].Value, retired))
+            if (!retired.Any(one => PathNames(m.Groups["path"].Value, one)))
             {
                 return m.Value;
             }
@@ -200,8 +221,20 @@ public static partial class RetiredCommands
             any = true;
             return $"legislator {job}";
         });
-        return !any || Names(rewritten, retired) ? null : rewritten;
+        return !any || retired.Any(one => Names(rewritten, one)) ? null : rewritten;
     }
+
+    /// <summary>
+    /// Whether a retired path is something a repository could run. A document and a machine-read
+    /// data file are read, never invoked: naming one is a mention, and refusing an upgrade over
+    /// the sentence "never hand-edit `docs/ai/manifest.json`" helps nobody.
+    /// </summary>
+    private static bool IsRunnable(string path) =>
+        !path.EndsWith(".md", StringComparison.Ordinal)
+        && !path.EndsWith(".json", StringComparison.Ordinal)
+        && !path.EndsWith(".yaml", StringComparison.Ordinal)
+        && !path.EndsWith(".yml", StringComparison.Ordinal)
+        && !path.EndsWith(".txt", StringComparison.Ordinal);
 
     /// <summary>
     /// A comment <b>in a script</b>. A fixture script that <em>describes</em> the old gate is not
@@ -285,6 +318,41 @@ public static partial class RetiredCommands
 
     private static bool IsNameCharacter(char c) => char.IsLetterOrDigit(c) || c is '.' or '-' or '_';
 
+    /// <summary>Whether a file is something a gate is written in: a known script shape, a workflow, or an executable.</summary>
+    private static bool IsScript(IFileSystem fs, string file)
+    {
+        var name = file.Replace('\\', '/');
+        foreach (var extension in new[] { ".sh", ".bash", ".zsh", ".py", ".ps1", ".yml", ".yaml" })
+        {
+            if (name.EndsWith(extension, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        if (name.Contains('.', StringComparison.Ordinal)
+            && name[(name.LastIndexOf('/') + 1)..].Contains('.', StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        // No extension: on a POSIX host, read it only where the repository marked it runnable.
+        // Windows has no such bit, and guessing there would read every extensionless file.
+        if (!OperatingSystem.IsWindows())
+        {
+            try
+            {
+                return (fs.File.GetUnixFileMode(file) & UnixFileMode.UserExecute) != 0;
+            }
+            catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+            {
+                return false;
+            }
+        }
+
+        return false;
+    }
+
     /// <summary>One line and the ending it was written with.</summary>
     private readonly record struct Line(string Text, string Ending);
 
@@ -330,20 +398,41 @@ public static partial class RetiredCommands
             }
         }
 
-        foreach (var (directory, pattern) in new[]
-                 {
-                     ($"{layout.Root}/{options.ProjectRulesDir.Value}", "*.md"),
-                     ($"{layout.Root}/tools", "*.sh"),
-                 })
+        var rules = $"{layout.Root}/{options.ProjectRulesDir.Value}";
+        if (fs.Directory.Exists(rules))
+        {
+            foreach (var file in fs.Directory.EnumerateFiles(rules, "*.md", SearchOption.AllDirectories))
+            {
+                yield return file.Replace('\\', '/');
+            }
+        }
+
+        // **Where a repository may plausibly run its gate from.** `tools/*.sh` alone covered
+        // foundry's `gate.sh` and nothing else: a `Makefile`, a workflow, a `scripts/` directory
+        // or a `gate.bash` each ran the retired file and was neither rewritten, refused nor
+        // mentioned. A file with no extension is read only where it is marked executable.
+        foreach (var directory in new[] { $"{layout.Root}/tools", $"{layout.Root}/scripts", $"{layout.Root}/.github" })
         {
             if (!fs.Directory.Exists(directory))
             {
                 continue;
             }
 
-            foreach (var file in fs.Directory.EnumerateFiles(directory, pattern, SearchOption.AllDirectories))
+            foreach (var file in fs.Directory.EnumerateFiles(directory, "*", SearchOption.AllDirectories))
             {
-                yield return file.Replace('\\', '/');
+                if (IsScript(fs, file))
+                {
+                    yield return file.Replace('\\', '/');
+                }
+            }
+        }
+
+        foreach (var name in new[] { "Makefile", "makefile", "Justfile", "justfile" })
+        {
+            var path = $"{layout.Root}/{name}";
+            if (fs.File.Exists(path))
+            {
+                yield return path;
             }
         }
     }

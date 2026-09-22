@@ -1,4 +1,5 @@
 using System.IO.Abstractions.TestingHelpers;
+using Legislator.Core.Options;
 using Legislator.Core.Repo;
 using Legislator.Engine.Apply;
 using Xunit;
@@ -520,5 +521,89 @@ public sealed class RetiredCommandsTests
 
         Assert.Empty(plan.Refusals);
         Assert.Empty(plan.Rewrites);
+    }
+
+    [Fact]
+    public void Given_two_retired_tools_on_one_line_When_swept_Then_both_decide()
+    {
+        // Passing one tool to the rewrite let the second ride through on the first's clean bill:
+        // the line came out rewritten at exit 0 with the second tool deleted under the half that
+        // still runs it.
+        var fs = ApplyFixture.Repo(new Dictionary<string, string>
+        {
+            ["AGENTS.md"] = $"- `python3 {Retired} anchors && python3 docs/ai/zz-tool.py check`\n",
+        });
+
+        var plan = RetiredCommands.Of(
+            fs, ApplyFixture.Options, ApplyFixture.Layout, [Retired, "docs/ai/zz-tool.py"]);
+
+        Assert.Empty(plan.Rewrites);
+        Assert.Single(plan.Refusals);
+    }
+
+    [Fact]
+    public void Given_a_retired_tool_named_beside_a_rewritable_one_When_swept_Then_the_bare_name_still_stops_it()
+    {
+        var fs = ApplyFixture.Repo(new Dictionary<string, string>
+        {
+            ["AGENTS.md"] = $"- `python3 {Retired} anchors`; keep `docs/ai/zz-tool.py` for now\n",
+        });
+
+        var plan = RetiredCommands.Of(
+            fs, ApplyFixture.Options, ApplyFixture.Layout, [Retired, "docs/ai/zz-tool.py"]);
+
+        Assert.Empty(plan.Rewrites);
+        Assert.Single(plan.Refusals);
+    }
+
+    [Theory]
+    // A document and a machine-read data file are read, never run: naming one is a mention.
+    [InlineData("docs/ai/README.md")]
+    [InlineData("docs/ai/manifest.json")]
+    [InlineData("docs/ai/rules-old/core/okf.md")]
+    public void Given_a_retired_path_that_is_not_runnable_When_named_in_a_declaration_Then_it_is_a_mention(string retired)
+    {
+        var fs = ApplyFixture.Repo(new Dictionary<string, string>
+        {
+            ["AGENTS.md"] = $"Never hand-edit `{retired}` — machine-managed.\n",
+        });
+
+        var plan = RetiredCommands.Of(fs, ApplyFixture.Options, ApplyFixture.Layout, [retired]);
+
+        Assert.Empty(plan.Refusals);
+        Assert.Equal("AGENTS.md:1", Assert.Single(plan.Mentions));
+    }
+
+    [Fact]
+    public void Given_a_rules_directory_written_with_a_trailing_slash_When_a_rule_retires_Then_it_is_still_law()
+    {
+        // `OptionsValidator` accepts `rules_dir: rules/`, and the prefix it produced was one no
+        // manifest path starts with — which turned every rule retirement on that repository into
+        // a refusal.
+        var options = new LegislatorOptions { RulesDir = new("rules/", OptionsLayer.Defaults) };
+        var layout = new RepoLayout(options, ApplyFixture.Root);
+        var fs = ApplyFixture.Repo(new Dictionary<string, string>
+        {
+            ["AGENTS.md"] = "@docs/ai/rules/core/old.md\n",
+        });
+
+        var plan = RetiredCommands.Of(fs, options, layout, ["docs/ai/rules/core/old.md"]);
+
+        Assert.Empty(plan.Refusals);
+        Assert.Equal("AGENTS.md:1", Assert.Single(plan.Mentions));
+    }
+
+    [Theory]
+    // `tools/*.sh` alone covered foundry's gate and nothing else a repository might run one from.
+    [InlineData("tools/gate.bash")]
+    [InlineData("tools/gate.py")]
+    [InlineData("scripts/gate.sh")]
+    [InlineData(".github/workflows/ci.yml")]
+    [InlineData("Makefile")]
+    public void Given_a_gate_in_another_shape_When_swept_Then_it_is_read(string home)
+    {
+        var plan = Plan((home, $"python3 {Retired} anchors\n"));
+
+        Assert.Equal("legislator anchors", Assert.Single(plan.Rewrites).After);
     }
 }
