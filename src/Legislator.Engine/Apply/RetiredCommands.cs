@@ -471,11 +471,14 @@ public static partial class RetiredCommands
         }
 
         var rules = $"{layout.Root}/{options.ProjectRulesDir.Value}";
-        if (fs.Directory.Exists(rules))
+        if (fs.Directory.Exists(rules) && !IsLink(fs, rules))
         {
-            foreach (var file in fs.Directory.EnumerateFiles(rules, "*.md", SearchOption.AllDirectories))
+            foreach (var file in Walk(fs, layout, rules))
             {
-                yield return file.Replace('\\', '/');
+                if (file.EndsWith(".md", StringComparison.Ordinal))
+                {
+                    yield return file;
+                }
             }
         }
 
@@ -531,15 +534,17 @@ public static partial class RetiredCommands
 
         foreach (var directory in new[] { $"{layout.Root}/tools", layout.Docs })
         {
-            if (!fs.Directory.Exists(directory))
+            if (!fs.Directory.Exists(directory) || IsLink(fs, directory))
             {
                 continue;
             }
 
-            foreach (var file in fs.Directory.EnumerateFiles(directory, "*.md", SearchOption.AllDirectories)
-                         .Select(p => p.Replace('\\', '/'))
-                         .Where(p => !p.StartsWith(layout.Ai + "/", StringComparison.Ordinal))
-                         .OrderBy(p => p, StringComparer.Ordinal))
+            // The same walk as the declarations use: a mention reported from outside the
+            // repository is a line no reader of this repository can act on, and a link into a
+            // large or unreadable tree failed the run rather than being skipped.
+            foreach (var file in Walk(fs, layout, directory)
+                         .Where(p => p.EndsWith(".md", StringComparison.Ordinal))
+                         .Where(p => !p.StartsWith(layout.Ai + "/", StringComparison.Ordinal)))
             {
                 yield return file;
             }

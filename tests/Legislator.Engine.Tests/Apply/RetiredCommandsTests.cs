@@ -671,4 +671,28 @@ public sealed class RetiredCommandsTests
 
         Assert.Single(plan.Refusals);
     }
+
+    [Theory]
+    // The guard was on three walks of five. **These two do not pin it**: the fake file system
+    // does not enumerate through a directory link, so removing the guard changes nothing they
+    // see — a mutation of either line survives the whole suite. What pins them is a run on the
+    // real file system, recorded in the case: a `.claude/rules` link to a directory outside the
+    // repository leaves that directory's file byte-identical. The gap is named because an
+    // unpinned bound a reader believes is pinned is worse than one they know to check by hand.
+    [InlineData(".claude/rules", "verification.md")]
+    [InlineData("docs/okf", "stand.md")]
+    public void Given_any_walked_home_that_is_a_link_When_swept_Then_it_is_not_read(string home, string leaf)
+    {
+        var fs = ApplyFixture.Repo(new Dictionary<string, string> { ["AGENTS.md"] = "# Entry\n" });
+        fs.AddFile($"/outside/{leaf}", new System.IO.Abstractions.TestingHelpers.MockFileData(
+            $"`python3 {Retired} anchors`\n"));
+        fs.Directory.CreateDirectory($"{ApplyFixture.Root}/{home[..home.LastIndexOf('/')]}");
+        fs.Directory.CreateSymbolicLink($"{ApplyFixture.Root}/{home}", "/outside");
+
+        var plan = RetiredCommands.Of(fs, ApplyFixture.Options, ApplyFixture.Layout, [Retired]);
+
+        Assert.Empty(plan.Rewrites);
+        Assert.Empty(plan.Refusals);
+        Assert.Empty(plan.Mentions);
+    }
 }
