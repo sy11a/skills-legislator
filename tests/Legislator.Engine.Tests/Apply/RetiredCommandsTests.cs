@@ -1,4 +1,5 @@
 using System.IO.Abstractions.TestingHelpers;
+using Legislator.Core.Repo;
 using Legislator.Engine.Apply;
 using Xunit;
 
@@ -55,7 +56,8 @@ public sealed class RetiredCommandsTests
     [Fact]
     public void Given_a_declaration_naming_the_retired_path_in_an_unknown_shape_When_swept_Then_it_refuses()
     {
-        var plan = Plan(("AGENTS.md", $"Verification: run {Retired} yourself.\n"));
+        // It must *run* the path: a line that merely names one is a mention, not a refusal.
+        var plan = Plan(("AGENTS.md", $"Run `python3 {Retired} anchors`, then `cp {Retired} /tmp/x`.\n"));
 
         Assert.Empty(plan.Rewrites);
         var refusal = Assert.Single(plan.Refusals);
@@ -177,6 +179,7 @@ public sealed class RetiredCommandsTests
     [Theory]
     [InlineData("see docs/ai/engine.py for the jobs")]
     [InlineData("python3 docs/ai/engine.py")]
+    [InlineData("python3 docs/ai/engine.py --help")]
     [InlineData("cp docs/ai/engine.py /tmp/x")]
     public void Given_a_shape_the_rewrite_does_not_know_When_rewritten_Then_it_returns_null(string line) =>
         Assert.Null(RetiredCommands.Rewrite(line, Retired));
@@ -202,8 +205,154 @@ public sealed class RetiredCommandsTests
     [Theory]
     [InlineData("tools/docs/ai/engine.py.bak", false)]
     [InlineData("x/docs/ai/engine.py", false)]
+    [InlineData("./docs/ai/engine.py", true)]
+    [InlineData("\"$ROOT/docs/ai/engine.py\"", true)]
+    [InlineData("/srv/checkout/docs/ai/engine.py", true)]
     [InlineData("`docs/ai/engine.py`", true)]
     [InlineData("run docs/ai/engine.py anchors", true)]
     public void Given_a_line_When_asked_whether_it_names_the_retired_path_Then_a_longer_path_is_not_it(string line, bool named) =>
         Assert.Equal(named, RetiredCommands.Names(line, Retired));
+
+    [Fact]
+    public void Given_an_entry_document_importing_a_retired_rule_When_swept_Then_it_is_a_mention_not_a_refusal()
+    {
+        // **The regression this file exists to prevent.** Every entry document names every rule
+        // it imports, by path. Refusing on a mention refused every upgrade that retires a rule
+        // or drops a stack — two of the five scenarios in this edition's own e2e corpus. The
+        // engine deletes; the skill's report proposes the import's removal.
+        var fs = ApplyFixture.Repo(new Dictionary<string, string>
+        {
+            ["AGENTS.md"] = "@docs/ai/rules/core/old.md\n\n# Entry\n",
+        });
+
+        var plan = RetiredCommands.Of(
+            fs, ApplyFixture.Options, ApplyFixture.Layout, ["docs/ai/rules/core/old.md"]);
+
+        Assert.Empty(plan.Refusals);
+        Assert.Empty(plan.Rewrites);
+        Assert.Equal("AGENTS.md:1", Assert.Single(plan.Mentions));
+    }
+
+    [Fact]
+    public void Given_a_stack_import_in_the_entry_document_When_swept_Then_the_drop_is_not_refused()
+    {
+        var fs = ApplyFixture.Repo(new Dictionary<string, string>
+        {
+            ["AGENTS.md"] = "@docs/ai/rules/stacks/aurelia/x.md\n",
+        });
+
+        var plan = RetiredCommands.Of(
+            fs, ApplyFixture.Options, ApplyFixture.Layout, ["docs/ai/rules/stacks/aurelia/x.md"]);
+
+        Assert.Empty(plan.Refusals);
+    }
+
+    [Theory]
+    [InlineData("./docs/ai/engine.py")]
+    [InlineData("\"$ROOT/docs/ai/engine.py\"")]
+    [InlineData("/srv/checkout/docs/ai/engine.py")]
+    public void Given_the_retired_path_written_under_a_root_When_swept_Then_the_command_still_moves(string written)
+    {
+        var plan = Plan(("tools/gate.sh", $"run anchors python3 {written} anchors\n"));
+
+        var edit = Assert.Single(plan.Rewrites);
+        Assert.Equal("run anchors legislator anchors", edit.After);
+    }
+
+    [Fact]
+    public void Given_a_script_under_a_fixtures_path_When_swept_Then_it_is_a_record_not_a_declaration()
+    {
+        var plan = Plan(("tools/tests/fixtures/old-gate.sh", $"# the old gate was python3 {Retired} anchors\n"));
+
+        Assert.Empty(plan.Refusals);
+        Assert.Empty(plan.Rewrites);
+        Assert.Empty(plan.Mentions);
+        Assert.Equal(1, plan.Records);
+    }
+
+    [Theory]
+    [InlineData("docs/okf/log.md")]
+    [InlineData("docs/okf/glossary.md")]
+    [InlineData("docs/backlog.md")]
+    [InlineData("docs/superpowers/specs/old.md")]
+    [InlineData("docs/changes/BL-001.md")]
+    public void Given_a_home_this_repository_calls_history_When_swept_Then_it_is_counted(string home)
+    {
+        // `core/okf.md`: a glossary defines terms and a log records what was true at the time,
+        // so naming something since removed is correct there. A generated mirror is never
+        // hand-edited; `docs/superpowers/**` is legacy history by this repository's own law.
+        var plan = Plan((home, $"the gate was `python3 {Retired} anchors`\n"));
+
+        Assert.Empty(plan.Mentions);
+        Assert.Equal(1, plan.Records);
+    }
+
+    [Fact]
+    public void Given_a_repository_checked_out_under_a_tests_directory_When_swept_Then_the_cut_is_unchanged()
+    {
+        // The record test was keyed on the absolute path, so a repository at `/x/tests/r` had
+        // every mention counted and none named.
+        var options = ApplyFixture.Options;
+        var fs = new System.IO.Abstractions.TestingHelpers.MockFileSystem();
+        fs.AddDirectory("/x/tests/r");
+        fs.AddFile("/x/tests/r/docs/okf/stand.md", new System.IO.Abstractions.TestingHelpers.MockFileData(
+            $"| `anchors` | `python3 {Retired} anchors` |\n"));
+
+        var plan = RetiredCommands.Of(fs, options, new RepoLayout(options, "/x/tests/r"), [Retired]);
+
+        Assert.Equal("docs/okf/stand.md:1", Assert.Single(plan.Mentions));
+        Assert.Equal(0, plan.Records);
+    }
+
+    [Theory]
+    [InlineData("#!/bin/sh\rrun anchors python3 docs/ai/engine.py anchors\recho done\r",
+                "#!/bin/sh\rrun anchors legislator anchors\recho done\r")]
+    [InlineData("run anchors python3 docs/ai/engine.py anchors\r\r\necho done\n",
+                "run anchors legislator anchors\r\r\necho done\n")]
+    [InlineData("run anchors python3 docs/ai/engine.py anchors", "run anchors legislator anchors")]
+    public void Given_a_file_with_unusual_endings_When_applied_Then_every_line_keeps_its_own(string before, string after)
+    {
+        // Walking only '\n' truncated a file whose lines end in a lone '\r' — the rewritten line
+        // among the ones it dropped — and lost the trailing newline of a `\r\r\n` file.
+        var fs = ApplyFixture.Repo(new Dictionary<string, string> { ["tools/gate.sh"] = before });
+        var plan = RetiredCommands.Of(fs, ApplyFixture.Options, ApplyFixture.Layout, [Retired]);
+
+        RetiredCommands.Apply(fs, ApplyFixture.Layout, plan);
+
+        Assert.Equal(after, fs.File.ReadAllText($"{ApplyFixture.Root}/tools/gate.sh"));
+    }
+
+    [Fact]
+    public void Given_a_real_alias_beside_the_entry_document_When_swept_Then_only_the_real_files_are_declarations()
+    {
+        var fs = ApplyFixture.Repo(new Dictionary<string, string>
+        {
+            ["CLAUDE.md"] = $"- `python3 {Retired} anchors`\n",
+        });
+
+        var plan = RetiredCommands.Of(fs, ApplyFixture.Options, ApplyFixture.Layout, [Retired]);
+
+        var edit = Assert.Single(plan.Rewrites);
+        Assert.Equal("CLAUDE.md", edit.Relative);
+    }
+
+    [Fact]
+    public void Given_a_non_markdown_file_in_the_project_rules_When_swept_Then_it_is_not_a_declaration()
+    {
+        var plan = Plan((".claude/rules/data.json", $"{{\"gate\": \"python3 {Retired} anchors\"}}\n"));
+
+        Assert.Empty(plan.Rewrites);
+        Assert.Empty(plan.Refusals);
+    }
+
+    [Fact]
+    public void Given_a_line_carrying_an_invocation_and_a_lookalike_path_When_swept_Then_it_is_rewritten_not_refused()
+    {
+        // The post-rewrite test must ask whether the path is still *named*, not whether the
+        // string is still present: `engine.py.bak` is a different file and must not block.
+        var plan = Plan(("tools/gate.sh", $"python3 {Retired} anchors  # see {Retired}.bak\n"));
+
+        Assert.Empty(plan.Refusals);
+        Assert.Equal("legislator anchors  # see docs/ai/engine.py.bak", Assert.Single(plan.Rewrites).After);
+    }
 }

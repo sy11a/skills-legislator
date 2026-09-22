@@ -173,6 +173,7 @@ public sealed partial class ApplyJob : IJob
             {
                 [RunRecord.RewrittenField] = RunRecord.Array(rewritten),
                 [RunRecord.MentionedField] = RunRecord.Array(stale.Mentions),
+                [RunRecord.RecordsField] = stale.Records,
             },
             [RunRecord.ReconstructedKey] = detection.Reconstructed,
             [RunRecord.RootKey] = ctx.Root,

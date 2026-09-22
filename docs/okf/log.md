@@ -23,9 +23,9 @@ counted and left, because its going out of date is the design); and **retired de
 literal the engine keeps, for the reconstruction that has no old manifest to diff against.
 
 A shape the rewrite does not recognise stops the run at exit 4 with nothing written, the retirement
-included. Over the four repositories the sweep moves six declarations — foundry's `tools/gate.sh`
-and the `.claude/rules/verification.md` rows it is reconciled against, in one run — and names two
-`docs/okf/` lines it did not rewrite, which are the OKF rule's to repair.
+included. Over the four repositories the sweep moves **eleven declarations in seven files** — foundry's
+`tools/gate.sh` and the `.claude/rules/verification.md` rows it is reconciled against, in one run —
+and names **three** `docs/okf/` lines it did not rewrite, which are the OKF rule's to repair.
 
 ## 2026-09-03 — BL-082 T-10: the write path, and a ruler measured with a dead arm
 

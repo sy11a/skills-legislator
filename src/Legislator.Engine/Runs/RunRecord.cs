@@ -44,6 +44,8 @@ public static class RunRecord
 
     public const string MentionedField = "mentioned";
 
+    public const string RecordsField = "records";
+
     public const string PostKey = "post";
 
     public const string CreatedField = "created";

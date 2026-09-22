@@ -1,4 +1,5 @@
 using System.IO.Abstractions;
+using System.Text;
 using System.Text.RegularExpressions;
 using Legislator.Core.Options;
 using Legislator.Core.Repo;
@@ -6,34 +7,37 @@ using Legislator.Core.Repo;
 namespace Legislator.Engine.Apply;
 
 /// <summary>
-/// A file the constitution retires is a file every command still naming it now names in vain.
-/// The retirement and the declaration have to move in **one act**: move the declaration first and
-/// the entry document contradicts the rule files it imports, which still call the delivered file
-/// the executing arm of their rule; move it after, and upgrade day is the day a repository's
-/// declared gate names a file that is gone. Neither ordering is safe, so neither is taken — the
-/// apply that retires the file rewrites the declarations that name it, or refuses to retire it.
+/// A file the constitution retires is a file every command still <em>running</em> it now runs in
+/// vain. The retirement and the declaration have to move in <b>one act</b>: move the declaration
+/// first and the entry document contradicts the rule files it imports, which still call the
+/// delivered file the executing arm of their rule; move it after, and upgrade day is the day a
+/// repository's declared gate names a file that is gone. Neither ordering is safe, so neither is
+/// taken — the apply that retires the file rewrites the commands that run it, or refuses to
+/// retire it.
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Declarations are rewritten; history is not.</b> A repository's entry document, its project
-/// rules and the gate scripts it owns are statements about how to verify it *now*, and an upgrade
-/// that leaves them stale has published a false instruction. A case summary, a journal day or a
-/// changelog entry naming the same command is a record of what was true when it was written:
-/// rewriting it would falsify the record, and going out of date is the design there rather than a
-/// defect (the artifact-lifecycle rule). Those are reported and left alone.
+/// <b>An invocation, not a mention.</b> The subject is a line that <em>runs</em> the retired path.
+/// A line that merely names it is reported and left — including the entry document's own
+/// `@docs/ai/rules/core/…` import block, which names every rule file by path. The first version
+/// refused on any mention, which meant it refused every upgrade that retires a rule file or drops
+/// a stack: two of the five scenarios in this edition's own e2e corpus, and a stack drop on every
+/// governed repository. The engine deletes and the skill's report proposes the import's removal;
+/// that division is older than this sweep and is not this sweep's to override.
 /// </para>
 /// <para>
-/// <b>One recognised shape, and everything else refuses.</b> The rewrite knows
-/// <c>python3 &lt;retired path&gt; &lt;job&gt;</c> and turns it into <c>legislator &lt;job&gt;</c>,
-/// which is the form every fleet repository's bindings already use. A declaration home naming a
-/// retired path in any other shape stops the run before its first write, naming the file and the
-/// line. Guessing at an unrecognised shape is how a migration silently breaks a gate it was asked
-/// to protect; refusing is the whole point of putting the two acts in one.
+/// <b>Declarations are rewritten; records are counted.</b> A repository's entry document, its
+/// project rules and the gate scripts it owns say how to verify it <em>now</em>. A case, a journal
+/// day, an ADR, a change fragment, the changelog, a test's fixture, a generated mirror and the OKF
+/// bundle's own human class (`log.md`, `glossary.md`) are records of what was true when they were
+/// written — `core/okf.md` says naming something since removed is correct there, not stale — so
+/// they are counted, not listed, and never rewritten. A worklist may only carry what its reader
+/// can act on.
 /// </para>
 /// </remarks>
 public static partial class RetiredCommands
 {
-    /// <summary>What a sweep found: the lines it would rewrite, the ones it cannot, and the mentions it leaves.</summary>
+    /// <summary>What a sweep found: the lines it would rewrite, the ones it cannot, the mentions it leaves, and the records it counted.</summary>
     public sealed record Plan(
         IReadOnlyList<Edit> Rewrites,
         IReadOnlyList<string> Refusals,
@@ -43,13 +47,12 @@ public static partial class RetiredCommands
     /// <summary>One line of one declaration, before and after.</summary>
     public sealed record Edit(string Relative, int Line, string Before, string After);
 
-    [GeneratedRegex(@"(?:python3?\s+)(?<path>[^\s`'""]+)\s+(?<job>[A-Za-z][\w-]*)")]
+    // The path may be quoted; the job is a word, so `--help` is not one and a line carrying it is
+    // refused rather than turned into `legislator --help`.
+    [GeneratedRegex("""(?:python3?\s+)(?<quote>["']?)(?<path>[^\s"']+)\k<quote>\s+(?<job>[A-Za-z][\w-]*)""")]
     private static partial Regex Invocation();
 
-    /// <summary>
-    /// The plan for one prospective retirement set, computed before anything is written so that a
-    /// refusal can keep its promise by having written nothing yet.
-    /// </summary>
+    /// <summary>The plan for one prospective retirement set, computed before anything is written.</summary>
     public static Plan Of(
         IFileSystem fs,
         LegislatorOptions options,
@@ -72,65 +75,47 @@ public static partial class RetiredCommands
         var declarations = Declarations(fs, options, layout).ToHashSet(StringComparer.Ordinal);
         foreach (var file in Candidates(fs, layout, declarations))
         {
-            var isDeclaration = declarations.Contains(file);
             var relative = layout.Relative(file);
-            var lines = fs.File.ReadAllLines(file);
-            for (var i = 0; i < lines.Length; i++)
+            // The record test comes first: a script under `tests/` or `fixtures/` is a frozen
+            // input whatever its extension, and taking it as a declaration refused an upgrade
+            // over a fixture of the old gate.
+            var isRecord = IsRecord(layout, relative);
+            var isDeclaration = !isRecord && declarations.Contains(file);
+            var text = fs.File.ReadAllText(file);
+            var lines = Split(text);
+            for (var i = 0; i < lines.Count; i++)
             {
-                var named = retiring.FirstOrDefault(path => Names(lines[i], path));
+                var line = lines[i].Text;
+                var named = retiring.FirstOrDefault(path => Names(line, path));
                 if (named is null)
                 {
                     continue;
                 }
 
-                if (!isDeclaration)
+                var rewritten = isDeclaration ? Rewrite(line, named) : null;
+                if (rewritten is not null)
                 {
-                    // **A worklist may only list what its reader can act on.** A case summary, a
-                    // journal day, an ADR and a changelog entry are records of what was true when
-                    // they were written; listing seventy-six of them buries the two lines that are
-                    // not — an OKF concept document naming the retired command is a document the
-                    // OKF rule says must be updated when the concept changes. So the records are
-                    // counted and the rest are named (`core/artifact-lifecycle.md`).
-                    if (IsRecord(layout, options, file))
-                    {
-                        records++;
-                    }
-                    else
-                    {
-                        mentions.Add($"{relative}:{i + 1}");
-                    }
-
-                    continue;
+                    rewrites.Add(new Edit(relative, i + 1, line, rewritten));
                 }
-
-                var rewritten = Rewrite(lines[i], named);
-                if (rewritten is null)
+                else if (isDeclaration && Invokes(line, named))
                 {
                     refusals.Add(
-                        $"{relative}:{i + 1} names '{named}', which this edition retires, in a form this "
-                        + $"migration does not know how to rewrite: {lines[i].Trim()}");
+                        $"{relative}:{i + 1} runs '{named}', which this edition retires, in a form this "
+                        + $"migration does not know how to rewrite: {line.Trim()}");
+                }
+                else if (isRecord)
+                {
+                    records++;
                 }
                 else
                 {
-                    rewrites.Add(new Edit(relative, i + 1, lines[i], rewritten));
+                    mentions.Add($"{relative}:{i + 1}");
                 }
             }
         }
 
         return new Plan(rewrites, refusals, mentions, records);
     }
-
-    /// <summary>A home whose going out of date is the design: a case, a journal day, an ADR, the changelog.</summary>
-    private static bool IsRecord(RepoLayout layout, LegislatorOptions options, string file) =>
-        string.Equals(file, layout.Changelog, StringComparison.Ordinal)
-        || file.StartsWith(layout.Cases + "/", StringComparison.Ordinal)
-        || file.StartsWith(layout.Journal + "/", StringComparison.Ordinal)
-        || file.StartsWith(layout.Adr + "/", StringComparison.Ordinal)
-        || file.StartsWith(layout.Changes + "/", StringComparison.Ordinal)
-        // A test's fixture is frozen input: its content is the thing under test, and rewriting it
-        // would change what the test is testing. clerk pins a 2026-08-31 snapshot by commit.
-        || file.Contains("/fixtures/", StringComparison.Ordinal)
-        || file.Contains("/tests/", StringComparison.Ordinal);
 
     /// <summary>Applies a plan's edits. Never called when the plan carries a refusal.</summary>
     public static IReadOnlyList<string> Apply(IFileSystem fs, RepoLayout layout, Plan plan)
@@ -143,17 +128,23 @@ public static partial class RetiredCommands
         foreach (var group in plan.Rewrites.GroupBy(e => e.Relative, StringComparer.Ordinal))
         {
             var path = $"{layout.Root}/{group.Key}";
-            var lines = fs.File.ReadAllLines(path);
+            var lines = Split(fs.File.ReadAllText(path));
             foreach (var edit in group)
             {
-                lines[edit.Line - 1] = edit.After;
+                // Every line keeps the ending it had — a rewrite that normalises them turns the
+                // upgrade into a whole-file diff, and one that walks only '\n' truncates a file
+                // whose lines end in a lone '\r'.
+                lines[edit.Line - 1] = lines[edit.Line - 1] with { Text = edit.After };
                 done.Add($"{edit.Relative}:{edit.Line}");
             }
 
-            // **Every line keeps the ending it had**, not just the last one. Reading with
-            // `ReadAllLines` and joining on '\n' normalises a CRLF file wholesale, which is the
-            // whole-file diff this comment used to promise it avoided.
-            fs.File.WriteAllText(path, Rejoin(fs.File.ReadAllText(path), lines));
+            var built = new StringBuilder();
+            foreach (var line in lines)
+            {
+                built.Append(line.Text).Append(line.Ending);
+            }
+
+            fs.File.WriteAllText(path, built.ToString());
         }
 
         return done;
@@ -161,43 +152,67 @@ public static partial class RetiredCommands
 
     /// <summary>
     /// Every <c>python3 &lt;retired&gt; &lt;job&gt;</c> on the line becomes <c>legislator &lt;job&gt;</c>.
-    /// Null where the line names the retired path in any other shape.
+    /// Null where nothing on the line is such an invocation, or where one is and the retired path
+    /// still stands after the rewrite.
     /// </summary>
     /// <remarks>
-    /// <b>Every occurrence, not the first.</b> The first version rewrote one match, saw the path
-    /// still on the line and refused — and every one of the four repositories this was written
-    /// for writes both invocations on one line, so the change refused all four and told the
-    /// operator to do by hand the thing the ruling says must not be done by hand. A fixture
-    /// written with one invocation per line is a fixture of a shape the fleet does not use.
+    /// <b>Every occurrence, not the first.</b> All four repositories this was written for put both
+    /// invocations on one line; a rewrite that took the first and then saw the path still there
+    /// refused every one of them.
     /// </remarks>
     public static string? Rewrite(string line, string retired)
     {
         ArgumentNullException.ThrowIfNull(line);
 
-        var rewritten = Invocation().Replace(
-            line,
-            m => string.Equals(m.Groups["path"].Value, retired, StringComparison.Ordinal)
-                ? $"legislator {m.Groups["job"].Value}"
-                : m.Value);
-        return Names(rewritten, retired) ? null : rewritten;
+        var any = false;
+        var rewritten = Invocation().Replace(line, m =>
+        {
+            if (!PathNames(m.Groups["path"].Value, retired))
+            {
+                return m.Value;
+            }
+
+            any = true;
+            return $"legislator {m.Groups["job"].Value}";
+        });
+        return !any || Names(rewritten, retired) ? null : rewritten;
+    }
+
+    /// <summary>Whether the line runs the retired path, as opposed to merely naming it.</summary>
+    public static bool Invokes(string line, string retired)
+    {
+        ArgumentNullException.ThrowIfNull(line);
+
+        return Invocation().Matches(line).Any(m => PathNames(m.Groups["path"].Value, retired));
     }
 
     /// <summary>
-    /// Whether a line names the retired path <b>as a path</b>. A plain substring test refused an
-    /// upgrade over <c>tools/docs/ai/engine.py.bak</c> — a different file whose name contains
-    /// this one — so the match is bounded by the characters a path is written between.
+    /// Whether a line names the retired path <b>as that file</b>. A plain substring test refused
+    /// an upgrade over <c>tools/docs/ai/engine.py.bak</c> — a different file whose name contains
+    /// this one — and a bound that rejected every <c>/</c> before it missed <c>./</c>,
+    /// <c>$ROOT/</c> and an absolute path, which are the same file written three other ways.
     /// </summary>
     public static bool Names(string line, string retired)
     {
+        ArgumentNullException.ThrowIfNull(line);
+
         var at = 0;
         while ((at = line.IndexOf(retired, at, StringComparison.Ordinal)) >= 0)
         {
-            var before = at == 0 ? ' ' : line[at - 1];
             var afterAt = at + retired.Length;
             var after = afterAt >= line.Length ? ' ' : line[afterAt];
-            if (!IsPathCharacter(before) && !IsPathCharacter(after))
+            if (!IsNameCharacter(after))
             {
-                return true;
+                var start = at;
+                while (start > 0 && (IsNameCharacter(line[start - 1]) || line[start - 1] is '/' or '$'))
+                {
+                    start--;
+                }
+
+                if (PathNames(line[start..afterAt], retired))
+                {
+                    return true;
+                }
             }
 
             at = afterAt;
@@ -206,34 +221,59 @@ public static partial class RetiredCommands
         return false;
     }
 
-    private static bool IsPathCharacter(char c) =>
-        char.IsLetterOrDigit(c) || c is '.' or '-' or '_' or '/';
-
-    /// <summary>Re-joins edited lines with the endings the original text used, line by line.</summary>
-    private static string Rejoin(string original, string[] lines)
+    /// <summary>Whether one written path is the retired one: itself, or itself under a root.</summary>
+    private static bool PathNames(string candidate, string retired)
     {
-        var built = new System.Text.StringBuilder();
-        var at = 0;
-        for (var i = 0; i < lines.Length; i++)
+        if (string.Equals(candidate, retired, StringComparison.Ordinal))
         {
-            built.Append(lines[i]);
-            var end = original.IndexOf('\n', at);
-            if (end < 0)
-            {
-                break;
-            }
-
-            built.Append(end > 0 && original[end - 1] == '\r' ? "\r\n" : "\n");
-            at = end + 1;
+            return true;
         }
 
-        return built.ToString();
+        if (!candidate.EndsWith($"/{retired}", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        // `./x`, `$ROOT/x` and `/abs/x` are the same file; `other/x` is a different one.
+        var prefix = candidate[..^(retired.Length + 1)];
+        return prefix.Length == 0 || prefix is "." || prefix[0] is '$' or '/';
+    }
+
+    private static bool IsNameCharacter(char c) => char.IsLetterOrDigit(c) || c is '.' or '-' or '_';
+
+    /// <summary>One line and the ending it was written with.</summary>
+    private readonly record struct Line(string Text, string Ending);
+
+    /// <summary>Splits text into lines, keeping each line's own terminator — `\r\n`, `\n`, `\r` or none.</summary>
+    private static List<Line> Split(string text)
+    {
+        List<Line> lines = [];
+        var start = 0;
+        for (var i = 0; i < text.Length; i++)
+        {
+            if (text[i] is not ('\n' or '\r'))
+            {
+                continue;
+            }
+
+            var ending = text[i] == '\r' && i + 1 < text.Length && text[i + 1] == '\n' ? "\r\n" : text[i].ToString();
+            lines.Add(new Line(text[start..i], ending));
+            i += ending.Length - 1;
+            start = i + 1;
+        }
+
+        if (start < text.Length)
+        {
+            lines.Add(new Line(text[start..], ""));
+        }
+
+        return lines;
     }
 
     /// <summary>
     /// The homes a declaration lives in: the entry document (and a real alias beside it), the
-    /// project rules, and the scripts the repository owns under its tools directory. Owned files
-    /// are not among them — they are rewritten byte-for-byte by this same run and self-heal.
+    /// project rules, and the <b>scripts</b> the repository owns under its tools directory —
+    /// not the documents there, since a test's frozen fixture is not a declaration.
     /// </summary>
     private static IEnumerable<string> Declarations(IFileSystem fs, LegislatorOptions options, RepoLayout layout)
     {
@@ -246,31 +286,25 @@ public static partial class RetiredCommands
             }
         }
 
-        var rules = $"{layout.Root}/{options.ProjectRulesDir.Value}";
-        if (fs.Directory.Exists(rules))
+        foreach (var (directory, pattern) in new[]
+                 {
+                     ($"{layout.Root}/{options.ProjectRulesDir.Value}", "*.md"),
+                     ($"{layout.Root}/tools", "*.sh"),
+                 })
         {
-            foreach (var file in fs.Directory.EnumerateFiles(rules, "*.md", SearchOption.AllDirectories))
+            if (!fs.Directory.Exists(directory))
             {
-                yield return file.Replace('\\', '/');
+                continue;
             }
-        }
 
-        // **Under `tools/`, a script is a declaration and a document is not.** The first version
-        // took `.md` here too, and clerk keeps a frozen 2026-08-31 backlog snapshot under
-        // `tools/tests/fixtures/` that its own parser test pins by commit: six of its prose lines
-        // name the retired path, so the upgrade refused and offered a remedy — edit it by hand —
-        // that would have rewritten a record and changed a test's subject.
-        var tools = $"{layout.Root}/tools";
-        if (fs.Directory.Exists(tools))
-        {
-            foreach (var file in fs.Directory.EnumerateFiles(tools, "*.sh", SearchOption.AllDirectories))
+            foreach (var file in fs.Directory.EnumerateFiles(directory, pattern, SearchOption.AllDirectories))
             {
                 yield return file.Replace('\\', '/');
             }
         }
     }
 
-    /// <summary>Every file a mention could be in: the declarations, plus the repository's own text.</summary>
+    /// <summary>Every file a mention could be in: the declarations, the changelog, and the repository's own text.</summary>
     private static IEnumerable<string> Candidates(IFileSystem fs, RepoLayout layout, IReadOnlyCollection<string> declarations)
     {
         foreach (var file in declarations.OrderBy(p => p, StringComparer.Ordinal))
@@ -283,30 +317,45 @@ public static partial class RetiredCommands
             yield return layout.Changelog;
         }
 
-        // Documents under `tools/` are not declarations — the scripts there are — but a reader
-        // may still want to know one names a retired command, so they are read for mentions.
-        var tools = $"{layout.Root}/tools";
-        if (fs.Directory.Exists(tools))
+        foreach (var directory in new[] { $"{layout.Root}/tools", layout.Docs })
         {
-            foreach (var file in fs.Directory.EnumerateFiles(tools, "*.md", SearchOption.AllDirectories)
+            if (!fs.Directory.Exists(directory))
+            {
+                continue;
+            }
+
+            foreach (var file in fs.Directory.EnumerateFiles(directory, "*.md", SearchOption.AllDirectories)
                          .Select(p => p.Replace('\\', '/'))
+                         .Where(p => !p.StartsWith(layout.Ai + "/", StringComparison.Ordinal))
                          .OrderBy(p => p, StringComparer.Ordinal))
             {
                 yield return file;
             }
         }
-
-        if (!fs.Directory.Exists(layout.Docs))
-        {
-            yield break;
-        }
-
-        foreach (var file in fs.Directory.EnumerateFiles(layout.Docs, "*.md", SearchOption.AllDirectories)
-                     .Select(p => p.Replace('\\', '/'))
-                     .Where(p => !p.StartsWith(layout.Ai + "/", StringComparison.Ordinal))
-                     .OrderBy(p => p, StringComparer.Ordinal))
-        {
-            yield return file;
-        }
     }
+
+    /// <summary>
+    /// A home whose going out of date is the design. Matched on the <b>repository-relative</b>
+    /// path: keyed on the absolute one, a repository checked out under a directory called `tests`
+    /// had every mention counted and none named.
+    /// </summary>
+    private static bool IsRecord(RepoLayout layout, string relative) =>
+        relative.Equals(layout.Relative(layout.Changelog), StringComparison.Ordinal)
+        || StartsWith(relative, layout.Relative(layout.Cases))
+        || StartsWith(relative, layout.Relative(layout.Journal))
+        || StartsWith(relative, layout.Relative(layout.Adr))
+        || StartsWith(relative, layout.Relative(layout.Changes))
+        // `core/okf.md`'s human class: a glossary defines terms and a log records what was true
+        // at the time, so naming something since removed is correct there, not stale.
+        || relative.EndsWith("/log.md", StringComparison.Ordinal)
+        || relative.EndsWith("/glossary.md", StringComparison.Ordinal)
+        // A generated mirror is never hand-edited, and legacy specs are history by their own law.
+        || relative.EndsWith("/backlog.md", StringComparison.Ordinal)
+        || StartsWith(relative, $"{layout.Relative(layout.Docs)}/superpowers")
+        // A test's fixture is frozen input: its content is the thing under test.
+        || relative.Contains("/tests/", StringComparison.Ordinal)
+        || relative.Contains("/fixtures/", StringComparison.Ordinal);
+
+    private static bool StartsWith(string relative, string directory) =>
+        relative.StartsWith($"{directory}/", StringComparison.Ordinal);
 }

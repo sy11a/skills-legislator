@@ -138,7 +138,8 @@ public sealed class ApplyJobTests
     [Fact]
     public void Given_a_declaration_in_a_shape_the_migration_cannot_rewrite_When_apply_runs_Then_it_stops_before_writing()
     {
-        var fs = AtEdition25("Verification: read docs/ai/engine.py and run what it says.\n");
+        // It must *run* the path: a line that merely names one is a mention, not a refusal.
+        var fs = AtEdition25("Run `python3 docs/ai/engine.py anchors`, then `cp docs/ai/engine.py /tmp/x`.\n");
 
         var result = RunApply(fs, null, "--stacks", "");
 
@@ -169,6 +170,11 @@ public sealed class ApplyJobTests
 
         Assert.Equal(0, result.ExitCode);
         Assert.Contains("1 mention(s) left in records", result.Stdout, StringComparison.Ordinal);
+        // The run record carries the same three facts the report prints.
+        var record = System.Text.Json.Nodes.JsonNode.Parse(
+            fs.File.ReadAllText(result.Stdout.Split("run record: ")[1].Trim()))!["retiredCommands"]!;
+        Assert.Equal(1, record["records"]!.GetValue<int>());
+        Assert.Empty(record["mentioned"]!.AsArray());
         Assert.Contains("`python3 docs/ai/engine.py anchors`",
             fs.File.ReadAllText($"{Root}/docs/cases/BL-001-a/summary.md"), StringComparison.Ordinal);
     }
