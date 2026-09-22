@@ -103,8 +103,28 @@ public sealed partial class ApplyJob : IJob
         };
 
         var sources = OwnedSet.Of(fs, parsed.Skill, layout, ctx.Options, stacks);
+
+        // The declarations that name what this run is about to retire, planned before the first
+        // write for the same reason the two-entry-document gate is: a refusal that promises
+        // nothing was written keeps that promise cheapest by having written nothing yet.
+        var retiring = detection.OwnedFilesOld
+            .Where(path => !sources.ContainsKey(path))
+            .ToList();
+        var stale = RetiredCommands.Of(fs, ctx.Options, layout, retiring);
+        if (stale.Refusals.Count > 0)
+        {
+            return new JobResult(
+                DecisionGateStop,
+                "",
+                "apply stopped: this edition retires a delivered file, and a declaration names it in a form "
+                + "this migration cannot rewrite. The retirement and the declaration have to move together, "
+                + "so neither moves until the shape is one it knows or the declaration is corrected by hand:\n"
+                + string.Concat(stale.Refusals.Select(r => $"  {r}\n")));
+        }
+
         var (created, overwritten, unchanged) = Copy(fs, layout, sources);
         var deleted = Retire(fs, layout, sources, detection.OwnedFilesOld);
+        var rewritten = RetiredCommands.Apply(fs, layout, stale);
         var keep = KeepList.Resolve(
             Carried(detection.Manifest),
             keepAdd,
@@ -149,6 +169,12 @@ public sealed partial class ApplyJob : IJob
                 [RunRecord.UnchangedField] = RunRecord.Array(unchanged),
             },
             [RunRecord.PreKey] = pre,
+            [RunRecord.RetiredCommandsKey] = new JsonObject
+            {
+                [RunRecord.RewrittenField] = RunRecord.Array(rewritten),
+                [RunRecord.MentionedField] = RunRecord.Array(stale.Mentions),
+                [RunRecord.RecordsField] = stale.Records,
+            },
             [RunRecord.ReconstructedKey] = detection.Reconstructed,
             [RunRecord.RootKey] = ctx.Root,
             [RunRecord.StacksKey] = RunRecord.Array(stacks),
@@ -160,6 +186,26 @@ public sealed partial class ApplyJob : IJob
         stdout.Append($"apply: {detection.Mode} mode, constitution v{version}, stacks [{string.Join(", ", stacks.Select(s => $"\"{s}\""))}]\n");
         stdout.Append($"  owned: {created.Count} created, {overwritten.Count} overwritten, {unchanged.Count} unchanged, {deleted.Count} deleted\n");
         stdout.Append($"  keep: {keep.Added.Count} added, {keep.Removed.Count} removed, {keep.Refused.Count} refused\n");
+        if (rewritten.Count > 0 || stale.Mentions.Count > 0 || stale.Records > 0)
+        {
+            // Named rather than counted-and-dropped: a declaration this run rewrote is a sentence
+            // the repository's owner did not write, and a mention it left is a place a reader may
+            // still meet the retired command.
+            stdout.Append(
+                $"  retired commands: {rewritten.Count} declaration(s) rewritten to the binary form, "
+                + $"{stale.Records} mention(s) left in records (cases, journal, ADRs, changelog — "
+                + "history, not a debt)\n");
+            foreach (var one in rewritten)
+            {
+                stdout.Append($"    rewritten: {one}\n");
+            }
+
+            foreach (var one in stale.Mentions)
+            {
+                stdout.Append($"    still names it, and is not a record: {one}\n");
+            }
+        }
+
         foreach (var ev in events)
         {
             stdout.Append($"  file model: {ev}\n");

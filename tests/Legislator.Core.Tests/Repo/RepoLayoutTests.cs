@@ -46,4 +46,29 @@ public sealed class RepoLayoutTests
 
         Assert.DoesNotContain('\\', layout.Rules);
     }
+
+    [Theory]
+    // `Relative` cuts `Root.Length + 1` characters, so a root carrying its own trailing
+    // separator ate the first character of every path it produced — and `apply --root ./`
+    // wrote the whole constitution to `ocs/ai/rules/core/`, deleted what it thought it was
+    // replacing, and reported success (BL-397).
+    [InlineData("/r")]
+    [InlineData("/r/")]
+    [InlineData("/r//")]
+    public void Given_a_root_written_with_or_without_a_separator_When_a_path_is_made_relative_Then_it_is_the_same(string root)
+    {
+        var layout = new RepoLayout(new LegislatorOptions(), root);
+
+        Assert.Equal("docs/ai/rules/core/okf.md", layout.Relative($"{layout.Root}/docs/ai/rules/core/okf.md"));
+        Assert.Equal("docs/ai/manifest.json", layout.Relative(layout.Manifest));
+    }
+
+    [Fact]
+    public void Given_the_file_system_root_When_a_layout_is_made_Then_it_keeps_its_one_separator()
+    {
+        var layout = new RepoLayout(new LegislatorOptions(), "/");
+
+        Assert.Equal("/", layout.Root);
+        Assert.Equal("docs/ai/manifest.json", layout.Relative(layout.Manifest));
+    }
 }

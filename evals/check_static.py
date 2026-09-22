@@ -305,9 +305,12 @@ print("== BL-051: the keep refusal covers the whole owned set ==")
 # opencode.json. A refusal phrased as "under docs/ai/rules/" leaves the other
 # two keep-listable, putting the kept-paths row (link-only) and the owned-law
 # row (replace) of the file-authority table in conflict.
-step3_keep = re.search(r"^6\. \*\*Keep list.+?(?=^7\. )", skill_md, re.M | re.S)
+# The step's ordinal moves whenever Step 3 gains an item (v27 inserted the retired-command
+# sweep before it), so the check finds the keep step by its name and ends it at the next
+# numbered item rather than pinning a number that a later edition silently invalidates.
+step3_keep = re.search(r"^\d+\. \*\*Keep list.+?(?=^\d+\. )", skill_md, re.M | re.S)
 report_keep = re.search(r"each refused request with why it was refused \(([^)]*)\)", skill_md)
-for label, text in (("step 3.6", step3_keep.group(0) if step3_keep else ""),
+for label, text in (("the Step 3 Keep list item", step3_keep.group(0) if step3_keep else ""),
                     ("the Step 7 Keep list section", report_keep.group(1) if report_keep else "")):
     check(bool(text), f"keep_refusal_covers_owned_set: {label} is parseable from SKILL.md")
     if text:

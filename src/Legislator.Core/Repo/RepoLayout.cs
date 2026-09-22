@@ -14,7 +14,12 @@ public sealed class RepoLayout
     {
         ArgumentNullException.ThrowIfNull(options);
 
-        Root = root;
+        // **Normalised once, here.** `Relative` cuts `Root.Length + 1` characters off a path, so a
+        // root carrying its own trailing separator ate the first character of every relative path
+        // it produced — and `apply --root ./` wrote the whole constitution to `ocs/ai/rules/core/`,
+        // deleted what it thought it was replacing, and reported success (BL-397). The separator
+        // belongs to the join, not to the root; `/` is the one root that is only a separator.
+        Root = Normalise(root);
         Docs = Join(root, options.DocsDir.Value);
         Ai = Join(Docs, options.AiDir.Value);
         Rules = Join(Ai, options.RulesDir.Value);
@@ -73,8 +78,29 @@ public sealed class RepoLayout
     {
         ArgumentNullException.ThrowIfNull(path);
 
-        return path.Replace('\\', '/')[(Root.Length + 1)..];
+        var forward = path.Replace('\\', '/');
+        // The separator belongs to the join. A root that is itself only a separator carries no
+        // second one, and cutting a fixed `Root.Length + 1` there ate the first character of
+        // every path — which is how a whole constitution landed in `ocs/ai/rules/core/`.
+        var cut = Root.EndsWith('/') ? Root.Length : Root.Length + 1;
+        return cut <= forward.Length ? forward[cut..] : forward;
     }
 
     private static string Join(string left, string right) => $"{left.TrimEnd('/')}/{right}";
+
+    private static string Normalise(string root)
+    {
+        ArgumentNullException.ThrowIfNull(root);
+
+        var forward = root.Replace('\\', '/');
+        if (forward == "/")
+        {
+            return forward;
+        }
+
+        var trimmed = forward.TrimEnd('/');
+        // `.` is the current directory written as a path: as a root it is one character, and
+        // `Relative` would then cut two off every path under it.
+        return trimmed.Length == 0 ? "/" : trimmed;
+    }
 }
