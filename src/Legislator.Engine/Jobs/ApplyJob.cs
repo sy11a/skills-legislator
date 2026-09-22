@@ -185,12 +185,15 @@ public sealed partial class ApplyJob : IJob
         stdout.Append($"apply: {detection.Mode} mode, constitution v{version}, stacks [{string.Join(", ", stacks.Select(s => $"\"{s}\""))}]\n");
         stdout.Append($"  owned: {created.Count} created, {overwritten.Count} overwritten, {unchanged.Count} unchanged, {deleted.Count} deleted\n");
         stdout.Append($"  keep: {keep.Added.Count} added, {keep.Removed.Count} removed, {keep.Refused.Count} refused\n");
-        if (rewritten.Count > 0 || stale.Mentions.Count > 0)
+        if (rewritten.Count > 0 || stale.Mentions.Count > 0 || stale.Records > 0)
         {
             // Named rather than counted-and-dropped: a declaration this run rewrote is a sentence
             // the repository's owner did not write, and a mention it left is a place a reader may
             // still meet the retired command.
-            stdout.Append($"  retired commands: {rewritten.Count} declaration(s) rewritten to the binary form\n");
+            stdout.Append(
+                $"  retired commands: {rewritten.Count} declaration(s) rewritten to the binary form, "
+                + $"{stale.Records} mention(s) left in records (cases, journal, ADRs, changelog — "
+                + "history, not a debt)\n");
             foreach (var one in rewritten)
             {
                 stdout.Append($"    rewritten: {one}\n");
@@ -198,7 +201,7 @@ public sealed partial class ApplyJob : IJob
 
             foreach (var one in stale.Mentions)
             {
-                stdout.Append($"    left as history: {one}\n");
+                stdout.Append($"    still names it, and is not a record: {one}\n");
             }
         }
 

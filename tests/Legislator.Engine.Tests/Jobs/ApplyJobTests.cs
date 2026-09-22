@@ -145,8 +145,14 @@ public sealed class ApplyJobTests
         Assert.Equal(4, result.ExitCode);
         Assert.Contains("AGENTS.md:1", result.Stderr, StringComparison.Ordinal);
         Assert.Contains("have to move together", result.Stderr, StringComparison.Ordinal);
-        // The promise the stop makes: the retirement did not happen either.
+        // The promise the stop makes: **nothing was written**. Asserting only that the retired
+        // file survives passes a migration that copies the new law in and then stops — which
+        // leaves the entry document importing v27 law that names the binary while still
+        // declaring the python form, the exact contradiction this case exists to prevent.
         Assert.True(fs.File.Exists($"{Root}/docs/ai/engine.py"));
+        Assert.False(fs.File.Exists($"{Root}/docs/ai/rules/core/sdd.md"));
+        Assert.False(fs.File.Exists($"{Root}/opencode.json"));
+        Assert.Equal("# okf law\n", fs.File.ReadAllText($"{Root}/docs/ai/rules/core/okf.md"));
         Assert.Equal("{\n  \"legislatorVersion\": 24,\n  \"stacks\": [],\n  \"keep\": [],\n  \"ownedFiles\": [\n"
             + "    \"docs/ai/engine.py\",\n    \"docs/ai/rules/core/okf.md\"\n  ]\n}\n",
             fs.File.ReadAllText($"{Root}/docs/ai/manifest.json"));
@@ -162,8 +168,46 @@ public sealed class ApplyJobTests
         var result = RunApply(fs, null, "--stacks", "");
 
         Assert.Equal(0, result.ExitCode);
-        Assert.Contains("left as history: docs/cases/BL-001-a/summary.md:1", result.Stdout, StringComparison.Ordinal);
+        Assert.Contains("1 mention(s) left in records", result.Stdout, StringComparison.Ordinal);
         Assert.Contains("`python3 docs/ai/engine.py anchors`",
             fs.File.ReadAllText($"{Root}/docs/cases/BL-001-a/summary.md"), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Given_a_repository_with_no_manifest_When_it_still_carries_a_retired_delivery_Then_the_upgrade_retires_it_and_moves_the_declaration()
+    {
+        // Reconstruction mode: the old owned set is read off disk, and a set listing only what
+        // the current edition delivers leaves the retired engine unowned — nothing deleted,
+        // nothing to rewrite, and a v27 manifest over a tree carrying an edition-25 engine that
+        // still answers `anchors` with edition-25 logic.
+        // The layer is plainly installed — the entry document imports the law — so detection
+        // reconstructs the owned set from disk rather than re-scaffolding.
+        var fs = AtEdition25(
+            "@docs/ai/rules/core/okf.md\n\n## Build & Test\n\n- `python3 docs/ai/engine.py anchors`\n");
+        fs.File.Delete($"{Root}/docs/ai/manifest.json");
+
+        var result = RunApply(fs, null, "--stacks", "");
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.False(fs.File.Exists($"{Root}/docs/ai/engine.py"));
+        Assert.Contains("- `legislator anchors`", fs.File.ReadAllText($"{Root}/AGENTS.md"), StringComparison.Ordinal);
+    }
+
+    [Theory]
+    // The four repositories this case was written for, each line as it really stands.
+    [InlineData("- Every commit: `python3 docs/ai/engine.py anchors`, `python3 docs/ai/engine.py sdd-lint`, and `python3 -m unittest discover tools/tests`",
+                "- Every commit: `legislator anchors`, `legislator sdd-lint`, and `python3 -m unittest discover tools/tests`")]
+    [InlineData("Verification: `python3 tools/verify-vault.py`, `python3 docs/ai/engine.py anchors`, `python3 docs/ai/engine.py sdd-lint`.",
+                "Verification: `python3 tools/verify-vault.py`, `legislator anchors`, `legislator sdd-lint`.")]
+    [InlineData("- Structural: `python3 docs/ai/engine.py anchors` and `python3 docs/ai/engine.py sdd-lint` from the repo root",
+                "- Structural: `legislator anchors` and `legislator sdd-lint` from the repo root")]
+    public void Given_a_real_fleet_declaration_When_apply_runs_Then_it_moves_rather_than_refusing(string before, string after)
+    {
+        var fs = AtEdition25($"## Build & Test\n\n{before}\n");
+
+        var result = RunApply(fs, null, "--stacks", "");
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.Equal($"## Build & Test\n\n{after}\n", fs.File.ReadAllText($"{Root}/AGENTS.md"));
     }
 }

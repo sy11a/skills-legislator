@@ -62,16 +62,27 @@ contradict the law it imports. Both are real and neither is fixed by being caref
 ## The hurting case
 
 **GIVEN** an edition-25 repository whose manifest owns `docs/ai/engine.py`, whose `AGENTS.md`
-declares `- `python3 docs/ai/engine.py anchors``, and a package that no longer ships that file,
+declares — **on one line, as all four of them do** — ``- Every commit: `python3 docs/ai/engine.py
+anchors`, `python3 docs/ai/engine.py sdd-lint`, and `python3 -m unittest discover tools/tests` ``,
+and a package that no longer ships that file,
 **WHEN** `legislator apply --skill <package> --root . --stacks ""` runs,
-**THEN** it exits 0, the file is gone, **and the declaration reads `- `legislator anchors``** — and
-its stdout names the line it rewrote.
+**THEN** it exits 0, the file is gone, **and the line reads ``- Every commit: `legislator anchors`,
+`legislator sdd-lint`, and `python3 -m unittest discover tools/tests` ``** — every invocation moved
+and the command that is not the retired one untouched — and its stdout names the line it rewrote.
+
+The first version of this fix rewrote **one** occurrence per line, saw the retired path still there
+and refused; every one of the four repositories writes both invocations on one line, so it refused
+all four and offered the remedy the ruling forbids — correct it by hand. Its control was written
+with one invocation per line, a shape no fleet entry document uses. **A fixture of a shape the
+subject does not have is a control over a corpus the change never meets.**
 
 **AND GIVEN** the same repository whose `AGENTS.md` instead reads
 `Verification: read docs/ai/engine.py and run what it says.`,
-**THEN** the run exits 4 naming `AGENTS.md:1`, **and the file is still there and the manifest still
-says version 24** — the promise a stop makes is that nothing moved, and a retirement that happened
-anyway would be the worst of both orderings.
+**THEN** the run exits 4 naming `AGENTS.md:1`, **and nothing is written at all** — the retired file
+still there, the manifest still at version 24, **and not one owned file of the new edition laid
+down**. Asserting only the first two passes a migration that copies the v27 law in and then stops,
+which leaves the entry document importing law that names the binary while still declaring the
+python form: the contradiction this case exists to prevent, reached through the stop.
 
 It is the case it would hurt most to see broken because it is the ordering trap itself: the two
 acts are one act, and a control that only checks the rewrite would pass a migration that retires
@@ -81,6 +92,15 @@ the file and leaves a declaration it could not read.
 
 **In scope.** The `apply` job's sweep, its controls, Step 3 of the skill's law, and the edition
 bump that carries them.
+
+**What the edition assignment owes, and does not pay here.** `skill/VERSION` moves 26 → 27, which
+assigns the number L-1's benchmark record left to the operator; the recommendation taken is that 27
+carries both halves, since neither is released and splitting them would make every repository take
+two upgrades for one week's work. Owed before a repository takes 27, recorded in
+`evals/benchmarks/v27.md`: a published `27.0.0` binary with its digest, and the e2e benchmark
+re-run against that arm. Until the binary exists, `python3 evals/check_engine.py` reports
+`[arm-integrity] the installed arm reports 26.0.0 where this edition pins 27.0.0` on a host whose
+arm is 26 — the check working, not a defect.
 
 **Out of scope, each with its own record.** Rewriting the four repositories' declarations by hand
 — that is the trap this case exists to close, and each moves when it takes the edition. The

@@ -8,6 +8,25 @@ timestamp: 2026-09-08T00:00:00Z
 
 # OKF Bundle Changelog
 
+## 2026-09-22 — a retirement and a declaration become one act (edition v27)
+
+BL-397 (`#60`, `sy11a/Architector#448`). Edition 26 retires `docs/ai/engine.py`. Four governed
+repositories declare that file as their own gate, in instance data the legislator owns nothing of —
+foundry's in `tools/gate.sh` as well as in prose — so the day any of them upgraded was the day its
+declared gate named a file that is gone. Neither ordering of the two acts is safe alone, which an
+earlier attempt on clerk proved by being refused for both of the reasons.
+
+`apply` sweeps, before its first write, for commands naming a path the run is about to retire, and
+two new terms carry the rule: **declaration home** (where a repository says how to verify itself
+now — rewritten) against a record (a case, a journal day, an ADR, the changelog, a test's fixture —
+counted and left, because its going out of date is the design); and **retired delivery**, the one
+literal the engine keeps, for the reconstruction that has no old manifest to diff against.
+
+A shape the rewrite does not recognise stops the run at exit 4 with nothing written, the retirement
+included. Over the four repositories the sweep moves six declarations — foundry's `tools/gate.sh`
+and the `.claude/rules/verification.md` rows it is reconciled against, in one run — and names two
+`docs/okf/` lines it did not rewrite, which are the OKF rule's to repair.
+
 ## 2026-09-03 — BL-082 T-10: the write path, and a ruler measured with a dead arm
 
 `apply`, `verify` and `report` exist in .NET, and with them the run record, the

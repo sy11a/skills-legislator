@@ -63,16 +63,57 @@ public sealed class RetiredCommandsTests
         Assert.Contains("does not know how to rewrite", refusal, StringComparison.Ordinal);
     }
 
-    [Fact]
-    public void Given_a_case_summary_naming_the_retired_command_When_swept_Then_it_is_left_as_history()
+    [Theory]
+    [InlineData("docs/cases/BL-001-a/summary.md")]
+    [InlineData("docs/journal/2026-09-01.md")]
+    [InlineData("docs/adr/0001-a.md")]
+    [InlineData("CHANGELOG.md")]
+    public void Given_a_record_naming_the_retired_command_When_swept_Then_it_is_counted_not_listed(string home)
     {
         // A record of what was true when it was written. Rewriting it would falsify the record,
-        // and its going out of date is the design (artifact-lifecycle).
-        var plan = Plan(("docs/cases/BL-001-a/summary.md", $"The gate we ran was `python3 {Retired} anchors`.\n"));
+        // and its going out of date is the design (artifact-lifecycle). Listing them buries the
+        // mentions a reader must act on, so they are counted.
+        var plan = Plan((home, $"The gate we ran was `python3 {Retired} anchors`.\n"));
 
         Assert.Empty(plan.Rewrites);
         Assert.Empty(plan.Refusals);
-        Assert.Equal("docs/cases/BL-001-a/summary.md:1", Assert.Single(plan.Mentions));
+        Assert.Empty(plan.Mentions);
+        Assert.Equal(1, plan.Records);
+    }
+
+    [Fact]
+    public void Given_a_knowledge_document_naming_the_retired_command_When_swept_Then_it_is_named_for_the_reader()
+    {
+        // Not a record: `core/okf.md` says a concept document must be updated when the concept
+        // changes, so this is the one line in the block its reader has an act in.
+        var plan = Plan(("docs/okf/stand.md", $"| `anchors` | `python3 {Retired} anchors` | the rung |\n"));
+
+        Assert.Equal("docs/okf/stand.md:1", Assert.Single(plan.Mentions));
+        Assert.Equal(0, plan.Records);
+    }
+
+    [Fact]
+    public void Given_a_frozen_fixture_under_tools_When_swept_Then_it_is_not_a_declaration()
+    {
+        // clerk keeps a 2026-08-31 backlog snapshot under `tools/tests/fixtures/`, pinned by its
+        // own parser test. Taking `tools/**.md` as declaration made the upgrade refuse and offer
+        // a remedy that would have rewritten a record and changed a test's subject.
+        var plan = Plan(("tools/tests/fixtures/backlog-2026-08-31.md", $"the engine, `{Retired}`, was delivered then\n"));
+
+        Assert.Empty(plan.Refusals);
+        Assert.Empty(plan.Rewrites);
+        Assert.Empty(plan.Mentions);
+        Assert.Equal(1, plan.Records);
+    }
+
+    [Fact]
+    public void Given_a_path_that_merely_contains_the_retired_one_When_swept_Then_nothing_is_named()
+    {
+        var plan = Plan(("tools/gate.sh", $"cp tools/docs/ai/engine.py.bak /tmp/x\n"));
+
+        Assert.Empty(plan.Refusals);
+        Assert.Empty(plan.Rewrites);
+        Assert.Empty(plan.Mentions);
     }
 
     [Fact]
@@ -123,6 +164,13 @@ public sealed class RetiredCommandsTests
     [InlineData("- `python3 docs/ai/engine.py anchors`", "- `legislator anchors`")]
     [InlineData("run sdd-lint python docs/ai/engine.py sdd-lint", "run sdd-lint legislator sdd-lint")]
     [InlineData("`python3 docs/ai/engine.py okf-debt` names stale documents", "`legislator okf-debt` names stale documents")]
+    // The four repositories this exists for all write both invocations on one line. A rewrite
+    // that took the first and then saw the path still there refused every one of them.
+    [InlineData(
+        "- Gates: `python3 docs/ai/engine.py anchors`, `python3 docs/ai/engine.py sdd-lint`, and `python3 -m unittest`",
+        "- Gates: `legislator anchors`, `legislator sdd-lint`, and `python3 -m unittest`")]
+    [InlineData("python3 docs/ai/engine.py anchors && python3 docs/ai/engine.py sdd-lint",
+                "legislator anchors && legislator sdd-lint")]
     public void Given_a_recognised_invocation_When_rewritten_Then_the_rest_of_the_line_survives(string before, string after) =>
         Assert.Equal(after, RetiredCommands.Rewrite(before, Retired));
 
@@ -130,7 +178,32 @@ public sealed class RetiredCommandsTests
     [InlineData("see docs/ai/engine.py for the jobs")]
     [InlineData("python3 docs/ai/engine.py")]
     [InlineData("cp docs/ai/engine.py /tmp/x")]
-    [InlineData("python3 docs/ai/engine.py anchors && python3 docs/ai/engine.py sdd-lint")]
     public void Given_a_shape_the_rewrite_does_not_know_When_rewritten_Then_it_returns_null(string line) =>
         Assert.Null(RetiredCommands.Rewrite(line, Retired));
+
+    [Fact]
+    public void Given_a_file_with_CRLF_endings_When_applied_Then_only_the_edited_line_changes()
+    {
+        // `ReadAllLines` + join on '\n' normalises the whole file, which is the whole-file diff
+        // the rewrite exists not to make.
+        var fs = ApplyFixture.Repo(new Dictionary<string, string>
+        {
+            ["tools/gate.sh"] = $"#!/bin/sh\r\nrun anchors python3 {Retired} anchors\r\necho done\r\n",
+        });
+        var plan = RetiredCommands.Of(fs, ApplyFixture.Options, ApplyFixture.Layout, [Retired]);
+
+        RetiredCommands.Apply(fs, ApplyFixture.Layout, plan);
+
+        Assert.Equal(
+            "#!/bin/sh\r\nrun anchors legislator anchors\r\necho done\r\n",
+            fs.File.ReadAllText($"{ApplyFixture.Root}/tools/gate.sh"));
+    }
+
+    [Theory]
+    [InlineData("tools/docs/ai/engine.py.bak", false)]
+    [InlineData("x/docs/ai/engine.py", false)]
+    [InlineData("`docs/ai/engine.py`", true)]
+    [InlineData("run docs/ai/engine.py anchors", true)]
+    public void Given_a_line_When_asked_whether_it_names_the_retired_path_Then_a_longer_path_is_not_it(string line, bool named) =>
+        Assert.Equal(named, RetiredCommands.Names(line, Retired));
 }

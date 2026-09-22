@@ -1,3 +1,4 @@
+using Legislator.Engine.Apply;
 using System.IO.Abstractions;
 using System.Text.Json.Nodes;
 using Legislator.Core.Manifest;
@@ -96,7 +97,13 @@ public sealed record Detection(
                 .Select(f => layout.Relative(f)));
         }
 
-        foreach (var extra in new[] { layout.Opencode })
+        // **What an earlier edition delivered is owned even where no manifest says so.** A tree
+        // with no manifest to read has its owned set reconstructed from disk, and a set that
+        // listed only what the *current* edition still delivers would leave a retired file
+        // unowned: the run would neither delete it nor see anything to retire, and a repository
+        // would come out of an upgrade carrying an edition-25 engine that still answers `anchors`
+        // with edition-25 logic, while its freshly-laid law names the binary (BL-397).
+        foreach (var extra in new[] { layout.Opencode, $"{layout.Ai}/{RetiredDeliveries.Engine}" })
         {
             if (fs.File.Exists(extra))
             {
