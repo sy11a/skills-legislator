@@ -17,13 +17,22 @@ namespace Legislator.Engine.Apply;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>An invocation, not a mention.</b> The subject is a line that <em>runs</em> the retired path.
-/// A line that merely names it is reported and left — including the entry document's own
-/// `@docs/ai/rules/core/…` import block, which names every rule file by path. The first version
-/// refused on any mention, which meant it refused every upgrade that retires a rule file or drops
-/// a stack: two of the five scenarios in this edition's own e2e corpus, and a stack drop on every
-/// governed repository. The engine deletes and the skill's report proposes the import's removal;
-/// that division is older than this sweep and is not this sweep's to override.
+/// <b>Law is imported; a tool is run.</b> The sweep asks first <em>what</em> is being retired.
+/// A rule file under the rules directory is named by every entry document that imports it, and
+/// retiring one is the ordinary business of a constitution — the engine deletes it and the
+/// skill's report proposes the import's removal, a division older than this sweep. So a retired
+/// rule is a mention everywhere and a refusal nowhere. Refusing on it refused two of the five
+/// scenarios in this edition's own e2e corpus and every stack drop on the fleet.
+/// </para>
+/// <para>
+/// <b>For a retired tool, refusal is the default and rewriting the exception.</b> A line in a
+/// declaration home that names a retired executable and does not come out of the rewrite clean
+/// stops the run. The version before this one refused only where its own regex had already
+/// matched — so a line the rewrite <em>could</em> read was guarded and a line it could not was
+/// waved through as a mention, the file deleted under a live command at exit 0. That is the
+/// wrong way round: an unreadable invocation is exactly the case a migration must not guess at,
+/// and an unknown classification fails toward the cheap error (`core/artifact-lifecycle.md`) —
+/// a refusal costs one hand-corrected line and a re-run, a silent pass costs a broken gate.
 /// </para>
 /// <para>
 /// <b>Declarations are rewritten; records are counted.</b> A repository's entry document, its
@@ -72,17 +81,15 @@ public static partial class RetiredCommands
             return new Plan(rewrites, refusals, mentions, 0);
         }
 
+        var law = $"{layout.Relative(layout.Rules)}/";
+        var tools = retiring.Where(p => !p.StartsWith(law, StringComparison.Ordinal)).ToList();
         var declarations = Declarations(fs, options, layout).ToHashSet(StringComparer.Ordinal);
         foreach (var file in Candidates(fs, layout, declarations))
         {
             var relative = layout.Relative(file);
-            // The record test comes first: a script under `tests/` or `fixtures/` is a frozen
-            // input whatever its extension, and taking it as a declaration refused an upgrade
-            // over a fixture of the old gate.
-            var isRecord = IsRecord(layout, relative);
-            var isDeclaration = !isRecord && declarations.Contains(file);
-            var text = fs.File.ReadAllText(file);
-            var lines = Split(text);
+            var isDeclaration = declarations.Contains(file);
+            var isRecord = IsRecord(options, layout, relative);
+            var lines = Split(fs.File.ReadAllText(file));
             for (var i = 0; i < lines.Count; i++)
             {
                 var line = lines[i].Text;
@@ -92,16 +99,20 @@ public static partial class RetiredCommands
                     continue;
                 }
 
-                var rewritten = isDeclaration ? Rewrite(line, named) : null;
+                // A comment is neither rewritten nor refused: rewriting one falsifies a record
+                // of what the gate used to be, and refusing offers a remedy that would.
+                var rewritten = isDeclaration && !IsComment(line) ? Rewrite(line, named) : null;
                 if (rewritten is not null)
                 {
                     rewrites.Add(new Edit(relative, i + 1, line, rewritten));
                 }
-                else if (isDeclaration && Invokes(line, named))
+                else if (isDeclaration && tools.Contains(named, StringComparer.Ordinal) && !IsComment(line))
                 {
+                    // Refusal is the default here, whether or not the rewrite could read the
+                    // line: the shapes it cannot read are the ones a migration must not guess at.
                     refusals.Add(
-                        $"{relative}:{i + 1} runs '{named}', which this edition retires, in a form this "
-                        + $"migration does not know how to rewrite: {line.Trim()}");
+                        $"{relative}:{i + 1} names '{named}', which this edition retires, and this "
+                        + $"migration cannot rewrite the line: {line.Trim()}");
                 }
                 else if (isRecord)
                 {
@@ -172,18 +183,32 @@ public static partial class RetiredCommands
                 return m.Value;
             }
 
+            // The job has to be one the binary answers to. `--help` is not a job, and neither
+            // is the next word of a sentence: rewriting either produces a command that does not
+            // exist, which is a worse declaration than the one it replaced.
+            var job = m.Groups["job"].Value;
+            if (!JobRegistry.Jobs.ContainsKey(job))
+            {
+                return m.Value;
+            }
+
             any = true;
-            return $"legislator {m.Groups["job"].Value}";
+            return $"legislator {job}";
         });
         return !any || Names(rewritten, retired) ? null : rewritten;
     }
 
-    /// <summary>Whether the line runs the retired path, as opposed to merely naming it.</summary>
-    public static bool Invokes(string line, string retired)
+    /// <summary>
+    /// A shell comment. A fixture script that <em>describes</em> the old gate in a comment is not
+    /// a gate, and stopping an upgrade over one offers a remedy — edit it by hand — that would
+    /// rewrite a record. A comment is the one shape in a declaration home that is not refused.
+    /// </summary>
+    public static bool IsComment(string line)
     {
         ArgumentNullException.ThrowIfNull(line);
 
-        return Invocation().Matches(line).Any(m => PathNames(m.Groups["path"].Value, retired));
+        var trimmed = line.TrimStart();
+        return trimmed.StartsWith('#') && !trimmed.StartsWith("#!", StringComparison.Ordinal);
     }
 
     /// <summary>
@@ -339,22 +364,29 @@ public static partial class RetiredCommands
     /// path: keyed on the absolute one, a repository checked out under a directory called `tests`
     /// had every mention counted and none named.
     /// </summary>
-    private static bool IsRecord(RepoLayout layout, string relative) =>
-        relative.Equals(layout.Relative(layout.Changelog), StringComparison.Ordinal)
-        || StartsWith(relative, layout.Relative(layout.Cases))
-        || StartsWith(relative, layout.Relative(layout.Journal))
-        || StartsWith(relative, layout.Relative(layout.Adr))
-        || StartsWith(relative, layout.Relative(layout.Changes))
-        // `core/okf.md`'s human class: a glossary defines terms and a log records what was true
-        // at the time, so naming something since removed is correct there, not stale.
-        || relative.EndsWith("/log.md", StringComparison.Ordinal)
-        || relative.EndsWith("/glossary.md", StringComparison.Ordinal)
-        // A generated mirror is never hand-edited, and legacy specs are history by their own law.
-        || relative.EndsWith("/backlog.md", StringComparison.Ordinal)
-        || StartsWith(relative, $"{layout.Relative(layout.Docs)}/superpowers")
-        // A test's fixture is frozen input: its content is the thing under test.
-        || relative.Contains("/tests/", StringComparison.Ordinal)
-        || relative.Contains("/fixtures/", StringComparison.Ordinal);
+    private static bool IsRecord(LegislatorOptions options, RepoLayout layout, string relative)
+    {
+        var docs = layout.Relative(layout.Docs);
+        var okf = layout.Relative(layout.Okf);
+        return relative.Equals(layout.Relative(layout.Changelog), StringComparison.Ordinal)
+            || StartsWith(relative, layout.Relative(layout.Cases))
+            || StartsWith(relative, layout.Relative(layout.Journal))
+            || StartsWith(relative, layout.Relative(layout.Adr))
+            || StartsWith(relative, layout.Relative(layout.Changes))
+            // `core/okf.md`'s human class: a glossary defines terms and a log records what was
+            // true at the time, so naming something since removed is correct there, not stale.
+            || options.HumanClassDocs.Value.Any(
+                name => relative.Equals($"{okf}/{name}", StringComparison.Ordinal))
+            // A generated mirror is never hand-edited; legacy specs are history by their own law.
+            || relative.Equals($"{docs}/{options.BacklogFile.Value}", StringComparison.Ordinal)
+            || StartsWith(relative, $"{docs}/superpowers")
+            // A test's fixture is frozen input — but only a document. A *script* under the same
+            // path is a live command wherever it lives, and calling it history left two of them
+            // running a file the same run had deleted.
+            || (relative.EndsWith(".md", StringComparison.Ordinal)
+                && (relative.Contains("/tests/", StringComparison.Ordinal)
+                    || relative.Contains("/fixtures/", StringComparison.Ordinal)));
+    }
 
     private static bool StartsWith(string relative, string directory) =>
         relative.StartsWith($"{directory}/", StringComparison.Ordinal);

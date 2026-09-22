@@ -56,13 +56,12 @@ public sealed class RetiredCommandsTests
     [Fact]
     public void Given_a_declaration_naming_the_retired_path_in_an_unknown_shape_When_swept_Then_it_refuses()
     {
-        // It must *run* the path: a line that merely names one is a mention, not a refusal.
         var plan = Plan(("AGENTS.md", $"Run `python3 {Retired} anchors`, then `cp {Retired} /tmp/x`.\n"));
 
         Assert.Empty(plan.Rewrites);
         var refusal = Assert.Single(plan.Refusals);
         Assert.Contains("AGENTS.md:1", refusal, StringComparison.Ordinal);
-        Assert.Contains("does not know how to rewrite", refusal, StringComparison.Ordinal);
+        Assert.Contains("cannot rewrite the line", refusal, StringComparison.Ordinal);
     }
 
     [Theory]
@@ -260,15 +259,68 @@ public sealed class RetiredCommandsTests
     }
 
     [Fact]
-    public void Given_a_script_under_a_fixtures_path_When_swept_Then_it_is_a_record_not_a_declaration()
+    public void Given_a_comment_in_a_script_When_swept_Then_it_is_not_refused()
     {
+        // A fixture script that *describes* the old gate is not a gate. A comment is the one
+        // shape in a declaration home that is not refused — stopping over one would offer a
+        // remedy that rewrites a record.
         var plan = Plan(("tools/tests/fixtures/old-gate.sh", $"# the old gate was python3 {Retired} anchors\n"));
 
         Assert.Empty(plan.Refusals);
         Assert.Empty(plan.Rewrites);
-        Assert.Empty(plan.Mentions);
-        Assert.Equal(1, plan.Records);
+        Assert.Equal("tools/tests/fixtures/old-gate.sh:1", Assert.Single(plan.Mentions));
     }
+
+    [Theory]
+    [InlineData("tools/tests/run.sh")]
+    [InlineData("tools/fixtures/run.sh")]
+    public void Given_a_live_script_under_a_tests_path_When_swept_Then_it_is_still_a_command(string where)
+    {
+        // Calling every line under `tests/` history left two scripts running a file the same run
+        // had deleted. A script is a live command wherever it lives; only a *document* there is
+        // frozen input.
+        var plan = Plan((where, $"python3 {Retired} anchors\n"));
+
+        Assert.Equal("legislator anchors", Assert.Single(plan.Rewrites).After);
+    }
+
+    [Theory]
+    // Shapes the rewrite's one regex cannot read. Each is a live command; each must stop the run.
+    [InlineData("python3 \"$ROOT\"/docs/ai/engine.py anchors")]
+    [InlineData("python3 -u docs/ai/engine.py anchors")]
+    [InlineData("exec python3 docs/ai/engine.py \"$@\"")]
+    [InlineData("Run `python3 docs/ai/engine.py --help` to list the jobs.")]
+    public void Given_an_invocation_the_rewrite_cannot_read_When_swept_Then_the_run_refuses(string line)
+    {
+        // The version before this one refused only where its own regex had matched — so a line
+        // it could read was guarded and a line it could not was waved through, the file deleted
+        // under a live command at exit 0. Refusal is the default now.
+        var plan = Plan(("tools/gate.sh", line + "\n"));
+
+        Assert.Empty(plan.Rewrites);
+        Assert.Single(plan.Refusals);
+    }
+
+    [Fact]
+    public void Given_a_retired_rule_file_When_it_is_named_anywhere_Then_it_is_never_a_refusal()
+    {
+        // Law is imported, not run: retiring a rule is the ordinary business of a constitution.
+        var plan0 = Plan(("AGENTS.md", "@docs/ai/rules/core/old.md\n"));
+        var fs = ApplyFixture.Repo(new Dictionary<string, string> { ["AGENTS.md"] = "@docs/ai/rules/core/old.md\n" });
+
+        var plan = RetiredCommands.Of(
+            fs, ApplyFixture.Options, ApplyFixture.Layout, ["docs/ai/rules/core/old.md"]);
+
+        Assert.Empty(plan0.Refusals);
+        Assert.Empty(plan.Refusals);
+        Assert.Equal("AGENTS.md:1", Assert.Single(plan.Mentions));
+    }
+
+    [Theory]
+    [InlineData("python3 docs/ai/engine.py --help")]
+    [InlineData("python3 docs/ai/engine.py nosuchjob")]
+    public void Given_a_job_the_binary_does_not_have_When_rewritten_Then_it_is_not_invented(string line) =>
+        Assert.Null(RetiredCommands.Rewrite(line, Retired));
 
     [Theory]
     [InlineData("docs/okf/log.md")]
