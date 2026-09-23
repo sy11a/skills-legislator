@@ -375,22 +375,124 @@ for cs in sorted(SRC.rglob("*.cs")):
     check(not hits, f"{rel} carries no path/name literal",
           f"lines {hits} — add an option instead (C-03)")
 
-print("== BL-082: the release matrix is the only home of three of the four RIDs (R-8203) ==")
+print("== BL-082: the release matrix builds every RID the edition releases (R-8203) ==")
 # NativeAOT does not cross-compile between operating systems, so `publish-legislator.sh`
-# publishes the host's RID and no more. The other three exist only if the matrix builds
-# them, which makes this workflow part of the edition rather than incidental config
+# publishes the host's RID and no more. Any other released RID exists only if the matrix
+# builds it, which makes this workflow part of the edition rather than incidental config
 # (operator ruling 2026-09-04, option a).
-RIDS = ("linux-x64", "win-x64", "osx-x64", "osx-arm64")
+#
+# BL-408: the set is READ from the publish script's `released=(...)` line, not restated
+# here. It was restated, and the two would have parted company the moment one moved —
+# which is the defect class BL-406 spent a day on, one file over.
+# BASH reads the bash. A regex over `released=(...)` is a third grammar
+# beside the two it is meant to hold together, and the round showed it
+# losing on shapes the file plainly permits: an inline comment (`#` and
+# the runner name became released RIDs), quotes, a line continuation,
+# `readonly`/`declare`/`export`, a leading indent, `+=` accumulation.
+# The natural way to restore a RID is to annotate it the way the workflow
+# annotates its retired rows — which is exactly the shape that broke.
+#
+# ONLY the assignment is handed to bash — never the script. Sourcing it
+# runs it, publish loop and all; that was tried here and it built a binary
+# before the probe's own printf could run.
+#
+# The assignment is taken from its opening `released=(` through the
+# matching `)`, so a multi-line array comes along whole.
+_pub_path = REPO / "tools" / "publish-legislator.sh"
+_pub = _pub_path.read_text()
+_start = re.search(r"^[ \t]*(?:declare\s+-a\s+|readonly\s+|export\s+)*"
+                   r"released=\(", _pub, re.M)
+_snippet = ""
+if _start:
+    _depth, _i = 0, _start.end() - 1
+    while _i < len(_pub):
+        if _pub[_i] == "(":
+            _depth += 1
+        elif _pub[_i] == ")":
+            _depth -= 1
+            if _depth == 0:
+                _snippet = _pub[_start.start():_i + 1]
+                break
+        _i += 1
+_probe = subprocess.run(
+    ["bash", "-c", f'set -u\n{_snippet}\nprintf "%s\\n" "${{released[@]}}"'],
+    capture_output=True, text=True) if _snippet else None
+RIDS = tuple(_probe.stdout.split()) if _probe else ()
+check(bool(RIDS), "the publish script declares the released RID set",
+      f"no readable `released=(...)` assignment in tools/publish-legislator.sh "
+      f"(bash said: {(_probe.stderr.strip()[:160] if _probe else 'no assignment found')}) "
+      f"— nothing states what the edition "
+      f"releases, so nothing can check the matrix against it")
 workflow = REPO / ".github" / "workflows" / "dotnet.yml"
 check(workflow.is_file(), "the release workflow exists",
-      f"{workflow.relative_to(REPO).as_posix()} is absent - three of the four RIDs have no builder")
+      f"{workflow.relative_to(REPO).as_posix()} is absent - a released RID with no builder "
+      f"is a RID the edition cannot release")
 if workflow.is_file():
     body = workflow.read_text()
-    missing = [rid for rid in RIDS if rid not in body]
-    check(not missing, "the release workflow names every released RID",
-          f"absent from the matrix: {missing} - a RID nothing builds is a RID the edition cannot release")
-    check("-warnaserror" in body, "the release workflow builds strict",
-          "the matrix must build under the same discipline as the gate (R-8202)")
+    # The workflow is READ AS YAML, not matched as text.
+    #
+    # Two drafts of this check failed before this one, and each failed the
+    # same way — reading prose and calling it a fact. The first asked
+    # `rid not in body`, which was true of a comment saying nothing builds
+    # that RID. The second matched flow-style rows with a regex, and the
+    # round killed it five ways: a block-style row, a quoted value, an
+    # anchored row and a one-line `include: [...]` each read as "the matrix
+    # builds nothing" on a workflow that builds fine, while a row moved
+    # under `exclude:` read as green on a matrix that builds nothing at all.
+    #
+    # PyYAML is not a declared dependency of this repository, so its absence
+    # FAILS the check rather than falling back to a regex. An unmeasured
+    # check that says so is worth more than a weaker one that says "ok".
+    try:
+        import yaml
+        wf, yaml_err = yaml.safe_load(body), ""
+    except ImportError:
+        wf, yaml_err = None, ("PyYAML is not installed, so the release matrix cannot be "
+                              "read as YAML; install it rather than trusting a text match")
+    except Exception as e:
+        wf, yaml_err = None, f"{workflow.name} is not valid YAML: {e}"
+    check(wf is not None, "the release workflow parses as YAML", yaml_err)
+
+    if wf is not None:
+        job = (wf.get("jobs") or {}).get("matrix") or {}
+        strategy = job.get("strategy") or {}
+        matrix = strategy.get("matrix") or {}
+        include = matrix.get("include") or []
+        built = [row.get("rid") for row in include
+                 if isinstance(row, dict) and row.get("rid")]
+        missing = [rid for rid in RIDS if rid not in built]
+        check(not missing, "the release workflow builds every released RID",
+              f"released but absent from the matrix: {missing} (matrix builds {built}) - "
+              f"a RID nothing builds is a RID the edition cannot release")
+        spurious = [rid for rid in built if rid not in RIDS]
+        check(not spurious, "the release matrix builds nothing the edition does not release",
+              f"built but not released: {spurious} (released {list(RIDS)}) - a job whose RID "
+              f"the edition does not release spends a runner and reddens a tag for nothing")
+        # An `exclude:` axis subtracts from the product, so a matrix can name
+        # every released RID and build none of them (the round's M5).
+        check(not matrix.get("exclude"), "the release matrix excludes nothing",
+              f"the matrix carries an `exclude:` axis ({matrix.get('exclude')}) - it can "
+              f"subtract a row this check has just counted as built")
+        # A job that never runs builds nothing, whatever its matrix says (M6).
+        check("if" not in job, "the release job is unconditional",
+              f"the matrix job carries `if: {job.get('if')}` - a condition this check "
+              f"cannot evaluate decides whether anything is built at all")
+        steps = job.get("steps") or []
+        runs = [s.get("run", "") for s in steps if isinstance(s, dict)]
+        check(any("-warnaserror" in r for r in runs),
+              "the release workflow builds strict",
+              "no step runs a build with -warnaserror; the matrix must build under the "
+              "same discipline as the gate (R-8202). Read from the steps' `run:` values, "
+              "not from the file's text - the previous form of this check was the very "
+              "defect the block above diagnoses, nine lines further down the same file")
+        check(any("publish-legislator" in r for r in runs),
+              "the release workflow publishes the arm",
+              "no step invokes tools/publish-legislator.sh - the matrix would build and "
+              "upload nothing, which CI reports only when upload-artifact finds no file")
+        tags = (((wf.get(True) or wf.get("on")) or {}).get("push") or {}).get("tags")
+        check(bool(tags), "the release workflow runs at a tag",
+              "no `on.push.tags` trigger - a tagged release would produce no run at all, "
+              "which is what ADR 0013 says this matrix exists to make green")
 
 print("== BL-082: the .NET gate is invoked by a shell that can run it ==")
 # The gate declares `#!/usr/bin/env bash` and uses arrays and `pipefail`.
@@ -400,6 +502,7 @@ print("== BL-082: the .NET gate is invoked by a shell that can run it ==")
 # /bin/sh is bash saw nothing. A gate that cannot start is worse than one that
 # fails, so the invocation is checked rather than remembered.
 gate_callers = []
+publish_callers = []
 for path in sorted(REPO.rglob("*")):
     if not path.is_file() or ".git/" in str(path):
         continue
@@ -416,9 +519,20 @@ for path in sorted(REPO.rglob("*")):
     for n, line in enumerate(text.splitlines(), 1):
         if re.search(r"(?<![-\w/])sh\s+\S*evals/check_dotnet\.sh", line):
             gate_callers.append(f"{rel}:{n}")
+        # BL-408, from the round: the publish script has the same shebang and
+        # the same hazard. `released=(linux-x64)` is an array, and under a
+        # /bin/sh that is dash the assignment is a syntax error — on a machine
+        # whose /bin/sh is bash, nothing shows. It is now also the ONLY thing
+        # that builds the arm on macOS and Windows, so a form that cannot start
+        # there takes the arm with it.
+        if re.search(r"(?<![-\w/])sh\s+\S*tools/publish-legislator\.sh", line):
+            publish_callers.append(f"{rel}:{n}")
 check(not gate_callers,
       "the .NET gate is never invoked through `sh` (it declares bash)",
       f"offenders: {gate_callers}")
+check(not publish_callers,
+      "the publish script is never invoked through `sh` (it declares bash and uses arrays)",
+      f"offenders: {publish_callers}")
 
 print("== BL-082: the edition pins the tool (R-8214, C-12) ==")
 # One number, two homes, and neither may move without the other: `skill/VERSION` is the

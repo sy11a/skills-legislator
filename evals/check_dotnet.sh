@@ -82,6 +82,8 @@ if [ ${#failed_projects[@]} -gt 0 ]; then
 fi
 echo "all $total .NET tests passed"
 
-# The AOT smoke publishes THIS host's RID. It named linux-x64 outright, which no Windows or
-# macOS job of the release matrix can build - unseen, because no job had ever got this far.
+# The AOT smoke publishes THIS host's RID, never a named one. Since ADR 0013 the matrix has a
+# linux-x64 job alone, so this line is the ONLY thing that ever builds the arm on a macOS or
+# Windows machine - which is why `released=(...)` is a release statement and not a build gate
+# (BL-408: making it one refused the host's own RID here, after a green test run).
 tools/publish-legislator.sh

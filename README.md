@@ -32,15 +32,21 @@ From v26 the engine and the four hooks are one binary, and the law names
 `legislator <job>` rather than an interpreter. Build it and put it on `PATH`:
 
 ```bash
-sh tools/publish-legislator.sh    # NativeAOT, this machine's RID, into artifacts/<rid>/
+bash tools/publish-legislator.sh    # NativeAOT, this machine's RID, into artifacts/<rid>/
 sh tools/install-legislator.sh    # copies it onto PATH
 legislator version --json         # version, RID, SHA-256 of what is running
 ```
 
 The arm is not delivered into a legislated repository — it is installed on the
-machine, once, and every repo's law calls the same binary. On Windows, copy
-`artifacts/win-x64/legislator.exe` to a directory on `PATH` yourself; the
-install script is POSIX. Audit check 20 (`arm-integrity`) reports a machine
+machine, once, and every repo's law calls the same binary. **The edition
+releases `linux-x64` alone** (ADR 0013), and that is a statement about the
+release, not a restriction on building: `bash tools/publish-legislator.sh` on a
+macOS or Windows host still builds that host's RID and says, on standard error,
+that its digest belongs in no `release.json` entry. On Windows, copy
+`artifacts/win-x64/legislator.exe` onto `PATH` yourself; the install script is
+POSIX. What the ruling does cost is verification — nothing checks that the
+source still builds on those platforms until a RID is added back to
+`released=(...)` and to the matrix. Audit check 20 (`arm-integrity`) reports a machine
 whose arm is missing or is not the one the edition released, so a repository
 never silently audits itself with the wrong instrument.
 
@@ -190,7 +196,9 @@ law for (no empty placeholder files).
 6. Review the `git diff` — only the changed owned file(s) and the manifest
    should appear — then commit.
 7. **At the tag, publish the arm and record its digests.** `sh
-   tools/publish-legislator.sh` on each supported RID writes the binary and its
+   tools/publish-legislator.sh` on each **released** RID — since ADR 0013 that
+   is `linux-x64` alone, and `released=(...)` in that script is where the set
+   is stated — writes the binary and its
    SHA-256 into `artifacts/SHA256SUMS`; the edition's released digests go into
    `skill/assets/release/release.json`, which is what audit check 20 compares a
    machine's arm against. An edition with no digests recorded is not a fault —

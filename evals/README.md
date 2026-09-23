@@ -225,7 +225,7 @@ from `PARITY_ENGINE_CMD` or, failing that, `artifacts/linux-x64/legislator`,
 exports it as **both** `PARITY_ENGINE_CMD` and `PARITY_HOOK_CMD`, and refuses
 to start when there is none — an absent arm stops the run at the top rather
 than reading as a corpus of failures three stages later. Publish one first with
-`sh tools/publish-legislator.sh`. The same two variables are what
+`bash tools/publish-legislator.sh`. The same two variables are what
 `check_engine.py` and `check_hooks.py` require when run by hand; `grade.py`
 falls back to the published binary so a hand-run grade needs no environment.
 
