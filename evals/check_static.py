@@ -375,20 +375,42 @@ for cs in sorted(SRC.rglob("*.cs")):
     check(not hits, f"{rel} carries no path/name literal",
           f"lines {hits} — add an option instead (C-03)")
 
-print("== BL-082: the release matrix is the only home of three of the four RIDs (R-8203) ==")
+print("== BL-082: the release matrix builds every RID the edition releases (R-8203) ==")
 # NativeAOT does not cross-compile between operating systems, so `publish-legislator.sh`
-# publishes the host's RID and no more. The other three exist only if the matrix builds
-# them, which makes this workflow part of the edition rather than incidental config
+# publishes the host's RID and no more. Any other released RID exists only if the matrix
+# builds it, which makes this workflow part of the edition rather than incidental config
 # (operator ruling 2026-09-04, option a).
-RIDS = ("linux-x64", "win-x64", "osx-x64", "osx-arm64")
+#
+# BL-408: the set is READ from the publish script's `released=(...)` line, not restated
+# here. It was restated, and the two would have parted company the moment one moved —
+# which is the defect class BL-406 spent a day on, one file over.
+_pub = (REPO / "tools" / "publish-legislator.sh").read_text()
+_m = re.search(r"^released=\(([^)]*)\)", _pub, re.M)
+check(_m is not None, "the publish script declares the released RID set",
+      "no `released=(...)` line in tools/publish-legislator.sh — nothing states what the "
+      "edition releases, so nothing can check the matrix against it")
+RIDS = tuple(_m.group(1).split()) if _m else ()
+check(bool(RIDS), "the released RID set is non-empty",
+      "`released=()` releases nothing")
 workflow = REPO / ".github" / "workflows" / "dotnet.yml"
 check(workflow.is_file(), "the release workflow exists",
-      f"{workflow.relative_to(REPO).as_posix()} is absent - three of the four RIDs have no builder")
+      f"{workflow.relative_to(REPO).as_posix()} is absent - a released RID with no builder "
+      f"is a RID the edition cannot release")
 if workflow.is_file():
     body = workflow.read_text()
-    missing = [rid for rid in RIDS if rid not in body]
-    check(not missing, "the release workflow names every released RID",
-          f"absent from the matrix: {missing} - a RID nothing builds is a RID the edition cannot release")
+    # The matrix's own rows, not a substring of the file. BL-408 wrote the
+    # retired RIDs into a comment and both mutations of this check survived:
+    # `"win-x64" in body` was true of a line explaining that nothing builds
+    # win-x64. A check that reads prose cannot tell a builder from a footnote.
+    built = re.findall(r"^\s*-\s*\{[^}]*\brid:\s*([A-Za-z0-9._-]+)", body, re.M)
+    missing = [rid for rid in RIDS if rid not in built]
+    check(not missing, "the release workflow builds every released RID",
+          f"released but absent from the matrix: {missing} (matrix builds {built}) - "
+          f"a RID nothing builds is a RID the edition cannot release")
+    spurious = [rid for rid in built if rid not in RIDS]
+    check(not spurious, "the release matrix builds nothing the edition does not release",
+          f"built but not released: {spurious} (released {list(RIDS)}) - a job whose RID the "
+          f"edition does not release spends a runner and reddens a tag for nothing")
     check("-warnaserror" in body, "the release workflow builds strict",
           "the matrix must build under the same discipline as the gate (R-8202)")
 

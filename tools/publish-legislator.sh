@@ -2,17 +2,22 @@
 # BL-082 (R-8203, C-12): publish the deterministic arm as a NativeAOT binary.
 #
 # NativeAOT does not cross-compile between operating systems - the toolchain says so in as
-# many words ("Cross-OS native compilation is not supported"), so a loop over the edition's
-# four RIDs cannot run on one machine. This script publishes what THIS host can publish and
-# refuses the rest by name, before reaching the SDK: the other three come from the release
-# matrix in .github/workflows/dotnet.yml, which is the only place they can come from
-# (operator ruling 2026-09-04).
+# many words ("Cross-OS native compilation is not supported") - so this script publishes what
+# THIS host can publish and refuses every other RID by name, before reaching the SDK.
+#
+# `released` below is the SINGLE statement of what the edition releases. The release matrix in
+# .github/workflows/dotnet.yml builds it, and evals/check_static.py reads this line rather than
+# restating the set: a RID added or dropped here moves both.
+#
+# The edition releases linux-x64 alone since the operator ruling of 2026-09-23 (ADR 0013).
+# Development is Linux-only, win-x64 had been red since BL-372, and a matrix carrying three
+# RIDs nobody runs made every tagged release a red workflow run.
 #
 # Usage: tools/publish-legislator.sh [rid ...]   (default: this host's RID)
 set -euo pipefail
 
 repo="$(cd "$(dirname "$0")/.." && pwd)"
-released=(linux-x64 win-x64 osx-x64 osx-arm64)
+released=(linux-x64)
 
 case "$(uname -s)" in
   Linux)  host_os=linux ;;
