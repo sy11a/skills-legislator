@@ -79,9 +79,13 @@ public sealed class RenderJobTests
     [Fact]
     public void A_fragment_with_missing_case_is_refused()
     {
+        // BL-409: the fixture was `no-case.md`, which the name gate now reads as
+        // furniture rather than a fragment — correctly, and the suite caught it. The
+        // test's subject is front matter with no `case` key, not the file's name, so
+        // the file is named for a case and the front matter is the thing left short.
         var fs = Repo(new Dictionary<string, string>
         {
-            ["docs/changes/no-case.md"] = "---\nissue: 1\nkind: Added\ndate: 2026-09-16\n---\n\n## changelog\n\n- Entry.\n\n## okf-log\n\nOkf.\n\n## journal\n\nJournal.\n",
+            ["docs/changes/BL-002.md"] = "---\nissue: 1\nkind: Added\ndate: 2026-09-16\n---\n\n## changelog\n\n- Entry.\n\n## okf-log\n\nOkf.\n\n## journal\n\nJournal.\n",
         });
 
         var result = Run(fs);
@@ -143,7 +147,43 @@ public sealed class RenderJobTests
         var result = Run(fs);
 
         Assert.Equal(1, result.ExitCode);
-        Assert.Contains("missing one or more of ## changelog, ## okf-log, ## journal sections", result.Stdout, StringComparison.Ordinal);
+        Assert.Contains("missing ## changelog or ## journal section", result.Stdout, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_fragment_without_an_okf_log_section_renders()
+    {
+        // BL-409, from the round: `core/changelog.md` has made `## okf-log` optional and
+        // normally absent since BL-347, and render demanded all three anyway — refusing
+        // every fragment written to the law of its own edition. 25 of Architector's 27
+        // and 6 of this repo's 7 carry no such section. Unreported because render has
+        // never run in the fleet: no `<!-- rendered:` marker exists in any repo.
+        var fs = Repo(new Dictionary<string, string>
+        {
+            ["docs/changes/BL-001.md"] = "---\ncase: BL-001\nissue: 1\nkind: Added\ndate: 2026-09-16\n---\n\n## changelog\n\n- Entry.\n\n## journal\n\nNothing owed.\n",
+        });
+
+        var result = Run(fs);
+
+        Assert.Equal(0, result.ExitCode);
+    }
+
+    [Fact]
+    public void The_homes_own_readme_is_not_rendered_as_a_fragment()
+    {
+        // Render reads the same directory as the lint and must draw the same line:
+        // refusing the scaffolded README here stopped the render of every lawful
+        // fragment beside it.
+        var fs = Repo(new Dictionary<string, string>
+        {
+            ["docs/changes/README.md"] = "# Change Fragments\n\nOne fragment per case.\n",
+            ["docs/changes/BL-001.md"] = "---\ncase: BL-001\nissue: 1\nkind: Added\ndate: 2026-09-16\n---\n\n## changelog\n\n- Entry.\n\n## journal\n\nNothing owed.\n",
+        });
+
+        var result = Run(fs);
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.DoesNotContain("README.md", result.Stdout, StringComparison.Ordinal);
     }
 
     [Fact]
