@@ -418,7 +418,7 @@ def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
         " — do not edit -->\n\n"
         "## Ready\n\n- **BL-002 — Retry storm triage** (#2)\n")
     (dest / "CHANGELOG.md").write_text(
-        "# Changelog\n\n## Unreleased\n\n- Initial legislation.\n")
+        "# Changelog\n\n## [Unreleased]\n\n- Initial legislation.\n")
     # Defect 9 — foreign AI-layer structure.
     (dest / ".cursorrules").write_text("Always write tests first.\n")
 
