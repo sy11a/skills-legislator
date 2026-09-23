@@ -10,6 +10,7 @@ Exit code 0 = all checks pass; 1 = at least one failure (printed).
 """
 import json
 import re
+import shlex
 import subprocess
 
 import sys
@@ -375,22 +376,202 @@ for cs in sorted(SRC.rglob("*.cs")):
     check(not hits, f"{rel} carries no path/name literal",
           f"lines {hits} — add an option instead (C-03)")
 
-print("== BL-082: the release matrix is the only home of three of the four RIDs (R-8203) ==")
+print("== BL-082: the release matrix builds every RID the edition releases (R-8203) ==")
 # NativeAOT does not cross-compile between operating systems, so `publish-legislator.sh`
-# publishes the host's RID and no more. The other three exist only if the matrix builds
-# them, which makes this workflow part of the edition rather than incidental config
+# publishes the host's RID and no more. Any other released RID exists only if the matrix
+# builds it, which makes this workflow part of the edition rather than incidental config
 # (operator ruling 2026-09-04, option a).
-RIDS = ("linux-x64", "win-x64", "osx-x64", "osx-arm64")
+#
+# BL-408: the set is READ from the publish script's `released=(...)` line, not restated
+# here. It was restated, and the two would have parted company the moment one moved —
+# which is the defect class BL-406 spent a day on, one file over.
+# The released set is parsed IN PYTHON, and a shape it cannot read is a
+# finding rather than a guess. Three drafts preceded this one:
+#
+#   1. a regex over `released=(...)` read `#` and a runner name as RIDs when
+#      the array carried an inline comment;
+#   2. handing the line to bash "read the bash" — and the round showed what
+#      that cost. `released=($(echo linux-x64; touch PWNED))` created the
+#      file: a command substitution in that line EXECUTES on every gate run,
+#      on every host, which is a code path a static check must not have. The
+#      paren matcher also counted parens in raw text, so one stray `(` inside
+#      an element's comment made it scan past the array and hand bash the
+#      `case` block below it — red on a script `bash -n` calls valid.
+#   3. only the FIRST assignment was read, so `released+=(osx-arm64)` on the
+#      next line — valid bash, and the natural way to restore a RID — left a
+#      released RID with no builder and the gate green.
+#
+# So: every `released=`/`released+=` assignment, joined; `shlex` for quoting
+# and comments; and anything that would need a shell to evaluate — a
+# substitution, a variable, a brace expansion — refused by name.
+def _released_rids(text: str) -> tuple[tuple[str, ...], str]:
+    """(rids, error). Every `released=`/`+=` assignment in the script."""
+    pattern = re.compile(
+        r"^[ \t]*(?:declare\s+-a\s+|readonly\s+|export\s+)*released\+?=\(", re.M)
+    rids: list[str] = []
+    found = False
+    for m in pattern.finditer(text):
+        found = True
+        depth, i, end = 0, m.end() - 1, None
+        lexer_ready = ""
+        while i < len(text):
+            ch = text[i]
+            if ch == "#":                      # a comment runs to end of line
+                nl = text.find("\n", i)
+                i = len(text) if nl < 0 else nl
+                continue
+            if ch in "\"'":                     # a quoted run is opaque
+                close = text.find(ch, i + 1)
+                if close < 0:
+                    return (), f"unterminated {ch} in the released assignment"
+                lexer_ready += text[i:close + 1]
+                i = close + 1
+                continue
+            if ch == "(":
+                depth += 1
+                if depth == 1:
+                    i += 1
+                    continue
+            elif ch == ")":
+                depth -= 1
+                if depth == 0:
+                    end = i
+                    break
+            lexer_ready += ch
+            i += 1
+        if end is None:
+            return (), "no closing `)` for the released assignment"
+        body = lexer_ready
+        for hostile, what in (("$(", "a command substitution"), ("`", "a backtick"),
+                              ("${", "a variable"), ("$", "a variable"),
+                              ("{", "a brace expansion")):
+            if hostile in body:
+                return (), (f"the released assignment contains {what} — this check "
+                            f"refuses to evaluate it rather than run a shell over the "
+                            f"repository's own script; write the RIDs literally")
+        try:
+            rids += shlex.split(body, comments=True)
+        except ValueError as e:
+            return (), f"the released assignment does not tokenize: {e}"
+    if not found:
+        return (), "no `released=(...)` assignment in tools/publish-legislator.sh"
+    return tuple(rids), ""
+
+
+_pub_path = REPO / "tools" / "publish-legislator.sh"
+RIDS, _rids_err = _released_rids(_pub_path.read_text())
+check(bool(RIDS), "the publish script declares the released RID set",
+      f"{_rids_err} — nothing states what the edition releases, so nothing can "
+      f"check the matrix against it")
 workflow = REPO / ".github" / "workflows" / "dotnet.yml"
 check(workflow.is_file(), "the release workflow exists",
-      f"{workflow.relative_to(REPO).as_posix()} is absent - three of the four RIDs have no builder")
+      f"{workflow.relative_to(REPO).as_posix()} is absent - a released RID with no builder "
+      f"is a RID the edition cannot release")
 if workflow.is_file():
     body = workflow.read_text()
-    missing = [rid for rid in RIDS if rid not in body]
-    check(not missing, "the release workflow names every released RID",
-          f"absent from the matrix: {missing} - a RID nothing builds is a RID the edition cannot release")
-    check("-warnaserror" in body, "the release workflow builds strict",
-          "the matrix must build under the same discipline as the gate (R-8202)")
+    # The workflow is READ AS YAML, not matched as text.
+    #
+    # Two drafts of this check failed before this one, and each failed the
+    # same way — reading prose and calling it a fact. The first asked
+    # `rid not in body`, which was true of a comment saying nothing builds
+    # that RID. The second matched flow-style rows with a regex, and the
+    # round killed it five ways: a block-style row, a quoted value, an
+    # anchored row and a one-line `include: [...]` each read as "the matrix
+    # builds nothing" on a workflow that builds fine, while a row moved
+    # under `exclude:` read as green on a matrix that builds nothing at all.
+    #
+    # PyYAML is not a declared dependency of this repository, so its absence
+    # FAILS the check rather than falling back to a regex. An unmeasured
+    # check that says so is worth more than a weaker one that says "ok".
+    try:
+        import yaml
+        wf, yaml_err = yaml.safe_load(body), ""
+    except ImportError:
+        wf, yaml_err = None, ("PyYAML is not installed, so the release matrix cannot be "
+                              "read as YAML; install it rather than trusting a text match")
+    except Exception as e:
+        wf, yaml_err = None, f"{workflow.name} is not valid YAML: {e}"
+    check(wf is not None, "the release workflow parses as YAML", yaml_err)
+
+    if isinstance(wf, dict):
+        job = (wf.get("jobs") or {}).get("matrix") or {}
+        strategy = job.get("strategy") or {}
+        matrix = strategy.get("matrix") or {}
+        # BOTH matrix idioms (the round). `include:` rows and a bare `rid:`
+        # axis are each ordinary GitHub Actions; reading one and calling the
+        # other empty reddens a working workflow and silently mandates this
+        # check's own dialect.
+        include = matrix.get("include") or []
+        built = [row.get("rid") for row in include
+                 if isinstance(row, dict) and row.get("rid")]
+        axis = matrix.get("rid")
+        if isinstance(axis, list):
+            built += [r for r in axis if isinstance(r, str)]
+        elif isinstance(axis, str):
+            built.append(axis)
+        missing = [rid for rid in RIDS if rid not in built]
+        check(not missing, "the release workflow builds every released RID",
+              f"released but absent from the matrix: {missing} (matrix builds {built}) - "
+              f"a RID nothing builds is a RID the edition cannot release")
+        spurious = [rid for rid in built if rid not in RIDS]
+        check(not spurious, "the release matrix builds nothing the edition does not release",
+              f"built but not released: {spurious} (released {list(RIDS)}) - a job whose RID "
+              f"the edition does not release spends a runner and reddens a tag for nothing")
+        # No `exclude:` check. The earlier one banned it outright, saying an
+        # exclude "can subtract a row this check has just counted as built" —
+        # which GitHub's own workflow syntax contradicts: "All `include`
+        # combinations are processed after `exclude`", so an exclude can never
+        # remove an include row. The ban reddened a documented pattern for a
+        # mechanism that does not exist (the round, fetched from the docs). An
+        # exclude that empties an AXIS is caught by `built` being empty.
+        #
+        # A job that never runs builds nothing, whatever its matrix says — and
+        # `if:` is only one member of that family. `continue-on-error: true`
+        # lets the whole job fail and the run still report green, which the
+        # round demonstrated in two bytes; the same key on a step makes the
+        # strict build advisory, and a step-level `if:` can skip the publish
+        # while the run-string check still sees it.
+        check("if" not in job, "the release job is unconditional",
+              f"the matrix job carries `if: {job.get('if')}` - a condition this check "
+              f"cannot evaluate decides whether anything is built at all")
+        check(not job.get("continue-on-error"), "the release job fails the run when it fails",
+              "the matrix job carries `continue-on-error: true` - build, publish and "
+              "upload can all fail and the run still reports green, which is a tag with "
+              "no artifact and nothing to say so")
+        steps = job.get("steps") or []
+        lenient = [s.get("name") or s.get("uses") or s.get("run", "")[:40]
+                   for s in steps if isinstance(s, dict) and s.get("continue-on-error")]
+        check(not lenient, "no release step is advisory",
+              f"these steps carry `continue-on-error: true`: {lenient} - a step that "
+              f"cannot redden the run is a gate in name only")
+        conditional = [s.get("name") or s.get("uses") or s.get("run", "")[:40]
+                       for s in steps if isinstance(s, dict) and "if" in s]
+        check(not conditional, "no release step is conditional",
+              f"these steps carry an `if:`: {conditional} - a condition this check cannot "
+              f"evaluate decides whether the arm is built or published at all")
+        runs = [s.get("run", "") for s in steps if isinstance(s, dict)]
+        check(any("-warnaserror" in r for r in runs),
+              "the release workflow builds strict",
+              "no step runs a build with -warnaserror; the matrix must build under the "
+              "same discipline as the gate (R-8202). Read from the steps' `run:` values, "
+              "not from the file's text - the previous form of this check was the very "
+              "defect the block above diagnoses, nine lines further down the same file")
+        check(any("publish-legislator" in r for r in runs),
+              "the release workflow publishes the arm",
+              "no step invokes tools/publish-legislator.sh - the matrix would build and "
+              "upload nothing, which CI reports only when upload-artifact finds no file")
+        # `on:` is three documented shapes — a mapping, a bare string, a list —
+        # and the earlier chain of `.get` crashed the whole gate on the latter
+        # two, losing five later checks along with its own summary (the round).
+        on = wf.get(True)
+        if on is None:
+            on = wf.get("on")
+        push = on.get("push") if isinstance(on, dict) else None
+        tags = push.get("tags") if isinstance(push, dict) else None
+        check(bool(tags), "the release workflow runs at a tag",
+              f"no `on.push.tags` trigger (`on:` reads as {type(on).__name__}) - a tagged "
+              f"release would produce no run at all, which is what ADR 0013 says this "
+              f"matrix exists to make green")
 
 print("== BL-082: the .NET gate is invoked by a shell that can run it ==")
 # The gate declares `#!/usr/bin/env bash` and uses arrays and `pipefail`.
@@ -400,6 +581,7 @@ print("== BL-082: the .NET gate is invoked by a shell that can run it ==")
 # /bin/sh is bash saw nothing. A gate that cannot start is worse than one that
 # fails, so the invocation is checked rather than remembered.
 gate_callers = []
+publish_callers = []
 for path in sorted(REPO.rglob("*")):
     if not path.is_file() or ".git/" in str(path):
         continue
@@ -413,12 +595,41 @@ for path in sorted(REPO.rglob("*")):
         text = path.read_text(encoding="utf-8", errors="ignore")
     except OSError:
         continue
+    # Whitespace-normalised, not line-wise (the round): `README.md`'s step 7
+    # wraps the invocation — "`sh" ends one line and "tools/publish-legislator.sh`"
+    # begins the next — so a line-wise scan cannot see the one caller that
+    # matters most, the tag-time procedure itself. The line number is recovered
+    # from the match offset.
+    flat = re.sub(r"\s+", " ", text)
+    def _line_of(offset: int) -> int:
+        # offsets in `flat` are not offsets in `text`; count the run words
+        # before the match and find that word's line.
+        words = flat[:offset].count(" ")
+        seen, n = 0, 1
+        for n, line in enumerate(text.splitlines(), 1):
+            seen += len(line.split())
+            if seen > words:
+                return n
+        return n
+    for script, bucket in ((r"evals/check_dotnet\.sh", gate_callers),
+                           (r"tools/publish-legislator\.sh", publish_callers),
+                           (r"tools/install-legislator\.sh", publish_callers)):
+        for m in re.finditer(r"(?<![-\w/])sh\s+\S*" + script, flat):
+            bucket.append(f"{rel}:{_line_of(m.start())}")
     for n, line in enumerate(text.splitlines(), 1):
-        if re.search(r"(?<![-\w/])sh\s+\S*evals/check_dotnet\.sh", line):
-            gate_callers.append(f"{rel}:{n}")
+        if False:  # line-wise scanning kept nothing; see above
+            pass
 check(not gate_callers,
       "the .NET gate is never invoked through `sh` (it declares bash)",
       f"offenders: {gate_callers}")
+# BL-408, from the round: both operator-side scripts declare bash and use
+# arrays or `set -o pipefail`, and under a /bin/sh that is dash they die before
+# their first line — invisibly on a host whose /bin/sh is bash. The publish
+# script is now also the ONLY thing that builds the arm off Linux, so a form
+# that cannot start there takes the arm with it.
+check(not publish_callers,
+      "the operator scripts are never invoked through `sh` (they declare bash)",
+      f"offenders: {publish_callers}")
 
 print("== BL-082: the edition pins the tool (R-8214, C-12) ==")
 # One number, two homes, and neither may move without the other: `skill/VERSION` is the

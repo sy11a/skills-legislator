@@ -2,22 +2,28 @@
 # BL-082 (R-8203, C-12): publish the deterministic arm as a NativeAOT binary.
 #
 # NativeAOT does not cross-compile between operating systems - the toolchain says so in as
-# many words ("Cross-OS native compilation is not supported"), so a loop over the edition's
-# four RIDs cannot run on one machine. This script publishes what THIS host can publish and
-# refuses the rest by name, before reaching the SDK: the other three come from the release
-# matrix in .github/workflows/dotnet.yml, which is the only place they can come from
-# (operator ruling 2026-09-04).
+# many words ("Cross-OS native compilation is not supported") - so this script publishes what
+# THIS host can build and refuses a cross-OS RID by name, before reaching the SDK. A RID of
+# this host's OS but another architecture is refused by the SDK, not here.
+#
+# `released` below is the SINGLE statement of what the edition releases. The release matrix in
+# .github/workflows/dotnet.yml builds it, and evals/check_static.py reads this line rather than
+# restating the set: a RID added or dropped here moves both.
+#
+# The edition releases linux-x64 alone since the operator ruling of 2026-09-23 (ADR 0013).
+# Development is Linux-only, win-x64 had been red since BL-372, and a matrix carrying three
+# RIDs nobody runs made every tagged release a red workflow run.
 #
 # Usage: tools/publish-legislator.sh [rid ...]   (default: this host's RID)
 set -euo pipefail
 
 repo="$(cd "$(dirname "$0")/.." && pwd)"
-released=(linux-x64 win-x64 osx-x64 osx-arm64)
+released=(linux-x64)
 
 case "$(uname -s)" in
   Linux)  host_os=linux ;;
   Darwin) host_os=osx ;;
-  # Git Bash / MSYS on a Windows runner: one publish path for all four RIDs beats a second
+  # Git Bash / MSYS on a Windows host: one publish path for every RID beats a second
   # one in the workflow that could drift from this script without anyone noticing.
   MINGW*|MSYS*|CYGWIN*) host_os=win ;;
   *)      printf 'publish-legislator: unsupported host %s\n' "$(uname -s)" >&2; exit 2 ;;
@@ -33,18 +39,34 @@ rids=("$@")
 [ ${#rids[@]} -eq 0 ] && rids=("$host_rid")
 
 # Refuse everything unbuildable BEFORE any work: a wrong RID costs a second, not a restore.
+#
+# `released` is NOT the gate. BL-408 first made it one, and the refutation round showed what
+# that costs: with a one-RID release set the script refused the host's own default RID on
+# every macOS and Windows machine, which takes the arm, `evals/check_dotnet.sh` (it publishes
+# after a green test run) and audit check 20's remedy — `install-legislator.sh` needs
+# `artifacts/<host rid>/legislator` — away from every contributor not on Linux, in one act.
+#
+# What is unbuildable is a cross-OS RID; that is the toolchain's refusal and stays fatal.
+# Building a RID this edition does not release is lawful and is said out loud, because the
+# digest it produces has nowhere to go in `release.json`.
+unreleased=()
 for rid in "${rids[@]}"; do
   found=no
   for known in "${released[@]}"; do [ "$rid" = "$known" ] && found=yes; done
   if [ "$found" = no ]; then
-    printf 'publish-legislator: %s is not a RID this edition releases (%s)\n' "$rid" "${released[*]}" >&2
-    exit 2
+    unreleased+=("$rid")
   fi
   if [ "${rid%-*}" != "$host_os" ]; then
-    printf 'publish-legislator: %s cannot be built on a %s host - cross-OS native compilation is not supported by the AOT toolchain; the release matrix builds it\n' "$rid" "$host_os" >&2
+    printf 'publish-legislator: %s cannot be built on a %s host - cross-OS native compilation is not supported by the AOT toolchain. Build it on a host of that OS; since ADR 0013 the release matrix builds linux-x64 alone\n' "$rid" "$host_os" >&2
     exit 2
   fi
 done
+
+# Said only once every RID has passed the refusal above, so the script never
+# calls a RID "buildable here" on the line before refusing it (the round).
+if [ ${#unreleased[@]} -gt 0 ]; then
+  printf 'publish-legislator: note - %s buildable here but not released by this edition (%s); the digest belongs in no release.json entry\n' "${unreleased[*]}" "${released[*]}" >&2
+fi
 
 sums="$repo/artifacts/SHA256SUMS"
 mkdir -p "$repo/artifacts"

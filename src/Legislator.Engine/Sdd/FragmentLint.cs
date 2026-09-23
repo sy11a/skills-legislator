@@ -21,6 +21,30 @@ public static class FragmentLint
 {
     private static readonly string[] Kinds = ["Added", "Changed", "Fixed", "Removed"];
 
+    /// <summary>
+    /// A file in the fragment home is a fragment when it is NAMED for a case key —
+    /// letters, a dash, digits: <c>BL-193.md</c>, <c>L-3.md</c>. Everything else in
+    /// that directory is the home's own furniture.
+    ///
+    /// Before BL-410 the enumeration took every <c>*.md</c>, so <c>README.md</c> —
+    /// the home's own explainer, which Step 4 of the skill scaffolds from a template —
+    /// was read as a malformed fragment. A repository went red the moment it adopted
+    /// the mechanism correctly, and could not clear the finding without deleting its
+    /// own README (#53, found by the first delivery of edition 26 into a consuming
+    /// repository). A lint that fires on correct adoption teaches its reader to
+    /// ignore it.
+    ///
+    /// Naming is the gate rather than a by-name skip of README, because the name is
+    /// also what ties a fragment to its case: a case-named file must declare that
+    /// case, which catches a fragment named after nothing.
+    /// </summary>
+    private static readonly System.Text.RegularExpressions.Regex CaseNamed =
+        new(@"^[A-Za-z]+-\d+$", System.Text.RegularExpressions.RegexOptions.Compiled);
+
+    /// <summary>Is this file name a case key, and therefore a fragment? Shared with
+    /// <c>RenderJob</c>, which reads the same directory and must draw the same line.</summary>
+    internal static bool IsFragmentName(string stem) => CaseNamed.IsMatch(stem);
+
     public static IEnumerable<string> Findings(IFileSystem fs, RepoLayout layout, IProcessRunner proc, string root, LegislatorOptions options)
     {
         ArgumentNullException.ThrowIfNull(fs);
@@ -39,6 +63,12 @@ public static class FragmentLint
         foreach (var entry in fs.Directory.EnumerateFiles(changesDir, "*.md", SearchOption.TopDirectoryOnly))
         {
             var relative = layout.Relative(entry);
+            var stem = Path.GetFileNameWithoutExtension(entry);
+            if (!CaseNamed.IsMatch(stem))
+            {
+                continue;
+            }
+
             var text = fs.File.ReadAllText(entry);
             var fm = FrontMatter(text);
             if (fm is not var (caseKey, issue, kind, date))
@@ -51,6 +81,21 @@ public static class FragmentLint
             {
                 yield return $"{relative}: no 'case' in front matter → state the case key per core/changelog.md";
                 continue;
+            }
+
+            // The other half of naming being the gate: a case-named file that declares
+            // a different case is a fragment filed under someone else's key, and the
+            // render inserts by case key, so it would land in the wrong place silently.
+            // Ordinal, not OrdinalIgnoreCase (the round): `RenderJob` keys rendered
+            // cases with `StringComparer.Ordinal`, so `bl-401.md` declaring `bl-401`
+            // renders under a different key than a later `BL-401` and the case is
+            // inserted twice. The law writes the key `BL-NNN`.
+            if (!string.Equals(caseKey.Trim(), stem, StringComparison.Ordinal))
+            {
+                yield return $"{relative}: front matter declares case '{caseKey.Trim()}' but the file is named '{stem}' → a fragment is named for the case it carries per core/changelog.md";
+                // Deliberately no `continue` (the round): the checks below it — branch,
+                // bullet count, journal — used to be reported in one run, and hiding
+                // them behind the name costs the author a second round trip.
             }
 
             if (string.IsNullOrWhiteSpace(issue))

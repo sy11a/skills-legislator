@@ -26,6 +26,22 @@ from pathlib import Path
 
 SKILL = Path(__file__).resolve().parent.parent / "skill"
 
+
+def _upgrade_forbidden_rel() -> str | None:
+    """The repo-relative path of a target SKILL.md Step 4 withholds from an
+    upgrade, resolved for today (BL-406). Read from the grader's own
+    derivation so the law is stated once: a row losing or gaining the
+    restriction moves the assert and its mutation together.
+
+    Returns None when the law withholds nothing — the assert this kills is
+    not emitted then either, and the round's reading was that raising here
+    turns a clean `uncovered` report into a traceback that loses every
+    scenario after it."""
+    from grade import UPGRADE_FORBIDDEN_ARTIFACTS, _resolve_today
+    if not UPGRADE_FORBIDDEN_ARTIFACTS:
+        return None
+    return _resolve_today(UPGRADE_FORBIDDEN_ARTIFACTS[0])
+
 REPORT = {
     "fresh-scaffold-dotnet": ("fresh-scaffold-dotnet", "scaffold-report.md"),
     "audit": ("rotted-layer", "audit-report.md"),
@@ -441,6 +457,18 @@ def mutations_for(ws: Path, scenario: str) -> dict[str, Mutation]:
             "edit-entry-document-content", "AGENTS.md",
             fn=lambda ws_, rev, p=repo / "AGENTS.md": _edit(
                 rev, p, lambda t: t + "\nviolation\n"))
+        # BL-406: Step 4 withholds `docs/journal/<today>.md` from an
+        # upgrade, so writing one is the violation the assert exists to
+        # catch — the kill is a creation, not a deletion. Both upgrade
+        # scenarios, because both are upgrades: the round found
+        # `upgrade-drop-stack` asserting none of the upgrade path's
+        # artifact rights.
+        _forbidden = _upgrade_forbidden_rel()
+        if _forbidden:
+            muts["upgrade_writes_no_forbidden_artifact"] = Mutation(
+                "write-upgrade-forbidden", _forbidden,
+                fn=lambda ws_, rev, p=repo / _forbidden:
+                    _write(rev, p, "# a day file an upgrade must not write\n"))
         if scenario == "upgrade":
             probe_report("step7_report_saved")
             stamp_strip()

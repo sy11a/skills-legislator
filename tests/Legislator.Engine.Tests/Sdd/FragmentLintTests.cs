@@ -38,6 +38,49 @@ public sealed class FragmentLintTests
     private const string OneBullet = "## changelog\n\n- One line, pointing at the summary.\n\n## journal\n\nNo dead end; the decision is in ADR 0021.\n";
 
     [Fact]
+    public void The_homes_own_readme_is_not_a_fragment()
+    {
+        // #53, found by the first delivery of edition 26 into a consuming repo:
+        // Step 4 scaffolds docs/changes/README.md from a template, the enumeration
+        // took every *.md, and the repository went red the moment it adopted the
+        // mechanism correctly — with no way to clear it but deleting its own README.
+        Assert.Empty(Findings("# Change Fragments\n\nOne fragment per case.\n",
+                              name: "README.md"));
+    }
+
+    [Fact]
+    public void A_file_not_named_for_a_case_is_not_a_fragment()
+    {
+        // The gate is the NAME, not a by-name skip of README: anything else the home
+        // grows — notes, a scratch file — is furniture too.
+        Assert.Empty(Findings("no front matter here\n", name: "notes.md"));
+    }
+
+    [Fact]
+    public void A_case_named_file_declaring_another_case_is_a_finding()
+    {
+        // The other half of naming being the gate. `render` inserts by case key, so a
+        // fragment filed under someone else's name lands in the wrong place silently.
+        var all = Findings(Fragment("BL-999", OneBullet), name: "BL-347.md");
+        var f = Assert.Single(all, x => x.Contains("declares case 'BL-999'", StringComparison.Ordinal));
+        Assert.Contains("named 'BL-347'", f);
+        // The name mismatch does not swallow what follows it (BL-410, the round): the
+        // checks below used to be reported in one run, and hiding them behind the name
+        // costs the author a second round trip. Here the declared case is also not this
+        // branch's, and both are said at once.
+        Assert.Contains(all, x => x.Contains("does not match current branch", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void A_case_named_file_without_front_matter_is_still_a_finding()
+    {
+        // Naming as the gate must not become a way to smuggle a broken fragment past
+        // the lint: a case-named file is held to the whole shape.
+        var f = Assert.Single(Findings("## changelog\n\n- One line.\n", name: "BL-347.md"));
+        Assert.Contains("no YAML front matter", f);
+    }
+
+    [Fact]
     public void A_lawful_fragment_is_silent()
     {
         Assert.Empty(Findings(Fragment("BL-347", OneBullet)));

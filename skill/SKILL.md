@@ -208,11 +208,14 @@ touches the views directly. On the default branch, after a merge:
 legislator render --root .
 ```
 
-It reads every `docs/changes/*.md`, validates each fragment's front matter
-(`case`, `issue`, `kind ∈ {Added, Changed, Fixed, Removed}`, `date`) and three
-sections (`## changelog`, `## okf-log`, `## journal`), and writes the views.
-A malformed fragment is refused naming the defect and the file — never skipped,
-never rendered half.
+It reads every file in `docs/changes/` **named for a case key** (`BL-193.md`,
+`L-3.md`) — the home's own README and anything else it carries are furniture, not
+fragments — validates each fragment's front matter (`case` matching the file's
+name, `issue`, `kind ∈ {Added, Changed, Fixed, Removed}`, `date`) and the two
+required sections (`## changelog`, `## journal`; `## okf-log` is optional and
+normally absent, per `core/changelog.md`), and writes the views. A malformed
+fragment is refused naming the defect and the file — never skipped, never
+rendered half.
 
 **Idempotent by case key:** each rendered entry carries a
 `<!-- rendered: <case> -->` marker on the line before it. On re-run, fragments
@@ -222,8 +225,10 @@ a row changes nothing the second time.
 
 **Refused on a non-default branch.** The run exits 3 with a refusal line naming
 the branch — the views are built from the merged tree, never from a task branch.
-`sdd-lint` checks fragment shape (front matter, kind, case matching branch)
-where it used to check the `[Unreleased]` section by hand.
+`sdd-lint` checks fragment shape over the same case-named set (front matter,
+kind, the declared case matching both the file name and the branch, one changelog
+bullet, a journal section) where it used to check the `[Unreleased]` section by
+hand.
 
 At a release cut the `[Unreleased]` section folds under a `## [vN]` heading and
 the fragments whose entries it consumed are deleted.
