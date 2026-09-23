@@ -70,7 +70,13 @@ jobs:
       - uses: actions/upload-artifact@v5
         with:
           name: legislator-${{ matrix.rid }}
+        # win-x64 publishes `legislator.exe`, so its path stays listed: restoring
+        # that RID must really be the two edits ADR 0013 promises and not a third
+        # nobody documents — the round found the two-edit tree red at upload.
+        # `upload-artifact` errors only when NO path matches, so a line that
+        # matches nothing on this RID costs nothing.
           path: |
             artifacts/${{ matrix.rid }}/legislator
+            artifacts/${{ matrix.rid }}/legislator.exe
             artifacts/SHA256SUMS
           if-no-files-found: error

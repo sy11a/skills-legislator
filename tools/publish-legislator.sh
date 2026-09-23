@@ -3,7 +3,8 @@
 #
 # NativeAOT does not cross-compile between operating systems - the toolchain says so in as
 # many words ("Cross-OS native compilation is not supported") - so this script publishes what
-# THIS host can publish and refuses every other RID by name, before reaching the SDK.
+# THIS host can build and refuses a cross-OS RID by name, before reaching the SDK. A RID of
+# this host's OS but another architecture is refused by the SDK, not here.
 #
 # `released` below is the SINGLE statement of what the edition releases. The release matrix in
 # .github/workflows/dotnet.yml builds it, and evals/check_static.py reads this line rather than
@@ -48,17 +49,24 @@ rids=("$@")
 # What is unbuildable is a cross-OS RID; that is the toolchain's refusal and stays fatal.
 # Building a RID this edition does not release is lawful and is said out loud, because the
 # digest it produces has nowhere to go in `release.json`.
+unreleased=()
 for rid in "${rids[@]}"; do
   found=no
   for known in "${released[@]}"; do [ "$rid" = "$known" ] && found=yes; done
   if [ "$found" = no ]; then
-    printf 'publish-legislator: note - %s is buildable here but is not a RID this edition releases (%s); its digest belongs in no release.json entry\n' "$rid" "${released[*]}" >&2
+    unreleased+=("$rid")
   fi
   if [ "${rid%-*}" != "$host_os" ]; then
-    printf 'publish-legislator: %s cannot be built on a %s host - cross-OS native compilation is not supported by the AOT toolchain; the release matrix builds it\n' "$rid" "$host_os" >&2
+    printf 'publish-legislator: %s cannot be built on a %s host - cross-OS native compilation is not supported by the AOT toolchain. Build it on a host of that OS; since ADR 0013 the release matrix builds linux-x64 alone\n' "$rid" "$host_os" >&2
     exit 2
   fi
 done
+
+# Said only once every RID has passed the refusal above, so the script never
+# calls a RID "buildable here" on the line before refusing it (the round).
+if [ ${#unreleased[@]} -gt 0 ]; then
+  printf 'publish-legislator: note - %s buildable here but not released by this edition (%s); the digest belongs in no release.json entry\n' "${unreleased[*]}" "${released[*]}" >&2
+fi
 
 sums="$repo/artifacts/SHA256SUMS"
 mkdir -p "$repo/artifacts"
