@@ -64,7 +64,7 @@ public sealed class FragmentLintTests
         var all = Findings(Fragment("BL-999", OneBullet), name: "BL-347.md");
         var f = Assert.Single(all, x => x.Contains("declares case 'BL-999'", StringComparison.Ordinal));
         Assert.Contains("named 'BL-347'", f);
-        // The name mismatch does not swallow what follows it (BL-409, the round): the
+        // The name mismatch does not swallow what follows it (BL-410, the round): the
         // checks below used to be reported in one run, and hiding them behind the name
         // costs the author a second round trip. Here the declared case is also not this
         // branch's, and both are said at once.

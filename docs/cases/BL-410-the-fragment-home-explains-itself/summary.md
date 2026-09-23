@@ -1,4 +1,4 @@
-# BL-409 — the fragment home explains itself, and is not read as a fragment
+# BL-410 — the fragment home explains itself, and is not read as a fragment
 
 **Tier: 0** (direct). Closes `#53`, filed 2026-09-20 by the first delivery of edition 26 into a
 consuming repository and standing since.

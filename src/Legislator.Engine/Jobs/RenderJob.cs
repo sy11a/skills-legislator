@@ -100,7 +100,7 @@ public sealed partial class RenderJob : IJob
             // The same gate `sdd-lint` applies, and for the same reason: the home's
             // own scaffolded README is not a fragment, and render is the job that
             // CONSUMES the directory — refusing it here stops the render of every
-            // lawful fragment beside it (BL-409, the refutation round).
+            // lawful fragment beside it (BL-410, the refutation round).
             if (!Legislator.Engine.Sdd.FragmentLint.IsFragmentName(System.IO.Path.GetFileNameWithoutExtension(entry)))
             {
                 continue;
@@ -145,7 +145,7 @@ public sealed partial class RenderJob : IJob
             // every fragment written to the law of its own edition: 25 of Architector's
             // 27 and 6 of this repo's 7 carry no `## okf-log`. It went unreported
             // because render has never run in the fleet — no `<!-- rendered:` marker
-            // exists in any repo (BL-409, the refutation round's census).
+            // exists in any repo (BL-410, the refutation round's census).
             if (!sections.TryGetValue("changelog", out var changelog) || !sections.TryGetValue("journal", out var journal))
             {
                 findings.Add($"{relative}: malformed fragment — missing ## changelog or ## journal section");
