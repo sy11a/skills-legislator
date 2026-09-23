@@ -86,35 +86,78 @@ def scaffold_artifacts(mode: str = "scaffold") -> list[str]:
     file to assert, the scaffold_checks directory assertions cover them.
 
     The notes column carries each row's mode restriction, and it is read
-    rather than assumed (BL-406). `docs/journal/<today>.md` says **Fresh-
-    scaffold mode only — an upgrade writes no entry**, which BL-360 wrote
-    into the law on 2026-09-20 without telling the grader; for three days
-    the upgrade scenario asserted an artifact the law forbids, and the
-    next run against that law found it. A row so marked is a target of
-    `mode == "scaffold"` and of no other mode.
+    rather than assumed (BL-406). `docs/journal/<today>.md` says an
+    upgrade writes no entry — BL-360 wrote that into the law on
+    2026-09-20 without telling the grader, and for three days the
+    upgrade scenario asserted an artifact the law withholds from it.
 
     Reading the third column is the same act the second column already
     performs for `(empty directory)`: the law states the restriction in
     its own words and the derivation obeys them, so moving the row, the
-    wording or the mode moves every consumer with it."""
+    wording or the mode moves every consumer with it. Which modes the
+    restriction reaches is `UPGRADE_FORBIDDEN_RE`'s comment below."""
     text = _skill_md()
     step4 = text.split("## Step 4", 1)[1].split("## Step 5", 1)[0]
     out = []
     for m in re.finditer(r"^\| `([^`]+)` \| ([^|]+) \|([^\n]*)$", step4, re.M):
-        target, template, notes = m.group(1), m.group(2).strip(), m.group(3)
+        target, template = m.group(1), m.group(2).strip()
+        notes = m.group(3).rstrip().removesuffix("|").strip()
         if template.startswith("(empty"):
             continue
-        if SCAFFOLD_ONLY_RE.search(notes) and mode != "scaffold":
+        if UPGRADE_FORBIDDEN_RE.search(notes) and mode == "upgrade":
             continue
         out.append(target)
     return sorted(out)
 
 
-# The law's own words for a row no mode but `scaffold` may create. A row
-# the law restricts and this pattern misses is a target asserted in every
-# mode — which is the defect BL-406 closes — so the pattern is pinned by
-# `law_checks`, not left to be noticed by the next red benchmark.
-SCAFFOLD_ONLY_RE = re.compile(r"fresh-scaffold mode only", re.I)
+# The law's own words for the one prohibition that survives its own
+# contradiction, and why this is a phrase and not a mode heading.
+#
+# `## File authority` declares itself "the only statement of what an
+# invocation mode may do to a file in the target repo", and grants
+# `scaffolded artifacts` x `upgrade` and x `migrate` the right
+# `create-if-absent`. Step 4's day-file row answers "**Fresh-scaffold
+# mode only** - an upgrade writes no entry, because the day's work is
+# the upgrading repository's to record." The two disagree, and the
+# disagreement is BL-360's, not this case's.
+#
+# Ruled by the operator on 2026-09-23: the table governs, and the
+# prohibition narrows to `upgrade` - the only mode the note names, and
+# the only one it gives a reason for. A migration keeps the table's
+# right, which is what BL-360's own rationale argues for anyway: the day
+# file exists because a run committing paths outside `docs/` reddens
+# `journal-recency`, and a migration commits them too.
+#
+# So the pattern is the reasoned clause, not the heading. Matching the
+# heading would also sweep in `AGENTS.md` ("Only in fresh-scaffold
+# mode"), which the table plainly governs - a row the refutation round
+# found the earlier pattern both missing and having no business
+# catching. The wording is pinned by `grade_derivation_selftest`, so a
+# reworded law reddens a control instead of a corpus.
+UPGRADE_FORBIDDEN_RE = re.compile(r"an upgrade writes no entry", re.I)
+
+
+def check_upgrade_writes_nothing_forbidden(g, repo) -> None:
+    """An upgrade must not WRITE a target Step 4 withholds from it.
+
+    A presence-only assert cannot tell obedience from the absence of the
+    act: the day file is missing both when the run correctly wrote none
+    and when it never reached Step 4 at all. BL-360 legislated this and
+    nothing measured it.
+
+    Emitted only while the law actually withholds something from an
+    upgrade — an assert with one possible answer reports coverage it
+    does not have. Shared by both upgrade scenarios: the round found
+    `upgrade-drop-stack` inheriting the upgrade path without asserting
+    any of its artifact rights."""
+    if not UPGRADE_FORBIDDEN_ARTIFACTS:
+        return
+    wrote = day_files_this_run_added(repo)
+    g.check("upgrade_writes_no_forbidden_artifact", not wrote,
+            f"the upgrade added no journal day file; Step 4 withholds "
+            f"{UPGRADE_FORBIDDEN_ARTIFACTS} from it" if not wrote
+            else f"upgrade added a day file Step 4 withholds from it: {wrote}",
+            artifact=g.repo_art)
 
 
 def _resolve_today(target: str) -> str:
@@ -124,20 +167,58 @@ def _resolve_today(target: str) -> str:
     False for every repository that has ever existed, so the assertion
     could report only failure and did so in whichever mode reached it.
 
-    An unresolved placeholder left after this is a derivation defect and
-    raises, because the alternative is a check that cannot pass quietly
-    telling the reader the run is at fault."""
-    out = target.replace("<today>", date.today().isoformat())
-    if "<" in out or ">" in out:
-        raise ValueError(
-            f"Step 4 target {target!r} carries a placeholder this grader "
-            f"cannot resolve; teach _resolve_today or fix the table")
-    return out
+    A placeholder this cannot resolve is returned untouched and reported
+    by `unresolved()` as a named finding. It deliberately does NOT raise:
+    a raise inside `scaffold_checks`' list comprehension propagates out
+    uncaught, `grading.json` is never written, and the scenario is not
+    measured at all — a worse failure than the assert it would replace
+    (the refutation round's reading). `grade_derivation_selftest` holds
+    the control that reddens instead."""
+    return target.replace("<today>", date.today().isoformat())
+
+
+def unresolved(targets: list[str]) -> list[str]:
+    """Step 4 targets still carrying a placeholder after resolution."""
+    return [a for a in targets
+            if "<" in _resolve_today(a) or ">" in _resolve_today(a)]
+
+
+_DAY_FILE_RE = re.compile(r"^docs/journal/\d{4}-\d{2}-\d{2}\.md$")
+
+
+def day_files_this_run_added(repo: Path) -> list[str]:
+    """Journal day files the RUN put there — added since `eval-base`, or
+    untracked.
+
+    Not `docs/journal/<the grader's date>.md`. The refutation round's
+    probe: an upgrade that wrote `docs/journal/2026-09-22.md` and is
+    graded on the 23rd is invisible to a date-keyed check, so the assert
+    that exists to catch the write reports a pass it cannot justify. It
+    also breaks the positive direction — re-grading a recorded run on
+    any later day calls a present day file missing, which makes
+    `mutate.py`'s `validate_substrate` refuse the scenario as UNUSABLE
+    the day after it ran.
+
+    The run's own trace answers the real question. `eval-base` is the
+    fixture anchor `reset_repo` restores to, so anything added against
+    it plus anything untracked is exactly what this invocation left."""
+    out = set()
+    for line in git(repo, "status", "--porcelain",
+                    "--untracked-files=all").splitlines():
+        path = line[3:].strip()
+        if _DAY_FILE_RE.match(path):
+            out.add(path)
+    if git(repo, "rev-parse", "-q", "--verify", "eval-base").strip():
+        for path in git(repo, "diff", "--name-only", "--diff-filter=A",
+                        "eval-base").splitlines():
+            if _DAY_FILE_RE.match(path.strip()):
+                out.add(path.strip())
+    return sorted(out)
 
 
 SCAFFOLD_ARTIFACTS = scaffold_artifacts()
 UPGRADE_ARTIFACTS = scaffold_artifacts("upgrade")
-SCAFFOLD_ONLY_ARTIFACTS = sorted(set(SCAFFOLD_ARTIFACTS) - set(UPGRADE_ARTIFACTS))
+UPGRADE_FORBIDDEN_ARTIFACTS = sorted(set(SCAFFOLD_ARTIFACTS) - set(UPGRADE_ARTIFACTS))
 
 # File authority (BL-038, edition v18): the ONE table in SKILL.md that
 # states what each invocation mode may do to each artifact class. The
@@ -812,22 +893,28 @@ class Grader:
         # written as. Before this, `migrate` was asserted against the
         # fresh-scaffold-only row and every mode against a literal path.
         owed = scaffold_artifacts(mode)
-        missing = [a for a in owed if not (repo / _resolve_today(a)).exists()]
-        self.check("scaffold_artifacts_present", not missing,
-                   f"all {len(owed)} Step 4 artifacts this mode owes exist" if not missing
-                   else f"missing: {missing}", artifact=self.repo_art)
-        # Only asked where the law actually withholds something from this
-        # mode. In `scaffold` the reserved rows ARE owed, so the question
-        # has one possible answer and an assert that cannot fail is worse
-        # than no assert: it reports coverage it does not have.
-        reserved = [a for a in SCAFFOLD_ONLY_ARTIFACTS if a not in owed]
-        if reserved:
-            forbidden = [a for a in reserved if (repo / _resolve_today(a)).exists()]
-            self.check("no_scaffold_only_artifact_in_this_mode", not forbidden,
-                       f"none of the {len(reserved)} target(s) the law reserves to fresh "
-                       f"scaffold was written by {mode}" if not forbidden
-                       else f"{mode} wrote a target the law reserves to fresh scaffold: {forbidden}",
-                       artifact=self.repo_art)
+        stuck = unresolved(owed)
+        # A `<today>` target is satisfied by the day file THIS RUN added,
+        # not by one named for the grader's calendar day: re-grading a
+        # recorded run on any later date would otherwise call a present
+        # day file missing, and `mutate.py`'s substrate check would refuse
+        # the scenario as UNUSABLE from the next morning on (the round).
+        added_days = day_files_this_run_added(repo)
+
+        def _present(target: str) -> bool:
+            resolved = _resolve_today(target)
+            if _DAY_FILE_RE.match(resolved):
+                return bool(added_days)
+            return (repo / resolved).exists()
+
+        missing = [a for a in owed if not _present(a)]
+        self.check("scaffold_artifacts_present", not missing and not stuck,
+                   f"all {len(owed)} Step 4 artifacts this mode owes exist"
+                   if not (missing or stuck) else
+                   (f"missing: {missing}" if not stuck else
+                    f"missing: {missing}; and these carry a placeholder this grader "
+                    f"cannot resolve, so they were never really asked: {stuck}"),
+                   artifact=self.repo_art)
         sk = repo / ".claude/rules/skills.md"
         sk_text = sk.read_text() if sk.exists() else ""
         stages = [w for w in ("pre-plan", "implement", "debug", "review") if w in sk_text.lower()]
@@ -1026,10 +1113,21 @@ def grade_upgrade(ws: Path) -> Grader:
     # BL-036 Wave B: upgrade is also a scaffold for artifacts the repo
     # never had — the v17 fixture predates docs/cases/, so the upgrade run
     # must create the case home (found unasserted by review 2026-08-21).
-    missing_artifacts = [a for a in UPGRADE_ARTIFACTS if not (repo / a).exists()]
-    g.check("upgrade_creates_missing_artifacts", not missing_artifacts,
-            "all Step 4 artifacts an upgrade owes exist (derived list)" if not missing_artifacts
-            else f"upgrade failed to scaffold: {missing_artifacts}", artifact=g.repo_art)
+    # BL-406, from the round: this call site asserted the raw target while
+    # `scaffold_checks` resolved it. Nothing upgrade-owed carries a
+    # placeholder today, so it was latent — and latent is how the defect
+    # this case repairs got in.
+    stuck_upgrade = unresolved(UPGRADE_ARTIFACTS)
+    missing_artifacts = [a for a in UPGRADE_ARTIFACTS
+                         if not (repo / _resolve_today(a)).exists()]
+    g.check("upgrade_creates_missing_artifacts",
+            not missing_artifacts and not stuck_upgrade,
+            "all Step 4 artifacts an upgrade owes exist (derived list)"
+            if not (missing_artifacts or stuck_upgrade)
+            else (f"upgrade failed to scaffold: {missing_artifacts}" if not stuck_upgrade
+                  else f"upgrade failed to scaffold: {missing_artifacts}; and these carry "
+                       f"a placeholder this grader cannot resolve: {stuck_upgrade}"),
+            artifact=g.repo_art)
 
     # BL-406: the other half of the same law. Step 4 marks a row **Fresh-
     # scaffold mode only**, and an assertion that only ever checks presence
@@ -1037,14 +1135,7 @@ def grade_upgrade(ws: Path) -> Grader:
     # missing both when the run correctly wrote none and when it never
     # reached Step 4 at all. This asserts the forbidden write did not
     # happen, which is what BL-360 legislated and nothing measured.
-    reserved = [a for a in SCAFFOLD_ONLY_ARTIFACTS if a not in UPGRADE_ARTIFACTS]
-    if reserved:
-        wrote_forbidden = [a for a in reserved if (repo / _resolve_today(a)).exists()]
-        g.check("upgrade_writes_no_scaffold_only_artifact", not wrote_forbidden,
-                f"none of the {len(reserved)} target(s) the law reserves to fresh "
-                f"scaffold was written by the upgrade" if not wrote_forbidden
-                else f"upgrade wrote a target the law reserves to fresh scaffold: {wrote_forbidden}",
-                artifact=g.repo_art)
+    check_upgrade_writes_nothing_forbidden(g, repo)
 
     # BL-036 Wave B: the keep-refusal branch — when the run's prompt (saved
     # by the runner to outputs/prompt.txt) asks to protect an OWNED path,
@@ -1564,25 +1655,33 @@ def grade_derivation_selftest() -> Grader:
     # pattern stops matching, every mode is handed the fresh-scaffold-only
     # rows again and every scenario asserts an artifact the law forbids —
     # which is exactly what happened silently for three days after BL-360.
-    g.check("scaffold_only_rows_detected", len(SCAFFOLD_ONLY_ARTIFACTS) >= 1,
-            f"Step 4 marks {len(SCAFFOLD_ONLY_ARTIFACTS)} row(s) fresh-scaffold-only: "
-            f"{SCAFFOLD_ONLY_ARTIFACTS}" if SCAFFOLD_ONLY_ARTIFACTS
-            else "no Step 4 row matched the fresh-scaffold-only marker — the law's "
-                 "wording moved, or the notes column is no longer being read",
+    # The exact list, not a count (the round): `>= 1` stays green while a
+    # newly restricted row goes unread, which is this case's own defect
+    # arriving again. A row gained or lost here is a deliberate act and
+    # moves this line with it.
+    expected_forbidden = ["docs/journal/<today>.md"]
+    g.check("upgrade_forbidden_rows_detected",
+            UPGRADE_FORBIDDEN_ARTIFACTS == expected_forbidden,
+            f"Step 4 withholds exactly {expected_forbidden} from an upgrade"
+            if UPGRADE_FORBIDDEN_ARTIFACTS == expected_forbidden
+            else f"the set of rows Step 4 withholds from an upgrade moved: "
+                 f"{UPGRADE_FORBIDDEN_ARTIFACTS} vs {expected_forbidden} — a row was "
+                 f"restricted in wording this derivation does not read, or one stopped "
+                 f"being restricted",
             artifact=LAW_SKILL)
-    journal_day = [a for a in SCAFFOLD_ONLY_ARTIFACTS if a.startswith("docs/journal/")]
-    g.check("journal_day_is_scaffold_only", bool(journal_day),
-            f"the day file is fresh-scaffold-only per BL-360: {journal_day}" if journal_day
-            else "docs/journal/<today>.md is being demanded of upgrade and migrate, "
-                 "which SKILL.md Step 4 forbids", artifact=LAW_SKILL)
-    try:
-        resolved_ok = all("<" not in _resolve_today(a) for a in SCAFFOLD_ARTIFACTS)
-        resolve_err = ""
-    except ValueError as e:
-        resolved_ok, resolve_err = False, str(e)
-    g.check("scaffold_targets_resolve_to_paths", resolved_ok,
-            "every Step 4 target resolves to a real path expression" if resolved_ok
-            else resolve_err, artifact=LAW_SKILL)
+    journal_day = [a for a in UPGRADE_FORBIDDEN_ARTIFACTS
+                   if a.startswith("docs/journal/")]
+    g.check("journal_day_withheld_from_upgrade", bool(journal_day),
+            f"the day file is withheld from an upgrade per BL-360: {journal_day}"
+            if journal_day
+            else "docs/journal/<today>.md is being demanded of an upgrade, which "
+                 "SKILL.md Step 4 says writes no entry", artifact=LAW_SKILL)
+    stuck = unresolved(SCAFFOLD_ARTIFACTS)
+    g.check("scaffold_targets_resolve_to_paths", not stuck,
+            "every Step 4 target resolves to a real path expression" if not stuck
+            else f"these carry a placeholder this grader cannot resolve, so every "
+                 f"assert reading them can only report failure: {stuck}",
+            artifact=LAW_SKILL)
     # File authority (BL-038): the table parses to the pinned shape, and
     # the state header says which repo state each mode assumes.
     try:
@@ -1746,6 +1845,10 @@ def grade_upgrade_drop_stack(ws: Path) -> Grader:
                home=home, label="upgrade-drop-stack")
     g.common_checks(repo, expected_keep=meta.get("expected_keep", []), fixture_meta=meta)
     check_mode_authority(g, repo, "upgrade", meta)
+    # BL-406, from the round: this scenario is an upgrade and had none of
+    # the upgrade path's artifact assertions. A drop-stack run writing the
+    # day file went uncaught.
+    check_upgrade_writes_nothing_forbidden(g, repo)
 
     dropped_left = [p for p in meta["dropped_stack_files"] if (repo / p).exists()]
     g.check("dropped_stack_files_deleted", not dropped_left,

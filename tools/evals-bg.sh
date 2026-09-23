@@ -599,6 +599,30 @@ if ! ( cd "$REPO" && python3 evals/check_engine.py > "$WS/engine.log" 2>&1 ); th
 fi
 status "engine green"
 
+# BL-406: the derivation selftest is a GATE, not a command somebody types.
+# It held three real controls and nobody ran it: `audit_slugs_derived` went
+# red on 2026-09-20 with BL-357 and was found three days later by accident,
+# while BL-360's law change sat unmeasured beside it. A control that runs
+# nowhere the benchmark runs prevents nothing.
+#
+# One standing red is named rather than silenced — the same shape the fleet
+# uses for a known finding that is not a red gate. When #64 closes, this
+# line goes with it; any OTHER failing control stops the run.
+status "=== stage 1: derivation selftest ==="
+if ! ( cd "$REPO" && python3 evals/grade.py "$WS" selftest:derivation \
+         > "$WS/selftest.log" 2>&1 ); then
+  other="$(grep -E '^  FAIL' "$WS/selftest.log" | grep -v 'audit_slugs_derived' || true)"
+  if [ -n "$other" ]; then
+    status "DERIVATION SELFTEST FAILED — see $WS/selftest.log"
+    printf '%s\n' "$other" | while IFS= read -r l; do status "  $l"; done
+    notify "evals: derivation selftest FAILED"
+    exit 1
+  fi
+  status "derivation green but for the standing red audit_slugs_derived (#64)"
+else
+  status "derivation green"
+fi
+
 if [ ${#IDEM[@]} -gt 0 ]; then
   # Targeted idempotency: re-measure the zero-diff promise for one scenario
   # after a law fix, without paying for the whole corpus again.

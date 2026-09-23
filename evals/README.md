@@ -19,9 +19,11 @@ Two layers, mirroring unit vs. e2e tests:
 All grading is deterministic scripting (byte-diffs against the skill source,
 git state, manifest parsing) — no AI judge. Expectations are **derived from
 the current skill source at grade time** (VERSION, `assets/rules/**`), so the
-suite does not rot when rules are added, removed, or renamed. The one thing to
-maintain by hand: `SCAFFOLD_ARTIFACTS` in `grade.py` mirrors SKILL.md Step 4's
-table — update it if that table changes.
+suite does not rot when rules are added, removed, or renamed. **Nothing here is
+maintained by hand** — this sentence used to claim `SCAFFOLD_ARTIFACTS` was, and
+it has been parsed from SKILL.md Step 4's table since long before BL-406 read
+that table's notes column as well (`scaffold_artifacts(mode)`,
+`UPGRADE_ARTIFACTS`, `UPGRADE_FORBIDDEN_ARTIFACTS`).
 
 ## What an eval actually is
 
@@ -175,12 +177,18 @@ deliverables checklist lives in `expected_output` for humans and in
 ## Derived contracts (BL-036)
 
 `grade.py` derives its expectations from the skill source at grade time —
-`SCAFFOLD_ARTIFACTS` is parsed from SKILL.md Step 4's table, the protected
-set from it, migration wiring from `AGENTS.md.tpl`, audit check
+`SCAFFOLD_ARTIFACTS` is parsed from SKILL.md Step 4's table — and since
+BL-406 so are `UPGRADE_ARTIFACTS` and `UPGRADE_FORBIDDEN_ARTIFACTS`, which
+read the same table's notes column for what it withholds from an upgrade —
+the protected set from it, migration wiring from `AGENTS.md.tpl`, audit check
 severities from the SKILL.md check list, the restructure action set from
-`restructure.md` §2. A divergence between law and grader is impossible to
-introduce silently; `python3 evals/grade.py <ws> selftest:derivation`
-asserts the derivations are alive (it is a pure check — no agent run).
+`restructure.md` §2. A divergence between law and grader is **not** impossible
+to introduce silently — BL-357 and BL-360 each did on 2026-09-20 and BL-406
+found them three days later. What closes the window is that
+`selftest:derivation` runs in stage 1 of every benchmark (`tools/evals-bg.sh`)
+rather than only when somebody types it: `python3 evals/grade.py <ws>
+selftest:derivation` asserts the derivations are alive, and it is a pure
+check — no agent run.
 Deliberately manual: fixture content markers (decimal-money, bl/NNN) —
 intentional test-data oracles, not contract.
 
