@@ -1955,9 +1955,20 @@ def grade_case_practice(ws: Path) -> Grader:
     all_text = ("\n".join(p.read_text(errors="ignore") for p in case_dir.rglob("*.md"))
                 if case_art.measurable else "")
 
-    tier = re.search(r"Tier:\s*([012])", all_text)
-    g.check("tier_declared_in_case_header", tier is not None,
-            f"tier {tier.group(1)} declared" if tier else "no 'Tier: N' line anywhere in the case", artifact=case_art)
+    # Every declaration, not the first one the walk happens to reach. The tier
+    # decides which artifacts the case owes, and `all_text` joins the case's
+    # files in `rglob` order — so a spec saying 1 and a summary saying 2 were
+    # resolved by directory-walk order, silently, in favour of whichever came
+    # first (BL-406). A case that cannot say what tier it is has not declared
+    # one.
+    tiers = sorted(set(re.findall(r"Tier:\s*([012])", all_text)))
+    tier = re.search(r"Tier:\s*([012])", all_text) if len(tiers) == 1 else None
+    g.check("tier_declared_in_case_header", len(tiers) == 1,
+            f"tier {tiers[0]} declared" if len(tiers) == 1
+            else ("no 'Tier: N' line anywhere in the case" if not tiers
+                  else f"the case declares more than one tier ({tiers}) — the tier decides "
+                       f"which artifacts it owes, so two answers is no answer"),
+            artifact=case_art)
 
     ears = re.findall(r"\bR-\d{3}\b", all_text)
     g.check("ears_lines_with_ids", len(set(ears)) >= 2,
@@ -1978,10 +1989,23 @@ def grade_case_practice(ws: Path) -> Grader:
             "GIVEN/WHEN/THEN scenario present" if hurting
             else "no GIVEN/WHEN/THEN scenario in the case", artifact=case_art)
 
-    per_trace = re.search(r"per\s+R-\d{3}", all_text)
-    g.check("tasks_trace_per_rnnn", per_trace is not None,
-            "at least one task traces 'per R-NNN'" if per_trace
-            else "no task carries per R-NNN traceability", artifact=case_art)
+    # Owed by TIER 2 and by no other tier (BL-406, found by the edition-27
+    # benchmark). `core/sdd.md` makes the tier the agent's call — "chosen on
+    # blast radius x novelty" — and gives each tier its own artifacts: tier 0
+    # has no spec, tier 1 is "EARS spec + hurting case + clarify", and only
+    # tier 2 carries the plan package whose every task traces `per R-NNN`.
+    # This assert demanded that trace unconditionally, so a case that declared
+    # tier 1 and obeyed tier 1 was red for lacking a tier-2 artifact. It was
+    # latent while the runs happened to pick tier 2 — the same shape as the
+    # day file and the fresh-scaffold-only row: a grader that reads a law's
+    # obligation and not the condition the law puts on it.
+    tier_n = tier.group(1) if tier else None
+    if tier_n == "2":
+        per_trace = re.search(r"per\s+R-\d{3}", all_text)
+        g.check("tasks_trace_per_rnnn", per_trace is not None,
+                "at least one task traces 'per R-NNN'" if per_trace
+                else "no task carries per R-NNN traceability, which tier 2 owes",
+                artifact=case_art)
 
     converged = ("Converged" in all_text) or re.search(r"\((?:missing|partial|contradicts|unrequested)\)", all_text)
     g.check("converge_trail_present", converged is not None,
