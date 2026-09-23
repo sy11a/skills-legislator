@@ -29,6 +29,27 @@ Any edit under `skill/` (SKILL.md, `assets/rules/**`, `assets/templates/**`,
 
 Documentation-only edits (README, `docs/**`, `evals/**` itself) need neither.
 
+**The run names its runner and its model; neither is optional.**
+
+```
+RUNNER=claude MODEL=sonnet tools/evals-bg.sh <workspace>     # or --runner claude --model sonnet
+```
+
+`tools/evals-bg.sh` defaults `RUNNER` to `opencode` and the `claude` profile's
+`MODEL` to `haiku`. A forgotten `--model` measures a cheaper arm than the record
+names; a forgotten `--runner` measures a different *engine*, which `POLICY.md`
+§ 4 calls the larger confound of the two. Neither reddens anything. This has
+already cost one edition: **v25 did not pin, so it ran `haiku`**, and its Harness
+table records only *"agent default (not pinned this cycle; the model floor is
+unmeasured)"* — the record cannot say which model produced its numbers.
+
+**The recorded run is `sonnet`** — ruled by the operator on 2026-09-23. POLICY
+§ 4's model floor is a *different* measurement — the cheapest model that still
+reaches 100% — answered by its own cheaper passes and written beside the
+headline figure, the way `v26.md` already writes it. The ruling fixes the
+recorded run's model; it does not answer the floor.
+
+
 **One exception rides every edition:** `docs/philosophy.md` §Horizon lists what
 is designed but not built. The edition that closes one of those cases removes
 its item in the same cycle — `check_static.py` fails while a Horizon entry
