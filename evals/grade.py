@@ -40,7 +40,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 EVALS = Path(__file__).resolve().parent
@@ -78,24 +78,66 @@ def _skill_md() -> str:
     return (SKILL / "SKILL.md").read_text()
 
 
-def scaffold_artifacts() -> list[str]:
+def scaffold_artifacts(mode: str = "scaffold") -> list[str]:
     """File targets parsed from SKILL.md Step 4's table — the table is the
     only source of what a scaffold must create (README's 'maintain by
-    hand' note is dead). Rows: `| <target> | <template> | ...`; empty-dir
-    rows (template column '(empty directory)') are skipped: no file to
-    assert, the scaffold_checks directory assertions cover them."""
+    hand' note is dead). Rows: `| <target> | <template> | <notes> |`;
+    empty-dir rows (template column '(empty directory)') are skipped: no
+    file to assert, the scaffold_checks directory assertions cover them.
+
+    The notes column carries each row's mode restriction, and it is read
+    rather than assumed (BL-406). `docs/journal/<today>.md` says **Fresh-
+    scaffold mode only — an upgrade writes no entry**, which BL-360 wrote
+    into the law on 2026-09-20 without telling the grader; for three days
+    the upgrade scenario asserted an artifact the law forbids, and the
+    next run against that law found it. A row so marked is a target of
+    `mode == "scaffold"` and of no other mode.
+
+    Reading the third column is the same act the second column already
+    performs for `(empty directory)`: the law states the restriction in
+    its own words and the derivation obeys them, so moving the row, the
+    wording or the mode moves every consumer with it."""
     text = _skill_md()
     step4 = text.split("## Step 4", 1)[1].split("## Step 5", 1)[0]
     out = []
-    for m in re.finditer(r"^\| `([^`]+)` \| ([^|]+) \|", step4, re.M):
-        target, template = m.group(1), m.group(2).strip()
+    for m in re.finditer(r"^\| `([^`]+)` \| ([^|]+) \|([^\n]*)$", step4, re.M):
+        target, template, notes = m.group(1), m.group(2).strip(), m.group(3)
         if template.startswith("(empty"):
+            continue
+        if SCAFFOLD_ONLY_RE.search(notes) and mode != "scaffold":
             continue
         out.append(target)
     return sorted(out)
 
 
+# The law's own words for a row no mode but `scaffold` may create. A row
+# the law restricts and this pattern misses is a target asserted in every
+# mode — which is the defect BL-406 closes — so the pattern is pinned by
+# `law_checks`, not left to be noticed by the next red benchmark.
+SCAFFOLD_ONLY_RE = re.compile(r"fresh-scaffold mode only", re.I)
+
+
+def _resolve_today(target: str) -> str:
+    """A Step 4 target may be written as a template of the day it is
+    created — `docs/journal/<today>.md`. Nothing resolved it (BL-406):
+    the literal string went straight into `Path.exists()`, which is
+    False for every repository that has ever existed, so the assertion
+    could report only failure and did so in whichever mode reached it.
+
+    An unresolved placeholder left after this is a derivation defect and
+    raises, because the alternative is a check that cannot pass quietly
+    telling the reader the run is at fault."""
+    out = target.replace("<today>", date.today().isoformat())
+    if "<" in out or ">" in out:
+        raise ValueError(
+            f"Step 4 target {target!r} carries a placeholder this grader "
+            f"cannot resolve; teach _resolve_today or fix the table")
+    return out
+
+
 SCAFFOLD_ARTIFACTS = scaffold_artifacts()
+UPGRADE_ARTIFACTS = scaffold_artifacts("upgrade")
+SCAFFOLD_ONLY_ARTIFACTS = sorted(set(SCAFFOLD_ARTIFACTS) - set(UPGRADE_ARTIFACTS))
 
 # File authority (BL-038, edition v18): the ONE table in SKILL.md that
 # states what each invocation mode may do to each artifact class. The
@@ -764,10 +806,28 @@ class Grader:
         self.check("no_unresolved_placeholders", not offenders,
                    "adr template carve-out respected, no stray {{TOKEN}}s" if not offenders else f"unfilled tokens in: {offenders}", artifact=self.repo_art)
 
-    def scaffold_checks(self, repo: Path) -> None:
-        missing = [a for a in SCAFFOLD_ARTIFACTS if not (repo / a).exists()]
+    def scaffold_checks(self, repo: Path, mode: str = "scaffold") -> None:
+        # BL-406: both halves of a Step 4 row are read — the mode its notes
+        # column restricts it to, and the `<today>` its target may be
+        # written as. Before this, `migrate` was asserted against the
+        # fresh-scaffold-only row and every mode against a literal path.
+        owed = scaffold_artifacts(mode)
+        missing = [a for a in owed if not (repo / _resolve_today(a)).exists()]
         self.check("scaffold_artifacts_present", not missing,
-                   "all Step 4 artifacts exist" if not missing else f"missing: {missing}", artifact=self.repo_art)
+                   f"all {len(owed)} Step 4 artifacts this mode owes exist" if not missing
+                   else f"missing: {missing}", artifact=self.repo_art)
+        # Only asked where the law actually withholds something from this
+        # mode. In `scaffold` the reserved rows ARE owed, so the question
+        # has one possible answer and an assert that cannot fail is worse
+        # than no assert: it reports coverage it does not have.
+        reserved = [a for a in SCAFFOLD_ONLY_ARTIFACTS if a not in owed]
+        if reserved:
+            forbidden = [a for a in reserved if (repo / _resolve_today(a)).exists()]
+            self.check("no_scaffold_only_artifact_in_this_mode", not forbidden,
+                       f"none of the {len(reserved)} target(s) the law reserves to fresh "
+                       f"scaffold was written by {mode}" if not forbidden
+                       else f"{mode} wrote a target the law reserves to fresh scaffold: {forbidden}",
+                       artifact=self.repo_art)
         sk = repo / ".claude/rules/skills.md"
         sk_text = sk.read_text() if sk.exists() else ""
         stages = [w for w in ("pre-plan", "implement", "debug", "review") if w in sk_text.lower()]
@@ -808,7 +868,7 @@ def grade_fresh(ws: Path) -> Grader:
                home=home, label="fresh-scaffold-dotnet")
     g.common_checks(repo)
     check_mode_authority(g, repo, "scaffold")
-    g.scaffold_checks(repo)
+    g.scaffold_checks(repo, "scaffold")
     g.no_unresolved_tokens(repo)
     # v24 BL-075 (R-769): the scaffold report is a persisted, graded artifact.
     g.probe("scaffold_report_saved", g.report_art, container=g.home_art)
@@ -823,7 +883,7 @@ def grade_migration(ws: Path) -> Grader:
                home=home, label="legacy-migration")
     g.common_checks(repo)
     check_mode_authority(g, repo, "migrate")
-    g.scaffold_checks(repo)
+    g.scaffold_checks(repo, "migrate")
     g.no_unresolved_tokens(repo)
     agents = (repo / "AGENTS.md").read_text() if (repo / "AGENTS.md").exists() else ""
     v2_wired = all(w in agents for w in migration_wiring())
@@ -880,7 +940,7 @@ def grade_migration_agents_first(ws: Path) -> Grader:
                home=home, label="legacy-migration-agents-first")
     g.common_checks(repo)
     check_mode_authority(g, repo, "migrate")
-    g.scaffold_checks(repo)
+    g.scaffold_checks(repo, "migrate")
     g.no_unresolved_tokens(repo)
     agents = (repo / "AGENTS.md").read_text() if (repo / "AGENTS.md").exists() else ""
     v2_wired = all(w in agents for w in migration_wiring())
@@ -966,10 +1026,25 @@ def grade_upgrade(ws: Path) -> Grader:
     # BL-036 Wave B: upgrade is also a scaffold for artifacts the repo
     # never had — the v17 fixture predates docs/cases/, so the upgrade run
     # must create the case home (found unasserted by review 2026-08-21).
-    missing_artifacts = [a for a in SCAFFOLD_ARTIFACTS if not (repo / a).exists()]
+    missing_artifacts = [a for a in UPGRADE_ARTIFACTS if not (repo / a).exists()]
     g.check("upgrade_creates_missing_artifacts", not missing_artifacts,
-            "all Step 4 artifacts exist after upgrade (derived list)" if not missing_artifacts
+            "all Step 4 artifacts an upgrade owes exist (derived list)" if not missing_artifacts
             else f"upgrade failed to scaffold: {missing_artifacts}", artifact=g.repo_art)
+
+    # BL-406: the other half of the same law. Step 4 marks a row **Fresh-
+    # scaffold mode only**, and an assertion that only ever checks presence
+    # cannot tell obedience from the absence of the act — the day file is
+    # missing both when the run correctly wrote none and when it never
+    # reached Step 4 at all. This asserts the forbidden write did not
+    # happen, which is what BL-360 legislated and nothing measured.
+    reserved = [a for a in SCAFFOLD_ONLY_ARTIFACTS if a not in UPGRADE_ARTIFACTS]
+    if reserved:
+        wrote_forbidden = [a for a in reserved if (repo / _resolve_today(a)).exists()]
+        g.check("upgrade_writes_no_scaffold_only_artifact", not wrote_forbidden,
+                f"none of the {len(reserved)} target(s) the law reserves to fresh "
+                f"scaffold was written by the upgrade" if not wrote_forbidden
+                else f"upgrade wrote a target the law reserves to fresh scaffold: {wrote_forbidden}",
+                artifact=g.repo_art)
 
     # BL-036 Wave B: the keep-refusal branch — when the run's prompt (saved
     # by the runner to outputs/prompt.txt) asks to protect an OWNED path,
@@ -1484,6 +1559,30 @@ def grade_derivation_selftest() -> Grader:
     g.check("scaffold_artifacts_include_cases_home",
             "docs/cases/README.md" in SCAFFOLD_ARTIFACTS,
             "the v17 case home is in the derived list", artifact=LAW_SKILL)
+    # BL-406: the mode restriction the notes column carries is read, and is
+    # pinned here rather than trusted. If the law's wording moves and the
+    # pattern stops matching, every mode is handed the fresh-scaffold-only
+    # rows again and every scenario asserts an artifact the law forbids —
+    # which is exactly what happened silently for three days after BL-360.
+    g.check("scaffold_only_rows_detected", len(SCAFFOLD_ONLY_ARTIFACTS) >= 1,
+            f"Step 4 marks {len(SCAFFOLD_ONLY_ARTIFACTS)} row(s) fresh-scaffold-only: "
+            f"{SCAFFOLD_ONLY_ARTIFACTS}" if SCAFFOLD_ONLY_ARTIFACTS
+            else "no Step 4 row matched the fresh-scaffold-only marker — the law's "
+                 "wording moved, or the notes column is no longer being read",
+            artifact=LAW_SKILL)
+    journal_day = [a for a in SCAFFOLD_ONLY_ARTIFACTS if a.startswith("docs/journal/")]
+    g.check("journal_day_is_scaffold_only", bool(journal_day),
+            f"the day file is fresh-scaffold-only per BL-360: {journal_day}" if journal_day
+            else "docs/journal/<today>.md is being demanded of upgrade and migrate, "
+                 "which SKILL.md Step 4 forbids", artifact=LAW_SKILL)
+    try:
+        resolved_ok = all("<" not in _resolve_today(a) for a in SCAFFOLD_ARTIFACTS)
+        resolve_err = ""
+    except ValueError as e:
+        resolved_ok, resolve_err = False, str(e)
+    g.check("scaffold_targets_resolve_to_paths", resolved_ok,
+            "every Step 4 target resolves to a real path expression" if resolved_ok
+            else resolve_err, artifact=LAW_SKILL)
     # File authority (BL-038): the table parses to the pinned shape, and
     # the state header says which repo state each mode assumes.
     try:

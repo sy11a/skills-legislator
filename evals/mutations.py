@@ -26,6 +26,19 @@ from pathlib import Path
 
 SKILL = Path(__file__).resolve().parent.parent / "skill"
 
+
+def _scaffold_only_rel() -> str:
+    """The repo-relative path of a target SKILL.md Step 4 reserves to fresh
+    scaffold, resolved for today (BL-406). Read from the grader's own
+    derivation so the law is stated once: a row losing or gaining the
+    restriction moves the assert and its mutation together."""
+    from grade import SCAFFOLD_ONLY_ARTIFACTS, _resolve_today
+    if not SCAFFOLD_ONLY_ARTIFACTS:
+        raise ValueError(
+            "no Step 4 row is marked fresh-scaffold-only; the asserts this "
+            "mutation kills are not emitted either — see grade.scaffold_checks")
+    return _resolve_today(SCAFFOLD_ONLY_ARTIFACTS[0])
+
 REPORT = {
     "fresh-scaffold-dotnet": ("fresh-scaffold-dotnet", "scaffold-report.md"),
     "audit": ("rotted-layer", "audit-report.md"),
@@ -387,6 +400,12 @@ def mutations_for(ws: Path, scenario: str) -> dict[str, Mutation]:
             fn=lambda ws_, rev, r=repo: (
                 _commit_all(rev, r),
                 _edit(rev, r / "docs/cases/README.md", lambda t: t + "\nmut\n")))
+        # BL-406: Step 4's day-file row is fresh-scaffold-only, and a
+        # migration is not a fresh scaffold. Writing one is the violation.
+        muts["no_scaffold_only_artifact_in_this_mode"] = Mutation(
+            "write-scaffold-only", _scaffold_only_rel(),
+            fn=lambda ws_, rev, p=repo / _scaffold_only_rel():
+                _write(rev, p, "# a day file a migration must not write\n"))
         if scenario == "legacy-migration":
             probe_report("step7_report_saved")
             stamp_strip()
@@ -470,6 +489,14 @@ def mutations_for(ws: Path, scenario: str) -> dict[str, Mutation]:
                 "delete", "docs/cases/README.md",
                 fn=lambda ws_, rev,
                 p=repo / "docs/cases/README.md": _delete(rev, p))
+            # BL-406: the inverse of the row above. The law reserves
+            # `docs/journal/<today>.md` to fresh scaffold, so writing one
+            # is the violation the assert exists to catch — the kill is a
+            # creation, not a deletion.
+            muts["upgrade_writes_no_scaffold_only_artifact"] = Mutation(
+                "write-scaffold-only", _scaffold_only_rel(),
+                fn=lambda ws_, rev, p=repo / _scaffold_only_rel():
+                    _write(rev, p, "# a day file an upgrade must not write\n"))
             # v24 BL-075: the report is the engine's print
             muts["report_created_lists_new_rules"] = Mutation(
                 "remove-lines", REPORT[scenario][1], f"`docs/ai/rules/core/{core}` —",
