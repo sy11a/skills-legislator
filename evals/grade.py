@@ -104,7 +104,7 @@ def scaffold_artifacts(mode: str = "scaffold") -> list[str]:
         notes = m.group(3).rstrip().removesuffix("|").strip()
         if template.startswith("(empty"):
             continue
-        if UPGRADE_FORBIDDEN_RE.search(notes) and mode == "upgrade":
+        if SCAFFOLD_ONLY_RE.search(notes) and mode != "scaffold":
             continue
         out.append(target)
     return sorted(out)
@@ -134,6 +134,35 @@ def scaffold_artifacts(mode: str = "scaffold") -> list[str]:
 # found the earlier pattern both missing and having no business
 # catching. The wording is pinned by `grade_derivation_selftest`, so a
 # reworded law reddens a control instead of a corpus.
+# TWO patterns, because Step 4 states two different things and conflating
+# them made the first draft wrong in both directions.
+#
+# Step 4's own opening is a DUTY in every mode: "This step runs in EVERY
+# mode — fresh scaffold, legacy migration, and upgrade alike: an upgrade
+# run on a repo missing artifacts ... must build everything absent from
+# the table below." A row's notes column then narrows which modes owe it.
+#
+#   SCAFFOLD_ONLY_RE — the heading form. A row so marked is OWED by
+#       `scaffold` and by no other mode. Both spellings the table actually
+#       uses: the day file's "Fresh-scaffold mode only" and `AGENTS.md`'s
+#       "Only in fresh-scaffold mode" (whose note adds that migration
+#       handles that file per Step 5 instead). The round found the earlier
+#       single-spelling pattern missing the second.
+#
+#   UPGRADE_FORBIDDEN_RE — the reasoned clause, "an upgrade writes no
+#       entry". Not owing a file is not the same as being forbidden it,
+#       and only this clause forbids.
+#
+# The difference between the two is the whole of the operator's ruling of
+# 2026-09-23. `## File authority` calls itself "the only statement of what
+# an invocation mode may do to a file" and grants scaffolded artifacts x
+# migrate `create-if-absent` — a RIGHT, not a duty. A migration may write
+# the day file and need not. The two migration scenarios of the 2026-09-23
+# benchmark split exactly there: one wrote it, one did not, and both
+# obeyed. An assert demanding it of a migration demanded what the law
+# permits, which is how an ambiguous row becomes a false red.
+SCAFFOLD_ONLY_RE = re.compile(
+    r"fresh-scaffold mode only|only in fresh-scaffold mode", re.I)
 UPGRADE_FORBIDDEN_RE = re.compile(r"an upgrade writes no entry", re.I)
 
 
@@ -158,6 +187,18 @@ def check_upgrade_writes_nothing_forbidden(g, repo) -> None:
             f"{UPGRADE_FORBIDDEN_ARTIFACTS} from it" if not wrote
             else f"upgrade added a day file Step 4 withholds from it: {wrote}",
             artifact=g.repo_art)
+
+
+def _step4_notes() -> dict[str, str]:
+    """Each Step 4 target mapped to its notes cell, from the same parse the
+    target list comes from — so `owed` and `forbidden` never read the table
+    two different ways."""
+    text = _skill_md()
+    step4 = text.split("## Step 4", 1)[1].split("## Step 5", 1)[0]
+    out = {}
+    for m in re.finditer(r"^\| `([^`]+)` \| ([^|]+) \|([^\n]*)$", step4, re.M):
+        out[m.group(1)] = m.group(3).rstrip().removesuffix("|").strip()
+    return out
 
 
 def _resolve_today(target: str) -> str:
@@ -217,8 +258,14 @@ def day_files_this_run_added(repo: Path) -> list[str]:
 
 
 SCAFFOLD_ARTIFACTS = scaffold_artifacts()
+MIGRATE_ARTIFACTS = scaffold_artifacts("migrate")
 UPGRADE_ARTIFACTS = scaffold_artifacts("upgrade")
-UPGRADE_FORBIDDEN_ARTIFACTS = sorted(set(SCAFFOLD_ARTIFACTS) - set(UPGRADE_ARTIFACTS))
+# Owed by a fresh scaffold and by nothing else.
+SCAFFOLD_ONLY_ARTIFACTS = sorted(set(SCAFFOLD_ARTIFACTS) - set(UPGRADE_ARTIFACTS))
+# Of those, the ones an upgrade is additionally FORBIDDEN to write.
+UPGRADE_FORBIDDEN_ARTIFACTS = sorted(
+    a for a in SCAFFOLD_ONLY_ARTIFACTS
+    if UPGRADE_FORBIDDEN_RE.search(_step4_notes().get(a, "")))
 
 # File authority (BL-038, edition v18): the ONE table in SKILL.md that
 # states what each invocation mode may do to each artifact class. The
@@ -1659,6 +1706,14 @@ def grade_derivation_selftest() -> Grader:
     # newly restricted row goes unread, which is this case's own defect
     # arriving again. A row gained or lost here is a deliberate act and
     # moves this line with it.
+    expected_only = ["AGENTS.md", "docs/journal/<today>.md"]
+    g.check("scaffold_only_rows_detected",
+            SCAFFOLD_ONLY_ARTIFACTS == expected_only,
+            f"Step 4 owes exactly {expected_only} to a fresh scaffold and to no "
+            f"other mode" if SCAFFOLD_ONLY_ARTIFACTS == expected_only
+            else f"the set Step 4 owes to a fresh scaffold alone moved: "
+                 f"{SCAFFOLD_ONLY_ARTIFACTS} vs {expected_only}",
+            artifact=LAW_SKILL)
     expected_forbidden = ["docs/journal/<today>.md"]
     g.check("upgrade_forbidden_rows_detected",
             UPGRADE_FORBIDDEN_ARTIFACTS == expected_forbidden,
