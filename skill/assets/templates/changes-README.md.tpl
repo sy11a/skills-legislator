@@ -1,8 +1,10 @@
 # Change Fragments
 
 One fragment per case, named for its case key: `<case>.md` — `BL-193.md`, `L-3.md`.
-The name is what makes a file a fragment; anything else in this directory (this
-README included) is the home's own furniture and is not linted as one.
+**The name is what makes a file a fragment**, for `sdd-lint` and for `render`
+alike: a file whose name is not a case key — this README included — is the
+home's own furniture, and one whose name *is* a case key must declare that same
+case in its front matter.
 
 Each fragment carries YAML front matter — `case`, `issue`, `kind`, `date`, all
 four required, `kind` one of `Added`, `Changed`, `Fixed`, `Removed` — and:

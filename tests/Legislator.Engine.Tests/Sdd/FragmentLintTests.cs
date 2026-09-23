@@ -61,9 +61,14 @@ public sealed class FragmentLintTests
     {
         // The other half of naming being the gate. `render` inserts by case key, so a
         // fragment filed under someone else's name lands in the wrong place silently.
-        var f = Assert.Single(Findings(Fragment("BL-999", OneBullet), name: "BL-347.md"));
-        Assert.Contains("declares case 'BL-999'", f);
+        var all = Findings(Fragment("BL-999", OneBullet), name: "BL-347.md");
+        var f = Assert.Single(all, x => x.Contains("declares case 'BL-999'", StringComparison.Ordinal));
         Assert.Contains("named 'BL-347'", f);
+        // The name mismatch does not swallow what follows it (BL-409, the round): the
+        // checks below used to be reported in one run, and hiding them behind the name
+        // costs the author a second round trip. Here the declared case is also not this
+        // branch's, and both are said at once.
+        Assert.Contains(all, x => x.Contains("does not match current branch", StringComparison.Ordinal));
     }
 
     [Fact]

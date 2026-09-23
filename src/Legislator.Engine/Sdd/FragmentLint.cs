@@ -41,6 +41,10 @@ public static class FragmentLint
     private static readonly System.Text.RegularExpressions.Regex CaseNamed =
         new(@"^[A-Za-z]+-\d+$", System.Text.RegularExpressions.RegexOptions.Compiled);
 
+    /// <summary>Is this file name a case key, and therefore a fragment? Shared with
+    /// <c>RenderJob</c>, which reads the same directory and must draw the same line.</summary>
+    internal static bool IsFragmentName(string stem) => CaseNamed.IsMatch(stem);
+
     public static IEnumerable<string> Findings(IFileSystem fs, RepoLayout layout, IProcessRunner proc, string root, LegislatorOptions options)
     {
         ArgumentNullException.ThrowIfNull(fs);
@@ -82,10 +86,16 @@ public static class FragmentLint
             // The other half of naming being the gate: a case-named file that declares
             // a different case is a fragment filed under someone else's key, and the
             // render inserts by case key, so it would land in the wrong place silently.
-            if (!string.Equals(caseKey.Trim(), stem, StringComparison.OrdinalIgnoreCase))
+            // Ordinal, not OrdinalIgnoreCase (the round): `RenderJob` keys rendered
+            // cases with `StringComparer.Ordinal`, so `bl-401.md` declaring `bl-401`
+            // renders under a different key than a later `BL-401` and the case is
+            // inserted twice. The law writes the key `BL-NNN`.
+            if (!string.Equals(caseKey.Trim(), stem, StringComparison.Ordinal))
             {
                 yield return $"{relative}: front matter declares case '{caseKey.Trim()}' but the file is named '{stem}' → a fragment is named for the case it carries per core/changelog.md";
-                continue;
+                // Deliberately no `continue` (the round): the checks below it — branch,
+                // bullet count, journal — used to be reported in one run, and hiding
+                // them behind the name costs the author a second round trip.
             }
 
             if (string.IsNullOrWhiteSpace(issue))

@@ -97,6 +97,15 @@ public sealed partial class RenderJob : IJob
         foreach (var entry in fs.Directory.EnumerateFiles(changesDir, "*.md", SearchOption.TopDirectoryOnly))
         {
             var relative = layout.Relative(entry);
+            // The same gate `sdd-lint` applies, and for the same reason: the home's
+            // own scaffolded README is not a fragment, and render is the job that
+            // CONSUMES the directory — refusing it here stops the render of every
+            // lawful fragment beside it (BL-409, the refutation round).
+            if (!Legislator.Engine.Sdd.FragmentLint.IsFragmentName(System.IO.Path.GetFileNameWithoutExtension(entry)))
+            {
+                continue;
+            }
+
             var text = fs.File.ReadAllText(entry);
             if (ParseFrontMatter(text) is not var (caseKey, issue, kind, date))
             {
@@ -129,11 +138,21 @@ public sealed partial class RenderJob : IJob
             }
 
             var sections = ParseSections(text);
-            if (!sections.TryGetValue("changelog", out var changelog) || !sections.TryGetValue("okf-log", out var okfLog) || !sections.TryGetValue("journal", out var journal))
+            // `## okf-log` is OPTIONAL and normally absent — `core/changelog.md` since
+            // BL-347: inside a case the record is the case summary, so the section is
+            // omitted, and a concept change made outside any case is written straight
+            // into `docs/okf/log.md`. Render demanded all three anyway, which refused
+            // every fragment written to the law of its own edition: 25 of Architector's
+            // 27 and 6 of this repo's 7 carry no `## okf-log`. It went unreported
+            // because render has never run in the fleet — no `<!-- rendered:` marker
+            // exists in any repo (BL-409, the refutation round's census).
+            if (!sections.TryGetValue("changelog", out var changelog) || !sections.TryGetValue("journal", out var journal))
             {
-                findings.Add($"{relative}: malformed fragment — missing one or more of ## changelog, ## okf-log, ## journal sections");
+                findings.Add($"{relative}: malformed fragment — missing ## changelog or ## journal section");
                 continue;
             }
+
+            var okfLog = sections.TryGetValue("okf-log", out var maybeOkfLog) ? maybeOkfLog : "";
 
             fragments.Add(new ChangeFragment(
                 caseKey.Trim(), issue.Trim(), kind.Trim(), date, changelog.Trim(), okfLog.Trim(), journal.Trim()));
