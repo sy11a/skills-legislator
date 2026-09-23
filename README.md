@@ -33,7 +33,7 @@ From v26 the engine and the four hooks are one binary, and the law names
 
 ```bash
 bash tools/publish-legislator.sh    # NativeAOT, this machine's RID, into artifacts/<rid>/
-sh tools/install-legislator.sh    # copies it onto PATH
+bash tools/install-legislator.sh  # copies it onto PATH
 legislator version --json         # version, RID, SHA-256 of what is running
 ```
 
@@ -195,8 +195,8 @@ law for (no empty placeholder files).
 5. `cd` into each downstream project and run `/legislator`.
 6. Review the `git diff` — only the changed owned file(s) and the manifest
    should appear — then commit.
-7. **At the tag, publish the arm and record its digests.** `sh
-   tools/publish-legislator.sh` on each **released** RID — since ADR 0013 that
+7. **At the tag, publish the arm and record its digests.**
+   `bash tools/publish-legislator.sh` on each **released** RID — since ADR 0013 that
    is `linux-x64` alone, and `released=(...)` in that script is where the set
    is stated — writes the binary and its
    SHA-256 into `artifacts/SHA256SUMS`; the edition's released digests go into
