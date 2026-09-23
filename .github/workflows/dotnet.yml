@@ -72,6 +72,5 @@ jobs:
           name: legislator-${{ matrix.rid }}
           path: |
             artifacts/${{ matrix.rid }}/legislator
-            artifacts/${{ matrix.rid }}/legislator.exe
             artifacts/SHA256SUMS
           if-no-files-found: error

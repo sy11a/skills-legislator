@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # BL-082 (C-12): put the published binary on this machine's PATH.
 #
-# The operator-side arm, POSIX only - the Windows install is a Copy-Item documented in the
-# README, per BL-068's declaration rule. Copies rather than links: a symlink into a build
+# The operator-side arm, POSIX only. The README's Windows Copy-Item sentence this line used
+# to point at went with ADR 0013, which made `linux-x64` the only RID the edition releases;
+# a Windows user still builds with `tools/publish-legislator.sh` on a Windows host and copies
+# `artifacts/win-x64/legislator.exe` onto PATH by hand. Copies rather than links: a symlink into a build
 # output directory is a binary that changes under the hooks whenever someone rebuilds.
 #
 # Usage: tools/install-legislator.sh [--from artifacts/<rid>]

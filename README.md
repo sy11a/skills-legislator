@@ -32,18 +32,21 @@ From v26 the engine and the four hooks are one binary, and the law names
 `legislator <job>` rather than an interpreter. Build it and put it on `PATH`:
 
 ```bash
-sh tools/publish-legislator.sh    # NativeAOT, this machine's RID, into artifacts/<rid>/
+bash tools/publish-legislator.sh    # NativeAOT, this machine's RID, into artifacts/<rid>/
 sh tools/install-legislator.sh    # copies it onto PATH
 legislator version --json         # version, RID, SHA-256 of what is running
 ```
 
 The arm is not delivered into a legislated repository — it is installed on the
 machine, once, and every repo's law calls the same binary. **The edition
-releases `linux-x64` alone** (ADR 0013): building on another platform is
-`sh tools/publish-legislator.sh` on a host of that platform, which the script
-still does — it is the *released* set that is one, not the buildable one, and
-nothing verifies the others until a RID is added back to `released=(...)` and
-to the matrix. Audit check 20 (`arm-integrity`) reports a machine
+releases `linux-x64` alone** (ADR 0013), and that is a statement about the
+release, not a restriction on building: `bash tools/publish-legislator.sh` on a
+macOS or Windows host still builds that host's RID and says, on standard error,
+that its digest belongs in no `release.json` entry. On Windows, copy
+`artifacts/win-x64/legislator.exe` onto `PATH` yourself; the install script is
+POSIX. What the ruling does cost is verification — nothing checks that the
+source still builds on those platforms until a RID is added back to
+`released=(...)` and to the matrix. Audit check 20 (`arm-integrity`) reports a machine
 whose arm is missing or is not the one the edition released, so a repository
 never silently audits itself with the wrong instrument.
 

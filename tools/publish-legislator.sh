@@ -22,7 +22,7 @@ released=(linux-x64)
 case "$(uname -s)" in
   Linux)  host_os=linux ;;
   Darwin) host_os=osx ;;
-  # Git Bash / MSYS on a Windows runner: one publish path for all four RIDs beats a second
+  # Git Bash / MSYS on a Windows host: one publish path for every RID beats a second
   # one in the workflow that could drift from this script without anyone noticing.
   MINGW*|MSYS*|CYGWIN*) host_os=win ;;
   *)      printf 'publish-legislator: unsupported host %s\n' "$(uname -s)" >&2; exit 2 ;;
@@ -38,12 +38,21 @@ rids=("$@")
 [ ${#rids[@]} -eq 0 ] && rids=("$host_rid")
 
 # Refuse everything unbuildable BEFORE any work: a wrong RID costs a second, not a restore.
+#
+# `released` is NOT the gate. BL-408 first made it one, and the refutation round showed what
+# that costs: with a one-RID release set the script refused the host's own default RID on
+# every macOS and Windows machine, which takes the arm, `evals/check_dotnet.sh` (it publishes
+# after a green test run) and audit check 20's remedy — `install-legislator.sh` needs
+# `artifacts/<host rid>/legislator` — away from every contributor not on Linux, in one act.
+#
+# What is unbuildable is a cross-OS RID; that is the toolchain's refusal and stays fatal.
+# Building a RID this edition does not release is lawful and is said out loud, because the
+# digest it produces has nowhere to go in `release.json`.
 for rid in "${rids[@]}"; do
   found=no
   for known in "${released[@]}"; do [ "$rid" = "$known" ] && found=yes; done
   if [ "$found" = no ]; then
-    printf 'publish-legislator: %s is not a RID this edition releases (%s)\n' "$rid" "${released[*]}" >&2
-    exit 2
+    printf 'publish-legislator: note - %s is buildable here but is not a RID this edition releases (%s); its digest belongs in no release.json entry\n' "$rid" "${released[*]}" >&2
   fi
   if [ "${rid%-*}" != "$host_os" ]; then
     printf 'publish-legislator: %s cannot be built on a %s host - cross-OS native compilation is not supported by the AOT toolchain; the release matrix builds it\n' "$rid" "$host_os" >&2
