@@ -79,7 +79,7 @@ public sealed class RenderJobTests
     [Fact]
     public void A_fragment_with_missing_case_is_refused()
     {
-        // BL-409: the fixture was `no-case.md`, which the name gate now reads as
+        // BL-410: the fixture was `no-case.md`, which the name gate now reads as
         // furniture rather than a fragment — correctly, and the suite caught it. The
         // test's subject is front matter with no `case` key, not the file's name, so
         // the file is named for a case and the front matter is the thing left short.
@@ -153,7 +153,7 @@ public sealed class RenderJobTests
     [Fact]
     public void A_fragment_without_an_okf_log_section_renders()
     {
-        // BL-409, from the round: `core/changelog.md` has made `## okf-log` optional and
+        // BL-410, from the round: `core/changelog.md` has made `## okf-log` optional and
         // normally absent since BL-347, and render demanded all three anyway — refusing
         // every fragment written to the law of its own edition. 25 of Architector's 27
         // and 6 of this repo's 7 carry no such section. Unreported because render has

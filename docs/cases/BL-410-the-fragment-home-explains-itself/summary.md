@@ -1,4 +1,4 @@
-# BL-409 — the fragment home explains itself, and is not read as a fragment
+# BL-410 — the fragment home explains itself, and is not read as a fragment
 
 **Tier: 0** (direct). Closes `#53`, filed 2026-09-20 by the first delivery of edition 26 into a
 consuming repository and standing since.
@@ -12,9 +12,17 @@ delivered_engine_sdd_lint_clean
   exit=1: docs/changes/README.md: no YAML front matter — declare case, issue, kind and date
 ```
 
-That assertion runs the **delivered** engine's `sdd-lint` over a freshly legislated repository.
-So the defect is not a nuisance in one consuming repo: it is in the product, it reddens the
-corpus, and `evals/POLICY.md` ships an edition only at 100 %.
+That assertion runs the **delivered** engine's `sdd-lint` over a freshly legislated repository:
+the fixture carries no `docs/changes/`, the *run* scaffolds it at Step 4, and the lint then reads
+the README it just wrote. So the defect is in the product, not a nuisance in one consuming repo.
+
+**It was not the whole of that red, and the case first said it was.** Both refuters challenged
+the claim; the re-run settled it. On the repaired arm the README finding is gone and the scenario
+is still 7/8, on a second finding that stood underneath it — `CHANGELOG.md: no ## [Unreleased]
+section`, the eval fixture's own heading missing its brackets. That is POLICY §4's harness class
+and belongs to BL-406, which repaired it; with both repairs the scenario is 8/8. What this case
+clears is one of two, and the sentence claiming it unblocked the corpus was written before
+anything had measured that.
 
 ## The two defects, both at first contact
 
@@ -60,7 +68,11 @@ remove the case/name match        -> 1 control red (a fragment under another cas
 ```
 
 The arm was republished from this branch, since the scenario that found this asserts the
-**delivered** engine and not the source.
+**delivered** engine and not the source — a fix in `src/` that nobody publishes is invisible to
+the thing that found it.
+
+`case-practice`, fresh workspace, the repaired arm and BL-406's fixture repair together: **8/8**,
+where both earlier runs were 7/8.
 
 ## What this does not close
 

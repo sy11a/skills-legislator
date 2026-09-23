@@ -26,7 +26,7 @@ public static class FragmentLint
     /// letters, a dash, digits: <c>BL-193.md</c>, <c>L-3.md</c>. Everything else in
     /// that directory is the home's own furniture.
     ///
-    /// Before BL-409 the enumeration took every <c>*.md</c>, so <c>README.md</c> —
+    /// Before BL-410 the enumeration took every <c>*.md</c>, so <c>README.md</c> —
     /// the home's own explainer, which Step 4 of the skill scaffolds from a template —
     /// was read as a malformed fragment. A repository went red the moment it adopted
     /// the mechanism correctly, and could not clear the finding without deleting its
