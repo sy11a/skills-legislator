@@ -49,4 +49,15 @@ public sealed class LegislatorOptionsTests
 
         Assert.Equal(intKeys, LegislatorOptions.IntegerKeys.ToHashSet());
     }
+
+    [Fact]
+    public void List_keys_census_matches_the_list_members()
+    {
+        var listKeys = typeof(LegislatorOptions).GetProperties()
+            .Where(p => p.PropertyType == typeof(OptionValue<IReadOnlyList<string>>))
+            .Select(p => LegislatorOptions.KeyMap.Single(kv => kv.Value == p.Name).Key)
+            .ToHashSet();
+
+        Assert.Equal(listKeys, LegislatorOptions.ListKeys.ToHashSet());
+    }
 }

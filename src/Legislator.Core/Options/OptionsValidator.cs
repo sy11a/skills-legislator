@@ -42,6 +42,12 @@ public static class OptionsValidator
             return "must not be empty";
         }
 
+        if (LegislatorOptions.ListKeys.Contains(key)
+            && value.Split(LegislatorOptions.ListSeparator).Any(entry => string.IsNullOrWhiteSpace(entry)))
+        {
+            return "each list entry must be non-empty";
+        }
+
         return value.Split(SegmentSeparators).Contains(ParentSegment, StringComparer.Ordinal)
             ? $"a '{ParentSegment}' path segment is not allowed"
             : null;

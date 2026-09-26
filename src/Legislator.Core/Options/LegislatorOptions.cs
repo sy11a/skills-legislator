@@ -144,6 +144,13 @@ public sealed record LegislatorOptions
     /// <summary>The names a repository's default branch conventionally carries; the conduct guard falls back to them only when exactly one is present, an ambiguity being a case it cannot decide.</summary>
     public OptionValue<IReadOnlyList<string>> ConventionalDefaultBranches { get; init; } = new(["main", "master"], OptionsLayer.Defaults);
 
+    /// <summary>The closed set of case prefixes a case key's letters may be — the law writes
+    /// the key `BL-NNN` or `L-N` (`core/changelog.md`). A branch names a case only when its
+    /// ticket's leading letters are one of these, so any other `letters-digits` run — a release
+    /// (`release/3`), a kebab description (`feature/fix-404-page`) — reads as no key. A closed
+    /// form checked closed, not an open blacklist of integration words (BL-441).</summary>
+    public OptionValue<IReadOnlyList<string>> CaseBranchPrefixes { get; init; } = new(["bl", "l"], OptionsLayer.Defaults);
+
     /// <summary>The sources directory the OKF-sync reminder watches - the half of okf.md's law that says code moved.</summary>
     public OptionValue<string> SrcDir { get; init; } = new("src", OptionsLayer.Defaults);
 
@@ -220,6 +227,7 @@ public sealed record LegislatorOptions
         ["adr_template_file"] = nameof(AdrTemplateFile),
         ["readme_file"] = nameof(ReadmeFile),
         ["git_dir"] = nameof(GitDir),
+        ["case_branch_prefixes"] = nameof(CaseBranchPrefixes),
         ["conventional_default_branches"] = nameof(ConventionalDefaultBranches),
         ["src_dir"] = nameof(SrcDir),
         ["path_variable"] = nameof(PathVariable),
@@ -254,6 +262,23 @@ public sealed record LegislatorOptions
         "max_file_bytes",
         "journal_recency_days",
         "formatter_timeout_seconds",
+    };
+
+    /// <summary>The keys whose member is an <c>OptionValue&lt;IReadOnlyList&lt;string&gt;&gt;</c> - the validator refuses a value whose comma-split entries include an empty one (a separator-only value would otherwise compose to an empty list and turn a check off silently, BL-441 F-9); asserted against the members by test (C-04).</summary>
+    public static IReadOnlySet<string> ListKeys { get; } = new HashSet<string>(StringComparer.Ordinal)
+    {
+        "source_extensions",
+        "build_dirs",
+        "human_class_docs",
+        "dotnet_project_patterns",
+        "legacy_home_subdirs",
+        "foreign_structures",
+        "skill_homes",
+        "case_branch_prefixes",
+        "conventional_default_branches",
+        "executable_extensions",
+        "prettier_extensions",
+        "prettier_config_files",
     };
 
     /// <summary>Every option as (key, rendered value, source): lists comma-joined, numbers invariant (C-03).</summary>
@@ -316,6 +341,7 @@ public sealed record LegislatorOptions
         yield return ("skill_opencode_template", SkillOpencodeTemplate.Value, SkillOpencodeTemplate.Source);
         yield return ("skill_file", SkillFile.Value, SkillFile.Source);
         yield return ("rules_core_dir", RulesCoreDir.Value, RulesCoreDir.Source);
+        yield return ("case_branch_prefixes", string.Join(ListSeparator, CaseBranchPrefixes.Value), CaseBranchPrefixes.Source);
         yield return ("conventional_default_branches", string.Join(ListSeparator, ConventionalDefaultBranches.Value), ConventionalDefaultBranches.Source);
         yield return ("src_dir", SrcDir.Value, SrcDir.Source);
         yield return ("path_variable", PathVariable.Value, PathVariable.Source);

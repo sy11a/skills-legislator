@@ -35,6 +35,19 @@ public sealed class FragmentLintTests
         return [.. FragmentLint.Findings(fs, layout, new BranchRunner(branch), "/r", options)];
     }
 
+    private static IReadOnlyList<string> Findings((string Name, string Content)[] fragments, string branch, LegislatorOptions? options = null)
+    {
+        var fs = new MockFileSystem();
+        foreach (var (name, content) in fragments)
+        {
+            fs.AddFile($"/r/docs/changes/{name}", new MockFileData(content));
+        }
+
+        options ??= new LegislatorOptions();
+        var layout = new RepoLayout(options, "/r");
+        return [.. FragmentLint.Findings(fs, layout, new BranchRunner(branch), "/r", options)];
+    }
+
     private const string OneBullet = "## changelog\n\n- One line, pointing at the summary.\n\n## journal\n\nNo dead end; the decision is in ADR 0021.\n";
 
     [Fact]
@@ -44,8 +57,10 @@ public sealed class FragmentLintTests
         // Step 4 scaffolds docs/changes/README.md from a template, the enumeration
         // took every *.md, and the repository went red the moment it adopted the
         // mechanism correctly — with no way to clear it but deleting its own README.
+        // `master` is used so the branch check (which always bounds to its own case)
+        // does not answer for a fragment this test deliberately does not provide.
         Assert.Empty(Findings("# Change Fragments\n\nOne fragment per case.\n",
-                              name: "README.md"));
+                              name: "README.md", branch: "master"));
     }
 
     [Fact]
@@ -53,7 +68,7 @@ public sealed class FragmentLintTests
     {
         // The gate is the NAME, not a by-name skip of README: anything else the home
         // grows — notes, a scratch file — is furniture too.
-        Assert.Empty(Findings("no front matter here\n", name: "notes.md"));
+        Assert.Empty(Findings("no front matter here\n", name: "notes.md", branch: "master"));
     }
 
     [Fact]
@@ -61,22 +76,22 @@ public sealed class FragmentLintTests
     {
         // The other half of naming being the gate. `render` inserts by case key, so a
         // fragment filed under someone else's name lands in the wrong place silently.
+        // The branch check does not pile on: the file named BL-347 IS this branch's
+        // fragment, so nothing is reported as absent — only the misdeclaration is.
         var all = Findings(Fragment("BL-999", OneBullet), name: "BL-347.md");
+        Assert.Single(all);
         var f = Assert.Single(all, x => x.Contains("declares case 'BL-999'", StringComparison.Ordinal));
         Assert.Contains("named 'BL-347'", f);
-        // The name mismatch does not swallow what follows it (BL-410, the round): the
-        // checks below used to be reported in one run, and hiding them behind the name
-        // costs the author a second round trip. Here the declared case is also not this
-        // branch's, and both are said at once.
-        Assert.Contains(all, x => x.Contains("does not match current branch", StringComparison.Ordinal));
     }
 
     [Fact]
     public void A_case_named_file_without_front_matter_is_still_a_finding()
     {
         // Naming as the gate must not become a way to smuggle a broken fragment past
-        // the lint: a case-named file is held to the whole shape.
-        var f = Assert.Single(Findings("## changelog\n\n- One line.\n", name: "BL-347.md"));
+        // the lint: a case-named file is held to the whole shape. `master` isolates the
+        // shape finding — the malformed file IS the branch's fragment, so nothing is
+        // reported as absent.
+        var f = Assert.Single(Findings("## changelog\n\n- One line.\n", name: "BL-347.md", branch: "master"));
         Assert.Contains("no YAML front matter", f);
     }
 
@@ -135,31 +150,142 @@ public sealed class FragmentLintTests
     }
 
     /// <summary>
-    /// The branch form every real branch in this fleet uses. Before BL-347 the check was a
-    /// plain Contains, so `bl/347-retelling-layer` did not match `BL-347` and the lint fired
-    /// on every correct fragment — including this repository's own `L-3`.
+    /// The branch forms this fleet writes. Before BL-347 the check was a plain Contains, so
+    /// `bl/347-retelling-layer` did not match `BL-347` and `l/3-change-fragments` did not
+    /// match `L-3` — it fired on every correct fragment. After BL-441 the question is
+    /// inverted: a branch answers only about the case its own name carries, and an own-case
+    /// fragment in either form is silence.
     /// </summary>
     [Theory]
-    [InlineData("bl/347-retelling-layer", "BL-347", true)]
-    [InlineData("l/3-change-fragments", "L-3", true)]
-    [InlineData("bl/BL-347-verbatim", "BL-347", true)]
-    [InlineData("bl/3470-other", "BL-347", false)]
-    [InlineData("bl/348-another-case", "BL-347", false)]
-    [InlineData("master", "BL-347", false)]
-    public void A_branch_names_its_case_in_either_form(string branch, string caseKey, bool matches)
+    [InlineData("bl/347-retelling-layer", "BL-347")]
+    [InlineData("l/3-change-fragments", "L-3")]
+    [InlineData("bl/BL-347-verbatim", "BL-347")]
+    [InlineData("feature/bl-441-x", "BL-441")]
+    [InlineData("feature/user/bl-441-x", "BL-441")]
+    public void A_branch_names_its_own_case_in_either_form(string branch, string caseKey)
+    {
+        Assert.Empty(Findings(Fragment(caseKey, OneBullet), $"{caseKey}.md", branch));
+    }
+
+    /// <summary>
+    /// The reproduction from #51: fragments accumulate until a release cut, so a branch that
+    /// carries a case key and has written its own fragment must not redden on another case's
+    /// fragment that sits beside it after a rebase onto the release branch.
+    /// </summary>
+    [Fact]
+    public void A_second_cases_fragment_is_silent_on_this_branch()
     {
         var findings = Findings(
-            $"---\ncase: {caseKey}\nissue: 405\nkind: Added\ndate: 2026-09-19\n---\n\n{OneBullet}",
-            $"{caseKey}.md",
+            [
+                ("BL-1.md", Fragment("BL-1", OneBullet)),
+                ("BL-2.md", Fragment("BL-2", OneBullet)),
+            ],
+            "bl/1-x");
+
+        Assert.Empty(findings);
+    }
+
+    /// <summary>
+    /// The one error the branch check exists to catch, and the only path that still reports
+    /// by name: a branch that carries a case key and changed something but wrote no fragment
+    /// for that case. A foreign fragment (L-3, another merged case) says nothing.
+    /// </summary>
+    [Fact]
+    public void The_branchs_case_without_a_fragment_is_a_finding()
+    {
+        var findings = Findings([("L-3.md", Fragment("L-3", OneBullet))], Branch);
+
+        var finding = Assert.Single(findings);
+        Assert.Contains("case 'BL-347' has no change fragment", finding, StringComparison.Ordinal);
+        Assert.DoesNotContain("case 'L-3'", finding, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// The case a branch names is reported in the law's key form (`BL-NNN`, letters
+    /// upper-cased) whatever the branch's own casing or shape: slashed (`bl/441-x`, `l/3-x`),
+    /// verbatim (`bl/BL-441-x`, `feature/bl-441-x`), or a group-prefixed verbatim ticket
+    /// (`feature/user/bl-441-x` — the ticket is the last segment, so the slice that read the
+    /// first segment would silently lose the key). A foreign fragment says nothing; the finding
+    /// names only the case whose fragment is missing.
+    /// </summary>
+    [Theory]
+    [InlineData("bl/441-x", "BL-441")]
+    [InlineData("bl/BL-441-x", "BL-441")]
+    [InlineData("feature/bl-441-x", "BL-441")]
+    [InlineData("feature/user/bl-441-x", "BL-441")]
+    [InlineData("l/3-x", "L-3")]
+    public void A_branch_naming_its_case_reports_its_absent_fragment(string branch, string caseKey)
+    {
+        var findings = Findings([("BL-999.md", Fragment("BL-999", OneBullet))], branch);
+
+        var finding = Assert.Single(findings);
+        Assert.Contains($"case '{caseKey}' has no change fragment", finding, StringComparison.Ordinal);
+        Assert.DoesNotContain("case 'BL-999'", finding, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// The instance layer may lawfully narrow the whitelist (`case_branch_prefixes: task`), and
+    /// the lint must read the configured value, not the default it happens to ship with. Under
+    /// the narrowed set, `task/12-x` names `TASK-12` and reports its absent fragment, while
+    /// `bl/441-x` — whose prefix is no longer a case prefix — draws no branch finding. This
+    /// test kills M1 (the configured value silently swapped back for the default `bl,l`):
+    /// under M1 `task/12-x` goes silent and `bl/441-x` fires, so both rows redden.
+    /// </summary>
+    [Fact]
+    public void A_narrowed_whitelist_is_honored()
+    {
+        var options = new LegislatorOptions
+        {
+            CaseBranchPrefixes = new(["task"], OptionsLayer.Instance),
+        };
+
+        var report = Findings([("BL-999.md", Fragment("BL-999", OneBullet))], "task/12-x", options);
+
+        Assert.Contains("case 'TASK-12' has no change fragment", Assert.Single(report), StringComparison.Ordinal);
+
+        Assert.Empty(Findings([("BL-999.md", Fragment("BL-999", OneBullet))], "bl/441-x", options));
+    }
+
+    /// <summary>
+    /// The number must end where the key's number ends (`BranchMatchesCase`'s boundary): a
+    /// branch `bl/3470-other` carries `BL-3470`, not `BL-347`, so a `BL-347` fragment does
+    /// not satisfy it and the branch is reported as having no fragment.
+    /// </summary>
+    [Fact]
+    public void A_number_is_not_truncated_to_a_shorter_case()
+    {
+        var findings = Findings(Fragment("BL-347", OneBullet), "BL-347.md", "bl/3470-other");
+
+        Assert.Contains(findings, x => x.Contains("case 'BL-3470' has no change fragment", StringComparison.Ordinal));
+    }
+
+    /// <summary>
+    /// A branch that names no case — an integration branch, a release branch, a detached
+    /// HEAD — reports no branch finding at all, whatever fragments sit in the tree. This is
+    /// the release-branch half of the defect: `release/3` reddened on every accumulated
+    /// fragment, and it must say nothing.
+    /// </summary>
+    [Theory]
+    [InlineData("master")]
+    [InlineData("main")]
+    [InlineData("release/3")]
+    [InlineData("rc/edition-27")]
+    [InlineData("release/edition-3")]
+    [InlineData("task/12-x")]
+    [InlineData("wave/2")]
+    [InlineData("v27/task-12")]
+    [InlineData("feature/fix-404-page")]
+    [InlineData("dependabot/npm_and_yarn/frontend/eslint-8.57.0")]
+    [InlineData("(HEAD detached at deadbeef)")]
+    public void A_branch_that_names_no_case_reports_no_branch_finding(string branch)
+    {
+        var findings = Findings(
+            [
+                ("BL-1.md", Fragment("BL-1", OneBullet)),
+                ("BL-2.md", Fragment("BL-2", OneBullet)),
+            ],
             branch);
 
-        if (matches)
-        {
-            Assert.Empty(findings);
-        }
-        else
-        {
-            Assert.Contains(findings, f => f.Contains("does not match current branch", StringComparison.Ordinal));
-        }
+        Assert.Empty(findings);
     }
 }

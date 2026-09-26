@@ -8,9 +8,10 @@ namespace Legislator.Engine.Sdd;
 
 /// <summary>
 /// Fragment shape checks for the sdd-lint job: front matter present, kind in the closed set,
-/// case matching the current branch, exactly one changelog bullet, and a journal section that
-/// is present. This replaces what sdd-lint used to check in the [Unreleased] section by hand —
-/// a branch adds a fragment and never edits the three views (core/changelog.md).
+/// exactly one changelog bullet, a journal section that is present, and — the one branch check —
+/// that a branch which names a case has written that case's fragment. This replaces what
+/// sdd-lint used to check in the [Unreleased] section by hand — a branch adds a fragment and
+/// never edits the three views (core/changelog.md).
 ///
 /// The one-bullet rule is the only machine-checkable half of the composition law: a case is one
 /// changelog line pointing at its summary, and a second bullet says the case was two cases. The
@@ -59,6 +60,8 @@ public static class FragmentLint
         }
 
         var branch = TryGetBranch(proc, options, root);
+        var branchCase = branch is null ? null : BranchCaseKey(branch, options.CaseBranchPrefixes.Value);
+        var branchFragmentSeen = false;
 
         foreach (var entry in fs.Directory.EnumerateFiles(changesDir, "*.md", SearchOption.TopDirectoryOnly))
         {
@@ -67,6 +70,17 @@ public static class FragmentLint
             if (!CaseNamed.IsMatch(stem))
             {
                 continue;
+            }
+
+            // The branch answers only about the case its own name carries: a fragment FILE
+            // for that case satisfies it, whether or not the file is well-formed — a finding
+            // about the file's shape goes out by itself, and a malformed fragment is not an
+            // absent one. Anything else is another case's fragment — ordinary until the release
+            // cut, never a finding.
+            if (branchCase is not null
+                && string.Equals(stem, branchCase, StringComparison.OrdinalIgnoreCase))
+            {
+                branchFragmentSeen = true;
             }
 
             var text = fs.File.ReadAllText(entry);
@@ -116,14 +130,6 @@ public static class FragmentLint
                 continue;
             }
 
-            if (branch is not null)
-            {
-                if (!BranchMatchesCase(branch, caseKey))
-                {
-                    yield return $"{relative}: case '{caseKey}' does not match current branch '{branch}' → a fragment belongs to the branch that writes it per core/changelog.md";
-                }
-            }
-
             var bullets = ChangelogBullets(text);
             if (bullets is null)
             {
@@ -138,6 +144,11 @@ public static class FragmentLint
             {
                 yield return $"{relative}: no '## journal' section → carry the dead ends, open questions and decisions, or one line saying there were none (core/dev-journal.md)";
             }
+        }
+
+        if (branchCase is not null && !branchFragmentSeen)
+        {
+            yield return $"case '{CanonicalCaseKey(branchCase)}' has no change fragment → a branch that names a case writes that case's fragment per core/changelog.md";
         }
     }
 
@@ -270,6 +281,133 @@ public static class FragmentLint
         }
 
         return branch.Length == slashed.Length || !char.IsAsciiDigit(branch[slashed.Length]);
+    }
+
+    /// <summary>
+    /// The case key a branch name carries, or null when it carries none — the inverse of
+    /// <see cref="BranchMatchesCase"/>, walked the other way (BL-441, #51). A task branch names
+    /// its case at the ticket position, in either of two forms, and anything else the name
+    /// carries is a slug or a group prefix:
+    /// <list type="bullet">
+    /// <item>verbatim — the last segment begins <c>letters-dash-digits</c>:
+    ///     <c>bl/BL-347-verbatim</c>, <c>feature/bl-441-…</c>, <c>feature/user/bl-441-x</c>;</item>
+    /// <item>slashed — the branch begins <c>letters-slash-digits</c>:
+    ///     <c>bl/347-retelling-layer</c>, <c>l/3-change-fragments</c>.</item>
+    /// </list>
+    ///
+    /// Only the law's case prefixes count: a candidate whose leading letters are not one of
+    /// <c>case_branch_prefixes</c> is not a case key, so an integration word (<c>release/3</c>,
+    /// <c>rc/edition-27</c>) and any kebab description (<c>feature/fix-404-page</c>) carry no
+    /// key — a closed form checked closed, not an open blacklist. The judgement stays with
+    /// <see cref="BranchMatchesCase"/> — a candidate is only returned once that primitive
+    /// agrees the branch names it, so the two cannot drift.
+    /// </summary>
+    internal static string? BranchCaseKey(string branch, IReadOnlyList<string> casePrefixes)
+    {
+        if (string.IsNullOrWhiteSpace(branch))
+        {
+            return null;
+        }
+
+        var candidates = new List<string>();
+
+        // Slashed form: the whole branch opens with "<letters>/<digits>".
+        if (branch.IndexOf('/') > 0)
+        {
+            var slashed = KeyAt(branch, '/');
+            if (slashed is not null)
+            {
+                candidates.Add(slashed);
+            }
+        }
+
+        // Verbatim form: the ticket (the last segment) opens with "<letters>-<digits>".
+        var lastSlash = branch.LastIndexOf('/');
+        var ticket = lastSlash >= 0 ? branch[(lastSlash + 1)..] : branch;
+        var verbatim = KeyAt(ticket, '-');
+        if (verbatim is not null)
+        {
+            candidates.Add(verbatim);
+        }
+
+        foreach (var key in candidates)
+        {
+            if (BranchMatchesCase(branch, key) && IsCasePrefix(key, casePrefixes))
+            {
+                return key;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// The <c>letters-separator-digits</c> key at the start of <paramref name="s"/> — the whole
+    /// prefix before the separator must be alphabetic, and the digits that follow must not be
+    /// empty — or null when no such key opens the string. The digits are consumed greedily, so
+    /// <c>bl/3470-other</c> yields <c>bl-3470</c>, never <c>bl-347</c>.
+    /// </summary>
+    private static string? KeyAt(string s, char separator)
+    {
+        var sep = s.IndexOf(separator);
+        if (sep <= 0)
+        {
+            return null;
+        }
+
+        for (var i = 0; i < sep; i++)
+        {
+            if (!char.IsAsciiLetter(s[i]))
+            {
+                return null;
+            }
+        }
+
+        var digitsStart = sep + 1;
+        var digitsEnd = digitsStart;
+        while (digitsEnd < s.Length && char.IsAsciiDigit(s[digitsEnd]))
+        {
+            digitsEnd++;
+        }
+
+        if (digitsEnd == digitsStart)
+        {
+            return null;
+        }
+
+        return string.Concat(s.AsSpan(0, sep), "-", s.AsSpan(digitsStart, digitsEnd - digitsStart));
+    }
+
+    /// <summary>Whether the key's leading letters are one of the law's case prefixes
+    /// (<c>bl</c>, <c>l</c>) — the closed set a case key may open with, matched case-insensitive.</summary>
+    private static bool IsCasePrefix(string key, IReadOnlyList<string> casePrefixes)
+    {
+        var dash = key.LastIndexOf('-');
+        if (dash <= 0)
+        {
+            return false;
+        }
+
+        var letters = key[..dash];
+        foreach (var prefix in casePrefixes)
+        {
+            if (string.Equals(letters, prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>The key in the law's written form — letters upper-cased, digits untouched:
+    /// <c>bl-441</c> → <c>BL-441</c>, <c>l-3</c> → <c>L-3</c>. The finding tells its reader which
+    /// key to go write; the law writes <c>BL-NNN</c>, and <c>RenderJob</c> keys rendered cases
+    /// Ordinal, so a lowercase key would name a different case than the one that renders.</summary>
+    private static string CanonicalCaseKey(string key)
+    {
+        var dash = key.IndexOf('-');
+        return dash <= 0 ? key : key[..dash].ToUpperInvariant() + key[dash..];
     }
 
     /// <summary>The YAML front matter fields as parsed, or null when absent.</summary>
