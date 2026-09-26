@@ -60,7 +60,7 @@ public static class FragmentLint
         }
 
         var branch = TryGetBranch(proc, options, root);
-        var branchCase = branch is null ? null : BranchCaseKey(branch, options.NonCaseBranchPrefixes.Value);
+        var branchCase = branch is null ? null : BranchCaseKey(branch, options.CaseBranchPrefixes.Value);
         var branchFragmentSeen = false;
 
         foreach (var entry in fs.Directory.EnumerateFiles(changesDir, "*.md", SearchOption.TopDirectoryOnly))
@@ -148,7 +148,7 @@ public static class FragmentLint
 
         if (branchCase is not null && !branchFragmentSeen)
         {
-            yield return $"case '{branchCase}' has no change fragment → a branch that names a case writes that case's fragment per core/changelog.md";
+            yield return $"case '{CanonicalCaseKey(branchCase)}' has no change fragment → a branch that names a case writes that case's fragment per core/changelog.md";
         }
     }
 
@@ -290,28 +290,29 @@ public static class FragmentLint
     /// carries is a slug or a group prefix:
     /// <list type="bullet">
     /// <item>verbatim — the last segment begins <c>letters-dash-digits</c>:
-    ///     <c>bl/BL-347-verbatim</c>, <c>feature/bl-441-…</c>, <c>docs/bl-043-…</c>;</item>
+    ///     <c>bl/BL-347-verbatim</c>, <c>feature/bl-441-…</c>, <c>feature/user/bl-441-x</c>;</item>
     /// <item>slashed — the branch begins <c>letters-slash-digits</c>:
     ///     <c>bl/347-retelling-layer</c>, <c>l/3-change-fragments</c>.</item>
     /// </list>
     ///
-    /// A branch whose leading letters prefix is an integration word (<c>release/3</c>,
-    /// <c>hotfix/4</c>, <c>rc/…</c>) carries no case key: it names a release or a hotfix, not a
-    /// case. The judgement stays with <see cref="BranchMatchesCase"/> — a candidate is only
-    /// returned once that primitive agrees the branch names it, so the two cannot drift.
+    /// Only the law's case prefixes count: a candidate whose leading letters are not one of
+    /// <c>case_branch_prefixes</c> is not a case key, so an integration word (<c>release/3</c>,
+    /// <c>rc/edition-27</c>) and any kebab description (<c>feature/fix-404-page</c>) carry no
+    /// key — a closed form checked closed, not an open blacklist. The judgement stays with
+    /// <see cref="BranchMatchesCase"/> — a candidate is only returned once that primitive
+    /// agrees the branch names it, so the two cannot drift.
     /// </summary>
-    internal static string? BranchCaseKey(string branch, IReadOnlyList<string> nonCasePrefixes)
+    internal static string? BranchCaseKey(string branch, IReadOnlyList<string> casePrefixes)
     {
         if (string.IsNullOrWhiteSpace(branch))
         {
             return null;
         }
 
-        var slash = branch.IndexOf('/');
         var candidates = new List<string>();
 
         // Slashed form: the whole branch opens with "<letters>/<digits>".
-        if (slash > 0)
+        if (branch.IndexOf('/') > 0)
         {
             var slashed = KeyAt(branch, '/');
             if (slashed is not null)
@@ -321,7 +322,8 @@ public static class FragmentLint
         }
 
         // Verbatim form: the ticket (the last segment) opens with "<letters>-<digits>".
-        var ticket = slash >= 0 ? branch[(slash + 1)..] : branch;
+        var lastSlash = branch.LastIndexOf('/');
+        var ticket = lastSlash >= 0 ? branch[(lastSlash + 1)..] : branch;
         var verbatim = KeyAt(ticket, '-');
         if (verbatim is not null)
         {
@@ -330,7 +332,7 @@ public static class FragmentLint
 
         foreach (var key in candidates)
         {
-            if (BranchMatchesCase(branch, key) && IsCasePrefix(key, nonCasePrefixes))
+            if (BranchMatchesCase(branch, key) && IsCasePrefix(key, casePrefixes))
             {
                 return key;
             }
@@ -376,25 +378,36 @@ public static class FragmentLint
         return string.Concat(s.AsSpan(0, sep), "-", s.AsSpan(digitsStart, digitsEnd - digitsStart));
     }
 
-    /// <summary>Whether the key's letters prefix is a case prefix, not an integration word.</summary>
-    private static bool IsCasePrefix(string key, IReadOnlyList<string> nonCasePrefixes)
+    /// <summary>Whether the key's leading letters are one of the law's case prefixes
+    /// (<c>bl</c>, <c>l</c>) — the closed set a case key may open with, matched case-insensitive.</summary>
+    private static bool IsCasePrefix(string key, IReadOnlyList<string> casePrefixes)
     {
         var dash = key.LastIndexOf('-');
         if (dash <= 0)
         {
-            return true;
+            return false;
         }
 
         var letters = key[..dash];
-        foreach (var prefix in nonCasePrefixes)
+        foreach (var prefix in casePrefixes)
         {
             if (string.Equals(letters, prefix, StringComparison.OrdinalIgnoreCase))
             {
-                return false;
+                return true;
             }
         }
 
-        return true;
+        return false;
+    }
+
+    /// <summary>The key in the law's written form — letters upper-cased, digits untouched:
+    /// <c>bl-441</c> → <c>BL-441</c>, <c>l-3</c> → <c>L-3</c>. The finding tells its reader which
+    /// key to go write; the law writes <c>BL-NNN</c>, and <c>RenderJob</c> keys rendered cases
+    /// Ordinal, so a lowercase key would name a different case than the one that renders.</summary>
+    private static string CanonicalCaseKey(string key)
+    {
+        var dash = key.IndexOf('-');
+        return dash <= 0 ? key : key[..dash].ToUpperInvariant() + key[dash..];
     }
 
     /// <summary>The YAML front matter fields as parsed, or null when absent.</summary>

@@ -79,6 +79,7 @@ public sealed class FragmentLintTests
         // The branch check does not pile on: the file named BL-347 IS this branch's
         // fragment, so nothing is reported as absent — only the misdeclaration is.
         var all = Findings(Fragment("BL-999", OneBullet), name: "BL-347.md");
+        Assert.Single(all);
         var f = Assert.Single(all, x => x.Contains("declares case 'BL-999'", StringComparison.Ordinal));
         Assert.Contains("named 'BL-347'", f);
     }
@@ -159,6 +160,8 @@ public sealed class FragmentLintTests
     [InlineData("bl/347-retelling-layer", "BL-347")]
     [InlineData("l/3-change-fragments", "L-3")]
     [InlineData("bl/BL-347-verbatim", "BL-347")]
+    [InlineData("feature/bl-441-x", "BL-441")]
+    [InlineData("feature/user/bl-441-x", "BL-441")]
     public void A_branch_names_its_own_case_in_either_form(string branch, string caseKey)
     {
         Assert.Empty(Findings(Fragment(caseKey, OneBullet), $"{caseKey}.md", branch));
@@ -193,8 +196,31 @@ public sealed class FragmentLintTests
         var findings = Findings([("L-3.md", Fragment("L-3", OneBullet))], Branch);
 
         var finding = Assert.Single(findings);
-        Assert.Contains("case 'bl-347' has no change fragment", finding, StringComparison.Ordinal);
-        Assert.DoesNotContain("L-3", finding, StringComparison.Ordinal);
+        Assert.Contains("case 'BL-347' has no change fragment", finding, StringComparison.Ordinal);
+        Assert.DoesNotContain("case 'L-3'", finding, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// The case a branch names is reported in the law's key form (`BL-NNN`, letters
+    /// upper-cased) whatever the branch's own casing or shape: slashed (`bl/441-x`, `l/3-x`),
+    /// verbatim (`bl/BL-441-x`, `feature/bl-441-x`), or a group-prefixed verbatim ticket
+    /// (`feature/user/bl-441-x` — the ticket is the last segment, so the slice that read the
+    /// first segment would silently lose the key). A foreign fragment says nothing; the finding
+    /// names only the case whose fragment is missing.
+    /// </summary>
+    [Theory]
+    [InlineData("bl/441-x", "BL-441")]
+    [InlineData("bl/BL-441-x", "BL-441")]
+    [InlineData("feature/bl-441-x", "BL-441")]
+    [InlineData("feature/user/bl-441-x", "BL-441")]
+    [InlineData("l/3-x", "L-3")]
+    public void A_branch_naming_its_case_reports_its_absent_fragment(string branch, string caseKey)
+    {
+        var findings = Findings([("BL-999.md", Fragment("BL-999", OneBullet))], branch);
+
+        var finding = Assert.Single(findings);
+        Assert.Contains($"case '{caseKey}' has no change fragment", finding, StringComparison.Ordinal);
+        Assert.DoesNotContain("case 'BL-999'", finding, StringComparison.Ordinal);
     }
 
     /// <summary>
@@ -207,7 +233,7 @@ public sealed class FragmentLintTests
     {
         var findings = Findings(Fragment("BL-347", OneBullet), "BL-347.md", "bl/3470-other");
 
-        Assert.Contains(findings, x => x.Contains("case 'bl-3470' has no change fragment", StringComparison.Ordinal));
+        Assert.Contains(findings, x => x.Contains("case 'BL-3470' has no change fragment", StringComparison.Ordinal));
     }
 
     /// <summary>
@@ -220,6 +246,13 @@ public sealed class FragmentLintTests
     [InlineData("master")]
     [InlineData("main")]
     [InlineData("release/3")]
+    [InlineData("rc/edition-27")]
+    [InlineData("release/edition-3")]
+    [InlineData("task/12-x")]
+    [InlineData("wave/2")]
+    [InlineData("v27/task-12")]
+    [InlineData("feature/fix-404-page")]
+    [InlineData("dependabot/npm_and_yarn/frontend/eslint-8.57.0")]
     [InlineData("(HEAD detached at deadbeef)")]
     public void A_branch_that_names_no_case_reports_no_branch_finding(string branch)
     {

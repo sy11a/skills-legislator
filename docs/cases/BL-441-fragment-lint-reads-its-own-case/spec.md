@@ -79,6 +79,22 @@ fragments (and it alone blocks the release, since every candidate carries them).
   absent one, so a branch cannot be told both "your fragment is missing" and "your fragment
   is malformed" at once.
 
+- 2026-09-26 (rework after refutation) — Q: is "carries a case key" decided by an open
+  blacklist of integration words? A: no. An open blacklist cannot enumerate the fleet's
+  non-case vocabulary — `rc/edition-27`, `release/edition-3`, `task/12-x`, `feature/fix-404-page`
+  all minted false keys against the released engine. The law names the closed set of case
+  prefixes — `core/changelog.md` "the case key (`BL-NNN` or `L-N`)" — so the check reads that
+  whitelist (`case_branch_prefixes` = `bl,l`, case-insensitive): a candidate whose letters are
+  not a case prefix is no key. An integration word is simply "not a case prefix"; there is no
+  second list. (The earlier "integration word" answer above is superseded by this one.)
+
+- 2026-09-26 (rework after refutation) — Q: which name segment is the ticket, and what casing
+  does the finding report? A: the ticket is the **last** segment (the doc comment's own words),
+  so `feature/user/bl-441-x` names `BL-441` — the slice that read the first segment silently
+  returned nothing. The finding reports the key in the law's written form, letters upper-cased
+  (`BL-441`, never `bl-441`), because `RenderJob` keys rendered cases Ordinal and a lowercase
+  key would name a different case than the one that renders.
+
 ## Converge — 2026-09-26
 
 - **per R-441 (complete).** `BranchCaseKey` resolves the branch's case (`BranchMatchesCase`
@@ -95,3 +111,30 @@ fragments (and it alone blocks the release, since every candidate carries them).
 - **Unchanged verified.** Every existing shape test stays green; `A_number_is_not_truncated_to_a_shorter_case`
   guards `BranchMatchesCase`'s number boundary through the inverted path. Suite 819 green,
   `check_static` clean.
+
+## Rework — 2026-09-26 (refutation round)
+
+The refutation (`refutation.md`) held the inversion and refuted the key derivation. Each
+finding, what changed, and the red shown before the fix (all on f943c4d):
+
+- **F-1 + F-2 (closed form checked closed).** The `non_case_branch_prefixes` blacklist minted
+  false keys on `rc/edition-27`, `release/edition-3` and any `feature/<word>-<digits>` name,
+  and cannot enumerate the fleet's non-case vocabulary while the law names its prefixes. The
+  blacklist is replaced by a `case_branch_prefixes` whitelist (`bl,l`, case-insensitive).
+  Red: `A_branch_that_names_no_case_reports_no_branch_finding` for `rc/edition-27`,
+  `release/edition-3`, `task/12-x`, `wave/2`, `v27/task-12`, `feature/fix-404-page`.
+- **F-3 (ticket is the last segment).** `feature/user/bl-441-x` names `BL-441` by
+  `BranchMatchesCase`'s own judgement, but the first-segment slice returned nothing. The slice
+  now reads the last segment; the row is pinned by `A_branch_names_its_own_case_in_either_form`
+  and `A_branch_naming_its_case_reports_its_absent_fragment`. Red: the latter, `Assert.Single`
+  on an empty collection.
+- **F-4 (law's key form).** The finding now reports the law's form (`BL-441`), letters
+  upper-cased. Red: lowercase-key assertions in `The_branchs_case_without_a_fragment_is_a_finding`
+  and `A_number_is_not_truncated_to_a_shorter_case`.
+- **F-5 (misdeclaration alone, asserted).** `Assert.Single(all)` sits beside the predicate
+  form, so a re-introduced pile-on cannot pass unnoticed. Red: under M2 (the per-fragment
+  branch stub re-added), `A_case_named_file_declaring_another_case_is_a_finding`.
+- **F-6 (law skew queued).** `core/changelog.md`'s sdd-lint description still says "case
+  matching the branch" where the engine now answers "the branch's case has its fragment";
+  law text is out of scope here and rides the next edition — filed as
+  sy11a/skills-legislator#72.
