@@ -35,7 +35,7 @@ public sealed class FragmentLintTests
         return [.. FragmentLint.Findings(fs, layout, new BranchRunner(branch), "/r", options)];
     }
 
-    private static IReadOnlyList<string> Findings((string Name, string Content)[] fragments, string branch)
+    private static IReadOnlyList<string> Findings((string Name, string Content)[] fragments, string branch, LegislatorOptions? options = null)
     {
         var fs = new MockFileSystem();
         foreach (var (name, content) in fragments)
@@ -43,7 +43,7 @@ public sealed class FragmentLintTests
             fs.AddFile($"/r/docs/changes/{name}", new MockFileData(content));
         }
 
-        var options = new LegislatorOptions();
+        options ??= new LegislatorOptions();
         var layout = new RepoLayout(options, "/r");
         return [.. FragmentLint.Findings(fs, layout, new BranchRunner(branch), "/r", options)];
     }
@@ -221,6 +221,29 @@ public sealed class FragmentLintTests
         var finding = Assert.Single(findings);
         Assert.Contains($"case '{caseKey}' has no change fragment", finding, StringComparison.Ordinal);
         Assert.DoesNotContain("case 'BL-999'", finding, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// The instance layer may lawfully narrow the whitelist (`case_branch_prefixes: task`), and
+    /// the lint must read the configured value, not the default it happens to ship with. Under
+    /// the narrowed set, `task/12-x` names `TASK-12` and reports its absent fragment, while
+    /// `bl/441-x` — whose prefix is no longer a case prefix — draws no branch finding. This
+    /// test kills M1 (the configured value silently swapped back for the default `bl,l`):
+    /// under M1 `task/12-x` goes silent and `bl/441-x` fires, so both rows redden.
+    /// </summary>
+    [Fact]
+    public void A_narrowed_whitelist_is_honored()
+    {
+        var options = new LegislatorOptions
+        {
+            CaseBranchPrefixes = new(["task"], OptionsLayer.Instance),
+        };
+
+        var report = Findings([("BL-999.md", Fragment("BL-999", OneBullet))], "task/12-x", options);
+
+        Assert.Contains("case 'TASK-12' has no change fragment", Assert.Single(report), StringComparison.Ordinal);
+
+        Assert.Empty(Findings([("BL-999.md", Fragment("BL-999", OneBullet))], "bl/441-x", options));
     }
 
     /// <summary>

@@ -59,4 +59,21 @@ public sealed class OptionsValidatorTests
 
         Assert.Empty(OptionsValidator.Validate(OptionsLayer.Instance, raw));
     }
+
+    [Theory]
+    [InlineData(",")]
+    [InlineData("bl,")]
+    [InlineData(" , ")]
+    public void List_value_with_an_empty_entry_is_rejected_by_name(string value)
+    {
+        // F-9: a separator-only value composes to an empty list and turns the
+        // branch check off without a word; the validator judges the split entries,
+        // not just the raw string. One case per shape.
+        var raw = new Dictionary<string, string> { ["case_branch_prefixes"] = value };
+
+        var error = Assert.Single(OptionsValidator.Validate(OptionsLayer.Instance, raw));
+
+        Assert.Equal("case_branch_prefixes", error.Key);
+        Assert.Contains("empty", error.Reason, StringComparison.Ordinal);
+    }
 }

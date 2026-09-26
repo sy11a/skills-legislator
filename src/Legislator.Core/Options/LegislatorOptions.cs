@@ -264,6 +264,23 @@ public sealed record LegislatorOptions
         "formatter_timeout_seconds",
     };
 
+    /// <summary>The keys whose member is an <c>OptionValue&lt;IReadOnlyList&lt;string&gt;&gt;</c> - the validator refuses a value whose comma-split entries include an empty one (a separator-only value would otherwise compose to an empty list and turn a check off silently, BL-441 F-9); asserted against the members by test (C-04).</summary>
+    public static IReadOnlySet<string> ListKeys { get; } = new HashSet<string>(StringComparer.Ordinal)
+    {
+        "source_extensions",
+        "build_dirs",
+        "human_class_docs",
+        "dotnet_project_patterns",
+        "legacy_home_subdirs",
+        "foreign_structures",
+        "skill_homes",
+        "case_branch_prefixes",
+        "conventional_default_branches",
+        "executable_extensions",
+        "prettier_extensions",
+        "prettier_config_files",
+    };
+
     /// <summary>Every option as (key, rendered value, source): lists comma-joined, numbers invariant (C-03).</summary>
     public IEnumerable<(string Key, string Value, OptionsLayer Source)> Enumerate()
     {

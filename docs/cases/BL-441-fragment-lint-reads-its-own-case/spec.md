@@ -95,6 +95,19 @@ fragments (and it alone blocks the release, since every candidate carries them).
   (`BL-441`, never `bl-441`), because `RenderJob` keys rendered cases Ordinal and a lowercase
   key would name a different case than the one that renders.
 
+- 2026-09-26 (second refutation round) — the Boundary above still names the retired
+  `non_case_branch_prefixes` option ("the `non_case_branch_prefixes` option it leans on"), which
+  the rework replaced with the `case_branch_prefixes` whitelist. The Boundary's line is left as
+  the accepted record, not rewritten in place; the Rework section below supersedes it. The live
+  option is `case_branch_prefixes` (`bl,l`, case-insensitive).
+
+- 2026-09-26 (second refutation round, operator ruling — F-8) — foundry's `F-NN` branch keys are
+  accepted, not repaired. Foundry's `F-NN` register is its pre-BL history (Release 1 era); every
+  live fleet case is `BL-NNN` or `L-N`, so the default `bl,l` whitelist stands, and a legacy
+  `bl/F19-…` branch drawing no branch finding is the correct reading rather than a miss.
+  `KeyAt`'s `letters-separator-digits` requirement — which mints no candidate for `F19` — is
+  left as it is; no configuration change and no `F-` prefix enter the whitelist.
+
 ## Converge — 2026-09-26
 
 - **per R-441 (complete).** `BranchCaseKey` resolves the branch's case (`BranchMatchesCase`
