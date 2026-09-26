@@ -121,6 +121,7 @@ public static class OptionsComposer
             nameof(LegislatorOptions.SkillOpencodeTemplate) => o with { SkillOpencodeTemplate = new(value, layer) },
             nameof(LegislatorOptions.SkillFile) => o with { SkillFile = new(value, layer) },
             nameof(LegislatorOptions.RulesCoreDir) => o with { RulesCoreDir = new(value, layer) },
+            nameof(LegislatorOptions.NonCaseBranchPrefixes) => o with { NonCaseBranchPrefixes = new(List(value), layer) },
             nameof(LegislatorOptions.ConventionalDefaultBranches) => o with { ConventionalDefaultBranches = new(List(value), layer) },
             nameof(LegislatorOptions.SrcDir) => o with { SrcDir = new(value, layer) },
             nameof(LegislatorOptions.PathVariable) => o with { PathVariable = new(value, layer) },

@@ -144,6 +144,11 @@ public sealed record LegislatorOptions
     /// <summary>The names a repository's default branch conventionally carries; the conduct guard falls back to them only when exactly one is present, an ambiguity being a case it cannot decide.</summary>
     public OptionValue<IReadOnlyList<string>> ConventionalDefaultBranches { get; init; } = new(["main", "master"], OptionsLayer.Defaults);
 
+    /// <summary>Leading branch-name prefixes that mark an integration or release branch rather than
+    /// a task branch; such a branch carries no case key, so `sdd-lint` takes no branch finding
+    /// against it (BL-441). Case prefixes (`bl`, `l`) are never listed here.</summary>
+    public OptionValue<IReadOnlyList<string>> NonCaseBranchPrefixes { get; init; } = new(["release", "hotfix", "rc"], OptionsLayer.Defaults);
+
     /// <summary>The sources directory the OKF-sync reminder watches - the half of okf.md's law that says code moved.</summary>
     public OptionValue<string> SrcDir { get; init; } = new("src", OptionsLayer.Defaults);
 
@@ -220,6 +225,7 @@ public sealed record LegislatorOptions
         ["adr_template_file"] = nameof(AdrTemplateFile),
         ["readme_file"] = nameof(ReadmeFile),
         ["git_dir"] = nameof(GitDir),
+        ["non_case_branch_prefixes"] = nameof(NonCaseBranchPrefixes),
         ["conventional_default_branches"] = nameof(ConventionalDefaultBranches),
         ["src_dir"] = nameof(SrcDir),
         ["path_variable"] = nameof(PathVariable),
@@ -316,6 +322,7 @@ public sealed record LegislatorOptions
         yield return ("skill_opencode_template", SkillOpencodeTemplate.Value, SkillOpencodeTemplate.Source);
         yield return ("skill_file", SkillFile.Value, SkillFile.Source);
         yield return ("rules_core_dir", RulesCoreDir.Value, RulesCoreDir.Source);
+        yield return ("non_case_branch_prefixes", string.Join(ListSeparator, NonCaseBranchPrefixes.Value), NonCaseBranchPrefixes.Source);
         yield return ("conventional_default_branches", string.Join(ListSeparator, ConventionalDefaultBranches.Value), ConventionalDefaultBranches.Source);
         yield return ("src_dir", SrcDir.Value, SrcDir.Source);
         yield return ("path_variable", PathVariable.Value, PathVariable.Source);
