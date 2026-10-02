@@ -378,3 +378,73 @@ general-purpose subagent, same method as `issue-73.md`) against the released
 edition; record the result showing the predicted drop (~11,000 tokens from the
 core alone). This closes the issue's Done-when and needs the tagged/published
 binary from T-14, so it runs after T-14–T-16.
+
+## Converge
+
+Judged 2026-10-02 against `spec.md` R-001..R-030 and Clarifications Q1–Q13, the plan's research
+decisions and contracts, and T-01..T-16. Run evidence comes from the orchestrator and was not re-run:
+`evals/check_dotnet.sh` 866/866; `check_static`, `check_engine`, `check_hooks` and
+`check_opencode_plugin` green; e2e 216/216 (`evals/benchmarks/v28.md:3`); `legislator sdd-lint`
+exit 0; self-delivery byte-verified.
+
+### Requirements
+
+- **R-001 / Q2 / Q9: met.** `skill/assets/templates/AGENTS.md.tpl:16-17` holds the `@` lines (always tier). `:11`, `:22-30` are non-`@` lines (on demand). `src/Legislator.Engine/Runs/TemplateTiers.cs:69-104` derives the split from those lines alone.
+- **R-002: met.** The template has exactly two core `@` lines: `AGENTS.md.tpl:16-17`.
+- **R-003 / R-020 / Q1: met.** `AGENTS.md.tpl:22-30` has one bullet per entry in the fixed grammar. Each trigger matches the per-file table. The map's wording is "looking up where something lives", which carries the table's meaning.
+- **R-018: met.** `AGENTS.md.tpl:20` is the heading. `:22-30` holds eight core rules plus `docs/okf/codebase-map.md`.
+- **R-019 / Q6: met.** `project-rules.md` is reached only through the merged line `AGENTS.md.tpl:11`. It gets no second bullet.
+- **R-004: met.** `skill/assets/templates/opencode.json.tpl:4-5` lists the two explicit always-tier paths. There is no core glob and no map entry. Delivered copy: `opencode.json:4-5`.
+- **R-005: met.** `skill/SKILL.md:147` describes the two-import-plus-pointer wiring.
+- **R-021: met.** `skill/references/migration.md:22`, `:25` and `:27` (rewrite order) describe the same shape.
+- **R-006: met.** `skill/SKILL.md:26` uses the `@docs/ai/rules/core/pair-development.md` marker.
+- **R-022: met.** `src/Legislator.Core/Options/LegislatorOptions.cs:76`. Fixtures follow it: `evals/check_engine.py:943`, `DetectTwins.cs`, `DetectJobTests.cs`.
+- **R-013: met.** `LegislatorOptions.cs:139` adds `SkillAgentsTemplate`, wired in `OptionsComposer.cs` and both key maps. `TemplateTiers.cs:34` resolves it under `skill.Root`. `ReportJob.cs:156,237` pass `parsed.Skill`.
+- **R-014: met.** `ReportJob.cs:277` emits the template line verbatim, re-rooted only by path substitution (`TemplateTiers.cs:97,102`).
+- **R-015 / R-016: met.** C# contains no pointer text, no `OnDemandCoreRules` set and no Python mirror. `evals/check_static.py:79-92` and `evals/grade.py` `core_rule_tiers()` both derive from the template.
+- **R-017 / Q10: met.** `TemplateTiers.cs:35-38` throws `AgentsTemplateMissingException`. Pinned by `ReportJobTierTests.cs:220` and `TemplateTiersTests.cs:68`.
+- **R-007 / Q3: met.** `ReportJob.cs:263-268` removes the `@import` of an on-demand rule. The map joins the loop at `:248`, gated on "on disk or scaffolded" rather than on scaffold state only (see deviation D-2). Pinned by `ReportJobTierTests.cs:55,108`.
+- **R-023: met.** The guard at `ReportJob.cs:275-278` uses `EntryNamesRuleWithoutImport` (`:315`), which strips the rule's own `@` line before checking. Pinned by `ReportJobTierTests.cs:55,69,81`.
+- **R-024: met.** The on-demand branch exits with `continue` before the add-`@` at `:285`. Tests assert no `@sdd.md` or `@codebase-map.md` (`check_engine.py:1103-1109`, `ReportTwins.cs:199`).
+- **R-025 / Q12: met.** Same guard. Pinned by `ReportJobTierTests.cs:93`.
+- **Q5 (atomic): met.** Both halves are emitted in the same pass for a rule (`ReportJob.cs:263-278`).
+- **R-008: met.** `ReportJob.cs:283-286` is unchanged and keeps manifest order. Pinned by `ReportJobTierTests.cs:44,182`.
+- **R-026: met.** The tier is keyed by full core path, and stack rules never appear in the template. Pinned by `ReportJobTierTests.cs:201`.
+- **R-009: met.** `skill/assets/rules/core/project-rules.md:4`. Delivered copy: `docs/ai/rules/core/project-rules.md`.
+- **R-010: met.** `evals/check_static.py:79-92` enforces exactly one form per core rule.
+- **R-027: met.** `evals/check_static.py:104-115` checks the set equals the always tier, with no map and no glob.
+- **R-011: met.** `2eb5e80` bumps `skill/VERSION` 28, `Version.props` 28.0.0 and `release.json` edition 28.0.0 together.
+- **R-028: met.** `release.json` digests are empty until tag time (`d701425`), and the publish flow is unchanged.
+- **R-029: met.** `docs/changes/BL-484.md`.
+- **R-030: met.** `evals/benchmarks/v28.md` ran on `b5496e4`, before the delivery commit `5d7bac5`. The standing red `audit_slugs_derived` (#64) is unchanged from master.
+- **R-012: pending, not a blocker.** This is T-17, the orchestrator's Architector probe against the released binary.
+- **Hurting case: met.** It is exercised end to end by `grade.py` `report_proposes_on_demand_remove_and_pointer_not_readd`, which reads the all-`@` fixture unchanged per Q13. Twins: `ReportTwins.cs`; `check_engine.py:1100-1111`.
+
+### Plan decisions and tasks
+
+- **T-01..T-08:** done as contracted.
+- **T-09:** done. The non-default `RulesDir`/`OkfDir` case is pinned at the helper level (`TemplateTiersTests.cs:192`), not through `ReviewLines`. This is partial against the plan's wording, but the report adds no path logic of its own beyond `codeBasePath`. See F-3.
+- **T-10:** done (`CoreRuleTierAuditTests.cs:15,30`). `AuditChecks.cs` is unchanged, as the research decided.
+- **T-11, T-12:** done. `setup_workspace.py:73` withholds `decision-gate.md` and keeps the all-`@` input. `migration_wiring` is pinned to 12 entries. Mutation renamed to `agents_md_core_tiers_wired_correctly`.
+- **T-13, T-14, T-15:** done, per the orchestrator's evidence.
+
+### Deviations (accepted)
+
+- **D-1:** `TierModel.Always` is kept as parser API: tests read it, `ReviewLines` does not. Two options were added beyond the contract: `TemplateCorePrefix` and `TemplateCodebaseMapPath` (`LegislatorOptions.cs:142-145`), each with `TemplateLayoutInvalidException`. They serve Q11 by keeping the template's default-layout paths in options, not literals. Recorded in `docs/changes/BL-484.md:16`.
+- **D-2:** The map's on-demand proposals require an entry document and a map that is on disk or scaffolded (`ReportJob.cs:246-252`). They are never gated on scaffold state alone, so Q3 holds. A stale `@` map import with no file behind it gets no remove proposal; the `imports-resolve` Health check already flags it.
+- **D-3:** `.claude/rules/verification.md` and `docs/changes/README.md` are absent, as on master. Follow-up.
+- **D-4:** `skill/SKILL.md` Step 7 test (2) and `references/migration.md:20` change the coverage rule ("carving is not coverage"). This goes beyond the spec, but the benchmark's law-class red required it (`docs/changes/BL-484.md:19`). Accepted as completion of the law, not unrequested scope.
+
+### Follow-ups (non-blocking)
+
+- **F-1:** Stage skills in other repositories (Architector's stage prompts) should name the on-demand file their trigger governs (`docs/changes/BL-484.md:17`; out of scope per the spec's Boundary).
+- **F-2:** Stack rules and `.claude/rules/*.md` get no tier split yet (Q4).
+- **F-3:** Add a `ReviewLines`-level non-default-layout test, end to end through the report (per T-09, partial).
+- **F-4:** `skill/SKILL.md:257` gives the rationale "the OKF index via `core/okf.md`" as a surface sessions load. Since `okf.md` is now on demand, this is loaded only at its trigger. The wording is mildly stale: per R-001 (partial).
+- **F-5:** `evals/benchmarks/v28.md:28` is headed "none of them the law", but `:6` and `93e88ec` classify one red as law. The record contradicts itself, so align the heading.
+- **F-6:** The R-009 static check (`check_static.py:116-119`) is a weak substring test ("pointer" plus `.claude/rules/`). Tighten it to the bullet's own text.
+- **F-7:** Gap from D-3: create `.claude/rules/verification.md` and `docs/changes/README.md`.
+
+No requirement is unmet and there is no constitutional violation. R-012 (T-17) is pending with the orchestrator, by design.
+
+✅ Converged
