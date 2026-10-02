@@ -50,6 +50,7 @@ REPORT = {
                                       "migration-report.md"),
     "upgrade": ("upgrade", "upgrade-report.md"),
     "upgrade-drop-stack": ("upgrade-drop-stack", "upgrade-report.md"),
+    "upgrade-tier-flip": ("upgrade-tier-flip", "upgrade-report.md"),
     "restructure": ("restructure", "restructure-report.md"),
 }
 
@@ -444,7 +445,7 @@ def mutations_for(ws: Path, scenario: str) -> dict[str, Mutation]:
                     rev, p, lambda t: _drop_lines(
                         t, "bl/NNN-short-description")))
 
-    elif scenario in ("upgrade", "upgrade-drop-stack"):
+    elif scenario in ("upgrade", "upgrade-drop-stack", "upgrade-tier-flip"):
         muts |= _common(repo, mani)
         muts |= _report_derived(ws, scenario, meta)
         kept = meta.get("expected_keep") or []

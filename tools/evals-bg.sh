@@ -133,7 +133,7 @@ print(e['prompt'] if e else '')" "$1"; }
 REPORT_OF() { # <scenario-dir-name> -> relative expected deliverable
   case "$1" in
     legacy-migration|legacy-migration-agents-first) echo "outputs/migration-report.md";;
-    upgrade|upgrade-drop-stack) echo "outputs/upgrade-report.md";;
+    upgrade|upgrade-drop-stack|upgrade-tier-flip) echo "outputs/upgrade-report.md";;
     rotted-layer) echo "outputs/audit-report.md";;
     restructure) echo "outputs/restructure-report.md";;
     *) echo "";;
@@ -215,7 +215,7 @@ msg_block() { # <dir>
   p="$(prompt_of "$(SC_OF "$sc")")"
   out="$WS/$sc/outputs"
   case "$sc" in
-    legacy-migration|legacy-migration-agents-first|upgrade|upgrade-drop-stack) report="Write your full Step 7 report (all sections, including Health and any Constitution candidates) to $out/$(basename "$(REPORT_OF "$sc")") — overwrite if it exists.";;
+    legacy-migration|legacy-migration-agents-first|upgrade|upgrade-drop-stack|upgrade-tier-flip) report="Write your full Step 7 report (all sections, including Health and any Constitution candidates) to $out/$(basename "$(REPORT_OF "$sc")") — overwrite if it exists.";;
     fresh-scaffold-dotnet) report="Write your full Step 7 report to $out/scaffold-report.md — outside the target repo.";;
     case-practice) report="";;
     rotted-layer) report="Save your full audit report to $out/audit-report.md — outside the target repo (which you must not touch: zero writes).";;

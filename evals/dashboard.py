@@ -54,6 +54,7 @@ DISPLAY = {
     "legacy-migration-agents-first": "migration (agents-first)",
     "upgrade": "upgrade",
     "upgrade-drop-stack": "upgrade (drop-stack)",
+    "upgrade-tier-flip": "upgrade (tier-flip)",
     "rotted-layer": "audit",
     "restructure": "restructure",
     "case-practice": "case-practice",
