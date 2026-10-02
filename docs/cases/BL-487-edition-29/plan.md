@@ -350,3 +350,68 @@ touch `evals/setup_workspace.py`)
 - **T-27** Converge: judge the implementation against every requirement (R-001..R-025), the
   Clarifications (Q1..Q2), and the Contracts above; append the Converge section to this plan,
   append-only, per `core/sdd.md`. Loop implement → converge until clean.
+
+## Converge
+
+Judged 2026-10-02 against `spec.md` R-001..R-025 and Clarifications Q1–Q3, the plan's research
+decisions and contracts, and T-01..T-26, over `git diff origin/master...HEAD` (`2546470..3d2b0e7`).
+Run evidence comes from the orchestrator and was not re-run: `evals/check_dotnet.sh` 878/878;
+`check_static` and `check_engine` green after the edition bump (two arm-integrity reds before it,
+expected while the arm still read 28); `check_hooks` and `check_opencode_plugin` green; e2e
+235/235 (`evals/benchmarks/v29.md:3`); self-delivery report reviewed; after T-20, `legislator
+report` proposes nothing and `verify`, `anchors` and `sdd-lint` exit 0.
+
+### Requirements
+
+- **R-001: met.** `skill/assets/templates/AGENTS.md.tpl:16-18` holds three `@` lines, `verification.md` the third.
+- **R-002 / R-007: met.** The `### Read on demand` block (`AGENTS.md.tpl:21-29`) has no standalone `verification.md` or `dev-journal.md` bullet.
+- **R-003: met.** `skill/assets/templates/opencode.json.tpl:4-6`. Delivered copy: `opencode.json:4-6`.
+- **R-006: met.** `AGENTS.md.tpl:25` names `core/changelog.md` and `core/dev-journal.md` with the plural "they are law". `TemplateTiers` folds both paths onto that one line.
+- **R-004 / R-008 / R-023: met.** `skill/SKILL.md:147` and `skill/references/migration.md:25,27` name three always-tier imports and say "one per line in the template's `### Read on demand` block". The count of 11 is pinned in `evals/grade.py:1870-1877` (T-16), not repeated in prose. `migration.md:22` still names only pair-development and decision-gate. That is correct: it lists the legacy sections those two rules replace, not the import set.
+- **R-005 / Q1: met.** `src/Legislator.Engine/Jobs/ReportJob.cs:338-353`: restricted to `tiers.Always`, ungated from the add-`@import` at `:355-358`, and gated on `FindEntryPointerLine` (`:390`), which takes the pointer grammar (`:69-75`) and requires the line to name the rule alone. No rule name is hardcoded. Pinned by `tests/Legislator.Engine.Tests/Jobs/ReportJobTierTests.cs:232` (edition-28 shape), `:248` (edition-29 shape, nothing proposed) and `:260` (owner prose left alone).
+- **R-010: met.** `ReportJob.cs:303-332`: the remove of the old single-rule grammar line, plus the add widened to `!EntryNamesRuleWithoutImport || diffsFromTemplate` and guarded against an add the entry already carries. BL-484 R-025 holds: a line outside the grammar is never matched (`ReportJobTierTests.cs:93`, unchanged and green).
+- **R-014: met.** `ReportJob.cs:237-248` (`TryAddAdd`). Pinned by `ReportJobTierTests.cs:313` (two removes, one add) and `:328` (all-`@` entry, merged add once).
+- **R-009: met.** `SKILL.md:168` describes the always-tier stale-pointer removal, the on-demand replace, and the merged add proposed once.
+- **R-011: met.** `skill/assets/rules/core/skills.md:5` adds the third clause, citing `core/project-rules.md`. The delivered copy `docs/ai/rules/core/skills.md` was refreshed by apply (self-delivery Overwritten).
+- **R-012 / Q3: met.** `src/Legislator.Engine/Runs/Step4Targets.cs:80-98` `ScaffoldOnlyPaths` matches the row by path (the `<today>.md` file name, `:27`), not by notes text. `src/Legislator.Engine/Jobs/VerifyJob.cs:79-85` drops only that row from the failure list. Pinned by `tests/Legislator.Engine.Tests/Runs/Step4TargetsTests.cs:26` (the `AGENTS.md` row is not included) and `VerifyJobTests.cs:72,91`.
+- **R-013: met as amended.** `VerifyJob.cs:75-77` reads the mode from `RunRecord.ModeKey` only and has no `Detection.Of` fallback. With no record, or a record without a mode, the row stays required. Pinned by `VerifyJobTests.cs:106`. See D-1.
+- **R-024: met.** `SKILL.md:157` carries the journal-row exception, scoped to a run record with a non-fresh-scaffold mode.
+- **R-025: met.** `Step4Targets.Of`/`Snapshot` are unchanged. `VerifyJob.cs:69` still snapshots unfiltered, and the unfiltered `post` is what gets persisted to the record (`:87-95`). Pinned by `Step4TargetsTests.cs:51`.
+- **R-015: met.** `evals/check_static.py:116-120` asserts the clause "reached only by a pointer line".
+- **R-016: met.** `tests/Legislator.Engine.Tests/Jobs/ReportJobLayoutTests.cs:41` runs a non-default `RulesDir`/`OkfDir` through `ReviewLines`. This closes BL-484 F-3.
+- **R-017 / R-018: met.** `b79b81c`: `skill/VERSION` 29, `src/Legislator.Cli/Version.props:9` 29.0.0, and `skill/assets/release/release.json:2-3` edition 29.0.0 with `digests: {}`.
+- **R-019: met.** `docs/changes/BL-487.md`.
+- **R-020: met.** `evals/benchmarks/v29.md:3,22`: `upgrade-tier-flip` 19/19 on `c461b45`, before the delivery commit `3d2b0e7`. The fixture is `evals/setup_workspace.py:241`. The grader is `evals/grade.py:1980`, which asserts the import add, the stale-pointer removal, both old-line removes and the merged add exactly once. The standing red `audit_slugs_derived` (#64) is unchanged from master.
+- **R-021: met.** `.claude/rules/verification.md` and `docs/changes/README.md` were written from their templates in `2fbb7e7` (T-19). After delivery, `verify` exits 0.
+- **R-022: met.** `AGENTS.md:33-35` has three `@` lines and `AGENTS.md:41` the merged bullet. The two old bullets are gone. `legislator report` then proposes nothing.
+- **Hurting case: met, on this repository itself.** Before T-20, the self-delivery report's "Needs your review" listed exactly the spec's five lines: the merged add once, the changelog remove, the dev-journal remove, the verification stale-pointer remove (now always-tier), and the verification `@` add. The same shape is graded in the benchmark (R-020) and in the unit tests (R-005, R-014).
+- **Q2: met.** `ReviewLines` is mode-blind, as before. In migration mode the wholesale rewrite (`migration.md:27`) leaves nothing stale, and the `legacy-migration` scenarios stayed green (28/28, 23/23).
+
+### Plan decisions and tasks
+
+- **T-01:** done. `sdd-lint` exits 0 at the end.
+- **T-02..T-10:** done as contracted, except for D-1 and D-2.
+- **T-11..T-16:** done (file:line above).
+- **T-17:** confirm-only. `tests/Legislator.Parity.Tests/**` is untouched, and the suite is green at 878/878.
+- **T-18:** done, plus the harness wiring the plan's file list missed (D-4).
+- **T-19, T-26, T-20:** done, in that order (`2fbb7e7`, `3d2b0e7`).
+- **T-21, T-23..T-25:** done, per the orchestrator's evidence.
+- **T-22:** no separate analyze report is in the case folder, so it is judged here. On reuse: R-012 reuses `RunRecord.ModeKey` (as `ReportJob` reads it) and `Detection.Fresh`, and R-005 and R-010 share one helper, `FindEntryPointerLine`. On scope: there is no general stale-pointer mechanism, only R-005's always-tier case and R-010's grammar-line-changed case. No finding.
+
+### Deviations (accepted)
+
+- **D-1:** The plan's T-03 and T-12 text still describes a `Detection.Of` fallback. The spec's R-013 was amended in code review round 1, because after apply has written the manifest, detection can never answer fresh. The code and `VerifyJobTests.cs:106` follow the amended spec. The plan text is left as written, since it is append-only.
+- **D-2:** `ScaffoldOnlyPaths` matches the row by its `<today>.md` file name rather than by the full literal path. It is still a path match, which is what Q3 asks for, and `Step4TargetsTests.cs:26` proves it does not catch the `AGENTS.md` row.
+- **D-3:** `TemplateTiers.cs:97,102` now `TrimEnd()` the template's on-demand line. This was not in the plan. It is needed so R-010's comparison against the trimmed entry line is not fooled by trailing whitespace.
+- **D-4:** The R-014 deduplication covers every engine add-line (`@import`, `## Boundaries`, glossary), not only the merged pointer. This is harmless, since no add was ever meant to repeat. Separately, benchmark run 1 found the new scenario unwired in `tools/evals-bg.sh`, `evals/mutate.py`, `evals/mutations.py` and `evals/dashboard.py`. The fix was `c461b45`, and it is recorded in `v29.md:30-35` and the fragment's journal.
+
+### Follow-ups (non-blocking)
+
+- **F-1, F-2:** These are BL-484's and stay open, out of scope per the Boundary. F-1: stage skills in other repositories should name their trigger file. F-2: stack rules and `.claude/rules/*.md` have no tier split.
+- **F-3:** `Step4Targets` never resolves `<today>`, so in fresh mode `verify` still checks the literal unresolved path (D3, out of scope).
+- **F-4:** R-005's and R-010's remove lines name the rule, not the line text. The owner has to find the line themselves, which is easy today but could be quoted.
+- **F-5:** The self-delivery Health section carries four pre-existing `unresolved-placeholders` findings under `docs/superpowers/`, and there is one constitution candidate (`.claude/rules/records.md`). Neither comes from this case.
+
+No requirement is unmet and there is no constitutional violation.
+
+✅ Converged
