@@ -47,6 +47,15 @@ internal static class ApplyFixture
         fs.AddFile($"{SkillPath}/assets/rules/stacks/dotnet/a.md", new MockFileData("# dotnet law\n"));
         fs.AddFile($"{SkillPath}/assets/rules/stacks/aurelia/x.md", new MockFileData("# aurelia law\n"));
         fs.AddFile($"{SkillPath}/assets/templates/opencode.json.tpl", new MockFileData("{}\n"));
+        // Pointer lines, not `@import` lines, for both core rules the fixture ships (BL-484
+        // Q10, round 2 finding 2): both read as on-demand, so ReportJob's template read never
+        // throws in a report test or twin that does not otherwise care about tiering.
+        fs.AddFile(
+            $"{SkillPath}/assets/templates/AGENTS.md.tpl",
+            new MockFileData(
+                "- Before changing code, read `docs/ai/rules/core/okf.md` — it is law, not a reference.\n"
+                + "- Before merging, read `docs/ai/rules/core/sdd.md` — it is law, not a reference.\n"
+                + "- When finding where something lives, read `docs/okf/codebase-map.md` — it is law, not a reference.\n"));
         fs.AddFile($"{SkillPath}/assets/engine/engine.py", new MockFileData("# engine\n"));
         fs.AddFile(
             $"{SkillPath}/SKILL.md",

@@ -142,7 +142,7 @@ public sealed class DetectTwins
     {
         var (exit, json, _) = Detect(Repo(new()
         {
-            ["AGENTS.md"] = "# P\n\n@docs/ai/rules/core/okf.md\n",
+            ["AGENTS.md"] = "# P\n\n@docs/ai/rules/core/pair-development.md\n",
             ["docs/ai/rules/core/okf.md"] = "x\n",
             ["docs/ai/rules/stacks/dotnet/a.md"] = "x\n",
             ["opencode.json"] = "{}\n",
@@ -163,7 +163,7 @@ public sealed class DetectTwins
     {
         var fs = Repo(new()
         {
-            ["AGENTS.md"] = "# P\n\n@docs/ai/rules/core/okf.md\n",
+            ["AGENTS.md"] = "# P\n\n@docs/ai/rules/core/pair-development.md\n",
             ["docs/ai/rules/core/okf.md"] = "x\n",
             ["docs/ai/rules/stacks/dotnet/a.md"] = "x\n",
             ["opencode.json"] = "{}\n",

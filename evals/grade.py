@@ -517,11 +517,26 @@ def expected_stacks(fixture_meta: dict | None = None) -> list[str]:
 
 def migration_wiring() -> list[str]:
     """Strings migration must write directly into AGENTS.md (the v2
-    wiring), derived from AGENTS.md.tpl: every import line the template
-    carries plus the section headings it pins."""
+    wiring), derived from AGENTS.md.tpl: every always-tier `@import`
+    line plus every on-demand pointer line under its `### Read on
+    demand` heading (BL-484 R-005), and the section headings it pins."""
     tpl = (SKILL / "assets/templates/AGENTS.md.tpl").read_text()
     imports = ["@" + i for i in re.findall(r"^@(docs/[^\s]+)$", tpl, re.M)]
-    return imports + ["## Boundaries"]
+    demand_block = tpl.split("### Read on demand", 1)[1] if "### Read on demand" in tpl else ""
+    pointers = [line for line in demand_block.splitlines() if line.strip().startswith("- ")]
+    return imports + pointers + ["## Boundaries"]
+
+
+def core_rule_tiers() -> tuple[list[str], list[str]]:
+    """Which on-disk core rules AGENTS.md.tpl imports with `@` (always-tier)
+    vs. names only on a non-`@` line (on-demand — reached via a pointer,
+    e.g. the Read-on-demand block or the project-rules.md bullet),
+    derived from the template itself (BL-484 D1)."""
+    tpl = (SKILL / "assets/templates/AGENTS.md.tpl").read_text()
+    always = set(re.findall(r"^@(docs/ai/rules/core/[^\s]+)$", tpl, re.M))
+    named = set(re.findall(r"`(docs/ai/rules/core/[^`]+\.md)`", tpl))
+    owned_core = {p for p in expected_owned() if p.startswith("docs/ai/rules/core/")}
+    return sorted(always & owned_core), sorted((named - always) & owned_core)
 
 
 def audit_check_severities() -> dict[str, str]:
@@ -974,11 +989,21 @@ class Grader:
                    f"{rows} term row(s) derived from the repo's domain" if rows >= 1
                    else "glossary table has no body rows — {{GLOSSARY_TABLE}} derivation produced nothing", artifact=self.repo_art)
         agents = (repo / "AGENTS.md").read_text() if (repo / "AGENTS.md").exists() else ""
-        missing_imports = [p for p in expected_owned()
-                           if p.startswith("docs/ai/rules/core/") and f"@{p}" not in agents]
-        self.check("agents_md_imports_all_core", not missing_imports,
-                   "every core rule imported" if not missing_imports
-                   else f"core rules on disk but not imported: {missing_imports}", artifact=self.repo_art)
+        always_tier, on_demand = core_rule_tiers()
+        not_imported = [p for p in always_tier if f"@{p}" not in agents]
+        wrongly_imported = [p for p in on_demand if f"@{p}" in agents]
+        not_named = [p for p in on_demand if p not in agents]
+        tiers_ok = not (not_imported or wrongly_imported or not_named)
+        problems = []
+        if not_imported:
+            problems.append(f"always-tier core rules not @-imported: {not_imported}")
+        if wrongly_imported:
+            problems.append(f"on-demand core rules @-imported instead of pointer-only: {wrongly_imported}")
+        if not_named:
+            problems.append(f"on-demand core rules named nowhere: {not_named}")
+        self.check("agents_md_core_tiers_wired_correctly", tiers_ok,
+                   "every always-tier core rule imported with @, every on-demand core rule named without @" if tiers_ok
+                   else "; ".join(problems), artifact=self.repo_art)
         self.check("agents_md_imports_rules", "@docs/ai/rules/core/" in agents,
                    "@import block present" if "@docs/ai/rules/core/" in agents else "no @import lines in AGENTS.md", artifact=self.repo_art)
         rules_dir = repo / ".claude/rules"
@@ -1144,6 +1169,18 @@ def grade_upgrade(ws: Path) -> Grader:
     g.check("report_proposes_core_import_line", core_proposed,
             "core-rule import proposed in Needs-your-review" if core_proposed
             else f"no proposal for {core_import}", artifact=g.report_art)
+    # The fixture's CLAUDE.md imports every owned rule with `@` (setup_workspace.py's
+    # all-`@` shape, unchanged per BL-484 Q13 - it is the hurting case's own input), so an
+    # on-demand rule it owns (okf.md) must be proposed remove-`@`-plus-add-pointer, never
+    # re-add, exercising R-007 against this fixture rather than a synthetic one.
+    review_text = report[core_review_idx:] if core_review_idx >= 0 else ""
+    on_demand_removed = "remove" in review_text and "@docs/ai/rules/core/okf.md" in review_text
+    on_demand_pointer = "docs/ai/rules/core/okf.md` — it is law, not a reference." in review_text
+    g.check("report_proposes_on_demand_remove_and_pointer_not_readd",
+            on_demand_removed and on_demand_pointer,
+            "okf.md's stale @import proposed for removal and its pointer proposed for addition"
+            if on_demand_removed and on_demand_pointer
+            else f"removed={on_demand_removed} pointer_added={on_demand_pointer}", artifact=g.report_art)
     import_line = f"@docs/ai/rules/stacks/dotnet/{meta['withheld_stack_rule']}"
     # Scoped to the "Needs your review" section (BL-019 R3): the line counts
     # only as a PROPOSAL — its appearance in Deleted/Overwritten would not.
@@ -1829,8 +1866,12 @@ def grade_derivation_selftest() -> Grader:
                 f"untouched: {'ok' if untouched_ok else 'FAIL ' + untouched_exp['evidence']}; "
                 f"content-changed: {'flagged' if edited_flagged else 'FAIL ' + edited_exp['evidence']}", artifact=GRADER_SELF)
     wiring = migration_wiring()
+    codebase_map_pointer = next((w for w in wiring if "docs/okf/codebase-map.md" in w and not w.startswith("@")), None)
+    # Pinned to an expected count, not only trusted from the derivation (BL-484 round 2 finding
+    # 8): 2 always-tier `@import` lines, 9 on-demand pointer lines (8 core rules plus the
+    # codebase map), and the `## Boundaries` heading.
     g.check("migration_wiring_derived_from_template",
-            "@docs/okf/codebase-map.md" in wiring and "## Boundaries" in wiring,
+            len(wiring) == 12 and codebase_map_pointer is not None and "## Boundaries" in wiring,
             f"{len(wiring)} wiring strings parsed from AGENTS.md.tpl", artifact=LAW_AGENTS_TPL)
     sev = audit_check_severities()
     g.check("audit_severities_derived",

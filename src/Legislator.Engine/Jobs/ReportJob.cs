@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using Legislator.Core.Manifest;
 using Legislator.Core.Options;
 using Legislator.Core.Repo;
+using Legislator.Core.Skill;
 using Legislator.Engine.Audit;
 using Legislator.Engine.Runs;
 
@@ -152,7 +153,7 @@ public sealed partial class ReportJob : IJob
             .Select(p => Item(p, "owned, left the constitution or a de-selected stack"))
             .ToList();
 
-        var review = ReviewLines(fs, layout, options, scaffolded, model);
+        var review = ReviewLines(fs, layout, options, scaffolded, model, parsed.Skill);
         var keepLines = KeepLines(record);
 
         var text = new StringBuilder();
@@ -216,7 +217,8 @@ public sealed partial class ReportJob : IJob
         RepoLayout layout,
         LegislatorOptions options,
         List<string> scaffolded,
-        ReportFindings model)
+        ReportFindings model,
+        SkillPackage skill)
     {
         var review = new List<string>();
         var entry = EntryDocument.Of(fs, layout, options);
@@ -228,21 +230,69 @@ public sealed partial class ReportJob : IJob
             .Where(o => o.StartsWith(rules, StringComparison.Ordinal))
             .ToList();
 
-        review.AddRange(ownedRules
-            .Where(rule => !imports.Contains(rule, StringComparer.Ordinal))
-            .Select(rule => $"- add to `{entryName}`: `@{rule}`"));
+        // The tier split is declared in AGENTS.md.tpl itself (BL-484 R-001): an `@import` line in
+        // the template names an always-tier core rule; any other line naming a core rule path (or
+        // the codebase map) names an on-demand one. The template ships with the run's --skill, so
+        // a mid-upgrade repo's older engine still proposes against the edition the caller named.
+        var tiers = TemplateTiers.Read(fs, skill, layout, options);
+        var codeBasePath = $"{layout.Relative(layout.Okf)}/{options.CodebaseMapFile.Value}";
+
+        // The codebase map is on-demand like every other rule (Q3): SKILL.md Step 4 (not Step 3)
+        // is what writes the file, so it has no entry in ownedRules. Add it only when the loop has
+        // something to propose against (an entry document, matching the old `entry is not null`
+        // guard) and only when the map is actually a thing in this repo - on disk or freshly
+        // scaffolded this run (f12). Without this gate, we'd propose an on-demand pointer for a
+        // map file that isn't there, or for an entry document that doesn't exist either.
+        var mapExists = fs.File.Exists($"{layout.Root}/{codeBasePath}");
+        var mapScaffolded = scaffolded.Contains(codeBasePath);
+        if (entry is not null && (mapExists || mapScaffolded)
+            && !ownedRules.Contains(codeBasePath, StringComparer.Ordinal))
+        {
+            ownedRules.Add(codeBasePath);
+        }
+
+        // Stack rules: a path under `docs/ai/rules/stacks/` is never on-demand under this case
+        // (R-008, Q4) - if the template's own lines do not name it, the tier helper inherits it
+        // as always-tier (its `OnDemandLine` map has no entry for it) and the today's add-`@<rule>`
+        // branch runs. Iterate `ownedRules` in the order the manifest declared them: today's
+        // always-tier branch must remain "unchanged" (R-008), which the `stackOwned.Concat(coreOwned)`
+        // reordering violated (f6).
+        foreach (var rule in ownedRules.Distinct(StringComparer.Ordinal))
+        {
+            if (tiers.OnDemandLine.ContainsKey(rule))
+            {
+                if (imports.Contains(rule, StringComparer.Ordinal))
+                {
+                    review.Add(
+                        $"- remove from `{entryName}`: `@{rule}` (on-demand: read on trigger, not imported)");
+                }
+
+                // The owner's own pointer wording is never second-guessed (R-007): the add-pointer
+                // half only fires when the rule's path is absent outside the rule's `@import`
+                // lines, so a reworded pointer the template no longer matches byte-for-byte is left
+                // alone rather than re-proposed.
+                if (tiers.OnDemandLine.TryGetValue(rule, out var pointerLine)
+                    && !EntryNamesRuleWithoutImport(entryText, rule))
+                {
+                    review.Add($"- add to `{entryName}`: {pointerLine}");
+                }
+
+                continue;
+            }
+
+            if (!imports.Contains(rule, StringComparer.Ordinal))
+            {
+                review.Add($"- add to `{entryName}`: `@{rule}`");
+            }
+        }
+
         review.AddRange(imports
             .Where(i => i.StartsWith(rules, StringComparison.Ordinal) && !ownedRules.Contains(i, StringComparer.Ordinal))
             .Select(i => $"- remove from `{entryName}`: `@{i}` (no longer owned)"));
 
         if (entry is not null)
         {
-            var map = $"{layout.Relative(layout.Okf)}/{options.CodebaseMapFile.Value}";
             var glossary = $"{layout.Relative(layout.Okf)}/{options.GlossaryFile.Value}";
-            if (scaffolded.Contains(map) && !imports.Contains(map, StringComparer.Ordinal))
-            {
-                review.Add($"- add to `{entryName}`: `@{map}`");
-            }
 
             if (scaffolded.Count > 0 && !entryText.Contains("## Boundaries", StringComparison.Ordinal))
             {
@@ -259,6 +309,16 @@ public sealed partial class ReportJob : IJob
 
         review.AddRange(model.Review.Select(l => l.TrimEnd()));
         return review;
+    }
+
+    /// <summary>Whether the entry text names the rule's path on a line that is not its own <c>@import</c> line - the add-pointer half's guard (BL-484 R-007).</summary>
+    private static bool EntryNamesRuleWithoutImport(string entryText, string rule)
+    {
+        var importLine = $"@{rule}";
+        var kept = string.Join(
+            '\n',
+            entryText.Split('\n').Where(l => !l.Trim().Equals(importLine, StringComparison.Ordinal)));
+        return kept.Contains(rule, StringComparison.Ordinal);
     }
 
     private static List<string> KeepLines(JsonObject record)

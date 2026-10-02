@@ -271,7 +271,7 @@ def _scaffold(repo: Path) -> dict[str, Mutation]:
                 rev, p, "# skills\n")),
         "glossary_seeded_with_terms": Mutation(
             "cut-glossary-rows", fn=cut_glossary),
-        "agents_md_imports_all_core": Mutation(
+        "agents_md_core_tiers_wired_correctly": Mutation(
             "drop-one-core-import", fn=drop_one_core_import),
         "agents_md_imports_rules": Mutation(
             "drop-all-core-imports", fn=drop_all_core_imports),

@@ -907,6 +907,15 @@ def tree(root: Path) -> set[str]:
 CORE_RULES = sorted(p.name for p in (SKILL_DIR / "assets/rules/core").glob("*.md"))
 VERSION = (SKILL_DIR / "VERSION").read_text().strip()
 
+
+def wired_block() -> str:
+    """The real AGENTS.md.tpl's own import/pointer block, verbatim (BL-484 R-001): the template
+    is the tier source, so a fixture that wants "every owned rule wired, nothing left to review"
+    reads it rather than re-deriving which rule is always- vs on-demand-tier a second time."""
+    tpl = (SKILL_DIR / "assets/templates/AGENTS.md.tpl").read_text()
+    block = tpl.split("Development law mode: pair\n", 1)[1].split("## Architecture Constraints", 1)[0]
+    return block.replace("{{STACK_IMPORTS}}\n", "").strip("\n")
+
 print("== R-753: detect — the three modes and the edge case, zero writes ==")
 root = git_repo({"README.md": "hi\n"})
 code, out, err = eng(root, "detect", "--skill", str(SKILL_DIR))
@@ -931,7 +940,7 @@ d = _json.loads(out) if code == 0 else {}
 check(d.get("mode") == "upgrade" and d.get("stacks", {}).get("subscribed") == ["dotnet"]
       and d.get("ownedFilesOld") == ["docs/ai/rules/core/okf.md"] and not d.get("reconstructed"),
       "detect_upgrade_reads_legacy_profiles", f"out={out[:300]!r}")
-root = git_repo({"AGENTS.md": "# P\n\n@docs/ai/rules/core/okf.md\n",
+root = git_repo({"AGENTS.md": "# P\n\n@docs/ai/rules/core/pair-development.md\n",
                  "docs/ai/rules/core/okf.md": "x\n", "docs/ai/rules/stacks/dotnet/a.md": "x\n",
                  "opencode.json": "{}\n"})
 before = tree(root)
@@ -1057,7 +1066,7 @@ print("== R-762/R-763/R-765/R-766/R-767: report — skeleton, deltas, Health, Ke
 root = git_repo({"README.md": "r\n"})
 eng(root, "apply", "--skill", str(SKILL_DIR), "--stacks", "")
 scaffold_all(root)
-(root / "AGENTS.md").write_text("# P\n\n" + "\n".join(f"@docs/ai/rules/core/{n}" for n in CORE_RULES) + "\n@docs/okf/codebase-map.md\n\n## Boundaries\n\nnone\n")
+(root / "AGENTS.md").write_text("# P\n\n" + wired_block() + "\n\n## Boundaries\n\nnone\n")
 eng(root, "verify", "--skill", str(SKILL_DIR))
 code, out, err = eng(root, "report", "--skill", str(SKILL_DIR))
 check(code == 0 and out.startswith("# Legislator Scaffold — "), "report_scaffold_title", f"exit={code} out={out[:120]!r} err={err[:200]!r}")
@@ -1088,15 +1097,24 @@ def _sec(text, a, b):
 over = _sec(out, "## Overwritten", "## Deleted")
 check("- `docs/ai/rules/core/okf.md`" in over, "report_overwritten_lists_changed_owned_file", over[:300])
 review = _sec(out, "## Needs your review", "## Keep list")
-check("@docs/ai/rules/core/sdd.md" in review and "remove" in review and "@docs/ai/rules/core/ghost.md" in review
-      and "@docs/okf/codebase-map.md" in review and "## Boundaries" in review and "docs/okf/glossary.md" in review,
+# okf.md is on-demand and present as an `@import`: remove that import, add its pointer.
+# sdd.md is on-demand and present as neither import nor pointer: add-only, never `@sdd.md`.
+# The codebase map is on-demand unconditionally (Q3): add-only here too.
+check("remove" in review and "@docs/ai/rules/core/okf.md" in review
+      and "docs/ai/rules/core/okf.md` — it is law, not a reference." in review
+      and "docs/ai/rules/core/sdd.md` — it is law, not a reference." in review
+      and "@docs/ai/rules/core/sdd.md" not in review
+      and "@docs/ai/rules/core/ghost.md" in review
+      and "docs/okf/codebase-map.md` — it is law, not a reference." in review
+      and "@docs/okf/codebase-map.md" not in review
+      and "## Boundaries" in review and "docs/okf/glossary.md" in review,
       "report_review_carries_import_deltas_and_scaffold_wiring", review[:500])
 keep = _sec(out, "## Keep list", "## Health")
 check("docs/notes/a.md" in keep and "opencode.json" in keep and "owned" in keep,
       "report_keep_list_added_and_refused", keep[:300])
 health = out.split("## Health", 1)[1] if "## Health" in out else ""
 check("[imports-resolve]" in health and "ghost.md" in health, "report_health_runs_audit_checks_1_to_6", health[:300])
-root2 = git_repo({"AGENTS.md": "# P\n\n" + "\n".join(f"@docs/ai/rules/core/{n}" for n in CORE_RULES) + "\n@docs/okf/codebase-map.md\n\n## Boundaries\n\nx\n\n- Domain glossary: `docs/okf/glossary.md`\n",
+root2 = git_repo({"AGENTS.md": "# P\n\n" + wired_block() + "\n\n## Boundaries\n\nx\n\n- Domain glossary: `docs/okf/glossary.md`\n",
                   "docs/ai/manifest.json": '{"legislatorVersion": 23, "stacks": [], "keep": [], "ownedFiles": []}'})
 eng(root2, "apply", "--skill", str(SKILL_DIR), "--stacks", "")
 scaffold_all(root2)
