@@ -77,6 +77,72 @@ public sealed class TemplateTiersTests
         Assert.Contains($"{SkillPath}/assets/templates/AGENTS.md.tpl", ex.Path, StringComparison.Ordinal);
     }
 
+    /// <summary>f3: two core-rule paths named on the same template line both land on-demand - neither falls through to always-tier by only recording the line's first occurrence.</summary>
+    [Fact]
+    public void Given_a_template_line_naming_two_core_paths_When_tiers_are_read_Then_both_land_on_demand()
+    {
+        var fs = Repo();
+        fs.File.WriteAllText(
+            $"{SkillPath}/assets/templates/AGENTS.md.tpl",
+            "- See `docs/ai/rules/core/okf.md` and `docs/ai/rules/core/sdd.md` together.\n");
+        var skill = Package(fs);
+
+        var tiers = TemplateTiers.Read(fs, skill, Layout, Options);
+
+        Assert.Contains("docs/ai/rules/core/okf.md", tiers.OnDemandLine.Keys);
+        Assert.Contains("docs/ai/rules/core/sdd.md", tiers.OnDemandLine.Keys);
+    }
+
+    /// <summary>f3: a core-rule path and the codebase map named on the same line both get an on-demand entry - the map is not lost to the `continue` the once-per-line cap used to take.</summary>
+    [Fact]
+    public void Given_a_template_line_naming_a_core_path_and_the_codebase_map_When_tiers_are_read_Then_both_land_on_demand()
+    {
+        var fs = Repo();
+        fs.File.WriteAllText(
+            $"{SkillPath}/assets/templates/AGENTS.md.tpl",
+            "- See `docs/ai/rules/core/okf.md` and `docs/okf/codebase-map.md` together.\n");
+        var skill = Package(fs);
+
+        var tiers = TemplateTiers.Read(fs, skill, Layout, Options);
+
+        Assert.Contains("docs/ai/rules/core/okf.md", tiers.OnDemandLine.Keys);
+        Assert.Contains("docs/okf/codebase-map.md", tiers.OnDemandLine.Keys);
+    }
+
+    /// <summary>f9: a path immediately followed by sentence punctuation does not absorb the punctuation into the matched path.</summary>
+    [Fact]
+    public void Given_a_path_followed_by_trailing_punctuation_When_tiers_are_read_Then_the_punctuation_is_not_part_of_the_path()
+    {
+        var fs = Repo();
+        fs.File.WriteAllText(
+            $"{SkillPath}/assets/templates/AGENTS.md.tpl",
+            "- Read docs/ai/rules/core/okf.md. Then read docs/ai/rules/core/sdd.md, and (docs/ai/rules/core/okf.md).\n");
+        var skill = Package(fs);
+
+        var tiers = TemplateTiers.Read(fs, skill, Layout, Options);
+
+        Assert.Contains("docs/ai/rules/core/okf.md", tiers.OnDemandLine.Keys);
+        Assert.Contains("docs/ai/rules/core/sdd.md", tiers.OnDemandLine.Keys);
+        Assert.DoesNotContain("docs/ai/rules/core/okf.md.", tiers.OnDemandLine.Keys);
+        Assert.DoesNotContain("docs/ai/rules/core/okf.md)", tiers.OnDemandLine.Keys);
+    }
+
+    /// <summary>f7: a CRLF template still classifies an `@import` line as always-tier - the regex anchors against `\n`, not a bare `$` that a trailing `\r` would desynchronise.</summary>
+    [Fact]
+    public void Given_a_CRLF_template_When_tiers_are_read_Then_the_always_tier_import_is_still_recognised()
+    {
+        var fs = Repo();
+        fs.File.WriteAllText(
+            $"{SkillPath}/assets/templates/AGENTS.md.tpl",
+            "@docs/ai/rules/core/okf.md\r\n\r\n- Read `docs/ai/rules/core/sdd.md` too.\r\n");
+        var skill = Package(fs);
+
+        var tiers = TemplateTiers.Read(fs, skill, Layout, Options);
+
+        Assert.Contains("docs/ai/rules/core/okf.md", tiers.Always);
+        Assert.Contains("docs/ai/rules/core/sdd.md", tiers.OnDemandLine.Keys);
+    }
+
     [Fact]
     public void Given_a_non_default_RulesDir_and_OkfDir_When_tiers_are_read_Then_the_template_still_classifies_against_the_repos_actual_layout()
     {

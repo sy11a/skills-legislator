@@ -139,10 +139,10 @@ public sealed record LegislatorOptions
     public OptionValue<string> SkillAgentsTemplate { get; init; } = new("assets/templates/AGENTS.md.tpl", OptionsLayer.Defaults); // under the skill package
 
     /// <summary>The default-layout prefix every <c>AGENTS.md.tpl</c> path under <c>docs/ai/rules/core/</c> is written against (BL-484 R-001, Q11). A repo whose <see cref="RulesDir"/> was renamed still matches because the engine folds the template's default-layout paths back through the actual layout before comparing.</summary>
-    public OptionValue<string> TemplateCorePrefix { get; init; } = new("docs/ai/rules/core/", OptionsLayer.Defaults); // under docs/ai/rules
+    public OptionValue<string> TemplateCorePrefix { get; init; } = new("docs/ai/rules/core/", OptionsLayer.Defaults); // the default-layout prefix
 
     /// <summary>The default-layout path the codebase-map pointer line in <c>AGENTS.md.tpl</c> is written against (BL-484 R-001, Q11). A repo whose <see cref="OkfDir"/> or <see cref="CodebaseMapFile"/> was renamed still matches because the engine folds the template's default-layout paths back through the actual layout before comparing.</summary>
-    public OptionValue<string> TemplateCodebaseMapPath { get; init; } = new("docs/okf/codebase-map.md", OptionsLayer.Defaults); // under docs/okf
+    public OptionValue<string> TemplateCodebaseMapPath { get; init; } = new("docs/okf/codebase-map.md", OptionsLayer.Defaults); // the default-layout path
 
     /// <summary>The package's own procedure document - Step 4's table is where the scaffold targets are declared, and apply snapshots them before and after a run.</summary>
     public OptionValue<string> SkillFile { get; init; } = new("SKILL.md", OptionsLayer.Defaults); // under the skill package

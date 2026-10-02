@@ -98,18 +98,22 @@ public sealed class ReportJobTierTests
         Assert.DoesNotContain(OkfOwned, review, StringComparison.Ordinal);
     }
 
+    private const string CodeBaseMapPointer =
+        "- When finding where something lives, read `docs/okf/codebase-map.md` — it is law, not a reference.\n";
+
     [Fact]
-    public void Given_the_codebase_map_present_as_an_import_When_reported_Then_remove_and_add_fire_unconditionally()
+    public void Given_the_codebase_map_present_on_disk_and_as_an_import_When_reported_Then_remove_and_add_fire()
     {
         var fs = Repo();
         Applied(
             fs,
             "# A\n\n@docs/okf/codebase-map.md\n",
             "{\"legislatorVersion\": 25, \"stacks\": [], \"keep\": [], \"ownedFiles\": []}",
-            "- When finding where something lives, read `docs/okf/codebase-map.md` — it is law, not a reference.\n");
+            CodeBaseMapPointer);
+        fs.AddFile($"{Root}/docs/okf/codebase-map.md", new System.IO.Abstractions.TestingHelpers.MockFileData("# map\n"));
 
-        // The codebase map's wiring is never gated on `scaffolded` - this fixture never ran a
-        // scaffold for it at all.
+        // The codebase map's wiring is never gated on `scaffolded` when the file already exists
+        // on disk - this fixture never ran a scaffold for it at all.
         var review = RunReport(fs).Stdout;
 
         Assert.Contains(
@@ -119,6 +123,75 @@ public sealed class ReportJobTierTests
             "- add to `AGENTS.md`: - When finding where something lives, read `docs/okf/codebase-map.md` — "
             + "it is law, not a reference.",
             review, StringComparison.Ordinal);
+    }
+
+    /// <summary>f12: with no map file on disk and none scaffolded this run, neither half is proposed - even though the entry document imports it and the template carries its pointer.</summary>
+    [Fact]
+    public void Given_the_codebase_map_absent_from_disk_When_reported_Then_neither_remove_nor_add_is_proposed()
+    {
+        var fs = Repo();
+        Applied(
+            fs,
+            "# A\n\n@docs/okf/codebase-map.md\n",
+            "{\"legislatorVersion\": 25, \"stacks\": [], \"keep\": [], \"ownedFiles\": []}",
+            CodeBaseMapPointer);
+
+        var review = RunReport(fs).Stdout;
+
+        Assert.DoesNotContain("docs/okf/codebase-map.md", Review(review), StringComparison.Ordinal);
+    }
+
+    /// <summary>f12: with no entry document at all, the map gets neither half proposed - the map "needs an entry document anyway" (review-1.md finding 12), the same guard the old code applied via its own `entry is not null` wrapper.</summary>
+    [Fact]
+    public void Given_no_entry_document_When_reported_Then_no_codebase_map_proposals_are_made()
+    {
+        var fs = Repo();
+        RunApply(fs, null, "--stacks", string.Empty);
+        fs.File.Delete($"{Root}/AGENTS.md");
+        fs.File.WriteAllText($"{Root}/docs/ai/manifest.json", OkfManifest);
+        fs.File.WriteAllText($"{SkillPath}/assets/templates/AGENTS.md.tpl", $"{OkfPointer}\n{CodeBaseMapPointer}");
+        fs.AddFile($"{Root}/docs/okf/codebase-map.md", new System.IO.Abstractions.TestingHelpers.MockFileData("# map\n"));
+
+        var review = Review(RunReport(fs).Stdout);
+
+        Assert.DoesNotContain("docs/okf/codebase-map.md", review, StringComparison.Ordinal);
+    }
+
+    /// <summary>f1: the map's tier comes only from the template's own pointer line - dropping the pointer means no on-demand proposal for the map, even though the file exists on disk and is imported.</summary>
+    [Fact]
+    public void Given_a_template_that_drops_the_codebase_map_pointer_When_reported_Then_no_on_demand_proposal_for_the_map()
+    {
+        var fs = Repo();
+        Applied(
+            fs,
+            "# A\n\n@docs/okf/codebase-map.md\n",
+            "{\"legislatorVersion\": 25, \"stacks\": [], \"keep\": [], \"ownedFiles\": []}",
+            "no map pointer here\n");
+        fs.AddFile($"{Root}/docs/okf/codebase-map.md", new System.IO.Abstractions.TestingHelpers.MockFileData("# map\n"));
+
+        var review = Review(RunReport(fs).Stdout);
+
+        Assert.DoesNotContain("docs/okf/codebase-map.md", review, StringComparison.Ordinal);
+    }
+
+    /// <summary>f6: the always-tier add branch keeps the manifest's own `ownedFiles` order, not a stack-then-core regrouping.</summary>
+    [Fact]
+    public void Given_owned_files_in_manifest_order_When_reported_Then_always_tier_adds_keep_that_order()
+    {
+        const string stackOwned = "docs/ai/rules/stacks/dotnet/a.md";
+        var fs = Repo();
+        Applied(
+            fs,
+            "# A\n",
+            "{\"legislatorVersion\": 25, \"stacks\": [\"dotnet\"], \"keep\": [], \"ownedFiles\": [\""
+                + stackOwned + "\", \"" + OkfOwned + "\"]}",
+            "@docs/ai/rules/core/okf.md\n");
+
+        var review = Review(RunReport(fs).Stdout);
+
+        var stackIndex = review.IndexOf($"@{stackOwned}", StringComparison.Ordinal);
+        var okfIndex = review.IndexOf($"@{OkfOwned}", StringComparison.Ordinal);
+        Assert.True(stackIndex >= 0 && okfIndex >= 0 && stackIndex < okfIndex, review);
     }
 
     [Fact]

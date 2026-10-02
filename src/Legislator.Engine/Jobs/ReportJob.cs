@@ -237,11 +237,16 @@ public sealed partial class ReportJob : IJob
         var tiers = TemplateTiers.Read(fs, skill, layout, options);
         var codeBasePath = $"{layout.Relative(layout.Okf)}/{options.CodebaseMapFile.Value}";
 
-        // The codebase map is unconditionally on-demand (BL-484 Q3): SKILL.md Step 4 (not Step 3)
-        // is what writes the file, so it has no entry in ownedRules; we add it here so the same
-        // remove+add-pointer branch the core rules take is what its wiring takes too. Its remove
-        // half is unconditional, never on `scaffolded.Contains` (R-007).
-        if (!ownedRules.Contains(codeBasePath, StringComparer.Ordinal))
+        // The codebase map is on-demand like every other rule (Q3): SKILL.md Step 4 (not Step 3)
+        // is what writes the file, so it has no entry in ownedRules. Add it only when the loop has
+        // something to propose against (an entry document, matching the old `entry is not null`
+        // guard) and only when the map is actually a thing in this repo - on disk or freshly
+        // scaffolded this run (f12). Without this gate, we'd propose an on-demand pointer for a
+        // map file that isn't there, or for an entry document that doesn't exist either.
+        var mapExists = fs.File.Exists($"{layout.Root}/{codeBasePath}");
+        var mapScaffolded = scaffolded.Contains(codeBasePath);
+        if (entry is not null && (mapExists || mapScaffolded)
+            && !ownedRules.Contains(codeBasePath, StringComparer.Ordinal))
         {
             ownedRules.Add(codeBasePath);
         }
@@ -249,17 +254,12 @@ public sealed partial class ReportJob : IJob
         // Stack rules: a path under `docs/ai/rules/stacks/` is never on-demand under this case
         // (R-008, Q4) - if the template's own lines do not name it, the tier helper inherits it
         // as always-tier (its `OnDemandLine` map has no entry for it) and the today's add-`@<rule>`
-        // branch runs.
-        var coreRelative = layout.Relative(layout.RulesCore);
-        var corePrefix = $"{coreRelative}/";
-        var coreOwned = ownedRules.Where(r => r.StartsWith(corePrefix, StringComparison.Ordinal)).ToList();
-        var stackOwned = ownedRules.Where(r => !r.StartsWith(corePrefix, StringComparison.Ordinal)).ToList();
-
-        foreach (var rule in stackOwned.Concat(coreOwned).Distinct(StringComparer.Ordinal))
+        // branch runs. Iterate `ownedRules` in the order the manifest declared them: today's
+        // always-tier branch must remain "unchanged" (R-008), which the `stackOwned.Concat(coreOwned)`
+        // reordering violated (f6).
+        foreach (var rule in ownedRules.Distinct(StringComparer.Ordinal))
         {
-            var isCodeBaseMap = string.Equals(rule, codeBasePath, StringComparison.Ordinal);
-            var isOnDemand = isCodeBaseMap || tiers.OnDemandLine.ContainsKey(rule);
-            if (isOnDemand)
+            if (tiers.OnDemandLine.ContainsKey(rule))
             {
                 if (imports.Contains(rule, StringComparer.Ordinal))
                 {

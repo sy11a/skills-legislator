@@ -12,7 +12,7 @@ public sealed class AgentsTemplateMissingException : Exception
     public AgentsTemplateMissingException(string path)
         : base($"the skill package carries no AGENTS.md template at `{path}`; "
             + "the report cannot derive a core rule's tier (always vs on-demand) without it "
-            + "- restore the template or remove --skill and point it at a package that ships one")
+            + "- restore the template or point --skill at a package that ships it")
     {
         ArgumentNullException.ThrowIfNull(path);
         Path = path;
