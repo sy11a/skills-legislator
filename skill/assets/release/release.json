@@ -1,4 +1,6 @@
 {
   "edition": "29.0.0",
-  "digests": {}
+  "digests": {
+    "linux-x64": "ed393792acd96030d7553428058f16bfc967223ab37f75884659e33ba7cb643c"
+  }
 }
