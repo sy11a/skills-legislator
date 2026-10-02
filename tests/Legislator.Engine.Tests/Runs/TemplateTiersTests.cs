@@ -144,6 +144,51 @@ public sealed class TemplateTiersTests
     }
 
     [Fact]
+    public void Given_an_empty_TemplateCorePrefix_When_tiers_are_read_Then_it_throws_template_layout_invalid()
+    {
+        var options = new LegislatorOptions { TemplateCorePrefix = new(string.Empty, OptionsLayer.Defaults) };
+        var layout = new RepoLayout(options, Root);
+        var fs = Repo();
+        var skill = Package(fs);
+
+        var ex = Assert.Throws<TemplateLayoutInvalidException>(
+            () => TemplateTiers.Read(fs, skill, layout, options));
+
+        Assert.Equal("template_core_prefix", ex.Key);
+        Assert.Equal(string.Empty, ex.Value);
+    }
+
+    [Fact]
+    public void Given_a_TemplateCorePrefix_without_a_trailing_slash_When_tiers_are_read_Then_it_throws_template_layout_invalid()
+    {
+        var options = new LegislatorOptions { TemplateCorePrefix = new("docs/ai/rules/core", OptionsLayer.Defaults) };
+        var layout = new RepoLayout(options, Root);
+        var fs = Repo();
+        var skill = Package(fs);
+
+        var ex = Assert.Throws<TemplateLayoutInvalidException>(
+            () => TemplateTiers.Read(fs, skill, layout, options));
+
+        Assert.Equal("template_core_prefix", ex.Key);
+        Assert.Equal("docs/ai/rules/core", ex.Value);
+    }
+
+    [Fact]
+    public void Given_a_TemplateCodebaseMapPath_not_ending_in_md_When_tiers_are_read_Then_it_throws_template_layout_invalid()
+    {
+        var options = new LegislatorOptions { TemplateCodebaseMapPath = new("docs/okf/codebase-map", OptionsLayer.Defaults) };
+        var layout = new RepoLayout(options, Root);
+        var fs = Repo();
+        var skill = Package(fs);
+
+        var ex = Assert.Throws<TemplateLayoutInvalidException>(
+            () => TemplateTiers.Read(fs, skill, layout, options));
+
+        Assert.Equal("template_codebase_map_path", ex.Key);
+        Assert.Equal("docs/okf/codebase-map", ex.Value);
+    }
+
+    [Fact]
     public void Given_a_non_default_RulesDir_and_OkfDir_When_tiers_are_read_Then_the_template_still_classifies_against_the_repos_actual_layout()
     {
         var options = new LegislatorOptions

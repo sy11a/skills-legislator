@@ -1,4 +1,7 @@
+using Legislator.Core.Options;
+using Legislator.Engine.Jobs;
 using Legislator.Engine.Runs;
+using Legislator.TestSupport;
 using Xunit;
 using static Legislator.Engine.Tests.Apply.ApplyFixture;
 
@@ -221,5 +224,23 @@ public sealed class ReportJobTierTests
         fs.File.Delete($"{SkillPath}/assets/templates/AGENTS.md.tpl");
 
         Assert.Throws<AgentsTemplateMissingException>(() => RunReport(fs));
+    }
+
+    [Fact]
+    public void Given_a_misconfigured_TemplateCorePrefix_When_reported_Then_the_layout_error_surfaces()
+    {
+        var fs = Repo();
+        Applied(fs, "# A\n", OkfManifest, "@docs/ai/rules/core/okf.md\n");
+        var options = Options with
+        {
+            TemplateCorePrefix = new("docs/ai/rules/core", OptionsLayer.Defaults),
+        };
+        var ctx = new JobContext(
+            fs, TimeProvider.System, new FakeEnvironment(),
+            new FakeProcessRunner(), options, Root, ["--skill", SkillPath]);
+
+        var ex = Assert.Throws<TemplateLayoutInvalidException>(() => new ReportJob().Run(ctx));
+
+        Assert.Equal("template_core_prefix", ex.Key);
     }
 }
