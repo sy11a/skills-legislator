@@ -9,9 +9,9 @@ namespace Legislator.Engine.Runs;
 /// <summary>
 /// The tier split a package's <c>AGENTS.md.tpl</c> declares for its core rules and for
 /// <c>docs/okf/codebase-map.md</c> (BL-484 R-001, Q9, Q11). The template is the single source:
-/// a core rule path on an <c>@docs/ai/rules/core/&lt;name&gt;.md</c> line is always-tier; a core
+/// a core rule path on an <c>@&lt;TemplateCorePrefix&gt;&lt;name&gt;</c> line is always-tier; a core
 /// rule path (or the codebase map) on any other line is on-demand, and the line itself is the
-/// pointer text the report emits verbatim. A path the template names into nothing is an
+/// pointer text the report emits verbatim. An owned rule the template doesn't name is an
 /// always-tier rule the report treats as "add the import" (the today branch).
 ///
 /// The template's paths are written against the default layout (<c>docs/ai/rules/core/...</c>
@@ -23,6 +23,7 @@ public static partial class TemplateTiers
 {
     /// <summary>The tier split for a package and a repository layout, plus a lookup that returns the template line naming a path on a non-@import line.</summary>
     /// <exception cref="AgentsTemplateMissingException">the template file is absent at the path the package's options name.</exception>
+    /// <exception cref="TemplateLayoutInvalidException">a <c>TemplateCorePrefix</c> or <c>TemplateCodebaseMapPath</c> option is empty or shaped in a way the helper cannot fold to an owned path.</exception>
     public static TierModel Read(IFileSystem fs, SkillPackage skill, RepoLayout layout, LegislatorOptions options)
     {
         ArgumentNullException.ThrowIfNull(fs);
@@ -45,6 +46,22 @@ public static partial class TemplateTiers
         var codeBaseFile = options.CodebaseMapFile.Value;
         var defaultCorePrefix = options.TemplateCorePrefix.Value;
         var defaultCodeBaseMapPath = options.TemplateCodebaseMapPath.Value;
+
+        // The prefix is a directory (e.g. `docs/ai/rules/core/`); an empty value would let the
+        // IndexOf call walk off the line and throw, and a value without the trailing slash would
+        // build `<coreRelative>//<name>.md` that never matches an owned path (BL-484 N2). The
+        // map path is a full file and must end with `.md` for the same reason.
+        if (string.IsNullOrEmpty(defaultCorePrefix) || !defaultCorePrefix.EndsWith('/'))
+        {
+            throw new TemplateLayoutInvalidException(
+                "template_core_prefix", defaultCorePrefix, "must be non-empty and end with `/`");
+        }
+
+        if (!defaultCodeBaseMapPath.EndsWith(".md", StringComparison.Ordinal))
+        {
+            throw new TemplateLayoutInvalidException(
+                "template_codebase_map_path", defaultCodeBaseMapPath, "must end with `.md`");
+        }
 
         // The always-tier signal is an `@<default-core-prefix><name>` line; the prefix comes from
         // options (BL-484 Q11, R-001) so the regex is built at runtime, not generated from a
