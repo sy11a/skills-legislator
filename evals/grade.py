@@ -527,6 +527,18 @@ def migration_wiring() -> list[str]:
     return imports + pointers + ["## Boundaries"]
 
 
+def core_rule_tiers() -> tuple[list[str], list[str]]:
+    """Which on-disk core rules AGENTS.md.tpl imports with `@` (always-tier)
+    vs. names only on a non-`@` line (on-demand — reached via a pointer,
+    e.g. the Read-on-demand block or the project-rules.md bullet),
+    derived from the template itself (BL-484 D1)."""
+    tpl = (SKILL / "assets/templates/AGENTS.md.tpl").read_text()
+    always = set(re.findall(r"^@(docs/ai/rules/core/[^\s]+)$", tpl, re.M))
+    named = set(re.findall(r"`(docs/ai/rules/core/[^`]+\.md)`", tpl))
+    owned_core = {p for p in expected_owned() if p.startswith("docs/ai/rules/core/")}
+    return sorted(always & owned_core), sorted((named - always) & owned_core)
+
+
 def audit_check_severities() -> dict[str, str]:
     """Pinned check slug -> severity, parsed from SKILL.md's Audit list
     ('N. **<name> (<severity>):**'). The severity-anchored markers and
@@ -977,11 +989,21 @@ class Grader:
                    f"{rows} term row(s) derived from the repo's domain" if rows >= 1
                    else "glossary table has no body rows — {{GLOSSARY_TABLE}} derivation produced nothing", artifact=self.repo_art)
         agents = (repo / "AGENTS.md").read_text() if (repo / "AGENTS.md").exists() else ""
-        missing_imports = [p for p in expected_owned()
-                           if p.startswith("docs/ai/rules/core/") and f"@{p}" not in agents]
-        self.check("agents_md_imports_all_core", not missing_imports,
-                   "every core rule imported" if not missing_imports
-                   else f"core rules on disk but not imported: {missing_imports}", artifact=self.repo_art)
+        always_tier, on_demand = core_rule_tiers()
+        not_imported = [p for p in always_tier if f"@{p}" not in agents]
+        wrongly_imported = [p for p in on_demand if f"@{p}" in agents]
+        not_named = [p for p in on_demand if p not in agents]
+        tiers_ok = not (not_imported or wrongly_imported or not_named)
+        problems = []
+        if not_imported:
+            problems.append(f"always-tier core rules not @-imported: {not_imported}")
+        if wrongly_imported:
+            problems.append(f"on-demand core rules @-imported instead of pointer-only: {wrongly_imported}")
+        if not_named:
+            problems.append(f"on-demand core rules named nowhere: {not_named}")
+        self.check("agents_md_core_tiers_wired_correctly", tiers_ok,
+                   "every always-tier core rule imported with @, every on-demand core rule named without @" if tiers_ok
+                   else "; ".join(problems), artifact=self.repo_art)
         self.check("agents_md_imports_rules", "@docs/ai/rules/core/" in agents,
                    "@import block present" if "@docs/ai/rules/core/" in agents else "no @import lines in AGENTS.md", artifact=self.repo_art)
         rules_dir = repo / ".claude/rules"
