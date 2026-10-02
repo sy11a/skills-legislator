@@ -1868,10 +1868,12 @@ def grade_derivation_selftest() -> Grader:
     wiring = migration_wiring()
     codebase_map_pointer = next((w for w in wiring if "docs/okf/codebase-map.md" in w and not w.startswith("@")), None)
     # Pinned to an expected count, not only trusted from the derivation (BL-484 round 2 finding
-    # 8): 2 always-tier `@import` lines, 9 on-demand pointer lines (8 core rules plus the
-    # codebase map), and the `## Boundaries` heading.
+    # 8; recount at BL-487 T-16): 3 always-tier `@import` lines, 7 on-demand pointer lines (six
+    # core-rule bullets - one of them naming two rules, the merged changelog/dev-journal bullet,
+    # so 7 core rules named in all - plus the codebase-map bullet), and the `## Boundaries`
+    # heading.
     g.check("migration_wiring_derived_from_template",
-            len(wiring) == 12 and codebase_map_pointer is not None and "## Boundaries" in wiring,
+            len(wiring) == 11 and codebase_map_pointer is not None and "## Boundaries" in wiring,
             f"{len(wiring)} wiring strings parsed from AGENTS.md.tpl", artifact=LAW_AGENTS_TPL)
     sev = audit_check_severities()
     g.check("audit_severities_derived",
@@ -1972,6 +1974,62 @@ def grade_upgrade_drop_stack(ws: Path) -> Grader:
     g.check("report_proposes_aurelia_import_removal", proposed,
             "aurelia import removal proposed under Needs your review" if proposed
             else "no proposal to remove the aurelia import line", artifact=g.report_art)
+    return g
+
+
+def grade_upgrade_tier_flip(ws: Path) -> Grader:
+    """BL-487: an edition-28-shaped repo upgrading to edition 29 — the one scenario
+    that exercises R-005's stale-pointer removal and R-010's template-vs-entry replace
+    end to end, which `grade_upgrade`'s generic "imports everything with `@`" fixture
+    never reaches (setup_workspace.py materialize_upgrade_tier_flip)."""
+    home = ws / "upgrade-tier-flip"
+    repo = home / "repo"
+    meta = json.loads((home / "fixture_meta.json").read_text())
+    g = Grader(repo=repo, report=home / "outputs" / "upgrade-report.md",
+               home=home, label="upgrade-tier-flip")
+    g.common_checks(repo, expected_keep=meta.get("expected_keep", []), fixture_meta=meta)
+    check_mode_authority(g, repo, "upgrade", meta)
+    check_upgrade_writes_nothing_forbidden(g, repo)
+
+    g.probe("upgrade_report_saved", g.report_art, container=g.home_art)
+    check_report_stamp(g, report_text(g))
+    report = report_text(g)
+    review_idx = report.find("eeds your review")
+    review = report[review_idx:] if review_idx >= 0 else ""
+
+    import_added = "@docs/ai/rules/core/verification.md" in review
+    g.check("report_proposes_verification_at_import_add", import_added,
+            "@docs/ai/rules/core/verification.md add proposed under Needs your review"
+            if import_added else "no proposal to add the verification.md @import line",
+            artifact=g.report_art)
+
+    stale_removed = (
+        "docs/ai/rules/core/verification.md" in review
+        and "now always-tier" in review)
+    g.check("report_proposes_stale_verification_pointer_removal", stale_removed,
+            "stale verification.md pointer line proposed for removal"
+            if stale_removed else "no proposal to remove the stale verification.md pointer line",
+            artifact=g.report_art)
+
+    changelog_removed = (
+        "the pointer line naming `docs/ai/rules/core/changelog.md`" in review)
+    journal_removed = (
+        "the pointer line naming `docs/ai/rules/core/dev-journal.md`" in review)
+    g.check("report_proposes_both_old_merge_pointers_removed",
+            changelog_removed and journal_removed,
+            "both the changelog.md and dev-journal.md old pointer lines proposed for removal"
+            if changelog_removed and journal_removed
+            else f"changelog removed={changelog_removed} dev-journal removed={journal_removed}",
+            artifact=g.report_art)
+
+    merged_add_count = review.count(
+        "add to `AGENTS.md`: - Before the first commit on a task branch, touching "
+        "`CHANGELOG.md`/`docs/changes/`, or writing a fragment's `## journal` section "
+        "or editing `docs/journal/` directly, read `docs/ai/rules/core/changelog.md` "
+        "and `docs/ai/rules/core/dev-journal.md`")
+    g.check("report_proposes_merged_bullet_add_exactly_once", merged_add_count == 1,
+            f"merged changelog/dev-journal add proposed {merged_add_count} time(s) — want exactly 1",
+            artifact=g.report_art)
     return g
 
 
@@ -2087,6 +2145,7 @@ SCENARIO_DIRS = {
     "legacy-migration": "legacy-migration",
     "legacy-migration-agents-first": "legacy-migration-agents-first",
     "upgrade-drop-stack": "upgrade-drop-stack",
+    "upgrade-tier-flip": "upgrade-tier-flip",
     "case-practice": "case-practice",
     "upgrade": "upgrade",
     "audit": "rotted-layer",
@@ -2147,6 +2206,8 @@ def main() -> None:
             g, outdir = grade_migration_agents_first(ws), ws / SCENARIO_DIRS[name]
         elif name == "upgrade-drop-stack":
             g, outdir = grade_upgrade_drop_stack(ws), ws / SCENARIO_DIRS[name]
+        elif name == "upgrade-tier-flip":
+            g, outdir = grade_upgrade_tier_flip(ws), ws / SCENARIO_DIRS[name]
         elif name == "case-practice":
             g, outdir = grade_case_practice(ws), ws / SCENARIO_DIRS[name]
         elif name == "upgrade":

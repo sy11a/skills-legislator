@@ -38,6 +38,7 @@ EXPECTED = {
     "legacy-migration-agents-first": ["outputs/migration-report.md"],
     "upgrade": ["outputs/upgrade-report.md"],
     "upgrade-drop-stack": ["outputs/upgrade-report.md"],
+    "upgrade-tier-flip": ["outputs/upgrade-report.md"],
     "rotted-layer": ["outputs/audit-report.md"],
     "restructure": ["outputs/restructure-report.md"],
     # NOT docs/cases/README.md — that ships with the clean legislated

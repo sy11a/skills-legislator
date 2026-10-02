@@ -238,6 +238,94 @@ def materialize_upgrade_drop_stack(dest: Path) -> None:
     (dest.parent / "fixture_meta.json").write_text(json.dumps(meta, indent=2) + "\n")
 
 
+def materialize_upgrade_tier_flip(dest: Path) -> None:
+    """BL-487: an edition-28-shaped repo upgrading to edition 29, exercising R-005's
+    stale-pointer removal and R-010's template-vs-entry replace - neither of which the
+    generic `materialize_upgrade` fixture exercises, since it imports every owned core
+    rule with `@` regardless of tier (setup_workspace.py:111). This fixture is built
+    directly at the edition-28 shape instead: `verification.md` is present only as its
+    old on-demand pointer bullet (no `@import`), and `changelog.md`/`dev-journal.md` are
+    two standalone pointer bullets rather than the merged edition-29 bullet."""
+    shutil.copytree(EVALS / "fixtures" / "upgrade-base", dest)
+    core_src = sorted((SKILL / "assets/rules/core").glob("*.md"))
+    dotnet_src = sorted((SKILL / "assets/rules/stacks/dotnet").glob("*.md"))
+
+    rules_dst = dest / "docs/ai/rules"
+    (rules_dst / "core").mkdir(parents=True)
+    (rules_dst / "stacks/dotnet").mkdir(parents=True)
+
+    owned: list[str] = []
+    for f in core_src:
+        shutil.copy2(f, rules_dst / "core" / f.name)
+        owned.append(f"docs/ai/rules/core/{f.name}")
+    for f in dotnet_src:
+        shutil.copy2(f, rules_dst / "stacks/dotnet" / f.name)
+        owned.append(f"docs/ai/rules/stacks/dotnet/{f.name}")
+
+    version = int((SKILL / "VERSION").read_text().strip())
+    owned_sorted = sorted(owned)
+    manifest = (
+        "{\n"
+        f'  "legislatorVersion": {version - 1},\n'
+        '  "stacks": ["dotnet"],\n'
+        '  "keep": [],\n'
+        '  "ownedFiles": [\n'
+        + ",\n".join(f'    "{p}"' for p in owned_sorted)
+        + "\n  ]\n}\n"
+    )
+    (dest / "docs" / "ai" / "manifest.json").write_text(manifest)
+
+    # Always-tier at edition 28: `pair-development.md`/`decision-gate.md` only, plus
+    # every stack rule (the generic "today" branch, unaffected by this case).
+    always_tier_core = {"pair-development.md", "decision-gate.md"}
+    always_imports = "\n".join(
+        f"@docs/ai/rules/core/{n}" for n in sorted(always_tier_core))
+    stack_imports = "\n".join(f"@{p}" for p in owned_sorted if "/stacks/" in p)
+
+    # The edition-28 `### Read on demand` block, verbatim (pre-BL-487): `verification.md`
+    # on its own bullet, `changelog.md` and `dev-journal.md` on two standalone bullets -
+    # the shape BL-487 merges and tier-flips.
+    read_on_demand = (
+        "### Read on demand\n\n"
+        "- Before changing code that implements a concept, read "
+        "`docs/ai/rules/core/okf.md` — it is law, not a reference.\n"
+        "- Before starting any unit of work or merging, read "
+        "`docs/ai/rules/core/sdd.md` — it is law, not a reference.\n"
+        "- Before writing tests or implementation code, and before reporting done, "
+        "read `docs/ai/rules/core/verification.md` — it is law, not a reference.\n"
+        "- Before the first commit on a task branch, or touching "
+        "`CHANGELOG.md`/`docs/changes/`, read `docs/ai/rules/core/changelog.md` — "
+        "it is law, not a reference.\n"
+        "- Before creating, deleting or reporting on an artifact, read "
+        "`docs/ai/rules/core/artifact-lifecycle.md` — it is law, not a reference.\n"
+        "- Before each stage boundary (plan, implement, debug, review), or before "
+        "invoking a skill, read `docs/ai/rules/core/skills.md` — it is law, not a "
+        "reference.\n"
+        "- Before writing a fragment's `## journal` section, or editing "
+        "`docs/journal/` directly, read `docs/ai/rules/core/dev-journal.md` — it is "
+        "law, not a reference.\n"
+        "- Before closing a decision-gate stop, introducing a new invariant, or "
+        "deliberately keeping an accepted antipattern or tradeoff, read "
+        "`docs/ai/rules/core/adr.md` — it is law, not a reference.\n"
+        "- Before looking up where something lives, read `docs/okf/codebase-map.md` "
+        "— it is law, not a reference.\n"
+    )
+
+    (dest / "CLAUDE.md").write_text(
+        "# BillingApi\n\n" + always_imports + "\n" + stack_imports + "\n\n"
+        + read_on_demand +
+        "\n## Project notes\n\nBillingApi handles invoice generation and payment "
+        "webhooks. Legislated one constitution version ago, at the edition-28 "
+        "tier shape.\n"
+    )
+
+    meta = {
+        "stacks": ["dotnet"],
+        "expected_keep": [],
+    }
+    (dest.parent / "fixture_meta.json").write_text(json.dumps(meta, indent=2) + "\n")
+
+
 def materialize_rotted(dest: Path, restructure_extras: bool = False) -> None:
     """Legislated repo with fifteen planted defects for the audit scenario.
 
@@ -696,6 +784,10 @@ def main() -> None:
     repo = ws / "upgrade-drop-stack" / "repo"
     materialize_upgrade_drop_stack(repo)
     init_commit(repo, "fixture: upgrade-drop-stack (dotnet+aurelia, dropping aurelia)")
+
+    repo = ws / "upgrade-tier-flip" / "repo"
+    materialize_upgrade_tier_flip(repo)
+    init_commit(repo, "fixture: upgrade-tier-flip (edition-28 tier shape, one version behind)")
 
     repo = ws / "case-practice" / "repo"
     materialize_case_practice(repo)

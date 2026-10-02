@@ -113,10 +113,11 @@ if oc_ok:
     check(not any(i == "docs/ai/rules/core/*.md" for i in instructions),
           "opencode.json.tpl instructions do not glob docs/ai/rules/core/*.md")
 
-print("== core/project-rules.md documents the on-demand project rule (BL-484 R-009, R-010) ==")
+print("== core/project-rules.md documents the on-demand project rule (BL-484 R-009, R-010; BL-487 R-015) ==")
 project_rules_text = (SKILL / "assets" / "rules" / "core" / "project-rules.md").read_text()
-check("pointer" in project_rules_text and ".claude/rules/" in project_rules_text,
-      "core/project-rules.md notes a project rule may be reached only by a pointer line")
+check("reached only by a pointer line" in project_rules_text,
+      "core/project-rules.md notes a project rule may be reached only by a pointer line",
+      "expected the exact clause 'reached only by a pointer line'")
 
 print("== stack rule-file naming (README content discipline) ==")
 allowed = {"architecture.md", "coding-standards.md", "data-access.md"}

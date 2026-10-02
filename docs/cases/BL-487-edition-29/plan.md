@@ -141,7 +141,7 @@ gains a clause.
   a new query (e.g. `ScaffoldOnlyPaths(fs, skill, options)`) returning the singleton set containing
   `docs/journal/<today>.md`'s path alone — matched by path, not by porting `SCAFFOLD_ONLY_RE`'s
   notes-column regex (D3: that pattern also matches the `AGENTS.md` row's note). `VerifyJob.Run`
-  gains the record-then-`Detection.Of` mode read (D3) and, after calling `Snapshot` unfiltered as
+  gains the record-only mode read (D3; R-013 as amended: no `Detection.Of` fallback) and, after calling `Snapshot` unfiltered as
   today, excludes that one path from its "missing" failure list when the mode differs from
   `Detection.Fresh` — the unfiltered `post` dictionary is still what is persisted to the record.
 - **`core/skills.md:5`**: the "Law beats skills" bullet's named surfaces grow a third clause

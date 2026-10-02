@@ -185,9 +185,10 @@ Step 4's human-guided scaffolding, which is why R-021 below is written by hand, 
   path, not by its notes text — the `AGENTS.md` row's own note also reads "Fresh-scaffold mode
   only" but stays in the failure list in every mode, per ruling 4, which is about the journal row
   alone) SHALL be excluded from that failure list when the run's mode differs from fresh-scaffold.
-- **R-013** — `VerifyJob` SHALL determine its mode by reading `RunRecord.ModeKey` from the
-  `--record` file when one exists (the same field `ReportJob.cs:85` already reads), falling back
-  to `Detection.Of` only when there is no record.
+- **R-013** — `VerifyJob` SHALL take its mode only from `RunRecord.ModeKey` in the `--record`
+  file (the field `ReportJob` reads); with no record, or a record without that key, the journal row
+  stays in the failure list (no `Detection.Of` fallback: after apply has written the manifest it
+  can never return fresh; code review round 1, ruled by the orchestrator).
 - **R-014** — WHEN `ReviewLines` proposes adding the same merged on-demand pointer line for more
   than one rule the line names (e.g. the merged changelog/dev-journal bullet), THEN the "Needs
   your review" section SHALL propose that add-line text once, not once per rule.

@@ -21,6 +21,11 @@ public static partial class Step4Targets
 
     private const string NotAFile = "(empty";
 
+    /// <summary>The file-name shape the table's journal row declares verbatim - law content (the
+    /// template writes the token into the path column), parallel to <see cref="SectionStart"/>.
+    /// </summary>
+    private const string JournalEntryFile = "<today>.md";
+
     [GeneratedRegex(@"^\| `([^`]+)` \| ([^|]+) \|", RegexOptions.Multiline)]
     private static partial Regex Row();
 
@@ -67,5 +72,28 @@ public static partial class Step4Targets
             t => t,
             t => fs.File.Exists($"{layout.Root}/{t}") || fs.Directory.Exists($"{layout.Root}/{t}"),
             StringComparer.Ordinal);
+    }
+
+    /// <summary>The single Step-4 row restricted to fresh-scaffold mode - identified by its
+    /// <c>&lt;today&gt;</c> token, which only that row carries. Returns an empty set when the
+    /// package carries no such row.</summary>
+    public static IReadOnlySet<string> ScaffoldOnlyPaths(
+        IFileSystem fs, SkillPackage skill, LegislatorOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(fs);
+        ArgumentNullException.ThrowIfNull(skill);
+        ArgumentNullException.ThrowIfNull(options);
+
+        var suffix = "/" + JournalEntryFile;
+        var matches = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var target in Of(fs, skill, options))
+        {
+            if (target.EndsWith(suffix, StringComparison.Ordinal))
+            {
+                matches.Add(target);
+            }
+        }
+
+        return matches;
     }
 }

@@ -94,12 +94,12 @@ public static partial class TemplateTiers
             // that same line - f3 lifts the once-per-line cap that lost a documented second path.
             foreach (var (owned, _) in FoldToOwned(line, defaultCorePrefix, $"{coreRelative}/"))
             {
-                onDemandLine[owned] = SubstitutePath(line, defaultCorePrefix, $"{coreRelative}/");
+                onDemandLine[owned] = SubstitutePath(line, defaultCorePrefix, $"{coreRelative}/").TrimEnd();
             }
 
             foreach (var (owned, _) in FoldToOwned(line, defaultCodeBaseMapPath, $"{okfRelative}/{codeBaseFile}"))
             {
-                onDemandLine[owned] = SubstitutePath(line, defaultCodeBaseMapPath, $"{okfRelative}/{codeBaseFile}");
+                onDemandLine[owned] = SubstitutePath(line, defaultCodeBaseMapPath, $"{okfRelative}/{codeBaseFile}").TrimEnd();
             }
         }
 
