@@ -130,34 +130,51 @@ scope (the upgrade proposal is propose-only by design).
   on a line that is not an `@import` line (a pointer line under `### Read on
   demand`, R-003, or an existing prose line such as `AGENTS.md.tpl:11`)
   declares it on-demand — the same rule applies to `docs/okf/codebase-map.md`.
-  `ReportJob.ReviewLines` SHALL read this split directly from the template
-  shipped at the path named by a new `SkillAgentsTemplate` layout option
-  (default `assets/templates/AGENTS.md.tpl`, beside `SkillOpencodeTemplate`),
-  resolved under `parsed.Skill.Root`, and SHALL propose that matching template
-  line verbatim as the add half of an on-demand proposal — the engine SHALL
-  NOT hard-code any rule-specific pointer text in C#. There SHALL be no
-  engine-side closed list (no `OwnedSet.OnDemandCoreRules`) and no Python-side
-  mirror set — `check_static.py` is the cross-check that the template agrees
-  with the delivered rule files, not a second source of the split. WHEN the
-  template file at that path is missing, THEN `ReportJob` SHALL fail the
-  report loudly with a named error, never silently falling back to treating
-  every rule as always-tier.
+
+- **R-013** — `ReportJob.ReviewLines` SHALL read the always/on-demand split
+  (R-001) directly from the template shipped at the path named by a new
+  `SkillAgentsTemplate` layout option (default
+  `assets/templates/AGENTS.md.tpl`, beside `SkillOpencodeTemplate`), resolved
+  under `parsed.Skill.Root`.
+
+- **R-014** — `ReportJob.ReviewLines` SHALL propose the template's own
+  matching line (per R-013) verbatim as the add half of an on-demand
+  proposal.
+
+- **R-015** — The engine SHALL NOT hard-code any rule-specific pointer text
+  in C#.
+
+- **R-016** — There SHALL be no engine-side closed list (no
+  `OwnedSet.OnDemandCoreRules`) and no Python-side mirror set —
+  `check_static.py` is the cross-check that the template agrees with the
+  delivered rule files, not a second source of the split.
+
+- **R-017** — WHEN the template file at the path named by R-013 is missing,
+  THEN `ReportJob` SHALL fail the report loudly with a named error, never
+  silently falling back to treating every rule as always-tier.
 
 - **R-002** — WHEN the legislator scaffolds a fresh repository, THEN
   `AGENTS.md.tpl` SHALL carry exactly two `@docs/ai/rules/core/*.md` imports
-  (`pair-development.md`, `decision-gate.md`) and SHALL carry one pointer line
-  per on-demand core rule (`okf.md`, `sdd.md`, `verification.md`,
-  `changelog.md`, `artifact-lifecycle.md`, `skills.md`, `dev-journal.md`,
-  `adr.md`) plus `docs/okf/codebase-map.md`, under a `### Read on demand`
-  heading. `project-rules.md` is on-demand too, but its pointer SHALL merge
-  into the existing line at `AGENTS.md.tpl:11` ("… read
+  (`pair-development.md`, `decision-gate.md`).
+
+- **R-018** — WHEN the legislator scaffolds a fresh repository, THEN
+  `AGENTS.md.tpl` SHALL carry one pointer line per on-demand core rule
+  (`okf.md`, `sdd.md`, `verification.md`, `changelog.md`,
+  `artifact-lifecycle.md`, `skills.md`, `dev-journal.md`, `adr.md`) plus
+  `docs/okf/codebase-map.md`, under a `### Read on demand` heading.
+
+- **R-019** — `project-rules.md` is on-demand too, but its pointer SHALL
+  merge into the existing line at `AGENTS.md.tpl:11` ("… read
   `docs/ai/rules/core/project-rules.md` before adding one") rather than gain a
   second, separate bullet.
 
 - **R-003** — Each pointer line under `### Read on demand` SHALL follow the
   fixed grammar "- Before `<trigger>`, read `` `<path>` `` — it is law, not a
-  reference." and SHALL name the moment the rule starts governing, never a
-  moment after (see the per-file trigger table below).
+  reference."
+
+- **R-020** — Each pointer line under `### Read on demand` SHALL name the
+  moment the rule starts governing, never a moment after (see the per-file
+  trigger table below).
 
 - **R-004** — `opencode.json.tpl`'s `instructions` array SHALL list only the
   always-tier core rule paths explicitly (never the `docs/ai/rules/core/*.md`
@@ -166,15 +183,18 @@ scope (the upgrade proposal is propose-only by design).
 
 - **R-005** — WHEN Step 5 (legacy migration) writes the owned-rule wiring into a
   canonicalized `AGENTS.md`, THEN it SHALL write the same two-import-plus-pointer
-  shape as a fresh scaffold (R-002, R-003), never the eleven-import block, and
-  `references/migration.md` SHALL describe the same shape throughout (including
-  its §1 "New sections to add" bullet).
+  shape as a fresh scaffold (R-002, R-003), never the eleven-import block.
+
+- **R-021** — `references/migration.md` SHALL describe the same shape as
+  R-005 throughout (including its §1 "New sections to add" bullet).
 
 - **R-006** — Step 1's manifest-less edge case (`SKILL.md:26`) SHALL detect an
   already-legislated repository using an always-tier import marker
   (`@docs/ai/rules/core/pair-development.md`), never an on-demand one
   (`okf.md`), since a repository legislated under this case's design no longer
-  imports `okf.md` at all. `LegislatorOptions.LegislationMarker`'s default
+  imports `okf.md` at all.
+
+- **R-022** — `LegislatorOptions.LegislationMarker`'s default
   (`LegislatorOptions.cs:76`) SHALL change from `"core/okf.md"` to
   `"core/pair-development.md"`, since that option — not the `SKILL.md` prose
   alone — is what `Detection.cs` actually reads to decide `reconstructed`.
@@ -183,25 +203,32 @@ scope (the upgrade proposal is propose-only by design).
   import changes for an on-demand owned rule (including
   `docs/okf/codebase-map.md`, which follows this branch unconditionally, never
   gated on whether the file was freshly scaffolded this run), THEN it SHALL
-  propose removing the rule's `@import` line if present in the entry document,
-  and SHALL propose adding the rule's pointer line unless the entry document —
-  checked with any `@import` line for that rule excluded — already contains the
-  rule's path, and it SHALL NOT propose adding an `@import` line for an
-  on-demand rule under any circumstance. (The exclusion matters: the `@import`
-  line itself contains the rule's path, so checking the unfiltered text would
-  make the add-pointer half silently never fire while the import is still
-  present — exactly the case this requirement exists to cover.) This guard is
-  deliberately "the rule's path is present outside `@import` lines", not "the
-  entry's pointer line matches the template's pointer line byte-for-byte": an
-  owner may reword an existing pointer (an older edition's trigger text, or
-  their own prose), and that wording is the owner's to keep — the proposal
-  SHALL NOT re-propose adding the pointer merely because its wording differs
-  from the template's.
+  propose removing the rule's `@import` line if present in the entry document.
+
+- **R-023** — Under the same WHEN as R-007, the report SHALL propose adding
+  the rule's pointer line unless the entry document — checked with any
+  `@import` line for that rule excluded — already contains the rule's path.
+  (The exclusion matters: the `@import` line itself contains the rule's path,
+  so checking the unfiltered text would make the add-pointer half silently
+  never fire while the import is still present — exactly the case this
+  requirement exists to cover.)
+
+- **R-024** — Under the same WHEN as R-007, the report SHALL NOT propose
+  adding an `@import` line for an on-demand rule under any circumstance.
+
+- **R-025** — R-023's guard is deliberately "the rule's path is present
+  outside `@import` lines", not "the entry's pointer line matches the
+  template's pointer line byte-for-byte": an owner may reword an existing
+  pointer (an older edition's trigger text, or their own prose), and that
+  wording is the owner's to keep — the proposal SHALL NOT re-propose adding
+  the pointer merely because its wording differs from the template's.
 
 - **R-008** — WHEN the upgrade report's "Needs your review" section proposes
   import changes for an always-tier owned rule, THEN it SHALL propose adding an
-  `@import` line exactly as it does today (unchanged), and tier SHALL be tested
-  only against `docs/ai/rules/core/<name>` paths — a stack rule under
+  `@import` line exactly as it does today (unchanged).
+
+- **R-026** — Tier (R-007/R-008) SHALL be tested only against
+  `docs/ai/rules/core/<name>` paths — a stack rule under
   `docs/ai/rules/stacks/**` is never on-demand under this case and keeps
   today's add-only behavior regardless of its filename.
 
@@ -214,15 +241,22 @@ scope (the upgrade proposal is propose-only by design).
   `skill/assets/rules/core/`, that its path appears in `AGENTS.md.tpl` in
   exactly one of the two forms — an `@import` line, or inside a pointer/bullet
   line naming it — and never in both, replacing the current "every core rule is
-  `@`-imported" assertion. It SHALL also assert that `opencode.json.tpl`'s
-  `instructions` array lists exactly the always-tier core rule paths and no
-  on-demand one.
+  `@`-imported" assertion.
+
+- **R-027** — `evals/check_static.py` SHALL also assert that
+  `opencode.json.tpl`'s `instructions` array lists exactly the always-tier
+  core rule paths and no on-demand one.
 
 - **R-011** — `skill/VERSION`, `src/Legislator.Cli/Version.props`'s major, and
   `skill/assets/release/release.json`'s `edition` SHALL bump together in one
-  commit (as `a9c34b2` did); `release.json`'s per-rule digests SHALL be filled
-  at tag time, unchanged from today. A change fragment SHALL record the case
-  under `docs/changes/`, and the full e2e benchmark SHALL be recorded at
+  commit (as `a9c34b2` did).
+
+- **R-028** — `release.json`'s per-rule digests SHALL be filled at tag time,
+  unchanged from today.
+
+- **R-029** — A change fragment SHALL record the case under `docs/changes/`.
+
+- **R-030** — The full e2e benchmark SHALL be recorded at
   `evals/benchmarks/v<N>.md` against the prior edition's baseline before
   delivery to this repository.
 
@@ -350,7 +384,7 @@ Ruled by the orchestrator; recorded here, not reopened.
   (D12, review round 2 finding 4)?** Ruled: no, deliberately — the add-pointer
   guard is "the rule's path is present outside `@import` lines"; an existing
   pointer's exact wording is the owner's to keep, never overwritten because it
-  drifted from the template. R-007 states this; `T-09` pins it with a test.
+  drifted from the template. R-025 states this; `T-09` pins it with a test.
 
 - **Q13 — does `T-12` change `setup_workspace.py:108`'s all-`@` shape (D13,
   review round 2 finding 5)?** Ruled: no — that shape is the hurting case's

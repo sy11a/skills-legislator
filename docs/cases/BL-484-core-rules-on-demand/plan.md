@@ -178,8 +178,8 @@ the same way `SkillOpencodeTemplate` is.
 
 ### Phase 1 — production: engine
 
-**T-01 — template-reading tier helper.** *(per R-001, round 2 finding 3,
-round 3 finding 2)*
+**T-01 — template-reading tier helper.** *(per R-001, R-013, R-014, R-015,
+R-016, R-017, round 2 finding 3, round 3 finding 2)*
 Add `SkillAgentsTemplate` to `LegislatorOptions.cs` (beside
 `SkillOpencodeTemplate`, wired through `OptionsComposer.cs` and the key-name
 maps). Add a helper (e.g. `ReportJob.TierFromTemplate` or a sibling static)
@@ -198,20 +198,21 @@ SHALL throw a named exception (`AgentsTemplateMissingException` or
 equivalent) — no fallback to always-tier. No `OwnedSet` change, no new
 engine-side closed list, no fixed-grammar pointer regex.
 
-**T-02 — `ReviewLines` tier-aware proposals.** *(per R-007, R-008)*
+**T-02 — `ReviewLines` tier-aware proposals.** *(per R-007, R-008, R-023,
+R-024, R-025, R-026)*
 Rewrite `ReportJob.cs:225-258` (`ReviewLines`) to take `parsed.Skill` and
 `layout`, call T-01's helper, and branch per the contract above, for both the
 rules loop and the codebase-map block (replacing `:240-245` outright,
 including its remove half); update the `ReviewLines` call at
 `ReportJob.cs:155` to pass `parsed.Skill` and `layout` through.
 
-**T-02a — `LegislationMarker` default.** *(per R-006)*
+**T-02a — `LegislationMarker` default.** *(per R-006, R-022)*
 Change `LegislatorOptions.cs:76`'s default from `"core/okf.md"` to
 `"core/pair-development.md"`.
 
 ### Phase 2 — production: law text and templates `[P]` (file-disjoint from Phase 1 and each other)
 
-**T-03 — `AGENTS.md.tpl`.** *(per R-002, R-003)* `[P]`
+**T-03 — `AGENTS.md.tpl`.** *(per R-002, R-003, R-018, R-019, R-020)* `[P]`
 Replace the eleven-line `@import` block (`AGENTS.md.tpl:16-26`) with two
 `@import` lines (`pair-development.md`, `decision-gate.md`) followed by a
 `### Read on demand` block of nine pointer lines (eight on-demand core rules —
@@ -237,20 +238,23 @@ Change the import marker Step 1 checks (`SKILL.md:26`) from
 `DetectJobTests.cs:181`, `DetectTwins.cs:145,166` and `check_engine.py:934` to
 the new marker.
 
-**T-07 — `SKILL.md` Step 5 + `references/migration.md`.** *(per R-005)*
+**T-07 — `SKILL.md` Step 5 + `references/migration.md`.** *(per R-005,
+R-021)*
 Change the wiring Step 5 writes directly into a canonicalized `AGENTS.md`
 (`SKILL.md:147`, `references/migration.md` §1 including its line-25 "New
 sections to add" bullet and its line-27 rewrite-order prose) from the full
 eleven-import block to the two-import-plus-pointer shape (T-03's content).
 
-**T-08 — `SKILL.md` Step 7 description.** *(per R-007, R-008)*
+**T-08 — `SKILL.md` Step 7 description.** *(per R-007, R-008, R-023, R-024,
+R-025, R-026)*
 Update the "Needs your review" prose (`SKILL.md:168`) to describe the
 tier-aware proposal (remove-and-add for on-demand, add-only for always),
 matching T-02.
 
 ### Phase 3 — tests and evals (different worker; file-disjoint from Phase 1/2) `[P]`
 
-**T-09 — engine unit tests.** *(per R-001, R-007, R-008)* `[P]`
+**T-09 — engine unit tests.** *(per R-001, R-007, R-008, R-013, R-014,
+R-015, R-016, R-017, R-023, R-024, R-025, R-026)* `[P]`
 `tests/Legislator.Engine.Tests`: T-01's helper parses `AGENTS.md.tpl`'s real
 content into the expected always/on-demand split, including `project-rules.md`
 classifying on-demand from its existing `:11` prose line with no
@@ -260,10 +264,10 @@ always-tier missing import still proposes add; on-demand rule present as
 proposes add-pointer only; on-demand rule already pointer-wired proposes
 nothing; an on-demand rule present under a *reworded* pointer (text differing
 from the template's) proposes nothing, pinning that the owner's wording is
-never overwritten (R-007, round 2 finding 4); `docs/okf/codebase-map.md`
+never overwritten (R-025, round 2 finding 4); `docs/okf/codebase-map.md`
 present as `@import` proposes remove-and-add unconditionally (not gated on
 scaffold state); a stack rule missing its import still proposes `add @<rule>`
-(R-008's path-scoping); a skill package with no `AGENTS.md.tpl` makes
+(R-026's path-scoping); a skill package with no `AGENTS.md.tpl` makes
 `ReviewLines`/T-01's helper throw the named error, not fall back silently
 (round 2 finding 2); a repo configured with a non-default `RulesDir` and/or
 `OkfDir` still classifies and proposes correctly (round 2 finding 3, round 3
@@ -279,7 +283,8 @@ not a core rule file, since `ExemptHomes` already excludes
 pass vacuously. A second case pins check 1 raising nothing for a pointer line
 (not an `@import`) naming an on-demand rule.
 
-**T-11 — `evals/check_static.py` rewrite.** *(per R-010, R-004, R-009)* `[P]`
+**T-11 — `evals/check_static.py` rewrite.** *(per R-010, R-004, R-009,
+R-027)* `[P]`
 Replace the loop at `check_static.py:79-84`: for each file in
 `skill/assets/rules/core/`, assert its path appears in `AGENTS.md.tpl` in
 exactly one of the two forms (`@`-import line, or inside a pointer/bullet line
@@ -290,7 +295,7 @@ that `core/project-rules.md` carries the on-demand-project-rule bullet
 (R-009's only test, same finding).
 
 **T-12 — fixture updates across the Python and C# suites.** *(per R-002,
-R-004, R-005, R-010)* `[P]`
+R-004, R-005, R-010, R-018, R-019, R-021, R-027)* `[P]`
 - `check_engine.py`: `CORE_RULES`-built `AGENTS.md` fixtures at `:1060`,
   `:1099` (`root2`) move to the two-import-plus-pointer shape; `:1075` imports
   `okf.md`, not `sdd.md` (round 2 finding 6) — its review assertion (`:1091`)
@@ -346,7 +351,7 @@ R-004, R-005, R-010)* `[P]`
 **T-13 — analyze.** Coverage R↔task, dangling `per R-NNN` references,
 unresolved placeholders, `legislator sdd-lint` if available.
 
-**T-14 — release.** *(per R-011)*
+**T-14 — release.** *(per R-011, R-028, R-029, R-030)*
 `skill/VERSION`, `src/Legislator.Cli/Version.props`'s major, and
 `skill/assets/release/release.json`'s `edition` bump together in one commit; a
 change fragment under `docs/changes/BL-484.md`; `bash evals/check_dotnet.sh`
