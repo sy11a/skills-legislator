@@ -178,7 +178,7 @@ public sealed class DetectJobTests
     {
         var json = Json(Detect(new()
         {
-            ["AGENTS.md"] = "# P\n\n@docs/ai/rules/core/okf.md\n",
+            ["AGENTS.md"] = "# P\n\n@docs/ai/rules/core/pair-development.md\n",
             ["docs/ai/rules/core/okf.md"] = "x\n",
         }));
 

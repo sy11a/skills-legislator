@@ -1,0 +1,152 @@
+using Legislator.Engine.Runs;
+using Xunit;
+using static Legislator.Engine.Tests.Apply.ApplyFixture;
+
+namespace Legislator.Engine.Tests.Jobs;
+
+/// <summary>
+/// `ReviewLines`' tier-aware proposals (BL-484 R-001, R-007, R-008): the split is read straight
+/// off a package's own `AGENTS.md.tpl`, and an on-demand rule's remove/add halves follow R-007's
+/// guard - the owner's own pointer wording is never second-guessed against the template's. Every
+/// fixture applies first (report needs a run record) and then overwrites the entry document, the
+/// manifest and the template to the exact shape the scenario needs.
+/// </summary>
+public sealed class ReportJobTierTests
+{
+    private const string OkfOwned = "docs/ai/rules/core/okf.md";
+
+    private const string OkfManifest =
+        "{\"legislatorVersion\": 25, \"stacks\": [], \"keep\": [], \"ownedFiles\": [\"" + OkfOwned + "\"]}";
+
+    private const string OkfPointer =
+        "- Before changing code that implements a concept, read `docs/ai/rules/core/okf.md` — it is law, not a reference.";
+
+    /// <summary>The "Needs your review" slice alone - `Created` legitimately lists every owned file, review-relevant or not.</summary>
+    private static string Review(string report)
+    {
+        var after = report.Split("## Needs your review\n", 2)[1];
+        return after.Split("\n\n", 2)[0];
+    }
+
+    private static void Applied(
+        System.IO.Abstractions.TestingHelpers.MockFileSystem fs, string entry, string manifest, string template)
+    {
+        RunApply(fs, null, "--stacks", string.Empty);
+        fs.File.WriteAllText($"{Root}/AGENTS.md", entry);
+        fs.File.WriteAllText($"{Root}/docs/ai/manifest.json", manifest);
+        fs.File.WriteAllText($"{SkillPath}/assets/templates/AGENTS.md.tpl", template);
+    }
+
+    [Fact]
+    public void Given_an_always_tier_rule_missing_its_import_When_reported_Then_it_proposes_add()
+    {
+        var fs = Repo();
+        Applied(fs, "# A\n", OkfManifest, "@docs/ai/rules/core/okf.md\n");
+
+        var review = RunReport(fs).Stdout;
+
+        Assert.Contains($"- add to `AGENTS.md`: `@{OkfOwned}`", review, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Given_an_on_demand_rule_present_as_an_import_When_reported_Then_it_proposes_remove_and_add_pointer()
+    {
+        var fs = Repo();
+        Applied(fs, $"# A\n\n@{OkfOwned}\n", OkfManifest, $"{OkfPointer}\n");
+
+        var review = RunReport(fs).Stdout;
+
+        Assert.Contains(
+            $"- remove from `AGENTS.md`: `@{OkfOwned}` (on-demand: read on trigger, not imported)",
+            review, StringComparison.Ordinal);
+        Assert.Contains($"- add to `AGENTS.md`: {OkfPointer}", review, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Given_an_on_demand_rule_present_as_neither_import_nor_pointer_When_reported_Then_it_proposes_add_pointer_only()
+    {
+        var fs = Repo();
+        Applied(fs, "# A\n", OkfManifest, $"{OkfPointer}\n");
+
+        var review = RunReport(fs).Stdout;
+
+        Assert.Contains($"- add to `AGENTS.md`: {OkfPointer}", review, StringComparison.Ordinal);
+        Assert.DoesNotContain("remove", review, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Given_an_on_demand_rule_already_pointer_wired_When_reported_Then_it_proposes_nothing()
+    {
+        var fs = Repo();
+        Applied(fs, $"# A\n\n{OkfPointer}\n", OkfManifest, $"{OkfPointer}\n");
+
+        var review = Review(RunReport(fs).Stdout);
+
+        Assert.DoesNotContain(OkfOwned, review, StringComparison.Ordinal);
+    }
+
+    /// <summary>R-007: an owner's own wording, differing from the template's, is never re-proposed merely because it does not match byte for byte.</summary>
+    [Fact]
+    public void Given_an_on_demand_rule_under_a_reworded_pointer_When_reported_Then_the_owners_wording_is_left_alone()
+    {
+        var fs = Repo();
+        Applied(
+            fs, $"# A\n\n- Check `{OkfOwned}` before doing anything risky.\n", OkfManifest, $"{OkfPointer}\n");
+
+        var review = Review(RunReport(fs).Stdout);
+
+        Assert.DoesNotContain(OkfOwned, review, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Given_the_codebase_map_present_as_an_import_When_reported_Then_remove_and_add_fire_unconditionally()
+    {
+        var fs = Repo();
+        Applied(
+            fs,
+            "# A\n\n@docs/okf/codebase-map.md\n",
+            "{\"legislatorVersion\": 25, \"stacks\": [], \"keep\": [], \"ownedFiles\": []}",
+            "- When finding where something lives, read `docs/okf/codebase-map.md` — it is law, not a reference.\n");
+
+        // The codebase map's wiring is never gated on `scaffolded` - this fixture never ran a
+        // scaffold for it at all.
+        var review = RunReport(fs).Stdout;
+
+        Assert.Contains(
+            "- remove from `AGENTS.md`: `@docs/okf/codebase-map.md` (on-demand: read on trigger, not imported)",
+            review, StringComparison.Ordinal);
+        Assert.Contains(
+            "- add to `AGENTS.md`: - When finding where something lives, read `docs/okf/codebase-map.md` — "
+            + "it is law, not a reference.",
+            review, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Given_a_stack_rule_missing_its_import_When_reported_Then_it_still_proposes_add_regardless_of_the_template()
+    {
+        const string stackOwned = "docs/ai/rules/stacks/dotnet/a.md";
+        var fs = Repo();
+        // The template never names a stack rule at all - T-08's fallback ("today's add-`@import`
+        // behavior") is what a path absent from the template entirely gets.
+        Applied(
+            fs,
+            "# A\n",
+            "{\"legislatorVersion\": 25, \"stacks\": [\"dotnet\"], \"keep\": [], \"ownedFiles\": [\""
+                + stackOwned + "\"]}",
+            "no rule paths here\n");
+
+        var review = RunReport(fs).Stdout;
+
+        Assert.Contains($"- add to `AGENTS.md`: `@{stackOwned}`", review, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Given_a_skill_package_with_no_AGENTS_md_tpl_When_reported_Then_it_throws_the_named_error_instead_of_a_silent_fallback()
+    {
+        var fs = Repo();
+        Applied(fs, "# A\n", OkfManifest, "@docs/ai/rules/core/okf.md\n");
+        fs.File.Delete($"{SkillPath}/assets/templates/AGENTS.md.tpl");
+
+        Assert.Throws<AgentsTemplateMissingException>(() => RunReport(fs));
+    }
+}

@@ -517,11 +517,14 @@ def expected_stacks(fixture_meta: dict | None = None) -> list[str]:
 
 def migration_wiring() -> list[str]:
     """Strings migration must write directly into AGENTS.md (the v2
-    wiring), derived from AGENTS.md.tpl: every import line the template
-    carries plus the section headings it pins."""
+    wiring), derived from AGENTS.md.tpl: every always-tier `@import`
+    line plus every on-demand pointer line under its `### Read on
+    demand` heading (BL-484 R-005), and the section headings it pins."""
     tpl = (SKILL / "assets/templates/AGENTS.md.tpl").read_text()
     imports = ["@" + i for i in re.findall(r"^@(docs/[^\s]+)$", tpl, re.M)]
-    return imports + ["## Boundaries"]
+    demand_block = tpl.split("### Read on demand", 1)[1] if "### Read on demand" in tpl else ""
+    pointers = [line for line in demand_block.splitlines() if line.strip().startswith("- ")]
+    return imports + pointers + ["## Boundaries"]
 
 
 def audit_check_severities() -> dict[str, str]:
@@ -1144,6 +1147,18 @@ def grade_upgrade(ws: Path) -> Grader:
     g.check("report_proposes_core_import_line", core_proposed,
             "core-rule import proposed in Needs-your-review" if core_proposed
             else f"no proposal for {core_import}", artifact=g.report_art)
+    # The fixture's CLAUDE.md imports every owned rule with `@` (setup_workspace.py's
+    # all-`@` shape, unchanged per BL-484 Q13 - it is the hurting case's own input), so an
+    # on-demand rule it owns (okf.md) must be proposed remove-`@`-plus-add-pointer, never
+    # re-add, exercising R-007 against this fixture rather than a synthetic one.
+    review_text = report[core_review_idx:] if core_review_idx >= 0 else ""
+    on_demand_removed = "remove" in review_text and "@docs/ai/rules/core/okf.md" in review_text
+    on_demand_pointer = "docs/ai/rules/core/okf.md` — it is law, not a reference." in review_text
+    g.check("report_proposes_on_demand_remove_and_pointer_not_readd",
+            on_demand_removed and on_demand_pointer,
+            "okf.md's stale @import proposed for removal and its pointer proposed for addition"
+            if on_demand_removed and on_demand_pointer
+            else f"removed={on_demand_removed} pointer_added={on_demand_pointer}", artifact=g.report_art)
     import_line = f"@docs/ai/rules/stacks/dotnet/{meta['withheld_stack_rule']}"
     # Scoped to the "Needs your review" section (BL-019 R3): the line counts
     # only as a PROPOSAL — its appearance in Deleted/Overwritten would not.
@@ -1829,8 +1844,12 @@ def grade_derivation_selftest() -> Grader:
                 f"untouched: {'ok' if untouched_ok else 'FAIL ' + untouched_exp['evidence']}; "
                 f"content-changed: {'flagged' if edited_flagged else 'FAIL ' + edited_exp['evidence']}", artifact=GRADER_SELF)
     wiring = migration_wiring()
+    codebase_map_pointer = next((w for w in wiring if "docs/okf/codebase-map.md" in w and not w.startswith("@")), None)
+    # Pinned to an expected count, not only trusted from the derivation (BL-484 round 2 finding
+    # 8): 2 always-tier `@import` lines, 9 on-demand pointer lines (8 core rules plus the
+    # codebase map), and the `## Boundaries` heading.
     g.check("migration_wiring_derived_from_template",
-            "@docs/okf/codebase-map.md" in wiring and "## Boundaries" in wiring,
+            len(wiring) == 12 and codebase_map_pointer is not None and "## Boundaries" in wiring,
             f"{len(wiring)} wiring strings parsed from AGENTS.md.tpl", artifact=LAW_AGENTS_TPL)
     sev = audit_check_severities()
     g.check("audit_severities_derived",

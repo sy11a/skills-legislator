@@ -181,10 +181,22 @@ public sealed class ReportTwins
         var (_, report, _) = Report(Upgraded());
         var review = Section(report, "## Needs your review", "## Keep list");
 
-        Assert.Contains("@docs/ai/rules/core/sdd.md", review, StringComparison.Ordinal);
+        // okf.md is on-demand and present as an `@import`: remove that import, add its pointer.
         Assert.Contains("remove", review, StringComparison.Ordinal);
+        Assert.Contains("@docs/ai/rules/core/okf.md", review, StringComparison.Ordinal);
+        Assert.Contains(
+            "docs/ai/rules/core/okf.md` — it is law, not a reference.", review, StringComparison.Ordinal);
+        // sdd.md is on-demand and present as neither import nor pointer: add-only.
+        Assert.Contains(
+            "docs/ai/rules/core/sdd.md` — it is law, not a reference.", review, StringComparison.Ordinal);
+        Assert.DoesNotContain("@docs/ai/rules/core/sdd.md", review, StringComparison.Ordinal);
+        // ghost.md is not delivered by this package at all - its stale import is removed as
+        // no-longer-owned, unrelated to tiering.
         Assert.Contains("@docs/ai/rules/core/ghost.md", review, StringComparison.Ordinal);
-        Assert.Contains("@docs/okf/codebase-map.md", review, StringComparison.Ordinal);
+        // The codebase map is on-demand unconditionally (Q3): add-only here too.
+        Assert.Contains(
+            "docs/okf/codebase-map.md` — it is law, not a reference.", review, StringComparison.Ordinal);
+        Assert.DoesNotContain("@docs/okf/codebase-map.md", review, StringComparison.Ordinal);
         Assert.Contains("## Boundaries", review, StringComparison.Ordinal);
         Assert.Contains("docs/okf/glossary.md", review, StringComparison.Ordinal);
     }

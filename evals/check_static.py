@@ -76,12 +76,20 @@ for rf in rule_files:
     check(text.startswith("## "), f"{rel} starts with a '## ' heading")
     check(len(text.strip()) > 0, f"{rel} is non-empty")
 
-print("== AGENTS.md.tpl imports every core rule ==")
+print("== AGENTS.md.tpl declares exactly one tier per core rule (BL-484 R-001, R-010) ==")
 tpl_text = (SKILL / "assets" / "templates" / "AGENTS.md.tpl").read_text()
-for rf in sorted((SKILL / "assets" / "rules" / "core").glob("*.md")):
-    check(f"@docs/ai/rules/core/{rf.name}" in tpl_text,
-          f"AGENTS.md.tpl imports core/{rf.name}",
-          "missing from the tpl core import block")
+tpl_lines = tpl_text.splitlines()
+always_tier: set[str] = set()
+for name in sorted(rf.name for rf in (SKILL / "assets" / "rules" / "core").glob("*.md")):
+    always = f"@docs/ai/rules/core/{name}" in tpl_text
+    if always:
+        always_tier.add(name)
+    on_demand = any(
+        f"docs/ai/rules/core/{name}" in line and not line.strip().startswith("@")
+        for line in tpl_lines
+    )
+    check(always != on_demand, f"AGENTS.md.tpl declares core/{name}'s tier exactly once",
+          f"always-tier={always} on-demand={on_demand}")
 
 print("== opencode.json.tpl well-formed owned wiring ==")
 oc_text = (SKILL / "assets" / "templates" / "opencode.json.tpl").read_text()
@@ -92,6 +100,23 @@ except Exception as e:
     oc, oc_ok = None, False
 check(oc_ok, "opencode.json.tpl is valid JSON with an instructions array",
       f"instructions={oc.get('instructions') if oc else 'parse error'}")
+
+print("== opencode.json.tpl instructions list only always-tier core rules (BL-484 R-004, R-010) ==")
+if oc_ok:
+    instructions = oc["instructions"]
+    listed_core = {i.rsplit("/", 1)[-1] for i in instructions if i.startswith("docs/ai/rules/core/")}
+    check(listed_core == always_tier,
+          "opencode.json.tpl instructions list exactly the always-tier core rules",
+          f"listed={sorted(listed_core)} always-tier={sorted(always_tier)}")
+    check("docs/okf/codebase-map.md" not in instructions,
+          "opencode.json.tpl instructions do not list docs/okf/codebase-map.md (on-demand)")
+    check(not any(i == "docs/ai/rules/core/*.md" for i in instructions),
+          "opencode.json.tpl instructions do not glob docs/ai/rules/core/*.md")
+
+print("== core/project-rules.md documents the on-demand project rule (BL-484 R-009, R-010) ==")
+project_rules_text = (SKILL / "assets" / "rules" / "core" / "project-rules.md").read_text()
+check("pointer" in project_rules_text and ".claude/rules/" in project_rules_text,
+      "core/project-rules.md notes a project rule may be reached only by a pointer line")
 
 print("== stack rule-file naming (README content discipline) ==")
 allowed = {"architecture.md", "coding-standards.md", "data-access.md"}

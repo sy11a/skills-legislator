@@ -70,6 +70,15 @@ internal static class RunJobs
         fs.AddFile($"{SkillPath}/assets/rules/stacks/dotnet/a.md", new MockFileData("# dotnet law\n"));
         fs.AddFile($"{SkillPath}/assets/rules/stacks/aurelia/x.md", new MockFileData("# aurelia law\n"));
         fs.AddFile($"{SkillPath}/assets/templates/opencode.json.tpl", new MockFileData("{\"instructions\": []}\n"));
+        // Pointer lines, not `@import` lines, for both core rules and the codebase map (BL-484
+        // Q10, round 2 finding 2): all three read as on-demand, so `ReportJob`'s template read
+        // never throws in a report twin, and `WiredEntry` wires them the same way.
+        fs.AddFile(
+            $"{SkillPath}/assets/templates/AGENTS.md.tpl",
+            new MockFileData(
+                "- Before changing code that implements a concept, read `docs/ai/rules/core/okf.md` — it is law, not a reference.\n"
+                + "- Before starting any unit of work or merging, read `docs/ai/rules/core/sdd.md` — it is law, not a reference.\n"
+                + "- When finding where something lives, read `docs/okf/codebase-map.md` — it is law, not a reference.\n"));
         fs.AddFile(
             $"{SkillPath}/SKILL.md",
             new MockFileData(
@@ -238,9 +247,17 @@ internal static class RunJobs
         return text.ToString();
     }
 
-    /// <summary>An entry document importing every core rule this package delivers, wired the way the report's review section has nothing left to ask for.</summary>
+    /// <summary>
+    /// An entry document wiring every core rule this package delivers the way the new tier split
+    /// needs (BL-484 R-007): both <see cref="CoreRules"/> are on-demand under the template
+    /// <c>AddSkill</c> ships, so they are reached by a pointer naming their path, never an
+    /// `@import` line - the review section has nothing left to ask for either way.
+    /// </summary>
     public static string WiredEntry() =>
         "# P\n\n"
-        + string.Join('\n', CoreRules.Select(n => $"@docs/ai/rules/core/{n}"))
-        + "\n@docs/okf/codebase-map.md\n\n## Boundaries\n\nnone\n\n- Domain glossary: `docs/okf/glossary.md`\n";
+        + string.Join(
+            '\n',
+            CoreRules.Select(n => $"- Before some trigger, read `docs/ai/rules/core/{n}` — it is law, not a reference."))
+        + "\n- When finding where something lives, read `docs/okf/codebase-map.md` — it is law, not a reference."
+        + "\n\n## Boundaries\n\nnone\n\n- Domain glossary: `docs/okf/glossary.md`\n";
 }

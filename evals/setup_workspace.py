@@ -67,7 +67,10 @@ def materialize_upgrade(dest: Path) -> None:
     dotnet_src = sorted((SKILL / "assets/rules/stacks/dotnet").glob("*.md"))
     if len(core_src) < 2 or len(dotnet_src) < 2:
         sys.exit("upgrade fixture needs at least 2 core and 2 dotnet rules to withhold one of each")
-    withheld = core_src[-1]  # the core rule "added since this repo was legislated"
+    # The withheld core rule must be always-tier (BL-484 research decision): the review this
+    # fixture exercises asserts an `@import` proposal, which is the shape the engine only ever
+    # proposes for an always-tier rule now that on-demand rules get a pointer line instead.
+    withheld = next((f for f in core_src if f.name == "decision-gate.md"), core_src[-1])
     withheld_stack = dotnet_src[-1]  # ditto for the dotnet stack (BL-017 R4)
 
     rules_dst = dest / "docs/ai/rules"

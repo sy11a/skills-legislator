@@ -1,6 +1,7 @@
 ## Project Rules
 
 - Project-specific rules — law that applies to this repo only ("every feature ships behind a feature toggle") — live in `.claude/rules/`, one topic per file (`feature-toggles.md`, `e2e-tests.md`). Claude Code loads every `.md` there automatically at session start; no `@import` wiring is needed.
+- A project rule may also live outside `.claude/rules/` — reached only by a pointer line in the entry document (an on-demand `AGENTS.md` bullet under `### Read on demand`), so neither Claude Code's directory autoload nor opencode's `.claude/rules/*.md` glob loads it. The pointer is the only wiring such a rule has; without it, the rule is invisible to the agent.
 - Write them law-shaped: short, imperative, checkable against a diff. How-to guidance is not law — link to where it lives (docs, skills) instead of inlining it.
 - When a rule only applies to part of the tree, scope it with `paths:` YAML frontmatter (glob patterns, e.g. `src/api/**/*.ts`) so it loads only when matching files are touched.
 - Never put project rules in `docs/ai/rules/**` — that is machine-managed fleet law, overwritten byte-for-byte on every legislator run. Never inline them into CLAUDE.md's body either — CLAUDE.md stays lean; `.claude/rules/` is the project-law home.

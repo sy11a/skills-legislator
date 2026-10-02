@@ -189,7 +189,7 @@ public sealed class ApplyJobTests
         // The layer is plainly installed — the entry document imports the law — so detection
         // reconstructs the owned set from disk rather than re-scaffolding.
         var fs = AtEdition25(
-            "@docs/ai/rules/core/okf.md\n\n## Build & Test\n\n- `python3 docs/ai/engine.py anchors`\n");
+            "@docs/ai/rules/core/pair-development.md\n\n## Build & Test\n\n- `python3 docs/ai/engine.py anchors`\n");
         fs.File.Delete($"{Root}/docs/ai/manifest.json");
 
         var result = RunApply(fs, null, "--stacks", "");

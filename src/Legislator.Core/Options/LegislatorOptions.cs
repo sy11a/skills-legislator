@@ -72,8 +72,8 @@ public sealed record LegislatorOptions
 
     public OptionValue<string> StacksDir { get; init; } = new("stacks", OptionsLayer.Defaults); // under docs/ai/rules
 
-    /// <summary>The import whose presence in the entry document says the layer is already installed, so a manifest-less repository is an upgrade to reconstruct rather than a migration.</summary>
-    public OptionValue<string> LegislationMarker { get; init; } = new("core/okf.md", OptionsLayer.Defaults); // under docs/ai/rules
+    /// <summary>The import whose presence in the entry document says the layer is already installed, so a manifest-less repository is an upgrade to reconstruct rather than a migration. Must be an always-tier rule (BL-484 R-006): a manifest-less repo with a stale on-demand import has no always-tier marker, and reads as a fresh scaffold, which rewrites the wiring it carries.</summary>
+    public OptionValue<string> LegislationMarker { get; init; } = new("core/pair-development.md", OptionsLayer.Defaults); // under docs/ai/rules
 
     /// <summary>The closed substring whose presence in the entry text declares the waterflow mode; pair is the default and needs no declaration (design C-2).</summary>
     public OptionValue<string> WaterflowModeMarker { get; init; } = new("Development law mode: waterflow", OptionsLayer.Defaults);
@@ -134,6 +134,15 @@ public sealed record LegislatorOptions
     public OptionValue<string> SkillReleaseFile { get; init; } = new("assets/release/release.json", OptionsLayer.Defaults); // under the skill package
 
     public OptionValue<string> SkillOpencodeTemplate { get; init; } = new("assets/templates/opencode.json.tpl", OptionsLayer.Defaults); // under the skill package
+
+    /// <summary>The entry-document template SKILL.md Step 3 copies byte-for-byte. Its own lines are the tier split: an `@import` line is always-tier, any other line naming a core rule path (or <c>docs/okf/codebase-map.md</c>) is on-demand (BL-484 R-001). Read by <c>ReportJob.ReviewLines</c>, not by <c>apply</c>.</summary>
+    public OptionValue<string> SkillAgentsTemplate { get; init; } = new("assets/templates/AGENTS.md.tpl", OptionsLayer.Defaults); // under the skill package
+
+    /// <summary>The default-layout prefix every <c>AGENTS.md.tpl</c> path under <c>docs/ai/rules/core/</c> is written against (BL-484 R-001, Q11). A repo whose <see cref="RulesDir"/> was renamed still matches because the engine folds the template's default-layout paths back through the actual layout before comparing.</summary>
+    public OptionValue<string> TemplateCorePrefix { get; init; } = new("docs/ai/rules/core/", OptionsLayer.Defaults); // under docs/ai/rules
+
+    /// <summary>The default-layout path the codebase-map pointer line in <c>AGENTS.md.tpl</c> is written against (BL-484 R-001, Q11). A repo whose <see cref="OkfDir"/> or <see cref="CodebaseMapFile"/> was renamed still matches because the engine folds the template's default-layout paths back through the actual layout before comparing.</summary>
+    public OptionValue<string> TemplateCodebaseMapPath { get; init; } = new("docs/okf/codebase-map.md", OptionsLayer.Defaults); // under docs/okf
 
     /// <summary>The package's own procedure document - Step 4's table is where the scaffold targets are declared, and apply snapshots them before and after a run.</summary>
     public OptionValue<string> SkillFile { get; init; } = new("SKILL.md", OptionsLayer.Defaults); // under the skill package
@@ -250,6 +259,9 @@ public sealed record LegislatorOptions
         ["arm_executable"] = nameof(ArmExecutable),
         ["skill_release_file"] = nameof(SkillReleaseFile),
         ["skill_opencode_template"] = nameof(SkillOpencodeTemplate),
+        ["skill_agents_template"] = nameof(SkillAgentsTemplate),
+        ["template_core_prefix"] = nameof(TemplateCorePrefix),
+        ["template_codebase_map_path"] = nameof(TemplateCodebaseMapPath),
         ["skill_file"] = nameof(SkillFile),
         ["rules_core_dir"] = nameof(RulesCoreDir),
     };
@@ -339,6 +351,9 @@ public sealed record LegislatorOptions
         yield return ("arm_executable", ArmExecutable.Value, ArmExecutable.Source);
         yield return ("skill_release_file", SkillReleaseFile.Value, SkillReleaseFile.Source);
         yield return ("skill_opencode_template", SkillOpencodeTemplate.Value, SkillOpencodeTemplate.Source);
+        yield return ("skill_agents_template", SkillAgentsTemplate.Value, SkillAgentsTemplate.Source);
+        yield return ("template_core_prefix", TemplateCorePrefix.Value, TemplateCorePrefix.Source);
+        yield return ("template_codebase_map_path", TemplateCodebaseMapPath.Value, TemplateCodebaseMapPath.Source);
         yield return ("skill_file", SkillFile.Value, SkillFile.Source);
         yield return ("rules_core_dir", RulesCoreDir.Value, RulesCoreDir.Source);
         yield return ("case_branch_prefixes", string.Join(ListSeparator, CaseBranchPrefixes.Value), CaseBranchPrefixes.Source);
