@@ -38,6 +38,7 @@ EXPECTED = {
     "legacy-migration-agents-first": ["outputs/migration-report.md"],
     "upgrade": ["outputs/upgrade-report.md"],
     "upgrade-drop-stack": ["outputs/upgrade-report.md"],
+    "upgrade-tier-flip": ["outputs/upgrade-report.md"],
     "rotted-layer": ["outputs/audit-report.md"],
     "restructure": ["outputs/restructure-report.md"],
     # NOT docs/cases/README.md — that ships with the clean legislated
@@ -53,6 +54,7 @@ DISPLAY = {
     "legacy-migration-agents-first": "migration (agents-first)",
     "upgrade": "upgrade",
     "upgrade-drop-stack": "upgrade (drop-stack)",
+    "upgrade-tier-flip": "upgrade (tier-flip)",
     "rotted-layer": "audit",
     "restructure": "restructure",
     "case-practice": "case-practice",

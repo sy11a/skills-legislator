@@ -58,6 +58,13 @@
    "assertions": "see grade.py grade_upgrade_drop_stack"
   },
   {
+   "id": 9,
+   "name": "upgrade-tier-flip",
+   "prompt": "Re-run the legislator in this repo.",
+   "expected_output": "Upgrade mode, same VERSION-1 edition-28 repo shape as the `upgrade` scenario but with `verification.md` present only as its old on-demand pointer bullet (no `@import`), and `changelog.md`/`dev-journal.md` as two standalone pointer bullets. The Step 7 report (saved by the eval harness to <ws>/upgrade-tier-flip/outputs/upgrade-report.md, outside the repo) proposes, under Needs your review: adding `@docs/ai/rules/core/verification.md` and removing its now-stale on-demand pointer line (R-005); removing both of the old standalone changelog.md/dev-journal.md pointer lines and adding the merged edition-29 bullet exactly once, not twice (R-010, R-014).",
+   "assertions": "see grade.py grade_upgrade_tier_flip"
+  },
+  {
    "id": 8,
    "name": "case-practice",
    "prompt": "Add a CSV export of settled invoices to this repo \u2014 an endpoint returning all invoices settled in the last 30 days as CSV. Work the way this repo's law prescribes for feature work.",

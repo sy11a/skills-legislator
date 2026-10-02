@@ -4,6 +4,7 @@ using System.Text.Json.Nodes;
 using Legislator.Core.Manifest;
 using Legislator.Core.Repo;
 using Legislator.Engine.Apply;
+using Legislator.Engine.Detect;
 using Legislator.Engine.Runs;
 
 namespace Legislator.Engine.Jobs;
@@ -66,14 +67,25 @@ public sealed class VerifyJob : IJob
         }
 
         var post = Step4Targets.Snapshot(fs, parsed.Skill, ctx.Options, layout);
+
+        // The mode filter applies only to the missing-failure list: ApplyJob and ReportJob
+        // still account for a row a non-default-mode run created via the snapshot's persisted
+        // form. With no record, or a record without a mode key, the journal row stays in the
+        // failure list; only a record whose mode differs from fresh excludes it.
+        var recordPath = RecordPath.Of(fs, ctx.Options, ctx.Root, parsed.Value(RecordFlag));
+        var record = fs.File.Exists(recordPath) ? RunRecord.Read(fs, recordPath) : null;
+        var mode = record?[RunRecord.ModeKey]?.GetValue<string>();
+
+        var scaffoldOnly = mode is { } m && m != Detection.Fresh
+            ? Step4Targets.ScaffoldOnlyPaths(fs, parsed.Skill, ctx.Options)
+            : new HashSet<string>(StringComparer.Ordinal);
+
         failures.AddRange(post
-            .Where(t => !t.Value)
+            .Where(t => !t.Value && !scaffoldOnly.Contains(t.Key))
             .Select(t => $"{t.Key}: Step 4 artifact missing → scaffold it"));
 
-        var recordPath = RecordPath.Of(fs, ctx.Options, ctx.Root, parsed.Value(RecordFlag));
-        if (fs.File.Exists(recordPath))
+        if (record is not null)
         {
-            var record = RunRecord.Read(fs, recordPath);
             var step4 = new JsonObject();
             foreach (var (target, present) in post)
             {

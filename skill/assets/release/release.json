@@ -1,6 +1,4 @@
 {
-  "edition": "28.0.0",
-  "digests": {
-    "linux-x64": "2e98c465805f9c5cd15a6f67d608ef871026e7809984c4a6d0384c66db9848a5"
-  }
+  "edition": "29.0.0",
+  "digests": {}
 }

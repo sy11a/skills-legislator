@@ -216,6 +216,125 @@ public sealed class ReportJobTierTests
         Assert.Contains($"- add to `AGENTS.md`: `@{stackOwned}`", review, StringComparison.Ordinal);
     }
 
+    private const string VerificationOwned = "docs/ai/rules/core/verification.md";
+
+    private const string VerificationManifest =
+        "{\"legislatorVersion\": 25, \"stacks\": [], \"keep\": [], \"ownedFiles\": [\"" + VerificationOwned + "\"]}";
+
+    private const string VerificationTemplate = $"@{VerificationOwned}\n";
+
+    private const string VerificationPointer =
+        "- Before writing tests or implementation code, and before reporting done, read "
+        + "`docs/ai/rules/core/verification.md` — it is law, not a reference.";
+
+    /// <summary>R-005: a rule now always-tier whose entry still carries its old on-demand pointer line proposes both the add-`@import` and the stale-pointer remove, in either order.</summary>
+    [Fact]
+    public void Given_an_edition_28_shaped_entry_for_a_now_always_tier_rule_When_reported_Then_it_proposes_add_import_and_remove_pointer()
+    {
+        var fs = Repo();
+        Applied(fs, $"# A\n\n{VerificationPointer}\n", VerificationManifest, VerificationTemplate);
+
+        var review = RunReport(fs).Stdout;
+
+        Assert.Contains($"- add to `AGENTS.md`: `@{VerificationOwned}`", review, StringComparison.Ordinal);
+        Assert.Contains(
+            $"- remove from `AGENTS.md`: the pointer line naming `{VerificationOwned}` "
+            + "(now always-tier: imported, not read on trigger)",
+            review, StringComparison.Ordinal);
+    }
+
+    /// <summary>R-005: an entry already at the edition-29 shape (`@import`, no pointer line) proposes neither half for that rule.</summary>
+    [Fact]
+    public void Given_an_edition_29_shaped_entry_for_an_always_tier_rule_When_reported_Then_it_proposes_neither_add_nor_remove()
+    {
+        var fs = Repo();
+        Applied(fs, $"# A\n\n@{VerificationOwned}\n", VerificationManifest, VerificationTemplate);
+
+        var review = Review(RunReport(fs).Stdout);
+
+        Assert.DoesNotContain(VerificationOwned, review, StringComparison.Ordinal);
+    }
+
+    /// <summary>R-005 negative case: owner prose merely naming the rule's path outside the pointer grammar (this repository's own `AGENTS.md:26` shape) is never proposed for removal.</summary>
+    [Fact]
+    public void Given_the_rule_named_only_in_owner_prose_When_reported_Then_no_removal_is_proposed()
+    {
+        var fs = Repo();
+        Applied(
+            fs,
+            $"# A\n\nThis is the backlog-ticket convention `{VerificationOwned}` defers to.\n",
+            VerificationManifest,
+            VerificationTemplate);
+
+        var review = RunReport(fs).Stdout;
+
+        Assert.Contains($"- add to `AGENTS.md`: `@{VerificationOwned}`", review, StringComparison.Ordinal);
+        Assert.DoesNotContain(
+            $"- remove from `AGENTS.md`: the pointer line naming `{VerificationOwned}`",
+            review, StringComparison.Ordinal);
+    }
+
+    private const string ChangelogOwned = "docs/ai/rules/core/changelog.md";
+
+    private const string DevJournalOwned = "docs/ai/rules/core/dev-journal.md";
+
+    private const string MergedManifest =
+        "{\"legislatorVersion\": 25, \"stacks\": [], \"keep\": [], \"ownedFiles\": [\""
+        + ChangelogOwned + "\", \"" + DevJournalOwned + "\"]}";
+
+    private const string MergedTemplateLine =
+        "- Before the first commit on a task branch, touching `CHANGELOG.md`/`docs/changes/`, or writing a "
+        + "fragment's `## journal` section or editing `docs/journal/` directly, read "
+        + "`docs/ai/rules/core/changelog.md` and `docs/ai/rules/core/dev-journal.md` — they are law, not a reference.";
+
+    private const string OldChangelogLine =
+        "- Before the first commit on a task branch, or touching `CHANGELOG.md`/`docs/changes/`, read "
+        + "`docs/ai/rules/core/changelog.md` — it is law, not a reference.";
+
+    private const string OldDevJournalLine =
+        "- Before writing a fragment's `## journal` section, or editing `docs/journal/` directly, read "
+        + "`docs/ai/rules/core/dev-journal.md` — it is law, not a reference.";
+
+    private static int Occurrences(string haystack, string needle)
+    {
+        var count = 0;
+        var at = 0;
+        while ((at = haystack.IndexOf(needle, at, StringComparison.Ordinal)) >= 0)
+        {
+            count++;
+            at += needle.Length;
+        }
+
+        return count;
+    }
+
+    /// <summary>R-010, R-014: two standalone old pointer bullets, both differing from the merged template line, propose two removes (one per old line) and a single merged add - not two.</summary>
+    [Fact]
+    public void Given_two_standalone_old_pointer_lines_merged_into_one_template_line_When_reported_Then_it_proposes_two_removes_and_one_add()
+    {
+        var fs = Repo();
+        Applied(
+            fs, $"# A\n\n{OldChangelogLine}\n{OldDevJournalLine}\n", MergedManifest, $"{MergedTemplateLine}\n");
+
+        var review = RunReport(fs).Stdout;
+
+        Assert.Contains($"- remove from `AGENTS.md`: the pointer line naming `{ChangelogOwned}`", review, StringComparison.Ordinal);
+        Assert.Contains($"- remove from `AGENTS.md`: the pointer line naming `{DevJournalOwned}`", review, StringComparison.Ordinal);
+        Assert.Equal(1, Occurrences(review, $"- add to `AGENTS.md`: {MergedTemplateLine}"));
+    }
+
+    /// <summary>R-014: an entry that already imports both of the merged bullet's rules with `@` lines proposes the merged add exactly once.</summary>
+    [Fact]
+    public void Given_an_entry_importing_both_merged_rules_with_at_lines_When_reported_Then_the_merged_add_is_proposed_exactly_once()
+    {
+        var fs = Repo();
+        Applied(fs, $"# A\n\n@{ChangelogOwned}\n@{DevJournalOwned}\n", MergedManifest, $"{MergedTemplateLine}\n");
+
+        var review = RunReport(fs).Stdout;
+
+        Assert.Equal(1, Occurrences(review, $"- add to `AGENTS.md`: {MergedTemplateLine}"));
+    }
+
     [Fact]
     public void Given_a_skill_package_with_no_AGENTS_md_tpl_When_reported_Then_it_throws_the_named_error_instead_of_a_silent_fallback()
     {

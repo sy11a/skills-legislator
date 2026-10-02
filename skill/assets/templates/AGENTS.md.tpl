@@ -15,17 +15,16 @@ Stack: {{STACK_SUMMARY}}
 
 @docs/ai/rules/core/pair-development.md
 @docs/ai/rules/core/decision-gate.md
+@docs/ai/rules/core/verification.md
 {{STACK_IMPORTS}}
 
 ### Read on demand
 
 - Before changing code that implements a concept, read `docs/ai/rules/core/okf.md` — it is law, not a reference.
 - Before starting any unit of work or merging, read `docs/ai/rules/core/sdd.md` — it is law, not a reference.
-- Before writing tests or implementation code, and before reporting done, read `docs/ai/rules/core/verification.md` — it is law, not a reference.
-- Before the first commit on a task branch, or touching `CHANGELOG.md`/`docs/changes/`, read `docs/ai/rules/core/changelog.md` — it is law, not a reference.
+- Before the first commit on a task branch, touching `CHANGELOG.md`/`docs/changes/`, or writing a fragment's `## journal` section or editing `docs/journal/` directly, read `docs/ai/rules/core/changelog.md` and `docs/ai/rules/core/dev-journal.md` — they are law, not a reference.
 - Before creating, deleting or reporting on an artifact, read `docs/ai/rules/core/artifact-lifecycle.md` — it is law, not a reference.
 - Before each stage boundary (plan, implement, debug, review), or before invoking a skill, read `docs/ai/rules/core/skills.md` — it is law, not a reference.
-- Before writing a fragment's `## journal` section, or editing `docs/journal/` directly, read `docs/ai/rules/core/dev-journal.md` — it is law, not a reference.
 - Before closing a decision-gate stop, introducing a new invariant, or deliberately keeping an accepted antipattern or tradeoff, read `docs/ai/rules/core/adr.md` — it is law, not a reference.
 - Before looking up where something lives, read `docs/okf/codebase-map.md` — it is law, not a reference.
 

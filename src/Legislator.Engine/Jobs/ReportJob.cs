@@ -64,6 +64,19 @@ public sealed partial class ReportJob : IJob
     [GeneratedRegex(@"^@(\S+)", RegexOptions.Multiline)]
     private static partial Regex ImportLine();
 
+    /// <summary>The pointer grammar shared by R-005's stale-pointer removal and R-010's
+    /// template-vs-entry replace proposal: <c>- Before &lt;trigger&gt;, read \`&lt;path&gt;\` — it is law, not a reference.</c>,
+    /// with an optional <c>and \`&lt;path2&gt;\`</c> for a merged bullet and a <c>they are</c>
+    /// plural pronoun to match. A line outside this grammar (owner prose naming the path) is left
+    /// alone.</summary>
+    [GeneratedRegex(
+        @"^-\s+Before\b.*\bread\s+`[^`]+`(\s+and\s+`[^`]+`)*\s+—\s+(it|they)\s+(is|are)\s+law,\s+not\s+a\s+reference\.\s*$",
+        RegexOptions.Multiline)]
+    private static partial Regex PointerLine();
+
+    [GeneratedRegex(@"`([^`]+)`")]
+    private static partial Regex BacktickPath();
+
     public JobResult Run(JobContext ctx)
     {
         ArgumentNullException.ThrowIfNull(ctx);
@@ -221,6 +234,19 @@ public sealed partial class ReportJob : IJob
         SkillPackage skill)
     {
         var review = new List<string>();
+        // R-014: deduplicate engine-generated add-lines before returning - a merged on-demand
+        // pointer line is proposed once per rule it names, but the section must show it once.
+        // Other review lines (engine removes, model review lines) keep their order and
+        // duplicates.
+        var seenAdds = new HashSet<string>(StringComparer.Ordinal);
+        void TryAddAdd(string line)
+        {
+            if (seenAdds.Add(line))
+            {
+                review.Add(line);
+            }
+        }
+
         var entry = EntryDocument.Of(fs, layout, options);
         var entryName = entry ?? options.EntryDocument.Value;
         var entryText = entry is not null ? fs.File.ReadAllText($"{layout.Root}/{entry}") : "";
@@ -251,6 +277,13 @@ public sealed partial class ReportJob : IJob
             ownedRules.Add(codeBasePath);
         }
 
+        // The set of paths the entry document treats as owned core rule paths. R-005 and R-010
+        // both gate on "naming that rule alone": a grammar-matched line is only a stale-pointer
+        // candidate when no other core rule's path appears on the same line. A merged bullet
+        // naming two rules names neither alone, and is therefore never proposed for removal
+        // under either rule.
+        var ownedRulesSet = new HashSet<string>(ownedRules, StringComparer.Ordinal);
+
         // Stack rules: a path under `docs/ai/rules/stacks/` is never on-demand under this case
         // (R-008, Q4) - if the template's own lines do not name it, the tier helper inherits it
         // as always-tier (its `OnDemandLine` map has no entry for it) and the today's add-`@<rule>`
@@ -267,22 +300,61 @@ public sealed partial class ReportJob : IJob
                         $"- remove from `{entryName}`: `@{rule}` (on-demand: read on trigger, not imported)");
                 }
 
-                // The owner's own pointer wording is never second-guessed (R-007): the add-pointer
-                // half only fires when the rule's path is absent outside the rule's `@import`
-                // lines, so a reworded pointer the template no longer matches byte-for-byte is left
-                // alone rather than re-proposed.
-                if (tiers.OnDemandLine.TryGetValue(rule, out var pointerLine)
-                    && !EntryNamesRuleWithoutImport(entryText, rule))
+                // R-010: when the entry's existing single-rule pointer line for this rule is in
+                // the pointer grammar and differs from the template's current line for the rule,
+                // the proposal is a replace (one remove of the entry's old line + one add of the
+                // template's current line). The add's gate is three-part:
+                //   - !EntryNamesRuleWithoutImport - the entry has no other mention of this rule;
+                //   - diffsFromTemplate - the entry's single-rule pointer line differs from the
+                //     template's current line;
+                //   - !entryText.Contains(pointerLine) - the entry does not already carry the
+                //     template's current line.
+                // The first two are alternatives; the third is a positive guard against
+                // proposing an add the entry already has. All three must hold for the add to
+                // fire. R-014 deduplicates the resulting add-lines above, so the merged bullet is
+                // proposed once no matter how many rules named it. The remove uses the same form
+                // R-005 emits - the pointer line naming the rule - so the two rules' removal
+                // halves share one shape.
+                if (tiers.OnDemandLine.TryGetValue(rule, out var pointerLine))
                 {
-                    review.Add($"- add to `{entryName}`: {pointerLine}");
+                    var existing = FindEntryPointerLine(ownedRulesSet, entryText, rule);
+                    var diffsFromTemplate = existing is not null && existing != pointerLine;
+                    if ((!EntryNamesRuleWithoutImport(entryText, rule) || diffsFromTemplate)
+                        && !entryText.Contains(pointerLine, StringComparison.Ordinal))
+                    {
+                        TryAddAdd($"- add to `{entryName}`: {pointerLine}");
+                    }
+
+                    if (diffsFromTemplate)
+                    {
+                        review.Add(
+                            $"- remove from `{entryName}`: the pointer line naming `{rule}`");
+                    }
                 }
 
                 continue;
             }
 
+            // R-005: when a rule is now always-tier in the running template AND the entry still
+            // carries a grammar-matched pointer line naming the rule alone, propose removing
+            // that stale pointer. Ungated from the add-`@import` proposal: the remove fires
+            // whenever the entry has a stale pointer for the rule, regardless of whether the
+            // add-`@import` proposal also fires. Restricted to `tiers.Always`: a stack rule is
+            // always-tier only by the template's silence about it, never a member of this set.
+            if (tiers.Always.Contains(rule))
+            {
+                var stale = FindEntryPointerLine(ownedRulesSet, entryText, rule);
+                if (stale is not null)
+                {
+                    review.Add(
+                        $"- remove from `{entryName}`: the pointer line naming `{rule}` "
+                        + "(now always-tier: imported, not read on trigger)");
+                }
+            }
+
             if (!imports.Contains(rule, StringComparer.Ordinal))
             {
-                review.Add($"- add to `{entryName}`: `@{rule}`");
+                TryAddAdd($"- add to `{entryName}`: `@{rule}`");
             }
         }
 
@@ -296,12 +368,12 @@ public sealed partial class ReportJob : IJob
 
             if (scaffolded.Count > 0 && !entryText.Contains("## Boundaries", StringComparison.Ordinal))
             {
-                review.Add($"- add to `{entryName}`: a `## Boundaries` section");
+                TryAddAdd($"- add to `{entryName}`: a `## Boundaries` section");
             }
 
             if (scaffolded.Contains(glossary) && !entryText.Contains(glossary, StringComparison.Ordinal))
             {
-                review.Add(
+                TryAddAdd(
                     $"- add to `{entryName}`: the glossary pointer line `- Domain glossary: \\`{glossary}\\` — "
                     + "check it when a term is unclear; add terms as they emerge`");
             }
@@ -309,6 +381,42 @@ public sealed partial class ReportJob : IJob
 
         review.AddRange(model.Review.Select(l => l.TrimEnd()));
         return review;
+    }
+
+    /// <summary>The line in the entry text that is in the pointer grammar and names <paramref name="rule"/> alone -
+    /// no other owned rule's path appears on the same line. Returns null when no such line exists.
+    /// Shared by R-005 (always-tier stale-pointer removal) and R-010 (on-demand template-vs-entry replace);
+    /// the same gate is reused so owner prose outside the pointer grammar is never proposed for removal.</summary>
+    private static string? FindEntryPointerLine(HashSet<string> ownedRulesSet, string entryText, string rule)
+    {
+        foreach (var raw in entryText.Split('\n'))
+        {
+            var line = raw.Trim();
+            if (!PointerLine().IsMatch(line))
+            {
+                continue;
+            }
+
+            if (!line.Contains(rule, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            // Naming alone: the line must not contain any other owned rule's path. Non-rule paths
+            // in the trigger phrase (e.g. `CHANGELOG.md`, `docs/journal/`) do not disqualify.
+            var otherRulePaths = BacktickPath().Matches(line)
+                .Select(m => m.Groups[1].Value)
+                .Where(p => p != rule && ownedRulesSet.Contains(p))
+                .ToList();
+            if (otherRulePaths.Count > 0)
+            {
+                continue;
+            }
+
+            return line;
+        }
+
+        return null;
     }
 
     /// <summary>Whether the entry text names the rule's path on a line that is not its own <c>@import</c> line - the add-pointer half's guard (BL-484 R-007).</summary>
