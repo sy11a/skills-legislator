@@ -6,9 +6,9 @@
 # THIS host can build and refuses a cross-OS RID by name, before reaching the SDK. A RID of
 # this host's OS but another architecture is refused by the SDK, not here.
 #
-# `released` below is the SINGLE statement of what the edition releases. The release matrix in
-# .github/workflows/dotnet.yml builds it, and evals/check_static.py reads this line rather than
-# restating the set: a RID added or dropped here moves both.
+# `released` below is the SINGLE statement of what the edition releases. evals/check_static.py
+# reads this line rather than restating the set. The hosted release matrix that used to build it
+# (.github/workflows/dotnet.yml) was removed on 2026-10-23: builds and tests run locally.
 #
 # The edition releases linux-x64 alone since the operator ruling of 2026-09-23 (ADR 0013).
 # Development is Linux-only, win-x64 had been red since BL-372, and a matrix carrying three

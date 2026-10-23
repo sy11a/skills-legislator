@@ -46,7 +46,7 @@ that its digest belongs in no `release.json` entry. On Windows, copy
 `artifacts/win-x64/legislator.exe` onto `PATH` yourself; the install script is
 POSIX. What the ruling does cost is verification — nothing checks that the
 source still builds on those platforms until a RID is added back to
-`released=(...)` and to the matrix. Audit check 20 (`arm-integrity`) reports a machine
+`released=(...)`. Audit check 20 (`arm-integrity`) reports a machine
 whose arm is missing or is not the one the edition released, so a repository
 never silently audits itself with the wrong instrument.
 
