@@ -63,6 +63,8 @@ never rewritten (`.claude/rules/records.md`).
 ## Build & Test
 
 - Every commit: `python3 evals/check_static.py` and `python3 evals/check_engine.py`
+- .NET arm (what the removed `dotnet` workflow ran): `dotnet build src -warnaserror --nologo` and
+  `bash evals/check_dotnet.sh`; the NativeAOT publish is `bash tools/publish-legislator.sh`
 - Enforcement arms: `python3 evals/check_hooks.py` and `node evals/check_opencode_plugin.mjs`
 - Behavioral change to `skill/`: the full e2e benchmark per `evals/README.md`
   (`python3 evals/setup_workspace.py <ws>` then `tools/evals-bg.sh <ws>`)
